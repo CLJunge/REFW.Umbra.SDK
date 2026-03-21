@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using Umbra.SDK.Config.Attributes;
@@ -11,13 +12,13 @@ namespace Umbra.SDK.Config.UI;
 /// <see cref="Type"/> object at the top of every <c>Collect</c> invocation.
 /// </summary>
 /// <remarks>
-/// Instances are keyed by <see cref="Type"/> identity in a static dictionary. Types are only
+/// Instances are keyed by <see cref="Type"/> identity in a thread-safe static cache. Types are only
 /// reflected over once per <see cref="System.AppDomain"/> lifetime; subsequent <c>Collect</c>
 /// calls for the same type return the cached result immediately.
 /// </remarks>
 internal sealed class TypeDrawMetadata
 {
-    private static readonly Dictionary<Type, TypeDrawMetadata> s_cache = new();
+    private static readonly ConcurrentDictionary<Type, TypeDrawMetadata> s_cache = new();
 
     /// <summary>
     /// Category name from <c>CategoryAttribute</c>, or <see langword="null"/> when absent.
@@ -92,13 +93,7 @@ internal sealed class TypeDrawMetadata
     /// building and caching it on first access via a single attribute scan.
     /// </summary>
     /// <param name="type">The type to read metadata for.</param>
-    internal static TypeDrawMetadata For(Type type)
-    {
-        if (s_cache.TryGetValue(type, out var cached)) return cached;
-        var meta = Build(type);
-        s_cache[type] = meta;
-        return meta;
-    }
+    internal static TypeDrawMetadata For(Type type) => s_cache.GetOrAdd(type, Build);
 
     private static TypeDrawMetadata Build(Type type)
     {
@@ -109,7 +104,7 @@ internal sealed class TypeDrawMetadata
         INestedGroupDrawerAttribute? nestedDrawer = null;
         bool isAutoRegister                       = false;
 
-        foreach (var a in type.GetCustomAttributes(false))
+        foreach (var a in type.GetCustomAttributes(inherit: true))
         {
             if (a is CategoryAttribute cat)           { category    = cat.Name; continue; }
             if (a is IndentAttribute ind)             { indent      = ind;      continue; }
