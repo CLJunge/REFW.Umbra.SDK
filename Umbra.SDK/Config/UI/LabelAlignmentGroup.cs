@@ -14,7 +14,7 @@ namespace Umbra.SDK.Config.UI;
 /// convergence delay occurs on the very first render. From the second frame onward
 /// <see cref="LabelWidth"/> is stable and all controls in the group are column-aligned.
 /// </remarks>
-[DebuggerDisplay("LabelAlignmentGroup: {LabelWidth} px")]
+[DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
 internal sealed class LabelAlignmentGroup
 {
     private float _committedMax;
@@ -62,5 +62,15 @@ internal sealed class LabelAlignmentGroup
         if (hasDescription)
             w += ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize("(?)").X;
         if (w > _runningMax) _runningMax = w;
+    }
+
+    private string GetDebuggerDisplay()
+    {
+        var displayStirng = "LabelAlignmentGroup: LabelWidth=" + LabelWidth;
+
+        if (Margin != 0f)
+            displayStirng += ", Margin=" + Margin;
+
+        return displayStirng;
     }
 }

@@ -60,15 +60,16 @@ internal sealed class ConfigDrawerBuilder
         // A type decorated with [NestedGroupDrawer<TDrawer>] is rendered entirely by its
         // custom drawer. Expanding its parameters here would duplicate what that drawer
         // manages, so bail out immediately regardless of how Collect was reached.
-        if (type.GetDrawerAttribute<INestedGroupDrawerAttribute>() is not null)
+        var typeMeta = TypeDrawMetadata.For(type);
+        if (typeMeta.NestedGroupDrawer is not null)
             return;
 
-        var classCategory = type.GetCustomAttribute<CategoryAttribute>()?.Name;
-        var classIndent = type.GetCustomAttribute<IndentAttribute>();
-        var classCollapseAttr = type.GetCustomAttribute<CollapseAsTreeAttribute>();
-        var classLabelMargin = type.GetCustomAttribute<LabelMarginAttribute>();
+        var classCategory  = typeMeta.Category;
+        var classIndent    = typeMeta.Indent;
+        var classCollapseAttr = typeMeta.CollapseAttr;
+        var classLabelMargin  = typeMeta.LabelMargin;
 
-        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (var prop in typeMeta.Properties)
         {
             var propType = prop.PropertyType;
 
@@ -78,10 +79,10 @@ internal sealed class ConfigDrawerBuilder
                 if (prop.GetValue(obj) is not IParameter parameter) continue;
 
                 var meta = parameter.Metadata;
-                var label = meta.DisplayName ?? prop.Name.ToDisplayName();
-                var cat = meta.Category
-                         ?? prop.GetCustomAttribute<CategoryAttribute>()?.Name
-                         ?? classCategory;
+                var label = meta.ResolvedLabel;
+                // meta.Category is already populated by ParameterMetadataReader.ReadFrom during
+                // SettingsStore.Load(), so the per-property GetCustomAttribute fallback is redundant.
+                var cat = meta.Category ?? classCategory;
 
                 // propertyIndentOverride wraps the entire category block (header + children).
                 EmitCategoryHeader(cat, classCollapseAttr, propertyIndentOverride);
@@ -91,32 +92,39 @@ internal sealed class ConfigDrawerBuilder
 
                 var group = cat is not null ? _currentCategoryNode!.AlignmentGroup : _rootAlignmentGroup;
                 if (classLabelMargin is not null) group.Margin = classLabelMargin.Pixels;
-                var (draw, resource) = ControlFactory.BuildDrawAction(prop, parameter, label, group);
+                var (draw, resource) = ControlFactory.BuildDrawAction(parameter, label, group);
                 if (resource is not null) Disposables.Add(resource);
 
-                // Property-level [Indent] takes priority; falls back to class-level.
-                var indent = prop.GetCustomAttribute<IndentAttribute>() ?? classIndent;
-                if (indent is not null)
+                // Property-level Indent (pre-populated in metadata by ParameterMetadataReader) takes
+                // priority; falls back to the class-level IndentAttribute read once per Collect call.
+                float? indentAmount = meta.Indent ?? classIndent?.Amount;
+                if (indentAmount.HasValue)
                 {
-                    var amount = indent.Amount; // capture before closure
+                    var amount = indentAmount.Value; // capture before closure
                     var inner = draw;
                     draw = () => { ImGui.Indent(amount); inner(); ImGui.Unindent(amount); };
                 }
 
-                var spacingCount = prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0;
-                var spacingAfterCount = prop.GetCustomAttribute<SpacingAfterAttribute>()?.Count ?? 0;
+                var spacingCount = meta.SpacingBefore;
+                var spacingAfterCount = meta.SpacingAfter;
                 var order = parameter.Metadata.Order ?? int.MaxValue;
-                targetList.Add(new ParameterNode(VisibilityPredicateResolver.Build(prop, obj), draw, order, spacingCount, spacingAfterCount));
+                // Fast path: most parameters carry no HideIf condition; return the cached static
+                // always-true delegate directly to avoid the function-call overhead of Build.
+                var isVisible = meta.HideIf is not null
+                    ? VisibilityPredicateResolver.Build(meta.HideIf, obj)
+                    : static () => true;
+                targetList.Add(new ParameterNode(isVisible, draw, order, spacingCount, spacingAfterCount));
                 continue;
             }
 
             // ── Branch: nested settings group ─────────────────────────────
-            if (propType.GetCustomAttribute<AutoRegisterSettingsAttribute>() is not null
+            var propTypeMeta = TypeDrawMetadata.For(propType);
+            if (propTypeMeta.IsAutoRegisterSettings
                 && prop.GetValue(obj) is { } nested)
             {
                 // Class-level [NestedGroupDrawer<TDrawer>] — skip recursion and render the
                 // group instance directly via the custom drawer.
-                var nestedDrawerAttr = propType.GetDrawerAttribute<INestedGroupDrawerAttribute>();
+                var nestedDrawerAttr = propTypeMeta.NestedGroupDrawer;
                 if (nestedDrawerAttr is not null)
                 {
                     try
@@ -162,18 +170,24 @@ internal sealed class ConfigDrawerBuilder
 
                         // Category: property override → nested class attribute → parent class attribute.
                         var cat = prop.GetCustomAttribute<CategoryAttribute>()?.Name
-                                 ?? propType.GetCustomAttribute<CategoryAttribute>()?.Name
+                                 ?? propTypeMeta.Category
                                  ?? classCategory;
 
                         EmitCategoryHeader(
                             cat,
-                            propType.GetCustomAttribute<CollapseAsTreeAttribute>(),
+                            propTypeMeta.CollapseAttr,
                             prop.GetCustomAttribute<IndentAttribute>());
 
                         var targetList = cat is not null ? _currentCategoryNode!.Children : Nodes;
 
+                        IHideIfAttribute? propHideIf = null;
+                        foreach (var a in prop.GetCustomAttributes(false))
+                        {
+                            if (a is IHideIfAttribute h) { propHideIf = h; break; }
+                        }
+
                         targetList.Add(new ParameterNode(
-                            VisibilityPredicateResolver.Build(prop, obj),
+                            VisibilityPredicateResolver.Build(propHideIf, obj),
                             drawAction,
                             order: prop.GetCustomAttribute<ParameterOrderAttribute>()?.Order ?? 0,
                             spacingBefore: prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0,
