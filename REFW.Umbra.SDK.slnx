@@ -1,0 +1,7 @@
+<Solution>
+    <Folder Name="/Solution Items/">
+		<File Path=".editorconfig" />
+	</Folder>
+	<Project Path="Umbra.SDK/Umbra.SDK.csproj" />
+    <Project Path="Umbra.SamplePlugin/Umbra.SamplePlugin.csproj" Id="55bc0663-13f1-46d8-8c80-99de8b445bfa" />
+</Solution>
