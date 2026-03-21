@@ -124,20 +124,36 @@ internal sealed class ConfigDrawerBuilder
                         var drawerInstance = Activator.CreateInstance(nestedDrawerAttr.DrawerType)!;
 
                         Type? genericIface = null;
+                        Type? groupType = null;
                         foreach (var iface in nestedDrawerAttr.DrawerType.GetInterfaces())
                         {
-                            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(INestedGroupDrawer<>))
-                            { genericIface = iface; break; }
+                            if (!iface.IsGenericType)
+                                continue;
+
+                            if (iface.GetGenericTypeDefinition() != typeof(INestedGroupDrawer<>))
+                                continue;
+
+                            var candidateGroupType = iface.GetGenericArguments()[0];
+                            // Ensure the drawer's group type is compatible with the nested group's actual type.
+                            if (!candidateGroupType.IsAssignableFrom(propType))
+                                continue;
+
+                            genericIface = iface;
+                            groupType = candidateGroupType;
+                            break;
                         }
-                        if (genericIface is null)
-                            throw new InvalidOperationException(
-                                $"Drawer type '{nestedDrawerAttr.DrawerType.Name}' does not implement INestedGroupDrawer<T>.");
+
+                        if (genericIface is null || groupType is null)
+                        {
+                            Logger.Error(
+                                $"ConfigDrawer: nested group drawer '{nestedDrawerAttr.DrawerType.Name}' does not support group type '{propType.FullName}'.");
+                            continue;
+                        }
 
                         if (drawerInstance is IDisposable disposable)
                             Disposables.Add(disposable);
 
                         var drawMethod = genericIface.GetMethod("Draw")!;
-                        var groupType = genericIface.GetGenericArguments()[0];
                         var callExpr = Expression.Call(
                             Expression.Convert(Expression.Constant(drawerInstance), genericIface),
                             drawMethod,
