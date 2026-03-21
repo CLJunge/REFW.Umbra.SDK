@@ -64,13 +64,20 @@ internal sealed class LabelAlignmentGroup
         if (w > _runningMax) _runningMax = w;
     }
 
+    /// <summary>
+    /// Builds a human-readable summary string for debugger visualizers.
+    /// </summary>
+    /// <returns>
+    /// A string containing the current <see cref="LabelWidth"/> and, when non-zero,
+    /// the configured <see cref="Margin"/>.
+    /// </returns>
     private string GetDebuggerDisplay()
     {
-        var displayStirng = "LabelAlignmentGroup: LabelWidth=" + LabelWidth;
+        var displayString = "LabelAlignmentGroup: LabelWidth=" + LabelWidth;
 
         if (Margin != 0f)
-            displayStirng += ", Margin=" + Margin;
+            displayString += ", Margin=" + Margin;
 
-        return displayStirng;
+        return displayString;
     }
 }
