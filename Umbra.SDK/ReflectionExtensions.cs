@@ -56,4 +56,30 @@ public static class ReflectionExtensions
 
         return null;
     }
+
+    /// <summary>
+    /// Returns the first custom attribute on <paramref name="type"/> that is assignable to
+    /// <typeparamref name="T"/>, or <see langword="null"/> when no match is found.
+    /// </summary>
+    /// <remarks>
+    /// Use this to locate interface-typed class-level attributes (e.g.
+    /// <see cref="Config.Attributes.INestedGroupDrawerAttribute"/>) on a configuration group
+    /// type without knowing the concrete generic type argument at the call site.
+    /// </remarks>
+    /// <typeparam name="T">The attribute type or interface to search for. Must be a reference type.</typeparam>
+    /// <param name="type">The type whose custom attributes are inspected.</param>
+    /// <returns>
+    /// The first attribute instance that is assignable to <typeparamref name="T"/>,
+    /// or <see langword="null"/> when no such attribute is present.
+    /// </returns>
+    public static T? GetDrawerAttribute<T>(this Type type) where T : class
+    {
+        foreach (var a in type.GetCustomAttributes(false))
+        {
+            if (a is T ca)
+                return ca;
+        }
+
+        return null;
+    }
 }

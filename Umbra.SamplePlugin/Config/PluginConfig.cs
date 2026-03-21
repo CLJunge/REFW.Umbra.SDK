@@ -43,6 +43,9 @@ public record PluginConfig
     [SettingsParameter]
     public FilmGrainSettings FilmGrain { get; set; } = new();
 
+    [SettingsParameter]
+    public NestedDrawerTest DrawerTest { get; set; } = new();
+
     /// <summary>
     /// Logs a diagnostic test message to the REFramework console.
     /// Demonstrates <see cref="ButtonDrawer"/> with a primary style and full-width layout,
@@ -195,5 +198,33 @@ public record PluginConfig
                 Opacity.Reset();
             });
         }
+    }
+
+    /// <summary>
+    /// Sample nested settings group used to demonstrate a custom nested group drawer.
+    /// The properties are modeled as <see cref="Parameter{T}"/> so they participate
+    /// in the standard Umbra settings registration and persistence workflow.
+    /// </summary>
+    [AutoRegisterSettings]
+    [Category("Drawer Test")]
+    [CollapseAsTree]
+    [NestedGroupDrawer<NestedDrawerTestDrawer>]
+    public record NestedDrawerTest
+    {
+        /// <summary>Gets or sets the first sample integer value for the nested drawer test.</summary>
+        [SettingsParameter]
+        public Parameter<int> Value1 { get; set; } = new(123);
+
+        /// <summary>Gets or sets the second sample boolean value for the nested drawer test.</summary>
+        [SettingsParameter]
+        public Parameter<bool> Value2 { get; set; } = new(true);
+
+        /// <summary>Gets or sets the third sample string value for the nested drawer test.</summary>
+        [SettingsParameter]
+        public Parameter<string> Value3 { get; set; } = new("Hello, world!");
+
+        /// <summary>Gets or sets the fourth sample float value for the nested drawer test.</summary>
+        [SettingsParameter]
+        public Parameter<float> Value4 { get; set; } = new(3.14f);
     }
 }

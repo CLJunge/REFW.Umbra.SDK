@@ -27,6 +27,18 @@ public interface ITwoColumnCustomDrawerAttribute
 }
 
 /// <summary>
+/// Non-generic marker interface implemented by <see cref="NestedGroupDrawerAttribute{TDrawer}"/>.
+/// Allows nested-group custom-drawer detection via
+/// <c>propType.GetDrawerAttribute&lt;INestedGroupDrawerAttribute&gt;()</c>
+/// without runtime generic type inspection.
+/// </summary>
+public interface INestedGroupDrawerAttribute
+{
+    /// <summary>Gets the concrete <see cref="INestedGroupDrawer{T}"/> type used to render the nested group instance.</summary>
+    Type DrawerType { get; }
+}
+
+/// <summary>
 /// Hides a settings parameter in the UI when a named member on the same configuration
 /// class satisfies a condition.
 /// </summary>
@@ -128,6 +140,37 @@ public sealed class TwoColumnCustomDrawerAttribute<TDrawer> : Attribute, ITwoCol
     where TDrawer : ITwoColumnParameterDrawer, new()
 {
     /// <summary>Gets the type of the custom drawer used to render this parameter's editing widget.</summary>
+    public Type DrawerType => typeof(TDrawer);
+}
+
+/// <summary>
+/// Instructs the UI builder to render the decorated nested configuration class using a custom
+/// <see cref="INestedGroupDrawer{TGroup}"/> instead of the default recursive property expansion.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Apply this attribute to a nested configuration class also decorated with
+/// <c>[AutoRegisterSettings]</c>. When <see cref="ConfigDrawer{TConfig}"/> encounters a
+/// property typed as this class, it instantiates <typeparamref name="TDrawer"/> and calls
+/// <see cref="INestedGroupDrawer{TGroup}.Draw"/> with the group instance each frame instead of
+/// recursing into the class's individual parameters.
+/// </para>
+/// <para>
+    /// The drawer has full ImGui layout control; no label, column alignment, or section header
+    /// is emitted by the factory. <c>[Category]</c>, <c>[SpacingBefore]</c>, <c>[SpacingAfter]</c>,
+    /// and <c>[HideIf]</c> on the property declaration are still honoured, while <c>[CollapseAsTree]</c>
+    /// must be applied to the nested group type itself.
+    /// </para>
+/// </remarks>
+/// <typeparam name="TDrawer">
+/// The <see cref="INestedGroupDrawer{T}"/> implementation to use. Must provide a public
+/// parameterless constructor; this constraint is enforced at compile time.
+/// </typeparam>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+public sealed class NestedGroupDrawerAttribute<TDrawer> : Attribute, INestedGroupDrawerAttribute
+    where TDrawer : class, new()
+{
+    /// <summary>Gets the type of the custom drawer used to render the nested group instance.</summary>
     public Type DrawerType => typeof(TDrawer);
 }
 
