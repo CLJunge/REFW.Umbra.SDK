@@ -1,7 +1,10 @@
 using Hexa.NET.ImGui;
+using System.Linq.Expressions;
 using System.Reflection;
 using Umbra.SDK.Config.Attributes;
 using Umbra.SDK.Config.UI.Nodes;
+using Umbra.SDK.Config.UI.ParameterDrawers;
+using Umbra.SDK.Logging;
 
 namespace Umbra.SDK.Config.UI;
 
@@ -47,8 +50,19 @@ internal sealed class ConfigDrawerBuilder
     /// This is distinct from the class-level <see cref="IndentAttribute"/> on
     /// <paramref name="type"/>, which only affects individual parameter controls as a fallback.
     /// </param>
+    /// <remarks>
+    /// Returns immediately without emitting any nodes when <paramref name="type"/> is decorated
+    /// with <see cref="INestedGroupDrawerAttribute"/>. Such types are rendered entirely by their
+    /// custom drawer; expanding their parameters here would duplicate what the drawer manages.
+    /// </remarks>
     internal void Collect(object obj, Type type, IndentAttribute? propertyIndentOverride = null)
     {
+        // A type decorated with [NestedGroupDrawer<TDrawer>] is rendered entirely by its
+        // custom drawer. Expanding its parameters here would duplicate what that drawer
+        // manages, so bail out immediately regardless of how Collect was reached.
+        if (type.GetDrawerAttribute<INestedGroupDrawerAttribute>() is not null)
+            return;
+
         var classCategory = type.GetCustomAttribute<CategoryAttribute>()?.Name;
         var classIndent = type.GetCustomAttribute<IndentAttribute>();
         var classCollapseAttr = type.GetCustomAttribute<CollapseAsTreeAttribute>();
@@ -100,7 +114,63 @@ internal sealed class ConfigDrawerBuilder
             if (propType.GetCustomAttribute<AutoRegisterSettingsAttribute>() is not null
                 && prop.GetValue(obj) is { } nested)
             {
-                Collect(nested, propType, prop.GetCustomAttribute<IndentAttribute>());
+                // Class-level [NestedGroupDrawer<TDrawer>] — skip recursion and render the
+                // group instance directly via the custom drawer.
+                var nestedDrawerAttr = propType.GetDrawerAttribute<INestedGroupDrawerAttribute>();
+                if (nestedDrawerAttr is not null)
+                {
+                    try
+                    {
+                        var drawerInstance = Activator.CreateInstance(nestedDrawerAttr.DrawerType)!;
+
+                        Type? genericIface = null;
+                        foreach (var iface in nestedDrawerAttr.DrawerType.GetInterfaces())
+                        {
+                            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(INestedGroupDrawer<>))
+                            { genericIface = iface; break; }
+                        }
+                        if (genericIface is null)
+                            throw new InvalidOperationException(
+                                $"Drawer type '{nestedDrawerAttr.DrawerType.Name}' does not implement INestedGroupDrawer<T>.");
+
+                        if (drawerInstance is IDisposable disposable)
+                            Disposables.Add(disposable);
+
+                        var drawMethod = genericIface.GetMethod("Draw")!;
+                        var groupType = genericIface.GetGenericArguments()[0];
+                        var callExpr = Expression.Call(
+                            Expression.Convert(Expression.Constant(drawerInstance), genericIface),
+                            drawMethod,
+                            Expression.Convert(Expression.Constant(nested), groupType));
+                        var drawAction = Expression.Lambda<Action>(callExpr).Compile();
+
+                        // Category: property override → nested class attribute → parent class attribute.
+                        var cat = prop.GetCustomAttribute<CategoryAttribute>()?.Name
+                                 ?? propType.GetCustomAttribute<CategoryAttribute>()?.Name
+                                 ?? classCategory;
+
+                        EmitCategoryHeader(
+                            cat,
+                            propType.GetCustomAttribute<CollapseAsTreeAttribute>(),
+                            prop.GetCustomAttribute<IndentAttribute>());
+
+                        var targetList = cat is not null ? _currentCategoryNode!.Children : Nodes;
+
+                        targetList.Add(new ParameterNode(
+                            VisibilityPredicateResolver.Build(prop, obj),
+                            drawAction,
+                            spacingBefore: prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0,
+                            spacingAfter: prop.GetCustomAttribute<SpacingAfterAttribute>()?.Count ?? 0));
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Exception(ex, $"ConfigDrawer: failed to instantiate nested group drawer '{nestedDrawerAttr.DrawerType.Name}'.");
+                    }
+                }
+                else
+                {
+                    Collect(nested, propType, prop.GetCustomAttribute<IndentAttribute>());
+                }
             }
         }
     }
