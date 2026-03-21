@@ -10,6 +10,8 @@ namespace Umbra.SamplePlugin;
 
 public static class SamplePlugin
 {
+    private static readonly PluginLogger _log = new("SamplePlugin");
+
     private static ConfigDrawer<PluginConfig>? _drawer;
     private static SettingsStore<PluginConfig>? _store;
     private static DeferredSaveController<PluginConfig>? _saveController;
@@ -23,11 +25,10 @@ public static class SamplePlugin
     {
         //System.Diagnostics.Debugger.Launch();
 
-        Logger.Prefix = "SamplePlugin";
-        Logger.Info("Loading...");
+        _log.Info("Loading...");
 
         var configPath = GetConfigPath();
-        Logger.Info($"Config path: {configPath}");
+        _log.Info($"Config path: {configPath}");
 
         _store = new SettingsStore<PluginConfig>(configPath);
         var config = _store.Load();
@@ -35,7 +36,7 @@ public static class SamplePlugin
 
         _drawer = new ConfigDrawer<PluginConfig>(config, idScope: "SamplePlugin");
 
-        Logger.Info("Loaded successfully.");
+        _log.Info("Loaded successfully.");
     }
 
     /// <summary>
@@ -45,7 +46,7 @@ public static class SamplePlugin
     [PluginExitPoint]
     public static void Unload()
     {
-        Logger.Info("Unloading...");
+        _log.Info("Unloading...");
 
         _saveController?.Flush();
         _saveController?.Dispose();
@@ -58,7 +59,7 @@ public static class SamplePlugin
         _drawer?.Dispose();
         _drawer = null;
 
-        Logger.Info("Unloaded.");
+        _log.Info("Unloaded.");
     }
 
     /// <summary>
@@ -76,7 +77,7 @@ public static class SamplePlugin
 
         if (!Directory.Exists(configDir))
         {
-            Logger.Info($"Config directory not found, creating: {configDir}");
+            _log.Info($"Config directory not found, creating: {configDir}");
             Directory.CreateDirectory(configDir);
         }
 

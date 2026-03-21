@@ -16,25 +16,33 @@
 
 ## 🔧 Umbra.SDK
 
-### Logging — `Umbra.SDK.Logging.Logger`
+### Logging — `Umbra.SDK.Logging.PluginLogger` / `Logger`
 
-A static, exception-safe wrapper around `REFrameworkNET.API.Log*`. All methods silently suppress errors to avoid disrupting the game process.
+Two exception-safe wrappers around `REFrameworkNET.API.Log*`. All core (non-formatted) methods silently suppress errors to avoid disrupting the game process. Formatted overloads (`...(string format, params object[] args)`) also silently suppress any exception thrown by `string.Format` — invalid format strings or mismatched arguments cause the message to be discarded rather than propagate.
+
+#### `PluginLogger` — per-plugin instance (recommended for all plugins)
+
+Because all managed plugins load into the **same AppDomain**, using shared static state for a
+prefix or log level would cause each plugin that loads to silently overwrite every earlier
+plugin's configuration. `PluginLogger` solves this by keeping all configuration in a
+**per-plugin instance** — declare it as a `private static readonly` field and initialise it
+inline so it is never `null` and never shared.
 
 ```csharp
-Logger.Prefix = "MyPlugin";       // prepends "[MyPlugin]" to every message
-Logger.PrefixFormat = "[{0}]";    // default — {0} is replaced with Prefix
-Logger.MinLevel = LogLevel.Info;  // suppress messages below this level (default: Info)
+// Declare once — no entry-point side-effects on shared state.
+private static readonly PluginLogger _log = new("MyPlugin");
 
-Logger.Info("Plugin loaded");
-Logger.Info("Version {0}.{1}", major, minor);
+// In Load() / Unload() / anywhere:
+_log.Info("Plugin loaded");
+_log.Info("Version {0}.{1}", major, minor);
 
-Logger.Warning("Unexpected state");
+_log.Warning("Unexpected state");
 
-Logger.Error("Something failed");
+_log.Error("Something failed");
 
 // Always use Exception() — not Error() — when logging exceptions:
-Logger.Exception(ex, "Failed to initialize camera");
-Logger.Exception(ex, "Failed to initialize {0}", "camera"); // formatted overload
+_log.Exception(ex, "Failed to initialize camera");
+_log.Exception(ex, "Failed to initialize {0}", "camera"); // formatted overload
 ```
 
 | Member | Forwards to | Notes |
@@ -48,7 +56,10 @@ Logger.Exception(ex, "Failed to initialize {0}", "camera"); // formatted overloa
 | `PrefixFormat` | — | Composite format string; `{0}` → `Prefix`. Defaults to `"[{0}]"` |
 | `MinLevel` | — | Messages below this level are silently discarded. Defaults to `LogLevel.Info` |
 
-> **Tip:** Set `Logger.Prefix` once at plugin startup to tag all log messages.
+#### `Logger` — static, raw forwarding facade
+
+The static `Logger` class carries **no configuration** and forwards messages unconditionally. It
+is intended for SDK-internal use. Prefer `PluginLogger` in all plugin code.
 
 ---
 
