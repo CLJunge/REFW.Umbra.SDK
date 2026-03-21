@@ -19,9 +19,14 @@ namespace Umbra.SDK.UI.Panel;
 /// A non-negative integer indicating the section's render position. Lower values appear
 /// earlier in the panel.
 /// </param>
+/// <exception cref="ArgumentOutOfRangeException">
+/// Thrown when <paramref name="order"/> is negative.
+/// </exception>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class SectionOrderAttribute(int order) : Attribute
 {
     /// <summary>Gets the render position of the section. Lower values render first.</summary>
-    public int Order { get; } = order;
+    public int Order { get; } = order >= 0
+        ? order
+        : throw new ArgumentOutOfRangeException(nameof(order), order, "order must be non-negative.");
 }

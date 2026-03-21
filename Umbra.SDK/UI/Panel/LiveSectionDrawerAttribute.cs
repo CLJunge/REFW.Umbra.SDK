@@ -29,8 +29,11 @@ namespace Umbra.SDK.UI.Panel;
 /// </example>
 /// </remarks>
 /// <typeparam name="TDrawer">
-/// The <see cref="ILiveSectionDrawer{T}"/> implementation to use. Must also provide a public
-/// parameterless constructor; both constraints are enforced at compile time.
+/// The drawer implementation to use. Must provide a public parameterless constructor;
+/// this constraint is enforced at compile time. The additional requirement that
+/// <typeparamref name="TDrawer"/> implements <see cref="ILiveSectionDrawer{T}"/> is
+/// validated at runtime by <see cref="LiveSectionDrawerResolver"/> when
+/// <see cref="LiveSection{T}"/> is constructed.
 /// </typeparam>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class LiveSectionDrawerAttribute<TDrawer> : Attribute, ILiveSectionDrawerAttribute

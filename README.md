@@ -200,9 +200,9 @@ Settings are serialized with `System.Text.Json` using camelCase property naming 
 | `[Format("%.1f°")]` | Printf-style format string override for numeric controls. Overrides the `[Step]`-derived format. |
 | `[MaxLength(uint)]` | Maximum character count for `string` input fields. Defaults to `256` when absent. |
 | `[Multiline(lines = 3)]` | Switches a `string` parameter from `InputText` to `InputTextMultiline`. `lines` controls the visible height. Use alongside `[MaxLength]` to increase the character buffer. |
-| `[Order(order)]` | Controls display order within a category. Lower values appear first. Parameters without this attribute sort after all explicitly ordered ones; declaration order is preserved among equals. |
-| `[SpacingBefore(count = 1)]` | Inserts one or more `ImGui.Spacing()` calls above the control. Travels with the parameter when `[Order]` reordering is active. |
-| `[SpacingAfter(count = 1)]` | Inserts one or more `ImGui.Spacing()` calls below the control. Travels with the parameter when `[Order]` reordering is active. |
+| `[ParameterOrder(order)]` | Controls display order within a category. Lower values appear first. Parameters without this attribute sort after all explicitly ordered ones; declaration order is preserved among equals. |
+| `[SpacingBefore(count = 1)]` | Inserts one or more `ImGui.Spacing()` calls above the control. Travels with the parameter when `[ParameterOrder]` reordering is active. |
+| `[SpacingAfter(count = 1)]` | Inserts one or more `ImGui.Spacing()` calls below the control. Travels with the parameter when `[ParameterOrder]` reordering is active. |
 | `[Indent(amount)]` | Indents this individual `Parameter<T>` control. Overrides the class-level `[Indent]` fallback for this parameter. |
 | `[ButtonStyle(style)]` | Sets the color style of a `ButtonDrawer` button. Variants: `Default`, `Primary`, `Success`, `Warning`, `Danger`. |
 | `[ButtonWidth(width)]` | Sets the pixel width of a `ButtonDrawer` button. `0f` = auto-size to label, `-1f` = fill available width, positive = fixed px. |
@@ -385,7 +385,7 @@ public record PluginConfig
 [AutoRegisterSettings, Category("FOV"), SettingsPrefix("fov"), Indent]
 public record FovSettings
 {
-    [SettingsParameter("tps"), DisplayName("3rd Person"), Range(10f, 180f), Format("%.1f"), Order(0)]
+    [SettingsParameter("tps"), DisplayName("3rd Person"), Range(10f, 180f), Format("%.1f"), ParameterOrder(0)]
     public Parameter<float> Tps { get; set; } = new(55f);
     // …
 }

@@ -235,7 +235,7 @@ internal sealed class ConfigDrawerBuilder
     /// </summary>
     /// <remarks>
     /// Call this once after <see cref="Collect"/> has finished walking the entire config tree.
-    /// Nodes without an explicit <c>[Order]</c> attribute receive an implicit key of
+    /// Nodes without an explicit <c>[ParameterOrder]</c> attribute receive an implicit key of
     /// <see cref="int.MaxValue"/>, placing them after all explicitly ordered entries while
     /// preserving original declaration order among equals. Both per-category children and the
     /// flat top-level <see cref="Nodes"/> list are sorted in place via

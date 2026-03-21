@@ -32,6 +32,7 @@ public static class SamplePlugin
 
         _store = new SettingsStore<PluginConfig>(configPath);
         var config = _store.Load();
+        config.LogTestMessage.Value = () => _log.Info("Sample Plugin is active!");
         _saveController = new DeferredSaveController<PluginConfig>(_store);
 
         _panel = new PluginPanel("SamplePlugin")
