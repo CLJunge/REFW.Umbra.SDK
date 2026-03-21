@@ -43,6 +43,9 @@ public record PluginConfig
     [SettingsParameter]
     public FilmGrainSettings FilmGrain { get; set; } = new();
 
+    [SettingsParameter]
+    public NestedDrawerTest DrawerTest { get; set; } = new();
+
     /// <summary>
     /// Logs a diagnostic test message to the REFramework console.
     /// Demonstrates <see cref="ButtonDrawer"/> with a primary style and full-width layout,
@@ -195,5 +198,17 @@ public record PluginConfig
                 Opacity.Reset();
             });
         }
+    }
+
+    [AutoRegisterSettings]
+    [Category("Drawer Test")]
+    [CollapseAsTree]
+    [NestedGroupDrawer<NestedDrawerTestDrawer>]
+    public record NestedDrawerTest
+    {
+        public int Value1 { get; set; } = 123;
+        public bool Value2 { get; set; } = true;
+        public string Value3 { get; set; } = "Hello, world!";
+        public float Value4 { get; set; } = 3.14f;
     }
 }
