@@ -6,7 +6,7 @@ namespace Umbra.SDK.Config.Attributes;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The trailing spacing travels with the parameter when <c>[Order]</c> reordering is active,
+/// The trailing spacing travels with the parameter when <see cref="ParameterOrderAttribute"/> (<c>[ParameterOrder]</c>) reordering is active,
 /// because it is owned by the same <see cref="Umbra.SDK.Config.UI.Nodes.ParameterNode"/>
 /// rather than being a separate sibling node.
 /// </para>
