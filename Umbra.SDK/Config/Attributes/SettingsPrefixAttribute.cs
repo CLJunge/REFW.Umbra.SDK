@@ -8,7 +8,7 @@ namespace Umbra.SDK.Config.Attributes;
 /// </summary>
 /// <param name="prefix">
 /// The prefix string to prepend to each parameter key, e.g. <c>"Camera"</c>
-/// results in keys such as <c>"Camera.FieldOfView"</c>.
+/// results in keys such as <c>"Camera.fieldOfView"</c>.
 /// </param>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class SettingsPrefixAttribute(string prefix) : Attribute
