@@ -145,14 +145,14 @@ public sealed class TwoColumnCustomDrawerAttribute<TDrawer> : Attribute, ITwoCol
 
 /// <summary>
 /// Instructs the UI builder to render the decorated nested configuration class using a custom
-/// <see cref="INestedGroupDrawer"/> instead of the default recursive property expansion.
+/// <see cref="INestedGroupDrawer{TGroup}"/> instead of the default recursive property expansion.
 /// </summary>
 /// <remarks>
 /// <para>
 /// Apply this attribute to a nested configuration class also decorated with
 /// <c>[AutoRegisterSettings]</c>. When <see cref="ConfigDrawer{TConfig}"/> encounters a
 /// property typed as this class, it instantiates <typeparamref name="TDrawer"/> and calls
-/// <see cref="INestedGroupDrawer.Draw"/> with the group instance each frame instead of
+/// <see cref="INestedGroupDrawer{TGroup}.Draw"/> with the group instance each frame instead of
 /// recursing into the class's individual parameters.
 /// </para>
 /// <para>
