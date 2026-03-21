@@ -31,9 +31,9 @@ namespace Umbra.SDK.UI.Panel;
 /// </typeparam>
 public sealed class LiveSection<T> : IPanelSection where T : class, new()
 {
-    private readonly string?      _idScope;
-    private readonly Action       _drawAction;
-    private readonly IDisposable? _drawerDisposable;
+    private readonly string?     _idScope;
+    private readonly Action      _drawAction;
+    private readonly IDisposable _drawerDisposable;
     private readonly int          _order;
     private bool                  _disposed;
 
@@ -93,7 +93,7 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     {
         if (_disposed) return;
         _disposed = true;
-        _drawerDisposable?.Dispose();
+        _drawerDisposable.Dispose();
         GC.SuppressFinalize(this);
     }
 }

@@ -27,9 +27,9 @@ internal static class LiveSectionDrawerResolver
     /// <see cref="Action"/> invocation.
     /// </param>
     /// <param name="disposable">
-    /// Set to the instantiated drawer cast to <see cref="IDisposable"/> so the caller can
-    /// track its lifetime, or <see langword="null"/> when the drawer does not hold
-    /// disposable resources beyond the default interface implementation.
+    /// Set to the instantiated drawer cast to <see cref="IDisposable"/>. Because
+    /// <see cref="ILiveSectionDrawer{T}"/> extends <see cref="IDisposable"/>, this is always
+    /// non-<see langword="null"/> when the method returns successfully.
     /// </param>
     /// <returns>
     /// A compiled <see cref="Action"/> that invokes <c>drawer.Draw(context)</c> with no
@@ -37,10 +37,12 @@ internal static class LiveSectionDrawerResolver
     /// </returns>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <paramref name="stateType"/> is not decorated with
-    /// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>, or when the declared drawer type
-    /// does not implement <see cref="ILiveSectionDrawer{T}"/>.
+    /// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>, when the declared drawer type
+    /// does not implement <see cref="ILiveSectionDrawer{T}"/> with a generic argument
+    /// compatible with <paramref name="stateType"/>, or when the drawer cannot be
+    /// instantiated.
     /// </exception>
-    internal static Action Resolve(Type stateType, object context, out IDisposable? disposable)
+    internal static Action Resolve(Type stateType, object context, out IDisposable disposable)
     {
         var attr = stateType.GetDrawerAttribute<ILiveSectionDrawerAttribute>();
         if (attr is null)
@@ -48,20 +50,40 @@ internal static class LiveSectionDrawerResolver
                 $"Live state type '{stateType.Name}' is not decorated with [LiveSectionDrawer<TDrawer>]. " +
                 $"Apply the attribute to the state class to declare its drawer.");
 
-        var drawerInstance = Activator.CreateInstance(attr.DrawerType)!;
+        object drawerInstance;
+        try
+        {
+            drawerInstance = Activator.CreateInstance(attr.DrawerType)
+                ?? throw new InvalidOperationException(
+                    $"Activator.CreateInstance returned null for drawer type '{attr.DrawerType.FullName}'.");
+        }
+        catch (Exception ex) when (ex is not InvalidOperationException)
+        {
+            throw new InvalidOperationException(
+                $"Failed to instantiate drawer type '{attr.DrawerType.FullName}' for live state type '{stateType.FullName}'. " +
+                $"Ensure the drawer has a public parameterless constructor.", ex);
+        }
 
         Type? genericIface = null;
         foreach (var iface in attr.DrawerType.GetInterfaces())
         {
-            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ILiveSectionDrawer<>))
-            { genericIface = iface; break; }
+            if (!iface.IsGenericType || iface.GetGenericTypeDefinition() != typeof(ILiveSectionDrawer<>))
+                continue;
+
+            var tState = iface.GetGenericArguments()[0];
+            if (!tState.IsAssignableFrom(stateType))
+                continue;
+
+            genericIface = iface;
+            break;
         }
 
         if (genericIface is null)
             throw new InvalidOperationException(
-                $"Drawer type '{attr.DrawerType.Name}' does not implement ILiveSectionDrawer<T>.");
+                $"Drawer type '{attr.DrawerType.Name}' does not implement ILiveSectionDrawer<T> " +
+                $"with a generic argument compatible with '{stateType.Name}'.");
 
-        disposable = drawerInstance as IDisposable;
+        disposable = (IDisposable)drawerInstance;
 
         var drawMethod = genericIface.GetMethod("Draw")!;
         var stateParam = genericIface.GetGenericArguments()[0];
