@@ -13,7 +13,7 @@
   - Declare the logger as a `private static readonly PluginLogger _log = new("PluginName");` field on the plugin class. Never set it in the entry point — initialise it inline so it is always available and never shared with other plugins.
   - Do **not** use `Logger.Prefix`, `Logger.PrefixFormat`, or `Logger.MinLevel`. These properties no longer exist on the static `Logger` class. All managed plugins load into the same AppDomain; any static prefix written by one plugin would silently overwrite every other plugin's prefix.
   - `PluginLogger` exposes `Prefix`, `PrefixFormat`, and `MinLevel` as instance properties, fully isolated per plugin.
-  - All `PluginLogger` methods are exception-safe and silently suppress errors to avoid disrupting the game process.
+  - All `PluginLogger` methods are exception-safe and silently suppress errors to avoid disrupting the game process. Formatted overloads (`...(string format, params object[] args)`) also swallow any exception thrown by `string.Format`, so an invalid format string or mismatched arguments causes the message to be silently discarded rather than propagated.
   - `_log.Exception(Exception ex, string message)` logs a context message followed by the exception type, message, and stack trace via `API.LogError`. Use this — **not** `_log.Error` — when logging exceptions.
   - The static `Logger` class still exists as a raw, unconditional forwarding facade (no prefix, no level filter). It is intended for SDK-internal use only.
 - Assume game-facing code may run in a constrained plugin environment where resilience is preferred over hard failures.

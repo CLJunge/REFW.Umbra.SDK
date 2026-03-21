@@ -28,11 +28,17 @@ public static class Logger
     /// <summary>
     /// Logs a formatted informational message via <see cref="API.LogInfo"/>.
     /// </summary>
+    /// <remarks>
+    /// This overload is exception-safe: if <see cref="string.Format(string, object[])"/> throws
+    /// during formatting, the exception is silently suppressed and no log is emitted.
+    /// </remarks>
     /// <param name="format">A composite format string.</param>
     /// <param name="args">An array of objects to format.</param>
     public static void Info(string format, params object[] args)
     {
-        Info(string.Format(format, args));
+        string message;
+        try { message = string.Format(format, args); } catch { return; }
+        Info(message);
     }
 
     /// <summary>
@@ -47,11 +53,17 @@ public static class Logger
     /// <summary>
     /// Logs a formatted warning message via <see cref="API.LogWarning"/>.
     /// </summary>
+    /// <remarks>
+    /// This overload is exception-safe: if <see cref="string.Format(string, object[])"/> throws
+    /// during formatting, the exception is silently suppressed and no log is emitted.
+    /// </remarks>
     /// <param name="format">A composite format string.</param>
     /// <param name="args">An array of objects to format.</param>
     public static void Warning(string format, params object[] args)
     {
-        Warning(string.Format(format, args));
+        string message;
+        try { message = string.Format(format, args); } catch { return; }
+        Warning(message);
     }
 
     /// <summary>
@@ -66,11 +78,17 @@ public static class Logger
     /// <summary>
     /// Logs a formatted error message via <see cref="API.LogError"/>.
     /// </summary>
+    /// <remarks>
+    /// This overload is exception-safe: if <see cref="string.Format(string, object[])"/> throws
+    /// during formatting, the exception is silently suppressed and no log is emitted.
+    /// </remarks>
     /// <param name="format">A composite format string.</param>
     /// <param name="args">An array of objects to format.</param>
     public static void Error(string format, params object[] args)
     {
-        Error(string.Format(format, args));
+        string message;
+        try { message = string.Format(format, args); } catch { return; }
+        Error(message);
     }
 
     /// <summary>
@@ -92,11 +110,17 @@ public static class Logger
     /// Logs a formatted error message accompanied by exception details, including the exception type,
     /// message, and stack trace, via <see cref="API.LogError"/>.
     /// </summary>
+    /// <remarks>
+    /// This overload is exception-safe: if <see cref="string.Format(string, object[])"/> throws
+    /// during formatting, the exception is silently suppressed and no log is emitted.
+    /// </remarks>
     /// <param name="ex">The exception to log.</param>
     /// <param name="format">A composite format string providing context for the exception.</param>
     /// <param name="args">An array of objects to format.</param>
     public static void Exception(Exception ex, string format, params object[] args)
     {
-        Exception(ex, string.Format(format, args));
+        string message;
+        try { message = string.Format(format, args); } catch { return; }
+        Exception(ex, message);
     }
 }
