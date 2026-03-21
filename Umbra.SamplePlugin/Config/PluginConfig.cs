@@ -1,4 +1,4 @@
-﻿using Umbra.SDK.Config;
+using Umbra.SDK.Config;
 using Umbra.SDK.Config.Attributes;
 using Umbra.SDK.Config.UI.ParameterDrawers;
 

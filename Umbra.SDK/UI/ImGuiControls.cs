@@ -1,4 +1,4 @@
-﻿using Hexa.NET.ImGui;
+using Hexa.NET.ImGui;
 using Umbra.SDK.Input;
 
 namespace Umbra.SDK.UI;
@@ -89,10 +89,7 @@ public static class ImGuiControls
     /// <param name="minValue">The minimum value allowed for the slider.</param>
     /// <param name="maxValue">The maximum value allowed for the slider.</param>
     /// <param name="format">The printf-style format string used to display the value on the slider. Defaults to <c>"%.1f"</c>.</param>
-    public static void DrawSlider(string label, ref float value, float minValue, float maxValue, string format = "%.1f")
-    {
-        ImGui.SliderFloat(label, ref value, minValue, maxValue, format);
-    }
+    public static void DrawSlider(string label, ref float value, float minValue, float maxValue, string format = "%.1f") => ImGui.SliderFloat(label, ref value, minValue, maxValue, format);
 
     /// <summary>
     /// Draws a slider control for editing an integer value within a specified range.
@@ -102,20 +99,14 @@ public static class ImGuiControls
     /// <param name="minValue">The minimum value allowed for the slider.</param>
     /// <param name="maxValue">The maximum value allowed for the slider.</param>
     /// <param name="format">The printf-style format string used to display the value on the slider. Defaults to <c>"%d"</c>.</param>
-    public static void DrawIntSlider(string label, ref int value, int minValue, int maxValue, string format = "%d")
-    {
-        ImGui.SliderInt(label, ref value, minValue, maxValue, format);
-    }
+    public static void DrawIntSlider(string label, ref int value, int minValue, int maxValue, string format = "%d") => ImGui.SliderInt(label, ref value, minValue, maxValue, format);
 
     /// <summary>
     /// Draws a checkbox control for editing a boolean value.
     /// </summary>
     /// <param name="label">The text label displayed next to the checkbox.</param>
     /// <param name="value">A reference to the boolean value to be edited.</param>
-    public static void DrawCheckbox(string label, ref bool value)
-    {
-        ImGui.Checkbox(label, ref value);
-    }
+    public static void DrawCheckbox(string label, ref bool value) => ImGui.Checkbox(label, ref value);
 
     /// <summary>
     /// Draws a combo box allowing selection from a list of string items.
@@ -123,19 +114,13 @@ public static class ImGuiControls
     /// <param name="label">The text label displayed next to the combo box.</param>
     /// <param name="selectedIndex">A reference to the index of the currently selected item. Updated when the user selects a different item.</param>
     /// <param name="items">The array of string items to display in the combo box.</param>
-    public static void DrawComboBox(string label, ref int selectedIndex, string[] items)
-    {
-        ImGui.Combo(label, ref selectedIndex, items, items.Length);
-    }
+    public static void DrawComboBox(string label, ref int selectedIndex, string[] items) => ImGui.Combo(label, ref selectedIndex, items, items.Length);
 
     /// <summary>
     /// Draws a horizontal separator followed by a section header label.
     /// </summary>
     /// <param name="label">The text to display as the section header.</param>
-    public static void DrawSectionHeader(string label)
-    {
-        ImGui.SeparatorText(label);
-    }
+    public static void DrawSectionHeader(string label) => ImGui.SeparatorText(label);
 
     /// <summary>
     /// Draws an inline <c>(?)</c> marker that shows a tooltip when hovered.

@@ -1,4 +1,4 @@
-﻿using Hexa.NET.ImGui;
+using Hexa.NET.ImGui;
 
 namespace Umbra.SDK.Input;
 
@@ -42,10 +42,7 @@ public static class KeyboardInput
     /// <returns>
     /// The enum member name if defined; otherwise <c>Key(n)</c> where <c>n</c> is the raw integer value.
     /// </returns>
-    public static string GetKeyName(int key)
-    {
-        return Enum.GetName((ImGuiKey)key) ?? $"Key({key})";
-    }
+    public static string GetKeyName(int key) => Enum.GetName((ImGuiKey)key) ?? $"Key({key})";
 
     /// <summary>
     /// Determines whether the given key value represents a valid, assigned key.
@@ -56,10 +53,7 @@ public static class KeyboardInput
     /// <see cref="ImGuiKey.None"/>); <see langword="false"/> when it is zero
     /// (<see cref="ImGuiKey.None"/>) or negative.
     /// </returns>
-    public static bool IsValidKey(int key)
-    {
-        return key > (int)ImGuiKey.None;
-    }
+    public static bool IsValidKey(int key) => key > (int)ImGuiKey.None;
 
     /// <summary>
     /// Gets a value indicating whether the left or right Ctrl key is currently held down.

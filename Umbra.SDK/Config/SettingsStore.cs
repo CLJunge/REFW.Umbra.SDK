@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Umbra.SDK.Logging;
 
 namespace Umbra.SDK.Config;

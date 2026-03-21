@@ -1,4 +1,4 @@
-﻿using REFrameworkNET;
+using REFrameworkNET;
 
 namespace Umbra.SDK.Logging;
 

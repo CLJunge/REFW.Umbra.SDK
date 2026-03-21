@@ -43,12 +43,9 @@ internal static class LiveSectionDrawerResolver
     /// </exception>
     internal static Action Resolve(Type stateType, object context, out IDisposable disposable)
     {
-        var attr = stateType.GetDrawerAttribute<ILiveSectionDrawerAttribute>();
-        if (attr is null)
-            throw new InvalidOperationException(
+        var attr = stateType.GetDrawerAttribute<ILiveSectionDrawerAttribute>() ?? throw new InvalidOperationException(
                 $"Live state type '{stateType.Name}' is not decorated with [LiveSectionDrawer<TDrawer>]. " +
                 $"Apply the attribute to the state class to declare its drawer.");
-
         object drawerInstance;
         try
         {

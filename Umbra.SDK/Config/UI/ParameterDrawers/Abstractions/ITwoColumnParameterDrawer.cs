@@ -49,8 +49,5 @@ public interface ITwoColumnParameterDrawer : IDisposable
     /// the drawer holds shared state that must be released on plugin unload
     /// (e.g. a capture-mode counter or a cached resource handle).
     /// </remarks>
-    void IDisposable.Dispose()
-    {
-        GC.SuppressFinalize(this);
-    }
+    void IDisposable.Dispose() => GC.SuppressFinalize(this);
 }

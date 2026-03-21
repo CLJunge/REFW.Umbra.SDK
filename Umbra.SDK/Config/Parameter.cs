@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace Umbra.SDK.Config;
 
@@ -91,16 +91,10 @@ public class Parameter<T> : IParameter
     /// Useful for initializing or restoring persisted values without triggering side effects.
     /// </summary>
     /// <param name="value">The value to assign silently.</param>
-    public void SetWithoutNotify(T? value)
-    {
-        _value = value;
-    }
+    public void SetWithoutNotify(T? value) => _value = value;
 
     /// <inheritdoc/>
-    object? IParameter.GetValue()
-    {
-        return Value;
-    }
+    object? IParameter.GetValue() => Value;
 
     /// <inheritdoc/>
     void IParameter.SetValue(object? value)
@@ -112,10 +106,7 @@ public class Parameter<T> : IParameter
     }
 
     /// <inheritdoc/>
-    void IParameter.SetValueWithoutNotify(object? value)
-    {
-        _value = (T?)value;
-    }
+    void IParameter.SetValueWithoutNotify(object? value) => _value = (T?)value;
 
     /// <summary>
     /// Validates <paramref name="value"/> against the <see cref="ParameterMetadata.Min"/> and

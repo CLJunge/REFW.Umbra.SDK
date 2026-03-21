@@ -35,8 +35,5 @@ public interface ILiveSectionDrawer<T> : IDisposable
     /// finalizer call. Override when the drawer holds resources that must be released on
     /// plugin unload.
     /// </remarks>
-    void IDisposable.Dispose()
-    {
-        GC.SuppressFinalize(this);
-    }
+    void IDisposable.Dispose() => GC.SuppressFinalize(this);
 }

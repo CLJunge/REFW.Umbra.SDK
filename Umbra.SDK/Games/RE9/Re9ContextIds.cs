@@ -1,4 +1,4 @@
-﻿namespace Umbra.SDK.Games.RE9;
+namespace Umbra.SDK.Games.RE9;
 
 /// <summary>
 /// Defines the known RE9 campaign context identifiers used to identify

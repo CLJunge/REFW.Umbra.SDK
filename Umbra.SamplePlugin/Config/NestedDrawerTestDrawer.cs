@@ -1,4 +1,4 @@
-﻿using Hexa.NET.ImGui;
+using Hexa.NET.ImGui;
 using Umbra.SDK.Config.UI.ParameterDrawers;
 using static Umbra.SamplePlugin.Config.PluginConfig;
 

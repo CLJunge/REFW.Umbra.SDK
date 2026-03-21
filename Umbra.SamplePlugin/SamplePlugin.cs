@@ -1,4 +1,4 @@
-﻿using REFrameworkNET;
+using REFrameworkNET;
 using REFrameworkNET.Attributes;
 using REFrameworkNET.Callbacks;
 using Umbra.SamplePlugin.Config;
