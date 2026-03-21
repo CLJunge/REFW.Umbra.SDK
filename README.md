@@ -82,24 +82,24 @@ A reflection-based, attribute-driven settings system backed by JSON persistence.
 
 1. Define a config class decorated with the SDK attributes.
 2. Create a `SettingsStore<TConfig>` with the path to the JSON file.
-3. Call `Load()` to get a fully populated config instance.
-4. Pass the config instance to `ConfigDrawer<TConfig>` to render a settings panel.
-5. Optionally wrap the manager in a `DeferredSaveController<TConfig>` for automatic change-triggered saves.
-6. Call `Save()` before `Dispose()` on plugin unload.
+3. Call `Load()` to get a fully populated config instance. (**Must happen before step 4.**)
+4. Optionally wrap the store in a `DeferredSaveController<TConfig>` for automatic change-triggered saves.
+5. Pass the config instance to `ConfigDrawer<TConfig>` to render a settings panel.
+6. Call `Flush()` + `Dispose()` on the controller, then `Save()` + `Dispose()` on the store on plugin unload.
 
 ```csharp
-// Plugin entry point
-var configPath = Path.Combine(API.GetPluginDirectory(typeof(MyPlugin).Assembly), "data", "config.json");
-_store = new SettingsStore<PluginConfig>(configPath);
-var config = _store.Load();
-_saveController = new DeferredSaveController<PluginConfig>(_store);
-_drawer = new ConfigDrawer<PluginConfig>(config, "MyPlugin");
+// Plugin entry point — order matters:
+var configPath  = Path.Combine(API.GetPluginDirectory(typeof(MyPlugin).Assembly), "config.json");
+_store          = new SettingsStore<PluginConfig>(configPath);
+var config      = _store.Load();                              // 1. Load registers parameters
+_saveController = new DeferredSaveController<PluginConfig>(_store); // 2. THEN attach listeners
+_drawer         = new ConfigDrawer<PluginConfig>(config, "MyPlugin");
 
-// Plugin exit point
-_saveController?.Flush();
-_saveController?.Dispose();
+// Plugin exit point:
+_saveController?.Flush();   // write any pending debounced change
+_saveController?.Dispose(); // remove listeners before the store is disposed
 _saveController = null;
-_store?.Save();
+_store?.Save();             // final save
 _store?.Dispose();
 _store = null;
 _drawer?.Dispose();
@@ -137,35 +137,105 @@ config.FieldOfView.Reset();
 
 | Member | Description |
 |---|---|
-| `Load()` | Creates a `TConfig` instance, registers parameters, and loads values from disk. Saves defaults if no file exists. |
+| `Load()` | Creates a `TConfig` instance, registers parameters, and loads values from disk. Saves defaults if no file exists. **Call this before constructing `DeferredSaveController`.** |
 | `Save()` | Serializes all parameter values to the configured JSON file. |
 | `ResetAll()` | Resets every registered parameter to its default value. Delegate-typed parameters (e.g. button actions) are skipped. |
 | `CopyValuesTo(target, setWithoutNotifying)` | Mirrors all values into another store, optionally suppressing change events. |
-| `AddListenerToAll(Action)` | Subscribes to `ValueChanged` on every parameter. Auto-removed on `Dispose`. |
-| `AddListenerToAll<T>(Action<T?,T?>)` | Subscribes to `ValueChanged` on every `Parameter<T>` whose type matches. Auto-removed on `Dispose`. |
-| `RemoveListenerFromAll(Action)` | Manually unsubscribes a listener. |
-| `RemoveListenerFromAll<T>(Action<T?,T?>)` | Manually unsubscribes a typed listener. |
-| `Dispose()` | Removes all event subscriptions. Always call after `Save()`. |
+| `AddListenerToAll(Action)` | Subscribes an untyped callback to `ValueChanged` on **every** parameter. Auto-removed on `Dispose`. |
+| `AddListenerToAll<T>(Action<T?,T?>)` | Subscribes a typed callback to `ValueChanged` on every `Parameter<T>` whose value type matches `T`. Auto-removed on `Dispose`. ⚠️ See caveat below. |
+| `AddListenerToAll(Func<IParameter,bool>, Action)` | Subscribes an untyped callback to `ValueChanged` on every parameter satisfying the predicate. Auto-removed on `Dispose`. Preferred over the typed overload when filtering by `ValueType`. |
+| `RemoveListenerFromAll(Action)` | Manually unsubscribes an untyped listener. |
+| `RemoveListenerFromAll<T>(Action<T?,T?>)` | Manually unsubscribes a typed listener. ⚠️ See caveat below. |
+| `RemoveListenerFromAll(Func<IParameter,bool>, Action)` | Manually unsubscribes a listener previously registered with the predicate overload. |
+| `Dispose()` | Removes all event subscriptions registered via `Add*`. Always call after `Save()`. |
+
+> **⚠️ `AddListenerToAll<T>` type-inference caveat**
+>
+> For unconstrained `T`, C# compiles `T?` as `T` in IL — the `?` is metadata-only annotation.
+> When you pass an `Action<int?, int?>` delegate, the compiler infers `T = int?` (not `T = int`),
+> so the `is Parameter<T>` filter never matches `Parameter<int>` instances. **Always supply the
+> type argument explicitly** (e.g. `AddListenerToAll<int>(myDelegate)`) or use the
+> `Func<IParameter, bool>` predicate overload instead, which checks `IParameter.ValueType`
+> directly and is not subject to this limitation.
 
 ---
 
 #### `DeferredSaveController<TConfig>`
 
-Drives automatic change-triggered persistence with debouncing for numeric sliders.
+Drives automatic, change-triggered persistence for a `SettingsStore<TConfig>` with smart debouncing for numeric parameters. This is the recommended way to wire up auto-save in a plugin — construct it once and call `Tick()` every frame.
 
-- **Non-numeric changes** (booleans, strings, enums) — saved on the very next `Tick()` call.
-- **Numeric changes** (`int`, `float`, `double`) — saved after `DebounceWindow` elapses since the last change (default: 1 second), so rapid slider interaction produces a single disk write.
+**Save behaviour:**
+
+| Parameter type | When saved |
+|---|---|
+| `bool`, `string`, `enum` | On the very next `Tick()` call after the change — effectively immediate. |
+| `int`, `float`, `double` | After `DebounceWindow` elapses with no further numeric changes (default: 1 second). Rapid slider interaction produces a single disk write instead of one per frame. |
+
+**Ordering requirements:**
+
+1. Call `SettingsStore<TConfig>.Load()` **before** constructing `DeferredSaveController`.
+   The constructor attaches listeners to parameters registered in the store at construction
+   time. If the store has not been loaded yet its parameter dictionary is empty and no
+   listeners will be attached — the controller will silently observe nothing.
+2. Always call `Flush()` before `Dispose()` on unload. `Dispose` does not flush; if a
+   debounced numeric change is in flight when the plugin exits, the final save is only
+   guaranteed by an explicit `Flush()`.
+3. Dispose this controller **before** or **alongside** the owning store. Disposing the store
+   first puts it into a disposed state; the controller's cleanup then throws
+   `ObjectDisposedException` when it tries to remove its listeners.
 
 ```csharp
-var controller = new DeferredSaveController<PluginConfig>(_manager);
+// ─── Entry point ─────────────────────────────────────────────────────────────
+[PluginEntryPoint]
+public static void Load()
+{
+    var configPath = Path.Combine(API.GetPluginDirectory(typeof(MyPlugin).Assembly), "config.json");
 
-// Call once per frame from the ImGuiDrawUI callback:
-controller.Tick();
+    _store          = new SettingsStore<PluginConfig>(configPath);
+    var config      = _store.Load();                              // Load FIRST
+    _saveController = new DeferredSaveController<PluginConfig>(_store); // THEN construct
 
-// Before unload — guarantee any pending changes are written:
-controller.Flush();
-controller.Dispose();
+    // Optional: shorten the debounce window to 500 ms:
+    // _saveController = new DeferredSaveController<PluginConfig>(_store, TimeSpan.FromMilliseconds(500));
+
+    _drawer = new ConfigDrawer<PluginConfig>(config, "MyPlugin");
+}
+
+// ─── Per-frame callback ───────────────────────────────────────────────────────
+[Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
+public static void PreDrawUI()
+{
+    if (API.IsDrawingUI())
+        _drawer?.Draw();
+
+    _saveController?.Tick(); // lightweight no-op when nothing is pending
+}
+
+// ─── Exit point ──────────────────────────────────────────────────────────────
+[PluginExitPoint]
+public static void Unload()
+{
+    _saveController?.Flush();   // write any pending debounced change NOW
+    _saveController?.Dispose(); // remove listeners — before store.Dispose()
+    _saveController = null;
+
+    _store?.Save();             // belt-and-suspenders final save
+    _store?.Dispose();
+    _store = null;
+
+    _drawer?.Dispose();
+    _drawer = null;
+}
 ```
+
+**API summary:**
+
+| Member | Description |
+|---|---|
+| `DebounceWindow` | Read-only. The cooldown after the last numeric change before the save fires. Set at construction; defaults to 1 second. |
+| `Tick()` | Evaluates pending saves. Call once per frame. No-op when nothing is pending or after disposal. |
+| `Flush()` | Forces an immediate save and clears pending state regardless of the debounce timer. Call before `Dispose()` on unload. No-op after disposal. |
+| `Dispose()` | Removes all event listeners from the store. Does **not** flush — call `Flush()` first. |
 
 ---
 
@@ -398,19 +468,19 @@ public record FovSettings
 public static void Load()
 {
     var configPath = GetConfigPath();
-    _store = new SettingsStore<PluginConfig>(configPath);
-    var config = _store.Load();
-    _saveController = new DeferredSaveController<PluginConfig>(_store);
-    _drawer = new ConfigDrawer<PluginConfig>(config, "SamplePlugin");
+    _store          = new SettingsStore<PluginConfig>(configPath);
+    var config      = _store.Load();                              // Load FIRST
+    _saveController = new DeferredSaveController<PluginConfig>(_store); // THEN construct
+    _drawer         = new ConfigDrawer<PluginConfig>(config, "SamplePlugin");
 }
 
 [PluginExitPoint]
 public static void Unload()
 {
-    _saveController?.Flush();
-    _saveController?.Dispose();
+    _saveController?.Flush();   // write any pending debounced change
+    _saveController?.Dispose(); // remove listeners — before store.Dispose()
     _saveController = null;
-    _store?.Save();
+    _store?.Save();             // belt-and-suspenders final save
     _store?.Dispose();
     _store = null;
     _drawer?.Dispose();
