@@ -143,6 +143,16 @@ public class SettingsStore<TConfig> : IDisposable
     /// <param name="listener">
     /// The callback to invoke with the previous and new value whenever a matching parameter changes.
     /// </param>
+    /// <remarks>
+    /// <para>
+    /// Due to a C# type-inference limitation with unconstrained <c>T?</c>, passing a delegate whose
+    /// type arguments are already nullable value types (e.g. <see cref="Action{T1,T2}"/> of
+    /// <c>int?</c>) causes the compiler to infer <typeparamref name="T"/> = <c>int?</c> rather
+    /// than <c>int</c>, so the <c>is Parameter&lt;T&gt;</c> filter never matches. Always supply
+    /// the type argument explicitly when calling this overload with nullable-value-type delegates,
+    /// or prefer <see cref="AddListenerToAll(Func{IParameter,bool},Action)"/> instead.
+    /// </para>
+    /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     public void AddListenerToAll<T>(Action<T?, T?> listener)
     {
@@ -154,6 +164,44 @@ public class SettingsStore<TConfig> : IDisposable
         {
             foreach (var p in _parameters.Values)
                 if (p is Parameter<T> typed) typed.ValueChanged -= listener;
+        });
+    }
+
+    /// <summary>
+    /// Subscribes a callback to the <c>ValueChanged</c> event of every registered parameter
+    /// that satisfies <paramref name="predicate"/>, and registers cleanup so it is removed on <see cref="Dispose"/>.
+    /// </summary>
+    /// <param name="predicate">
+    /// A function evaluated once per registered parameter at subscription time; the listener
+    /// is attached only to parameters for which it returns <see langword="true"/>.
+    /// The matched parameter set is captured at subscription time — the predicate is <em>not</em>
+    /// re-evaluated during cleanup, so predicate results that depend on mutable external state
+    /// will not affect whether listeners are removed on <see cref="Dispose"/>.
+    /// </param>
+    /// <param name="listener">The callback to invoke whenever a matching parameter's value changes.</param>
+    /// <remarks>
+    /// Prefer this overload over <see cref="AddListenerToAll{T}(Action{T?,T?})"/> when the
+    /// selection criterion is based on <see cref="IParameter.ValueType"/> (e.g. to detect changes
+    /// to numeric parameters), because it avoids the generic type-inference pitfall described
+    /// on that overload.
+    /// </remarks>
+    /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    public void AddListenerToAll(Func<IParameter, bool> predicate, Action listener)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var matched = new List<IParameter>();
+        foreach (var p in _parameters.Values)
+        {
+            if (!predicate(p)) continue;
+            p.ValueChanged += listener;
+            matched.Add(p);
+        }
+
+        _cleanupActions.Add(() =>
+        {
+            foreach (var p in matched)
+                p.ValueChanged -= listener;
         });
     }
 
@@ -174,12 +222,38 @@ public class SettingsStore<TConfig> : IDisposable
     /// </summary>
     /// <typeparam name="T">The parameter value type to filter on.</typeparam>
     /// <param name="listener">The typed callback to remove.</param>
+    /// <remarks>
+    /// See <see cref="AddListenerToAll{T}(Action{T?,T?})"/> for the type-inference caveat that
+    /// applies equally here. Supply the type argument explicitly when needed.
+    /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     public void RemoveListenerFromAll<T>(Action<T?, T?> listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         foreach (var p in _parameters.Values)
             if (p is Parameter<T> typed) typed.ValueChanged -= listener;
+    }
+
+    /// <summary>
+    /// Removes a previously added callback from the <c>ValueChanged</c> event of every registered
+    /// parameter that satisfies <paramref name="predicate"/>.
+    /// </summary>
+    /// <param name="predicate">
+    /// A filtering function applied to the current parameter set to identify which parameters to
+    /// unsubscribe from. For deterministic removal, the predicate must produce the same set of
+    /// matches as it did at subscription time. If the predicate closes over mutable external state
+    /// that has changed since subscription, parameters that were originally subscribed may not be
+    /// unsubscribed. When lifecycle cleanup is the primary concern, rely on <see cref="Dispose"/>
+    /// instead — <see cref="AddListenerToAll(Func{IParameter,bool},Action)"/> captures the matched
+    /// set at subscription time and removes exactly those listeners on disposal.
+    /// </param>
+    /// <param name="listener">The callback to remove.</param>
+    /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    public void RemoveListenerFromAll(Func<IParameter, bool> predicate, Action listener)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        foreach (var p in _parameters.Values)
+            if (predicate(p)) p.ValueChanged -= listener;
     }
 
     /// <summary>

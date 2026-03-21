@@ -17,7 +17,7 @@ namespace Umbra.SDK.Config.Attributes;
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class HideIfAttribute<T> : Attribute
+public sealed class HideIfAttribute<T> : Attribute, IHideIfAttribute
 {
     /// <summary>Gets the name of the property or field on the configuration class to evaluate.</summary>
     public string MemberName { get; }
@@ -58,4 +58,7 @@ public sealed class HideIfAttribute<T> : Attribute
         Value = value;
         HasValue = true;
     }
+
+    /// <inheritdoc/>
+    object? IHideIfAttribute.BoxedValue => Value;
 }
