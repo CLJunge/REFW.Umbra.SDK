@@ -1,4 +1,4 @@
-﻿namespace Umbra.SDK.Config;
+namespace Umbra.SDK.Config;
 
 /// <summary>
 /// Represents a configuration parameter that holds a typed value and notifies
