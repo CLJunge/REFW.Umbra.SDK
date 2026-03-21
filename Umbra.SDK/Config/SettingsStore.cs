@@ -195,7 +195,7 @@ public class SettingsStore<TConfig> : IDisposable
     public void ResetAll()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        int count = 0;
+        var count = 0;
         foreach (var p in _parameters.Values)
         {
             if (typeof(Delegate).IsAssignableFrom(p.ValueType)) continue;

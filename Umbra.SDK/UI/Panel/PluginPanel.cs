@@ -1,5 +1,4 @@
 using Hexa.NET.ImGui;
-using Umbra.SDK;
 
 namespace Umbra.SDK.UI.Panel;
 
@@ -13,24 +12,24 @@ namespace Umbra.SDK.UI.Panel;
 /// display both configuration settings and live game state in a single panel.
 /// For plugins that only require a settings panel, <see cref="Config.UI.ConfigDrawer{TConfig}"/>
 /// may be used directly.
-    /// </para>
-    /// <para>
-    /// Sections are rendered in ascending <see cref="IPanelSection.Order"/>. The internal
-    /// list is re-sorted on each call to <see cref="Add"/>, and equal-order sections preserve
-    /// their insertion order because a stable sort is used. The panel pushes its <c>idScope</c>
-    /// as an ImGui ID scope around all section rendering, preventing widget ID collisions when
-    /// multiple plugins render into the same ImGui window.
-    /// </para>
-    /// <para>
+/// </para>
+/// <para>
+/// Sections are rendered in ascending <see cref="IPanelSection.Order"/>. The internal
+/// list is re-sorted on each call to <see cref="Add"/>, and equal-order sections preserve
+/// their insertion order because a stable sort is used. The panel pushes its <c>idScope</c>
+/// as an ImGui ID scope around all section rendering, preventing widget ID collisions when
+/// multiple plugins render into the same ImGui window.
+/// </para>
+/// <para>
 /// Always dispose the panel in the plugin's <c>[PluginExitPoint]</c> to release all
 /// section drawers and their captured state.
 /// </para>
 /// </remarks>
 public sealed class PluginPanel : IDisposable
 {
-    private readonly string               _idScope;
-    private readonly List<IPanelSection>  _sections = [];
-    private bool                          _disposed;
+    private readonly string _idScope;
+    private readonly List<IPanelSection> _sections = [];
+    private bool _disposed;
 
     /// <summary>
     /// Initialises a new panel with the given top-level ImGui ID scope.

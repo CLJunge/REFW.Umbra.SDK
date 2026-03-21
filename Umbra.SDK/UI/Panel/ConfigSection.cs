@@ -1,4 +1,3 @@
-using Umbra.SDK;
 using Umbra.SDK.Config.UI;
 
 namespace Umbra.SDK.UI.Panel;
@@ -25,8 +24,8 @@ namespace Umbra.SDK.UI.Panel;
 public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class, new()
 {
     private readonly ConfigDrawer<TConfig> _drawer;
-    private readonly int                   _order;
-    private bool                           _disposed;
+    private readonly int _order;
+    private bool _disposed;
 
     /// <summary>
     /// Initialises a new config section wrapping a <see cref="ConfigDrawer{TConfig}"/>.
@@ -41,7 +40,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// </param>
     public ConfigSection(TConfig config, string? idScope = null)
     {
-        _order  = typeof(TConfig).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
+        _order = typeof(TConfig).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
         _drawer = new ConfigDrawer<TConfig>(config, idScope ?? typeof(TConfig).Name);
     }
 

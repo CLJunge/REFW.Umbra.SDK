@@ -3,8 +3,8 @@ using REFrameworkNET.Attributes;
 using REFrameworkNET.Callbacks;
 using Umbra.SamplePlugin.Config;
 using Umbra.SDK.Config;
-using Umbra.SDK.UI.Panel;
 using Umbra.SDK.Logging;
+using Umbra.SDK.UI.Panel;
 
 namespace Umbra.SamplePlugin;
 
@@ -12,8 +12,8 @@ public static class SamplePlugin
 {
     private static readonly PluginLogger _log = new("SamplePlugin");
 
-    private static PluginPanel?                   _panel;
-    private static SettingsStore<PluginConfig>?   _store;
+    private static PluginPanel? _panel;
+    private static SettingsStore<PluginConfig>? _store;
     private static DeferredSaveController<PluginConfig>? _saveController;
 
     /// <summary>

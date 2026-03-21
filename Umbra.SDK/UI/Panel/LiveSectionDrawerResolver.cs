@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace Umbra.SDK.UI.Panel;
 
@@ -87,7 +86,7 @@ internal static class LiveSectionDrawerResolver
 
         var drawMethod = genericIface.GetMethod("Draw")!;
         var stateParam = genericIface.GetGenericArguments()[0];
-        var callExpr   = Expression.Call(
+        var callExpr = Expression.Call(
             Expression.Convert(Expression.Constant(drawerInstance), genericIface),
             drawMethod,
             Expression.Convert(Expression.Constant(context), stateParam));

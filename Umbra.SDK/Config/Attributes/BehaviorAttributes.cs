@@ -156,11 +156,11 @@ public sealed class TwoColumnCustomDrawerAttribute<TDrawer> : Attribute, ITwoCol
 /// recursing into the class's individual parameters.
 /// </para>
 /// <para>
-    /// The drawer has full ImGui layout control; no label, column alignment, or section header
-    /// is emitted by the factory. <c>[Category]</c>, <c>[SpacingBefore]</c>, <c>[SpacingAfter]</c>,
-    /// and <c>[HideIf]</c> on the property declaration are still honoured, while <c>[CollapseAsTree]</c>
-    /// must be applied to the nested group type itself.
-    /// </para>
+/// The drawer has full ImGui layout control; no label, column alignment, or section header
+/// is emitted by the factory. <c>[Category]</c>, <c>[SpacingBefore]</c>, <c>[SpacingAfter]</c>,
+/// and <c>[HideIf]</c> on the property declaration are still honoured, while <c>[CollapseAsTree]</c>
+/// must be applied to the nested group type itself.
+/// </para>
 /// </remarks>
 /// <typeparam name="TDrawer">
 /// The <see cref="INestedGroupDrawer{T}"/> implementation to use. Must provide a public

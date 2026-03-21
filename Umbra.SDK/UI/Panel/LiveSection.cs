@@ -1,5 +1,4 @@
 using Hexa.NET.ImGui;
-using Umbra.SDK;
 
 namespace Umbra.SDK.UI.Panel;
 
@@ -31,11 +30,11 @@ namespace Umbra.SDK.UI.Panel;
 /// </typeparam>
 public sealed class LiveSection<T> : IPanelSection where T : class, new()
 {
-    private readonly string?     _idScope;
-    private readonly Action      _drawAction;
+    private readonly string? _idScope;
+    private readonly Action _drawAction;
     private readonly IDisposable _drawerDisposable;
-    private readonly int          _order;
-    private bool                  _disposed;
+    private readonly int _order;
+    private bool _disposed;
 
     /// <summary>
     /// Initialises a new live section bound to the provided state instance.
@@ -56,8 +55,8 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// </exception>
     public LiveSection(T context, string? idScope = null)
     {
-        _idScope    = idScope;
-        _order      = typeof(T).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
+        _idScope = idScope;
+        _order = typeof(T).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
         _drawAction = LiveSectionDrawerResolver.Resolve(typeof(T), context, out _drawerDisposable);
     }
 
