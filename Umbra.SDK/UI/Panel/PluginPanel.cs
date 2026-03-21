@@ -60,8 +60,19 @@ public sealed class PluginPanel : IDisposable
     /// </remarks>
     /// <param name="section">The section to add. Must not be <see langword="null"/>.</param>
     /// <returns>This <see cref="PluginPanel"/> instance, enabling fluent chaining.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="section"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    /// Thrown when the panel has already been disposed.
+    /// </exception>
     public PluginPanel Add(IPanelSection section)
     {
+        if (section is null)
+            throw new ArgumentNullException(nameof(section));
+
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(PluginPanel), "Cannot add sections to a disposed panel.");
         _sections.Add(section);
         _sections.StableSortBy(s => s.Order);
         return this;
