@@ -144,7 +144,7 @@ public sealed class ParameterMetadata
     /// Lower values appear first; parameters without an order value sort after all explicitly
     /// ordered entries (using <see cref="int.MaxValue"/> as an implicit sentinel), with
     /// original declaration order preserved among equals via stable sort.
-    /// Sourced from <c>OrderAttribute</c>. <see langword="null"/> when not specified.
+    /// Sourced from <c>ParameterOrderAttribute</c>. <see langword="null"/> when not specified.
     /// </summary>
     public int? Order { get; init; }
 

@@ -168,38 +168,97 @@ internal class MyGroupDrawer : INestedGroupDrawer<MyGroup>
 }
 ```
 
+## Plugin panel system
+
+`PluginPanel` (in `Umbra.SDK.UI.Panel`) is the recommended top-level UI type for plugins. It composes an ordered list of `IPanelSection` instances under a shared ImGui ID scope and owns their lifetimes. Use `ConfigDrawer<TConfig>` directly only when the plugin needs a settings panel with no live state.
+
+**Section types:**
+- `ConfigSection<TConfig>` — wraps `ConfigDrawer<TConfig>` as a panel section. Accepts an optional `idScope` that defaults to the config type name.
+- `LiveSection<T>` — renders live game state via an `ILiveSectionDrawer<T>` declared on the state type. Accepts an optional instance (for hook-written state the plugin owns) or constructs one internally.
+
+**Declaring a live state drawer:**
+
+Apply `[LiveSectionDrawer<TDrawer>]` to the state class, not the drawer. The state class is a plain mutable POCO whose fields are written by `[MethodHook]` callbacks and read by the drawer each frame. Use the swap-instance pattern for multi-field updates.
+
+```csharp
+[LiveSectionDrawer<CameraStatusDrawer>]
+public sealed class CameraState
+{
+    public float      Fov  { get; set; }
+    public CameraMode Mode { get; set; }
+}
+
+internal sealed class CameraStatusDrawer : ILiveSectionDrawer<CameraState>
+{
+    public void Draw(CameraState state)
+    {
+        ImGui.Text($"FOV: {state.Fov:F1}");
+        ImGui.Text($"Mode: {state.Mode}");
+    }
+}
+```
+
+**Hook-to-state wiring:**
+
+The plugin owns the state instance. The hook class holds a `private static volatile` reference to it, set via `Attach`/`Detach`. Always call `Detach()` in `[PluginExitPoint]`.
+
+```csharp
+internal static class FovHooks
+{
+    private static volatile CameraState? _target;
+
+    internal static void Attach(CameraState target) => _target = target;
+    internal static void Detach()                   => _target = null;
+
+    [MethodHook(typeof(app.PlayerCameraFOVCalc), nameof(app.PlayerCameraFOVCalc.getFOV), MethodHookType.Post)]
+    public static void OnGetFOVPost(ref ulong retval)
+    {
+        if (_target is null) return;
+        float fov = BitConverter.UInt32BitsToSingle((uint)(retval & 0xFFFFFFFF));
+        _target = new CameraState { Fov = fov, Mode = _target.Mode };
+    }
+}
+```
+
 ## Plugin lifecycle
 - Mark the plugin entry point with `[PluginEntryPoint]` and the exit point with `[PluginExitPoint]` (from `REFrameworkNET.Attributes`).
-- Initialize `SettingsStore<TConfig>` and `ConfigDrawer<TConfig>` in the entry point; dispose and null both in the exit point.
-- Always pass a unique plugin identifier string as `idScope` to `ConfigDrawer<TConfig>` so that all ImGui widget IDs rendered by the drawer are scoped with `ImGui.PushID` / `ImGui.PopID`. This prevents duplicate-ID warnings when multiple plugins render settings panels in the same ImGui window.
-- Always call `Save()` before `Dispose()` on the store so the last in-memory values are flushed to disk on unload.
+- Construct `PluginPanel` in the entry point with all required sections; dispose and null it in the exit point.
+- The `idScope` passed to `PluginPanel` scopes all ImGui widget IDs for the entire panel. Individual sections may optionally push a sub-scope via their own `idScope` parameter.
+- Always call `Save()` before `Dispose()` on `SettingsStore` so the last in-memory values are flushed to disk on unload.
 - Null out all static references in the exit point to avoid stale state if the plugin is reloaded in the same process session.
 
-```
-    private static ConfigDrawer<PluginConfig>? _drawer;
-    private static SettingsStore<PluginConfig>? _store;
+```csharp
+    private static PluginPanel?                   _panel;
+    private static SettingsStore<PluginConfig>?   _store;
+    private static CameraState?                   _cameraState;
 
     [PluginEntryPoint]
     public static void Load()
     {
-        //System.Diagnostics.Debugger.Launch();
-
         var configPath = GetConfigPath();
-        _store = new SettingsStore<PluginConfig>(configPath);
-        var config = _store.Load();
+        _store       = new SettingsStore<PluginConfig>(configPath);
+        var config   = _store.Load();
 
-        _drawer = new ConfigDrawer<PluginConfig>(config, idScope: "MyPlugin");
+        _cameraState = new CameraState();
+        FovHooks.Attach(_cameraState);
+
+        _panel = new PluginPanel("MyPlugin")
+            .Add(new LiveSection<CameraState>(_cameraState))
+            .Add(new ConfigSection<PluginConfig>(config));
     }
 
     [PluginExitPoint]
     public static void Unload()
     {
+        FovHooks.Detach();
+        _cameraState = null;
+
         _store?.Save();
         _store?.Dispose();
         _store = null;
 
-        _drawer?.Dispose();
-        _drawer = null;
+        _panel?.Dispose();
+        _panel = null;
     }
 ```
 

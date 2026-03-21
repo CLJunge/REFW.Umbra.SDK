@@ -43,7 +43,7 @@ internal static class ParameterMetadataReader
         // is absent so the two metadata slots remain independent.
         var controlWidth = buttonWidth is null ? member.GetCustomAttribute<ControlWidthAttribute>() : null;
         var multiline = member.GetCustomAttribute<MultilineAttribute>();
-        var order = member.GetCustomAttribute<OrderAttribute>();
+        var order = member.GetCustomAttribute<ParameterOrderAttribute>();
 
         return new ParameterMetadata
         {

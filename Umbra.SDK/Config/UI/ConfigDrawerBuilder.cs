@@ -175,7 +175,7 @@ internal sealed class ConfigDrawerBuilder
                         targetList.Add(new ParameterNode(
                             VisibilityPredicateResolver.Build(prop, obj),
                             drawAction,
-                            order: prop.GetCustomAttribute<OrderAttribute>()?.Order ?? 0,
+                            order: prop.GetCustomAttribute<ParameterOrderAttribute>()?.Order ?? 0,
                             spacingBefore: prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0,
                             spacingAfter: prop.GetCustomAttribute<SpacingAfterAttribute>()?.Count ?? 0));
                     }
