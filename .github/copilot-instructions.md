@@ -18,6 +18,36 @@
   - The static `Logger` class still exists as a raw, unconditional forwarding facade (no prefix, no level filter). It is intended for SDK-internal use only.
 - Assume game-facing code may run in a constrained plugin environment where resilience is preferred over hard failures.
 
+## Thread safety — hooks and callbacks
+
+- `[MethodHook]` methods and REFramework callbacks (e.g. ImGui pre-draw) **must be static**. This means any dedicated hook class uses a `private static` field to hold a reference to the state it writes.
+- A `private static` field is scoped to its declaring type, which is scoped to its assembly. All managed plugins share one `AppDomain`, but each plugin assembly has its own type identity — cross-plugin contamination of a hook class's static field is not possible without explicit reflection.
+- Hooks fire on whichever thread the hooked method runs on. ImGui callbacks fire on the game's render/update thread. For most RE Engine camera and gameplay hooks these are the same thread, but this is not guaranteed.
+- **Use the swap-instance pattern** when a hook or callback writes multiple fields to a shared state object. Build a fresh instance, populate it fully, then replace the reference in a single volatile write. This ensures readers always see a consistent snapshot. The static field holding the reference should be volatile. Always null it in `[PluginExitPoint]` so post-unload hook calls are no-ops. Example:
+```csharp
+internal static class FovHooks
+{
+    // volatile ensures the reference write is visible across threads without a lock.
+    private static volatile CameraState? _target;
+
+    internal static void Attach(CameraState target) => _target = target;
+    internal static void Detach()                   => _target = null;
+
+    [MethodHook(typeof(app.PlayerCameraFOVCalc), nameof(app.PlayerCameraFOVCalc.getFOV), MethodHookType.Post)]
+    public static void OnGetFOVPost(ref ulong retval)
+    {
+        if (_target is null) return;
+
+        float fov = BitConverter.UInt32BitsToSingle((uint)(retval & 0xFFFFFFFF));
+
+        // Swap-instance: build the new snapshot, then replace the reference atomically.
+        _target = new CameraState { Fov = fov, Mode = _target.Mode };
+    }
+}
+```
+- Always call `Detach()` (or equivalent null-assignment) in `[PluginExitPoint]` so any hook that fires after unload becomes a safe no-op.
+- The same pattern applies to ImGui pre-draw or any other static callback that writes shared state consumed by another part of the plugin.
+
 ## UI and input
 - UI should be implemented with **ImGui**, using `Hexa.NET.ImGui`.
 - Do not suggest WPF, WinForms, MAUI, Blazor, or ASP.NET for in-game UI.
