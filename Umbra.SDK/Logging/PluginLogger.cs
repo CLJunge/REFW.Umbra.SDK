@@ -14,10 +14,11 @@ namespace Umbra.SDK.Logging;
 /// to silently overwrite every earlier plugin's configuration.
 /// </para>
 /// <para>
-/// Declare the logger as a <see langword="static"/> field on the plugin class and initialise it
-/// in the entry point:
+/// Declare the logger as a <see langword="private"/> <see langword="static"/>
+/// <see langword="readonly"/> field on the plugin class and initialise it inline so that it is
+/// always available and never shared with other plugins:
 /// <code>
-/// private static PluginLogger _log = new("MyPlugin");
+/// private static readonly PluginLogger _log = new("MyPlugin");
 ///
 /// [PluginEntryPoint]
 /// public static void Load()
@@ -81,11 +82,19 @@ public sealed class PluginLogger
     /// <summary>
     /// Logs a formatted informational message via <see cref="API.LogInfo"/>.
     /// </summary>
+    /// <remarks>
+    /// This overload is exception-safe: if <see cref="MinLevel"/> filters out info logs, or if
+    /// <see cref="string.Format(string, object[])"/> throws during formatting, the exception is
+    /// silently suppressed and no log is emitted.
+    /// </remarks>
     /// <param name="format">A composite format string.</param>
     /// <param name="args">An array of objects to format.</param>
     public void Info(string format, params object[] args)
     {
-        Info(string.Format(format, args));
+        if (MinLevel > LogLevel.Info) return;
+        string message;
+        try { message = string.Format(format, args); } catch { return; }
+        Info(message);
     }
 
     /// <summary>
@@ -101,11 +110,19 @@ public sealed class PluginLogger
     /// <summary>
     /// Logs a formatted warning message via <see cref="API.LogWarning"/>.
     /// </summary>
+    /// <remarks>
+    /// This overload is exception-safe: if <see cref="MinLevel"/> filters out warning logs, or if
+    /// <see cref="string.Format(string, object[])"/> throws during formatting, the exception is
+    /// silently suppressed and no log is emitted.
+    /// </remarks>
     /// <param name="format">A composite format string.</param>
     /// <param name="args">An array of objects to format.</param>
     public void Warning(string format, params object[] args)
     {
-        Warning(string.Format(format, args));
+        if (MinLevel > LogLevel.Warning) return;
+        string message;
+        try { message = string.Format(format, args); } catch { return; }
+        Warning(message);
     }
 
     /// <summary>
@@ -121,11 +138,19 @@ public sealed class PluginLogger
     /// <summary>
     /// Logs a formatted error message via <see cref="API.LogError"/>.
     /// </summary>
+    /// <remarks>
+    /// This overload is exception-safe: if <see cref="MinLevel"/> filters out error logs, or if
+    /// <see cref="string.Format(string, object[])"/> throws during formatting, the exception is
+    /// silently suppressed and no log is emitted.
+    /// </remarks>
     /// <param name="format">A composite format string.</param>
     /// <param name="args">An array of objects to format.</param>
     public void Error(string format, params object[] args)
     {
-        Error(string.Format(format, args));
+        if (MinLevel > LogLevel.Error) return;
+        string message;
+        try { message = string.Format(format, args); } catch { return; }
+        Error(message);
     }
 
     /// <summary>
@@ -149,12 +174,20 @@ public sealed class PluginLogger
     /// Logs a formatted error message accompanied by exception details — the exception type,
     /// message, and stack trace — via <see cref="API.LogError"/>.
     /// </summary>
+    /// <remarks>
+    /// This overload is exception-safe: if <see cref="MinLevel"/> filters out error logs or if
+    /// <see cref="string.Format(string, object[])"/> throws during formatting, the exception is
+    /// silently suppressed and no log is emitted.
+    /// </remarks>
     /// <param name="ex">The exception to log.</param>
     /// <param name="format">A composite format string providing context for the exception.</param>
     /// <param name="args">An array of objects to format.</param>
     public void Exception(Exception ex, string format, params object[] args)
     {
-        Exception(ex, string.Format(format, args));
+        if (MinLevel > LogLevel.Error) return;
+        string message;
+        try { message = string.Format(format, args); } catch { return; }
+        Exception(ex, message);
     }
 
     /// <summary>

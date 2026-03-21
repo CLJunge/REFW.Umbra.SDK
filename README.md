@@ -18,7 +18,7 @@
 
 ### Logging — `Umbra.SDK.Logging.PluginLogger` / `Logger`
 
-Two exception-safe wrappers around `REFrameworkNET.API.Log*`. All methods silently suppress errors to avoid disrupting the game process.
+Two exception-safe wrappers around `REFrameworkNET.API.Log*`. All core (non-formatted) methods silently suppress errors to avoid disrupting the game process. Formatted overloads (`...(string format, params object[] args)`) also silently suppress any exception thrown by `string.Format` — invalid format strings or mismatched arguments cause the message to be discarded rather than propagate.
 
 #### `PluginLogger` — per-plugin instance (recommended for all plugins)
 

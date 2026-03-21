@@ -1,8 +1,8 @@
 namespace Umbra.SDK.Logging;
 
 /// <summary>
-/// Defines the severity levels for log messages emitted via <see cref="Logger"/>.
-/// Assign <see cref="Logger.MinLevel"/> to suppress messages below a chosen threshold.
+/// Defines the severity levels for log messages emitted via <see cref="PluginLogger"/>.
+/// Assign <see cref="PluginLogger.MinLevel"/> to suppress messages below a chosen threshold.
 /// </summary>
 public enum LogLevel
 {
