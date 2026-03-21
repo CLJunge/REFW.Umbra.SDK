@@ -200,15 +200,31 @@ public record PluginConfig
         }
     }
 
+    /// <summary>
+    /// Sample nested settings group used to demonstrate a custom nested group drawer.
+    /// The properties are modeled as <see cref="Parameter{T}"/> so they participate
+    /// in the standard Umbra settings registration and persistence workflow.
+    /// </summary>
     [AutoRegisterSettings]
     [Category("Drawer Test")]
     [CollapseAsTree]
     [NestedGroupDrawer<NestedDrawerTestDrawer>]
     public record NestedDrawerTest
     {
-        public int Value1 { get; set; } = 123;
-        public bool Value2 { get; set; } = true;
-        public string Value3 { get; set; } = "Hello, world!";
-        public float Value4 { get; set; } = 3.14f;
+        /// <summary>Gets or sets the first sample integer value for the nested drawer test.</summary>
+        [SettingsParameter]
+        public Parameter<int> Value1 { get; set; } = new(123);
+
+        /// <summary>Gets or sets the second sample boolean value for the nested drawer test.</summary>
+        [SettingsParameter]
+        public Parameter<bool> Value2 { get; set; } = new(true);
+
+        /// <summary>Gets or sets the third sample string value for the nested drawer test.</summary>
+        [SettingsParameter]
+        public Parameter<string> Value3 { get; set; } = new("Hello, world!");
+
+        /// <summary>Gets or sets the fourth sample float value for the nested drawer test.</summary>
+        [SettingsParameter]
+        public Parameter<float> Value4 { get; set; } = new(3.14f);
     }
 }
