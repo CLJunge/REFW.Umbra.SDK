@@ -11,9 +11,10 @@ namespace Umbra.SDK.Config.UI.ParameterDrawers;
 /// </para>
 /// <para>
 /// The drawer has complete ImGui layout control; no label, column alignment, or section header
-/// is emitted by the factory. <c>[Category]</c>, <c>[CollapseAsTree]</c>,
-/// <c>[SpacingBefore]</c>, <c>[SpacingAfter]</c>, and <c>[HideIf]</c> on the property
-/// declaration in the parent config are still honoured.
+/// is emitted by the factory. Property-level attributes such as <c>[Category]</c>,
+/// <c>[SpacingBefore]</c>, <c>[SpacingAfter]</c>, and <c>[HideIf]</c> on the declaration of the
+/// nested-group property in the parent config are still honoured. <c>[CollapseAsTree]</c> is
+/// applied to the nested group <em>type</em> itself rather than the parent property.
 /// </para>
 /// <para>
 /// Implements <see cref="IDisposable"/> so drawers that hold per-instance state (e.g. cached
