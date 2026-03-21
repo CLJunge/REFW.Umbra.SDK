@@ -174,6 +174,9 @@ public class SettingsStore<TConfig> : IDisposable
     /// <param name="predicate">
     /// A function evaluated once per registered parameter at subscription time; the listener
     /// is attached only to parameters for which it returns <see langword="true"/>.
+    /// The matched parameter set is captured at subscription time — the predicate is <em>not</em>
+    /// re-evaluated during cleanup, so predicate results that depend on mutable external state
+    /// will not affect whether listeners are removed on <see cref="Dispose"/>.
     /// </param>
     /// <param name="listener">The callback to invoke whenever a matching parameter's value changes.</param>
     /// <remarks>
@@ -186,13 +189,19 @@ public class SettingsStore<TConfig> : IDisposable
     public void AddListenerToAll(Func<IParameter, bool> predicate, Action listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var matched = new List<IParameter>();
         foreach (var p in _parameters.Values)
-            if (predicate(p)) p.ValueChanged += listener;
+        {
+            if (!predicate(p)) continue;
+            p.ValueChanged += listener;
+            matched.Add(p);
+        }
 
         _cleanupActions.Add(() =>
         {
-            foreach (var p in _parameters.Values)
-                if (predicate(p)) p.ValueChanged -= listener;
+            foreach (var p in matched)
+                p.ValueChanged -= listener;
         });
     }
 
@@ -230,9 +239,13 @@ public class SettingsStore<TConfig> : IDisposable
     /// parameter that satisfies <paramref name="predicate"/>.
     /// </summary>
     /// <param name="predicate">
-    /// The same filtering function that was passed to
-    /// <see cref="AddListenerToAll(Func{IParameter,bool},Action)"/>; applied again to identify
-    /// which parameters to unsubscribe from.
+    /// A filtering function applied to the current parameter set to identify which parameters to
+    /// unsubscribe from. For deterministic removal, the predicate must produce the same set of
+    /// matches as it did at subscription time. If the predicate closes over mutable external state
+    /// that has changed since subscription, parameters that were originally subscribed may not be
+    /// unsubscribed. When lifecycle cleanup is the primary concern, rely on <see cref="Dispose"/>
+    /// instead — <see cref="AddListenerToAll(Func{IParameter,bool},Action)"/> captures the matched
+    /// set at subscription time and removes exactly those listeners on disposal.
     /// </param>
     /// <param name="listener">The callback to remove.</param>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
