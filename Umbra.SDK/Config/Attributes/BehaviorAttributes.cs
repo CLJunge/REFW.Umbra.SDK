@@ -275,7 +275,7 @@ public sealed class MultilineAttribute(int lines = 3) : Attribute
 /// </remarks>
 /// <param name="order">The sort key. Lower values appear first within the same category context.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class OrderAttribute(int order) : Attribute
+public sealed class ParameterOrderAttribute(int order) : Attribute
 {
     /// <summary>Gets the sort key for this parameter within its category context. Lower values appear first.</summary>
     public int Order { get; } = order;

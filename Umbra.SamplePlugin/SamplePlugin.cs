@@ -3,7 +3,7 @@ using REFrameworkNET.Attributes;
 using REFrameworkNET.Callbacks;
 using Umbra.SamplePlugin.Config;
 using Umbra.SDK.Config;
-using Umbra.SDK.Config.UI;
+using Umbra.SDK.UI.Panel;
 using Umbra.SDK.Logging;
 
 namespace Umbra.SamplePlugin;
@@ -12,13 +12,13 @@ public static class SamplePlugin
 {
     private static readonly PluginLogger _log = new("SamplePlugin");
 
-    private static ConfigDrawer<PluginConfig>? _drawer;
-    private static SettingsStore<PluginConfig>? _store;
+    private static PluginPanel?                   _panel;
+    private static SettingsStore<PluginConfig>?   _store;
     private static DeferredSaveController<PluginConfig>? _saveController;
 
     /// <summary>
     /// Plugin entry point. Resolves the configuration file path, loads persisted settings from disk
-    /// (or writes defaults if no file exists), and constructs the ImGui settings drawer.
+    /// (or writes defaults if no file exists), and constructs the plugin panel.
     /// </summary>
     [PluginEntryPoint]
     public static void Load()
@@ -32,16 +32,18 @@ public static class SamplePlugin
 
         _store = new SettingsStore<PluginConfig>(configPath);
         var config = _store.Load();
+        config.LogTestMessage.Value = () => _log.Info("Sample Plugin is active!");
         _saveController = new DeferredSaveController<PluginConfig>(_store);
 
-        _drawer = new ConfigDrawer<PluginConfig>(config, idScope: "SamplePlugin");
+        _panel = new PluginPanel("SamplePlugin")
+            .Add(new ConfigSection<PluginConfig>(config));
 
         _log.Info("Loaded successfully.");
     }
 
     /// <summary>
     /// Plugin exit point. Persists the current configuration to disk, then disposes and nulls
-    /// all static resources to prevent stale state if the plugin is reloaded within the same process session.
+    /// all static resources to prevent stale state if the plugin is reloaded in the same process session.
     /// </summary>
     [PluginExitPoint]
     public static void Unload()
@@ -56,8 +58,8 @@ public static class SamplePlugin
         _store?.Dispose();
         _store = null;
 
-        _drawer?.Dispose();
-        _drawer = null;
+        _panel?.Dispose();
+        _panel = null;
 
         _log.Info("Unloaded.");
     }
@@ -91,7 +93,7 @@ public static class SamplePlugin
     public static void PreDrawUI()
     {
         if (API.IsDrawingUI())
-            _drawer?.Draw();
+            _panel?.Draw();
 
         _saveController?.Tick();
     }

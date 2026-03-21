@@ -1,7 +1,6 @@
 ﻿using Umbra.SDK.Config;
 using Umbra.SDK.Config.Attributes;
 using Umbra.SDK.Config.UI.ParameterDrawers;
-using Umbra.SDK.Logging;
 
 namespace Umbra.SamplePlugin.Config;
 
@@ -49,7 +48,7 @@ public record PluginConfig
     /// <summary>
     /// Logs a diagnostic test message to the REFramework console.
     /// Demonstrates <see cref="ButtonDrawer"/> with a primary style and full-width layout,
-    /// and <see cref="OrderAttribute"/> to pin this button above all other root-level settings.
+    /// and <see cref="ParameterOrderAttribute"/> to pin this button above all other root-level settings.
     /// </summary>
     [SettingsParameter]
     [DisplayName("Log Test Message")]
@@ -57,9 +56,8 @@ public record PluginConfig
     [CustomDrawer<ButtonDrawer>]
     [ButtonStyle(ButtonStyle.Primary)]
     [ButtonWidth(-1f)]
-    [Order(0)]
-    public Parameter<Action> LogTestMessage { get; set; } =
-        new(static () => Logger.Info("Sample Plugin is active!"));
+    [ParameterOrder(0)]
+    public Parameter<Action> LogTestMessage { get; init; } = new(static () => { });
 
     /// <summary>Resets all General settings to their default values.</summary>
     [SettingsParameter]
@@ -103,24 +101,24 @@ public record PluginConfig
         public Parameter<float> Tps { get; set; } = new(55f);
 
         /// <summary>Gets or sets the FOV angle used when aiming down sights in third-person view.</summary>
-        /// <remarks>Declared before <see cref="Fps"/> but rendered after it via <c>[Order(2)]</c>.</remarks>
+        /// <remarks>Declared before <see cref="Fps"/> but rendered after it via <c>[ParameterOrder(2)]</c>.</remarks>
         [SettingsParameter]
         [DisplayName("3rd Person ADS")]
         [Description("The FOV to use when aiming down sights in third person.")]
         [Range(_minFov, _maxFov)]
         [Format("%.1f")]
-        [Order(2)]
-        public Parameter<float> TpsAds { get; set; } = new(35f);
+        [ParameterOrder(2)]
+        public Parameter<float> TpsAds { get; set; } = new(45f);
 
         /// <summary>Gets or sets the FOV angle used in first-person view.</summary>
-        /// <remarks>Declared after <see cref="TpsAds"/> but rendered before it via <c>[Order(1)]</c>.</remarks>
+        /// <remarks>Declared after <see cref="TpsAds"/> but rendered before it via <c>[ParameterOrder(1)]</c>.</remarks>
         [SettingsParameter]
         [DisplayName("1st Person")]
         [Description("The FOV to use in first person.")]
         [Range(_minFov, _maxFov)]
         [Format("%.1f")]
-        [Order(1)]
-        public Parameter<float> Fps { get; set; } = new(55f);
+        [ParameterOrder(1)]
+        public Parameter<float> Fps { get; set; } = new(70f);
 
         /// <summary>Gets or sets the FOV angle used when aiming down sights in first-person view.</summary>
         [SettingsParameter]
