@@ -2,6 +2,7 @@
 
 > A support library and example plugin for **RE Engine** game modding via [REFramework.NET](https://github.com/praydog/REFramework).
 > Runs inside the game process through the REFramework managed plugin environment — **.NET 10 / x64**.
+> Depends on three host assemblies distributed with REFramework: `REFramework.NET`, `Hexa.NET.ImGui`, and `HexaGen.Runtime`.
 
 ---
 
@@ -11,6 +12,57 @@
 |---|---|
 | `Umbra.SDK` | Reusable support library: logging, configuration, ImGui helpers, keyboard utilities. |
 | `Umbra.SamplePlugin` | Example plugin that uses `Umbra.SDK` to expose a configurable enhanced camera for RE9. |
+
+---
+
+## 🛠️ Development Setup
+
+### Prerequisites
+
+- **.NET 10 SDK** (x64)
+- **REFramework** installed in a supported RE Engine game directory
+
+### Fetching dependencies
+
+Run the setup script once before opening the solution. It downloads the latest
+[REFramework-nightly](https://github.com/praydog/REFramework-nightly) `csharp-api.zip`,
+extracts the three DLLs the projects reference, and optionally copies them into your game
+directory and stages generated game-binding assemblies.
+
+```powershell
+.\scripts\setup_reframework_deps.ps1
+```
+
+Or use the wrapper batch file:
+
+```cmd
+scripts\setup_reframework_deps.bat
+```
+
+After setup, `dependencies\reframework\api\` will contain exactly:
+
+| File | Used by |
+|---|---|
+| `REFramework.NET.dll` | Core plugin API — `[PluginEntryPoint]`, `API.Log*`, hooks |
+| `Hexa.NET.ImGui.dll` | ImGui bindings — all UI and input code |
+| `HexaGen.Runtime.dll` | Runtime support for ImGui bindings |
+
+All other assemblies distributed with REFramework (`AssemblyGenerator`, `REFCoreDeps`,
+`Microsoft.CodeAnalysis.*`) are host-internal and are **not** referenced by any project
+in this solution.
+
+### Local Debug deployment
+
+Debug builds deploy automatically after a successful build via `Directory.Build.targets`.
+Each project declares its own deployment target through the `$(UmbraDeployScript)` property:
+
+| Project | Deploys to |
+|---|---|
+| `Umbra.SDK` | `reframework\plugins\managed\dependencies\` |
+| `Umbra.SamplePlugin` | `reframework\plugins\managed\` |
+
+Deployment is skipped silently when `game_dir.local.txt` is absent (e.g. on CI) or the
+batch file does not exist.
 
 ---
 
@@ -62,15 +114,6 @@ _log.Exception(ex, "Failed to initialize {0}", "camera"); // formatted overload
 
 Carries **no configuration** and forwards messages unconditionally. Intended for SDK-internal use
 only. Prefer `PluginLogger` in all plugin code.
-
----
-
-### RE9 Context IDs — `Umbra.SDK.Games.RE9.Re9ContextIds`
-
-| Constant | Description |
-|---|---|
-| `Re9ContextIds.Leon` | RE9 Leon campaign context GUID |
-| `Re9ContextIds.Grace` | RE9 Grace campaign context GUID |
 
 ---
 
