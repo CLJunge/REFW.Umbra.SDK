@@ -16,28 +16,28 @@
 
 ## 🔧 Umbra.SDK
 
-### Logging — `Umbra.SDK.Logging.PluginLogger` / `Logger`
+### Logging — `Umbra.SDK.Logging`
 
-Two exception-safe wrappers around `REFrameworkNET.API.Log*`. All core (non-formatted) methods silently suppress errors to avoid disrupting the game process. Formatted overloads (`...(string format, params object[] args)`) also silently suppress any exception thrown by `string.Format` — invalid format strings or mismatched arguments cause the message to be discarded rather than propagate.
+Two exception-safe wrappers around `REFrameworkNET.API.Log*`. All methods silently suppress
+errors to avoid disrupting the game process. Formatted overloads (`...(string format, params object[] args)`)
+also swallow exceptions thrown by `string.Format` — invalid format strings or mismatched arguments
+cause the message to be silently discarded rather than propagated.
 
 #### `PluginLogger` — per-plugin instance (recommended for all plugins)
 
-Because all managed plugins load into the **same AppDomain**, using shared static state for a
-prefix or log level would cause each plugin that loads to silently overwrite every earlier
-plugin's configuration. `PluginLogger` solves this by keeping all configuration in a
-**per-plugin instance** — declare it as a `private static readonly` field and initialise it
-inline so it is never `null` and never shared.
+All managed plugins load into the **same AppDomain**. Using shared static state for a prefix or log
+level causes each plugin that loads to silently overwrite every earlier plugin's configuration.
+`PluginLogger` solves this by keeping all configuration in a per-plugin instance.
+
+Declare it as a `private static readonly` field and initialise inline — never in the entry point:
 
 ```csharp
 // Declare once — no entry-point side-effects on shared state.
 private static readonly PluginLogger _log = new("MyPlugin");
 
-// In Load() / Unload() / anywhere:
 _log.Info("Plugin loaded");
 _log.Info("Version {0}.{1}", major, minor);
-
 _log.Warning("Unexpected state");
-
 _log.Error("Something failed");
 
 // Always use Exception() — not Error() — when logging exceptions:
@@ -50,22 +50,22 @@ _log.Exception(ex, "Failed to initialize {0}", "camera"); // formatted overload
 | `Info(string)` / `Info(string, params object[])` | `API.LogInfo` | |
 | `Warning(string)` / `Warning(string, params object[])` | `API.LogWarning` | |
 | `Error(string)` / `Error(string, params object[])` | `API.LogError` | |
-| `Exception(Exception, string)` | `API.LogError` | Includes type, message, and stack trace |
+| `Exception(Exception, string)` | `API.LogError` | Logs exception type, message, and stack trace |
 | `Exception(Exception, string, params object[])` | `API.LogError` | Formatted context message overload |
 | `Prefix` | — | Optional string prepended as `[Prefix] message` |
-| `PrefixFormat` | — | Composite format string; `{0}` → `Prefix`. Defaults to `"[{0}]"` |
-| `MinLevel` | — | Messages below this level are silently discarded. Defaults to `LogLevel.Info` |
+| `PrefixFormat` | — | Composite format; `{0}` → `Prefix`. Defaults to `"[{0}]"` |
+| `MinLevel` | — | Messages below this `LogLevel` are silently discarded. Defaults to `LogLevel.Info` |
+
+`LogLevel` values: `Info = 0`, `Warning = 1`, `Error = 2`, `None = 3` (silences all output).
 
 #### `Logger` — static, raw forwarding facade
 
-The static `Logger` class carries **no configuration** and forwards messages unconditionally. It
-is intended for SDK-internal use. Prefer `PluginLogger` in all plugin code.
+Carries **no configuration** and forwards messages unconditionally. Intended for SDK-internal use
+only. Prefer `PluginLogger` in all plugin code.
 
 ---
 
 ### RE9 Context IDs — `Umbra.SDK.Games.RE9.Re9ContextIds`
-
-Shared RE9 context identifiers.
 
 | Constant | Description |
 |---|---|
@@ -76,41 +76,51 @@ Shared RE9 context identifiers.
 
 ### ⚙️ Configuration — `Umbra.SDK.Config`
 
-A reflection-based, attribute-driven settings system backed by JSON persistence. The draw tree for the UI is built once at construction — no per-frame reflection.
+A reflection-based, attribute-driven settings system backed by JSON persistence
+(`System.Text.Json`, camelCase property names, enums serialized as strings).
+The draw tree for the UI is built once at construction — no per-frame reflection.
 
 #### Quick-Start Flow
 
-1. Define a config class decorated with the SDK attributes.
+1. Annotate a config class with SDK attributes.
 2. Create a `SettingsStore<TConfig>` with the path to the JSON file.
-3. Call `Load()` to get a fully populated config instance. (**Must happen before step 4.**)
+3. Call `Load()` to get a fully populated config instance. **This must happen before step 4.**
 4. Optionally wrap the store in a `DeferredSaveController<TConfig>` for automatic change-triggered saves.
-5. Pass the config instance to `ConfigDrawer<TConfig>` to render a settings panel.
-6. Call `Flush()` + `Dispose()` on the controller, then `Save()` + `Dispose()` on the store on plugin unload.
+5. Pass the config instance to `ConfigDrawer<TConfig>` (or `ConfigSection<TConfig>`) to render a settings panel.
+6. On plugin unload: `Flush()` + `Dispose()` the controller, then `Save()` + `Dispose()` the store.
 
 ```csharp
-// Plugin entry point — order matters:
-var configPath  = Path.Combine(API.GetPluginDirectory(typeof(MyPlugin).Assembly), "config.json");
-_store          = new SettingsStore<PluginConfig>(configPath);
-var config      = _store.Load();                              // 1. Load registers parameters
-_saveController = new DeferredSaveController<PluginConfig>(_store); // 2. THEN attach listeners
-_drawer         = new ConfigDrawer<PluginConfig>(config, "MyPlugin");
+[PluginEntryPoint]
+public static void Load()
+{
+    var configPath  = Path.Combine(API.GetPluginDirectory(typeof(MyPlugin).Assembly), "config.json");
+    _store          = new SettingsStore<PluginConfig>(configPath);
+    var config      = _store.Load();                               // Load FIRST
+    _saveController = new DeferredSaveController<PluginConfig>(_store); // THEN construct
+    _drawer         = new ConfigDrawer<PluginConfig>(config, "MyPlugin");
+}
 
-// Plugin exit point:
-_saveController?.Flush();   // write any pending debounced change
-_saveController?.Dispose(); // remove listeners before the store is disposed
-_saveController = null;
-_store?.Save();             // final save
-_store?.Dispose();
-_store = null;
-_drawer?.Dispose();
-_drawer = null;
+[PluginExitPoint]
+public static void Unload()
+{
+    _saveController?.Flush();   // write any pending debounced change
+    _saveController?.Dispose(); // remove listeners before the store is disposed
+    _saveController = null;
+    _store?.Save();             // final save
+    _store?.Dispose();
+    _store = null;
+    _drawer?.Dispose();
+    _drawer = null;
+}
 ```
 
 ---
 
 #### `Parameter<T>`
 
-The core value container. Supported types for JSON persistence: `bool`, `int`, `float`, `double`, `string`, and any `enum`.
+The core value container. Supported types for JSON persistence: `bool`, `int`, `float`, `double`,
+`string`, and any `enum`. Use `Parameter<Action>` for button controls — the stored action is not
+persisted to JSON.
 
 ```csharp
 public Parameter<float> FieldOfView { get; set; } = new(55f);
@@ -121,6 +131,7 @@ float fovImplicit = config.FieldOfView; // implicit conversion
 
 // Write (raises ValueChanged)
 config.FieldOfView.Value = 70f;
+config.FieldOfView.Set(70f); // alias; avoids .Value.Value inside nested group drawers
 
 // Write silently (no event)
 config.FieldOfView.SetWithoutNotify(70f);
@@ -140,463 +151,387 @@ config.FieldOfView.Reset();
 | `Load()` | Creates a `TConfig` instance, registers parameters, and loads values from disk. Saves defaults if no file exists. **Call this before constructing `DeferredSaveController`.** |
 | `Save()` | Serializes all parameter values to the configured JSON file. |
 | `ResetAll()` | Resets every registered parameter to its default value. Delegate-typed parameters (e.g. button actions) are skipped. |
-| `CopyValuesTo(target, setWithoutNotifying)` | Mirrors all values into another store, optionally suppressing change events. |
+| `CopyValuesTo(target, setWithoutNotifying)` | Mirrors all values into another store instance, optionally suppressing change events. |
 | `AddListenerToAll(Action)` | Subscribes an untyped callback to `ValueChanged` on **every** parameter. Auto-removed on `Dispose`. |
 | `AddListenerToAll<T>(Action<T?,T?>)` | Subscribes a typed callback to `ValueChanged` on every `Parameter<T>` whose value type matches `T`. Auto-removed on `Dispose`. ⚠️ See caveat below. |
-| `AddListenerToAll(Func<IParameter,bool>, Action)` | Subscribes an untyped callback to `ValueChanged` on every parameter satisfying the predicate. Auto-removed on `Dispose`. Preferred over the typed overload when filtering by `ValueType`. |
+| `AddListenerToAll(Func<IParameter,bool>, Action)` | Subscribes to `ValueChanged` on parameters matching the predicate. Preferred over the typed overload when filtering by `ValueType`. Auto-removed on `Dispose`. |
 | `RemoveListenerFromAll(Action)` | Manually unsubscribes an untyped listener. |
 | `RemoveListenerFromAll<T>(Action<T?,T?>)` | Manually unsubscribes a typed listener. ⚠️ See caveat below. |
-| `RemoveListenerFromAll(Func<IParameter,bool>, Action)` | Manually unsubscribes a listener previously registered with the predicate overload. |
+| `RemoveListenerFromAll(Func<IParameter,bool>, Action)` | Manually unsubscribes a predicate-filtered listener. |
 | `Dispose()` | Removes all event subscriptions registered via `Add*`. Always call after `Save()`. |
 
 > **⚠️ `AddListenerToAll<T>` type-inference caveat**
 >
-> For unconstrained `T`, C# compiles `T?` as `T` in IL — the `?` is metadata-only annotation.
-> When you pass an `Action<int?, int?>` delegate, the compiler infers `T = int?` (not `T = int`),
+> For unconstrained `T`, passing an `Action<int?,int?>` causes the compiler to infer `T = int?`,
 > so the `is Parameter<T>` filter never matches `Parameter<int>` instances. **Always supply the
 > type argument explicitly** (e.g. `AddListenerToAll<int>(myDelegate)`) or use the
-> `Func<IParameter, bool>` predicate overload instead, which checks `IParameter.ValueType`
-> directly and is not subject to this limitation.
+> `Func<IParameter,bool>` predicate overload, which checks `IParameter.ValueType` directly.
 
 ---
 
 #### `DeferredSaveController<TConfig>`
 
-Drives automatic, change-triggered persistence for a `SettingsStore<TConfig>` with smart debouncing for numeric parameters. This is the recommended way to wire up auto-save in a plugin — construct it once and call `Tick()` every frame.
+Drives automatic, change-triggered persistence for a `SettingsStore<TConfig>` with smart
+debouncing for numeric parameters. Construct after `Load()` and call `Tick()` every frame.
 
 **Save behaviour:**
 
 | Parameter type | When saved |
 |---|---|
-| `bool`, `string`, `enum` | On the very next `Tick()` call after the change — effectively immediate. |
-| `int`, `float`, `double` | After `DebounceWindow` elapses with no further numeric changes (default: 1 second). Rapid slider interaction produces a single disk write instead of one per frame. |
-
-**Ordering requirements:**
-
-1. Call `SettingsStore<TConfig>.Load()` **before** constructing `DeferredSaveController`.
-   The constructor attaches listeners to parameters registered in the store at construction
-   time. If the store has not been loaded yet its parameter dictionary is empty and no
-   listeners will be attached — the controller will silently observe nothing.
-2. Always call `Flush()` before `Dispose()` on unload. `Dispose` does not flush; if a
-   debounced numeric change is in flight when the plugin exits, the final save is only
-   guaranteed by an explicit `Flush()`.
-3. Dispose this controller **before** or **alongside** the owning store. Disposing the store
-   first puts it into a disposed state; the controller's cleanup then throws
-   `ObjectDisposedException` when it tries to remove its listeners.
-
-```csharp
-// ─── Entry point ─────────────────────────────────────────────────────────────
-[PluginEntryPoint]
-public static void Load()
-{
-    var configPath = Path.Combine(API.GetPluginDirectory(typeof(MyPlugin).Assembly), "config.json");
-
-    _store          = new SettingsStore<PluginConfig>(configPath);
-    var config      = _store.Load();                              // Load FIRST
-    _saveController = new DeferredSaveController<PluginConfig>(_store); // THEN construct
-
-    // Optional: shorten the debounce window to 500 ms:
-    // _saveController = new DeferredSaveController<PluginConfig>(_store, TimeSpan.FromMilliseconds(500));
-
-    _drawer = new ConfigDrawer<PluginConfig>(config, "MyPlugin");
-}
-
-// ─── Per-frame callback ───────────────────────────────────────────────────────
-[Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
-public static void PreDrawUI()
-{
-    if (API.IsDrawingUI())
-        _drawer?.Draw();
-
-    _saveController?.Tick(); // lightweight no-op when nothing is pending
-}
-
-// ─── Exit point ──────────────────────────────────────────────────────────────
-[PluginExitPoint]
-public static void Unload()
-{
-    _saveController?.Flush();   // write any pending debounced change NOW
-    _saveController?.Dispose(); // remove listeners — before store.Dispose()
-    _saveController = null;
-
-    _store?.Save();             // belt-and-suspenders final save
-    _store?.Dispose();
-    _store = null;
-
-    _drawer?.Dispose();
-    _drawer = null;
-}
-```
-
-**API summary:**
+| `bool`, `string`, `enum` | On the very next `Tick()` after the change — effectively immediate. |
+| `int`, `float`, `double` | After `DebounceWindow` elapses with no further numeric changes (default: 1 second). Rapid slider interaction produces one disk write rather than one per frame. |
 
 | Member | Description |
 |---|---|
-| `DebounceWindow` | Read-only. The cooldown after the last numeric change before the save fires. Set at construction; defaults to 1 second. |
-| `Tick()` | Evaluates pending saves. Call once per frame. No-op when nothing is pending or after disposal. |
-| `Flush()` | Forces an immediate save and clears pending state regardless of the debounce timer. Call before `Dispose()` on unload. No-op after disposal. |
-| `Dispose()` | Removes all event listeners from the store. Does **not** flush — call `Flush()` first. |
+| `DebounceWindow` | The cooldown after the last numeric change before writing to disk. Read-only; set at construction. |
+| `Tick()` | Evaluates pending saves; call once per frame from an ImGui callback. Lightweight no-op when nothing is pending. |
+| `Flush()` | Forces an immediate save and clears all pending state. Always call before `Dispose()`. |
+| `Dispose()` | Unregisters all parameter-change listeners. Call `Flush()` first, then dispose this before the store. |
+
+**Ordering requirements:** `Load()` → construct controller → `Tick()` per frame → `Flush()` → `Dispose()` controller → `Save()` + `Dispose()` store.
+
+```csharp
+_store          = new SettingsStore<PluginConfig>(configPath);
+var config      = _store.Load();
+_saveController = new DeferredSaveController<PluginConfig>(_store);
+
+// Optional: shorten the debounce window to 500 ms:
+// _saveController = new DeferredSaveController<PluginConfig>(_store, TimeSpan.FromMilliseconds(500));
+```
 
 ---
 
-#### JSON Persistence
+### 🏷️ Settings Attributes — `Umbra.SDK.Config.Attributes`
 
-Settings are serialized with `System.Text.Json` using camelCase property naming and enums as strings. The file is written to the path passed to `SettingsStore<TConfig>`.
-
----
-
-### 🏷️ Settings Attributes
-
-#### Class-Level Attributes
-
-| Attribute | Target | Description |
-|---|---|---|
-| `[AutoRegisterSettings]` | class / struct | Marks a settings group for automatic parameter discovery by `SettingsStore`. Required on every config class and nested group. |
-| `[SettingsPrefix("prefix")]` | class / struct | Prepends a dot-separated key prefix to all parameters in the class (e.g. `"Camera"` → keys like `"Camera.fieldOfView"`). |
-| `[Category("name")]` | class / struct / property | Groups parameters under a named section in the UI. Can be placed on the class (inherited by all members) or overridden on individual properties. |
-| `[CollapseAsTree]` / `[CollapseAsTree(defaultOpen: true)]` | class | Renders the category as a collapsible `ImGui.TreeNode` instead of a flat `SeparatorText` header. `defaultOpen` controls whether the node starts expanded (defaults to `false`). |
-| `[ConfigRootNode]` / `[ConfigRootNode("Label")]` | class | Wraps the entire settings panel in a single top-level `ImGui.TreeNode`. When `label` is omitted the config class name is space-separated (e.g. `PluginConfig` → `"Plugin Config"`). Accepts an optional `defaultOpen` bool as a second argument. |
-| `[Indent(amount)]` | class / property | On a **class**: indentation fallback for each parameter control in that group. On the **property** declaring a nested group: wraps the entire category block in an `ImGui.Indent`/`ImGui.Unindent` scope. `amount = 0` uses ImGui's default spacing. |
-
-#### Property-Level Attributes
+#### Class-level attributes (on a config class or nested group type)
 
 | Attribute | Description |
 |---|---|
-| `[SettingsParameter]` | Marks a property as a settings parameter. Optional `keyOverride` replaces the auto-derived key. |
-| `[DisplayName("label")]` | Human-readable label shown in the settings UI. Falls back to the property name when absent. |
-| `[Description("text")]` | Tooltip / help text rendered as a `(?)` marker next to the control. |
-| `[Range(min, max)]` | Enforces a numeric range. Renders as `SliderFloat` / `SliderInt` instead of a drag control. Also enforced at the `Parameter<T>` level — out-of-range values are rejected. |
-| `[Step(step)]` | Drag speed for unconstrained drag controls (`DragInt` / `DragFloat`). For `float`/`double`, also infers the fallback display format's decimal precision (e.g. `0.25` → `"%.2f"`); applies to both `DragFloat`/`DragDouble` and `SliderFloat`/`SliderDouble` when `[Format]` is absent. Has no effect on `SliderInt`. |
-| `[Format("%.1f°")]` | Printf-style format string override for numeric controls. Overrides the `[Step]`-derived format. |
-| `[MaxLength(uint)]` | Maximum character count for `string` input fields. Defaults to `256` when absent. |
-| `[Multiline(lines = 3)]` | Switches a `string` parameter from `InputText` to `InputTextMultiline`. `lines` controls the visible height. Use alongside `[MaxLength]` to increase the character buffer. |
-| `[ParameterOrder(order)]` | Controls display order within a category. Lower values appear first. Parameters without this attribute sort after all explicitly ordered ones; declaration order is preserved among equals. |
-| `[SpacingBefore(count = 1)]` | Inserts one or more `ImGui.Spacing()` calls above the control. Travels with the parameter when `[ParameterOrder]` reordering is active. |
-| `[SpacingAfter(count = 1)]` | Inserts one or more `ImGui.Spacing()` calls below the control. Travels with the parameter when `[ParameterOrder]` reordering is active. |
-| `[Indent(amount)]` | Indents this individual `Parameter<T>` control. Overrides the class-level `[Indent]` fallback for this parameter. |
-| `[ButtonStyle(style)]` | Sets the color style of a `ButtonDrawer` button. Variants: `Default`, `Primary`, `Success`, `Warning`, `Danger`. |
-| `[ButtonWidth(width)]` | Sets the pixel width of a `ButtonDrawer` button. `0f` = auto-size to label, `-1f` = fill available width, positive = fixed px. |
-| `[HideIf<T>("MemberName")]` | Hides the control while the named `bool` member is `true`. |
-| `[HideIf<T>("MemberName", value)]` | Hides the control while the named member equals `value`. Works with `Parameter<T>` properties (unwrapped automatically) and plain fields or properties. |
-| `[CustomDrawer<TDrawer>]` | Renders the control using a custom `IParameterDrawer` instead of the default type-inferred control. |
+| `[AutoRegisterSettings]` | Marks the class for parameter auto-discovery in `SettingsStore.Load()`. **Required** on every config type and nested group. |
+| `[SettingsPrefix("prefix")]` | Prepends a dot-separated key namespace to every parameter in the class. |
+| `[Category("name")]` | Default category name for all parameters in the class; overridable per property. |
+| `[CollapseAsTree]` | Renders the category as a collapsible `ImGui.TreeNode` instead of a flat `SeparatorText` header. |
+| `[CollapseAsTree(defaultOpen: true)]` | Same, but starts in the expanded state. |
+| `[ConfigRootNode]` | Wraps the **entire** config panel inside a single top-level `ImGui.TreeNode`. |
+| `[ConfigRootNode("Label", defaultOpen: true)]` | Same with a custom label and starting expanded. |
+| `[NestedGroupDrawer<TDrawer>]` | Bypasses recursive parameter expansion; delegates rendering to `INestedGroupDrawer<T>`. |
+| `[Indent(amount)]` | Indents all parameters in the class by `amount` pixels (`0` = ImGui default indent). |
+| `[LabelMargin(pixels)]` | Adds extra pixels between the label column and the editing widget for all parameters in the class. |
 
-#### Key Derivation
+#### Property-level attributes (on `Parameter<T>` properties)
 
-Keys are dot-separated and built as `[SettingsPrefix].[propertyName (camelCased)]`, unless `keyOverride` is provided on `[SettingsParameter]`.
+| Attribute | Description |
+|---|---|
+| `[SettingsParameter]` | Marks the property for registration. Optionally accepts a `keyOverride` string. |
+| `[DisplayName("label")]` | Human-readable UI label. Defaults to a PascalCase → `"Pascal Case"` conversion. |
+| `[Description("text")]` | Tooltip or help text rendered via a `(?)` help marker. |
+| `[Category("name")]` | Overrides the class-level category for this parameter only. |
+| `[Range(min, max)]` | Numeric bounds; renders as a slider instead of a drag control. Also enforced at assignment time. |
+| `[Step(step)]` | Drag speed for unconstrained numeric controls. Also infers float format precision (e.g. `0.25` → `"%.2f"`). |
+| `[Format("%.0f°")]` | Explicit printf-style format string for numeric controls. Overrides the `[Step]`-derived format. |
+| `[MaxLength(uint)]` | Maximum character count for `string` input fields (default `256`). |
+| `[Multiline(lines)]` | Switches `string` from `InputText` to `InputTextMultiline` with the given visible line count (default `3`). |
+| `[ControlWidth(float)]` | Pixel width of the editing widget. `0f` = ImGui default, `-1f` = fill remaining, positive = fixed. |
+| `[ButtonWidth(float)]` | Pixel width of a `ButtonDrawer` button. `0f` = auto-size to label, `-1f` = fill, positive = fixed. |
+| `[ButtonStyle(ButtonStyle.Danger)]` | Preset color scheme for `ButtonDrawer`. See `ButtonStyle` enum below. |
+| `[CustomButtonColors(r, g, b)]` | Custom RGBA button colors for normal/hovered/active states. Overrides `[ButtonStyle]`. |
+| `[SpacingBefore(count = 1)]` | Inserts `count` `ImGui.Spacing()` calls **above** the control. |
+| `[SpacingAfter(count = 1)]` | Inserts `count` `ImGui.Spacing()` calls **below** the control. |
+| `[Indent(amount = 0f)]` | Indents this control only; overrides any class-level `[Indent]`. |
+| `[ParameterOrder(int)]` | Explicit render order within the category. Lower = earlier; unordered parameters sort last. |
+| `[HideIf<T>("MemberName")]` | Hides the control while the named `bool` member on the same config class is `true`. |
+| `[HideIf<T>("MemberName", value)]` | Hides the control while the named member equals `value`. |
+| `[CustomDrawer<TDrawer>]` | Full custom rendering via `IParameterDrawer`. Bypasses label column and all standard layout. |
+| `[TwoColumnCustomDrawer<TDrawer>]` | Custom widget via `ITwoColumnParameterDrawer`. Retains the standard two-column label layout. |
+
+**`ButtonStyle` enum:** `Default` · `Primary` (blue) · `Success` (green) · `Warning` (orange) · `Danger` (red) · `Custom` (requires `[CustomButtonColors]`).
 
 ---
 
-### 🖼️ Settings UI — `Umbra.SDK.Config.UI`
+### 🖥️ Config UI — `Umbra.SDK.Config.UI`
 
 #### `ConfigDrawer<TConfig>`
 
-Renders a full ImGui settings panel from a config instance. The draw tree is built once at construction; `Draw()` walks the pre-built node list with no per-frame reflection.
+Pre-builds and renders an ImGui settings panel for a typed config class. The draw tree is
+assembled once at construction via a single reflection pass; `Draw()` walks the pre-built nodes
+with no per-frame reflection.
 
 ```csharp
 _drawer = new ConfigDrawer<PluginConfig>(config, "MyPlugin");
 
-// Inside ImGuiDrawUI callback:
+// In ImGui callback each frame:
 _drawer.Draw();
 
-// Dispose when the window closes or the plugin unloads:
+// On unload:
 _drawer.Dispose();
+_drawer = null;
 ```
 
-- Construct with the instance returned by `SettingsStore<TConfig>.Load()` so that `ParameterMetadata` is already populated.
-- Apply `[CollapseAsTree]` to any nested settings group class to render its category as a collapsible tree node.
-- Apply `[ConfigRootNode]` to the root config class to wrap the entire panel in a single top-level tree node.
-- `ConfigDrawer<TConfig>` implements `IDisposable` — always dispose it.
+- `idScope` scopes all ImGui widget IDs to prevent cross-plugin collisions. Must be non-empty.
+- Dispose on plugin unload to release stateful custom drawers (e.g. hotkey capture counters).
+- `Draw()` on a disposed instance logs a warning and is a safe no-op rather than throwing.
 
-#### Default Control Mapping
+---
 
-| `Parameter<T>` type | Rendered as |
-|---|---|
-| `bool` | `ImGui.Checkbox` |
-| `int` (no `[Range]`) | `ImGui.DragInt` |
-| `int` (with `[Range]`) | `ImGui.SliderInt` |
-| `float` / `double` (no `[Range]`) | `ImGui.DragFloat` |
-| `float` / `double` (with `[Range]`) | `ImGui.SliderFloat` |
-| `string` (no `[Multiline]`) | `ImGui.InputText` |
-| `string` (with `[Multiline]`) | `ImGui.InputTextMultiline` |
-| `enum` | `ImGui.Combo` (enum member names) |
-| `Action` | `ImGui.Button` via `[CustomDrawer<ButtonDrawer>]` |
-| Other | Read-only `ImGui.TextDisabled` label |
+#### Built-in parameter drawers
 
-#### `IParameterDrawer` — Custom Controls
+Apply these with the corresponding `[CustomDrawer<>]` or `[TwoColumnCustomDrawer<>]` attribute.
 
-Implement this interface and apply `[CustomDrawer<TDrawer>]` to a parameter property to replace the default control.
+##### `HotkeyDrawer`
+
+Full-row hotkey capture for a `Parameter<int>` (an `ImGuiKey` cast to `int`). Renders the
+current key name and **Change** / **Cancel** buttons. At most one capture is active per frame.
+
+```csharp
+[SettingsParameter, DisplayName("Hotkey"), CustomDrawer<HotkeyDrawer>]
+public Parameter<int> ActivateKey { get; set; } = new((int)ImGuiKey.F2);
+```
+
+##### `TwoColumnHotkeyDrawer`
+
+Same capture behavior as `HotkeyDrawer` but participates in the standard two-column label
+layout. Use this when the hotkey should align with other parameters in the same category.
+
+```csharp
+[SettingsParameter, DisplayName("Activate key"), TwoColumnCustomDrawer<TwoColumnHotkeyDrawer>]
+public Parameter<int> ActivateKey { get; set; } = new((int)ImGuiKey.F2);
+```
+
+Both drawers share `HotkeyCaptureState.WaitingCount` so at most one is ever capturing input at
+once. `ConfigDrawer` disposes them on unload to reset the counter.
+
+##### `ButtonDrawer`
+
+Renders a push-button for a `Parameter<Action>`. The stored action is invoked on click.
+The button label comes from `[DisplayName]`; the action is not persisted to JSON.
+
+```csharp
+[SettingsParameter, DisplayName("Reset to defaults"), ButtonStyle(ButtonStyle.Danger), CustomDrawer<ButtonDrawer>]
+public Parameter<Action> ResetButton { get; set; } = new(() => { /* ... */ });
+```
+
+---
+
+### 🎨 Custom Drawers — `Umbra.SDK.Config.UI.ParameterDrawers`
+
+#### `IParameterDrawer`
+
+Complete rendering control. The factory skips the label column and all standard layout.
 
 ```csharp
 public sealed class MyDrawer : IParameterDrawer
 {
     public void Draw(string label, IParameter parameter)
     {
-        // render your ImGui control here
+        // full ImGui layout; use $"##{parameter.Key}" as the widget ID
     }
 }
 ```
 
-> `TDrawer` must have a public parameterless constructor; both constraints are enforced at compile time.
+Apply with `[CustomDrawer<MyDrawer>]` on the property.
 
-#### Built-in Drawer: `HotkeyDrawer`
+#### `ITwoColumnParameterDrawer`
 
-Renders a hotkey-capture control for a `Parameter<int>` where the value is an `ImGuiKey` cast to `int`. Multiple `HotkeyDrawer` instances coordinate automatically so only one capture session is active at a time.
-
-```csharp
-[SettingsParameter("toggleHotkey")]
-[DisplayName("Toggle Hotkey")]
-[Description("The hotkey to toggle the plugin.")]
-[CustomDrawer<HotkeyDrawer>]
-public Parameter<int> ToggleHotkey { get; set; } = new(574); // ImGuiKey.F3
-```
-
-#### Built-in Drawer: `ButtonDrawer`
-
-Renders an ImGui push-button for a `Parameter<Action>`. The stored action is invoked on click. Button parameters are never written to or read from the JSON settings file.
+Renders only the editing widget; the factory handles label, help marker, column alignment,
+and `SetNextItemWidth`.
 
 ```csharp
-[SettingsParameter]
-[DisplayName("Reset Settings")]
-[Description("Resets all values to their defaults.")]
-[CustomDrawer<ButtonDrawer>]
-[ButtonStyle(ButtonStyle.Danger)]
-[ButtonWidth(-1f)]
-public Parameter<Action> ResetButton { get; init; }
-
-// Wire up the action in the config constructor:
-public PluginConfig()
+public sealed class MyWidgetDrawer : ITwoColumnParameterDrawer
 {
-    ResetButton = new(() => { FieldOfView.Reset(); /* … */ });
-}
-```
-
----
-
-### 🖱️ ImGui Helpers — `Umbra.SDK.UI.ImGuiControls`
-
-Static helpers for common settings panel controls. All methods must be called from within an active ImGui window.
-
-| Method | Description |
-|---|---|
-| `DrawHotKeySetting(label, id, ref state, ref keyCode, otherWaiting)` | Renders a hotkey label + "Change" button, handling capture mode and cancellation. `id` must be a stable unique string within the window to prevent ImGui ID collisions when two hotkey controls share the same display label. |
-| `DrawSlider(label, ref value, min, max, format)` | `ImGui.SliderFloat` wrapper. Defaults: `min=10`, `max=120`, `format="%.1f"`; |
-| `DrawIntSlider(label, ref value, min, max, format)` | `ImGui.SliderInt` wrapper. |
-| `DrawCheckbox(label, ref value)` | `ImGui.Checkbox` wrapper. |
-| `DrawComboBox(label, ref selectedIndex, string[] items)` | `ImGui.Combo` wrapper. |
-| `DrawSectionHeader(label)` | `ImGui.SeparatorText` wrapper. |
-| `DrawHelpMarker(description)` | Renders a `(?)` label that shows a tooltip on hover. Call after `ImGui.SameLine()`. |
-
-The following static string properties can be set once at startup to localise hotkey control labels:
-
-| Property | Default | Description |
-|---|---|---|
-| `HotkeyChangeLabel` | `"Change"` | Label for the "Change" button when no capture is in progress. |
-| `HotkeyCancelLabel` | `"Cancel"` | Label for the "Cancel" button during an active capture. |
-| `HotkeyCapturingPrompt` | `"{0}: Press any key..."` | Prompt shown while waiting for a key press; `{0}` is replaced by the parameter label. |
-
----
-
-### ⌨️ Keyboard Utilities — `Umbra.SDK.Input.KeyboardInput`
-
-Helpers for hotkey capture and modifier-key state, backed by ImGui's input system.
-
-```csharp
-// Capture a key pressed this frame (excludes mouse/gamepad/modifier keys)
-if (KeyboardInput.TryCaptureKeyboardKey(out int key))
-    myHotkey = key; // ImGuiKey cast to int
-
-// Get a display name for a stored key code
-string name = KeyboardInput.GetKeyName(myHotkey); // e.g. "F3"
-
-// Validate a stored key code
-bool ok = KeyboardInput.IsValidKey(myHotkey); // true if key > ImGuiKey.None
-
-// Modifier state (left OR right key)
-bool ctrl  = KeyboardInput.IsCtrlHeld;
-bool shift = KeyboardInput.IsShiftHeld;
-bool alt   = KeyboardInput.IsAltHeld;
-```
-
----
-
-## 🧩 Example Plugin — `Umbra.SamplePlugin`
-
-Demonstrates the full SDK lifecycle for an RE9 camera plugin.
-
-### `PluginConfig`
-
-```csharp
-[AutoRegisterSettings]
-[ConfigRootNode("Sample Plugin v1.0")]
-[SettingsPrefix("samplePlugin")]
-[Category("General")]
-[CollapseAsTree]
-public record PluginConfig
-{
-    [SettingsParameter, DisplayName("Enabled"), Description("Whether the plugin is enabled.")]
-    public Parameter<bool> IsEnabled { get; set; } = new(true);
-
-    [SettingsParameter, DisplayName("Toggle Hotkey"), CustomDrawer<HotkeyDrawer>]
-    public Parameter<int> ToggleHotkey { get; set; } = new(574); // ImGuiKey.F3
-
-    [SettingsParameter]
-    public FovSettings Fov { get; set; } = new();
-
-    [SettingsParameter]
-    [DisplayName("Reset General"), CustomDrawer<ButtonDrawer>, ButtonStyle(ButtonStyle.Danger), ButtonWidth(-1f)]
-    public Parameter<Action> ResetGeneral { get; init; }
-
-    public PluginConfig()
+    public void Draw(IParameter parameter)
     {
-        ResetGeneral = new(() => { IsEnabled.Reset(); ToggleHotkey.Reset(); });
+        // widget only — SetNextItemWidth is already applied
+        // use $"##{parameter.Key}" as the ImGui widget ID
     }
-}
-
-[AutoRegisterSettings, Category("FOV"), SettingsPrefix("fov"), Indent]
-public record FovSettings
-{
-    [SettingsParameter("tps"), DisplayName("3rd Person"), Range(10f, 180f), Format("%.1f"), ParameterOrder(0)]
-    public Parameter<float> Tps { get; set; } = new(55f);
-    // …
 }
 ```
 
-### Plugin Entry / Exit Pattern
+Apply with `[TwoColumnCustomDrawer<MyWidgetDrawer>]` on the property.
+
+#### `INestedGroupDrawer<T>`
+
+Full layout control for an entire nested configuration group. Applied at the **type** level
+with `[NestedGroupDrawer<TDrawer>]`.
 
 ```csharp
+[AutoRegisterSettings, SettingsPrefix("myGroup"), Category("My Group")]
+[NestedGroupDrawer<MyGroupDrawer>]
+public record MyGroup
+{
+    [SettingsParameter]
+    public Parameter<int> Value { get; set; } = new(42);
+}
+
+internal sealed class MyGroupDrawer : INestedGroupDrawer<MyGroup>
+{
+    public void Draw(MyGroup groupInstance)
+    {
+        ImGui.Text($"Value: {groupInstance.Value.Value}");
+        int v = groupInstance.Value.Value;
+        if (ImGui.SliderInt("##value", ref v, 0, 100))
+            groupInstance.Value.Set(v);
+    }
+}
+```
+
+All three interfaces extend `IDisposable`. The default `Dispose` calls `GC.SuppressFinalize`;
+override only when the drawer holds resources that must be released on plugin unload.
+
+---
+
+### 🖼️ Plugin Panel — `Umbra.SDK.UI.Panel`
+
+`PluginPanel` composes an ordered list of `IPanelSection` instances under a shared ImGui ID scope
+and owns their lifetimes. It is the recommended top-level UI type for plugins that display both
+configuration settings and live game state.
+
+```csharp
+_panel = new PluginPanel("MyPlugin")
+    .Add(new LiveSection<CameraState>(_cameraState))
+    .Add(new ConfigSection<PluginConfig>(config));
+
+// Per-frame (in ImGui callback):
+_panel.Draw();
+
+// On unload:
+_panel.Dispose();
+_panel = null;
+```
+
+Sections render in ascending `Order`; equal-order sections preserve insertion order (stable sort).
+
+#### `IPanelSection`
+
+| Member | Description |
+|---|---|
+| `int Order` | Default `int.MaxValue`. Derived from `[SectionOrder]` on the state or config type. |
+| `void Draw()` | Called every frame by `PluginPanel.Draw()`. Must be render-thread safe. |
+| `void Dispose()` | Called by `PluginPanel.Dispose()`. |
+
+#### `ConfigSection<TConfig>`
+
+Wraps `ConfigDrawer<TConfig>` as a panel section.
+
+```csharp
+new ConfigSection<PluginConfig>(config)           // idScope defaults to type name
+new ConfigSection<PluginConfig>(config, "MySub")  // explicit sub-scope
+```
+
+#### `LiveSection<T>`
+
+Renders a live game state instance each frame via `ILiveSectionDrawer<T>` declared on the state
+type with `[LiveSectionDrawer<TDrawer>]`. The drawer is instantiated once at construction; no
+per-frame reflection.
+
+```csharp
+// State type — annotate with the drawer:
+[LiveSectionDrawer<CameraStatusDrawer>]
+public sealed class CameraState
+{
+    public float      Fov  { get; set; }
+    public CameraMode Mode { get; set; }
+}
+
+// Drawer:
+internal sealed class CameraStatusDrawer : ILiveSectionDrawer<CameraState>
+{
+    public void Draw(CameraState state)
+    {
+        ImGui.Text($"FOV: {state.Fov:F1}");
+        ImGui.Text($"Mode: {state.Mode}");
+    }
+}
+
+// Wiring — plugin owns the state instance:
+_cameraState = new CameraState();
+FovHooks.Attach(_cameraState);
+new LiveSection<CameraState>(_cameraState)
+```
+
+- Use the **swap-instance pattern** in hooks that update multiple fields to guarantee the
+  drawer always reads a consistent snapshot (see `[PluginExitPoint]` pattern below).
+- Always call `Detach()` (or null-assignment) in `[PluginExitPoint]` so post-unload hook
+  calls are safe no-ops.
+
+#### `SectionOrderAttribute`
+
+Apply to a state class or config record to control panel render position:
+
+```csharp
+[SectionOrder(0)]   public sealed class CameraState  { … }
+[SectionOrder(1)]   public record      PluginConfig   { … }
+```
+
+---
+
+### ⌨️ Input — `Umbra.SDK.Input.KeyboardInput`
+
+| Member | Description |
+|---|---|
+| `TryCaptureKeyboardKey(out int)` | Returns `true` and the pressed `ImGuiKey` (as `int`) this frame. Mouse, gamepad, and modifier-alias keys are excluded. |
+| `GetKeyName(int)` | Returns the enum member name, or `Key(n)` for unknown values. |
+| `IsValidKey(int)` | `true` when the key value is > `ImGuiKey.None`. |
+| `IsCtrlHeld` | `true` while left or right Ctrl is held. |
+| `IsShiftHeld` | `true` while left or right Shift is held. |
+| `IsAltHeld` | `true` while left or right Alt is held. |
+
+Hotkey values are stored as `int` (an `ImGuiKey` cast to `int`).
+
+---
+
+### 🧰 ImGui Helpers — `Umbra.SDK.UI.ImGuiWidgets`
+
+| Member | Description |
+|---|---|
+| `DrawHelpMarker(string)` | Renders an inline `(?)` marker that shows a tooltip on hover. Call after `ImGui.SameLine()`. |
+
+---
+
+### 🔌 Plugin Lifecycle — Recommended Pattern
+
+```csharp
+private static PluginPanel?                          _panel;
+private static SettingsStore<PluginConfig>?          _store;
+private static DeferredSaveController<PluginConfig>? _saveController;
+private static CameraState?                          _cameraState;
+
+private static readonly PluginLogger _log = new("MyPlugin");
+
 [PluginEntryPoint]
 public static void Load()
 {
-    var configPath = GetConfigPath();
+    var configPath = Path.Combine(API.GetPluginDirectory(typeof(MyPlugin).Assembly), "config.json");
+
     _store          = new SettingsStore<PluginConfig>(configPath);
-    var config      = _store.Load();                              // Load FIRST
+    var config      = _store.Load();                               // Load FIRST
     _saveController = new DeferredSaveController<PluginConfig>(_store); // THEN construct
-    _drawer         = new ConfigDrawer<PluginConfig>(config, "SamplePlugin");
+
+    _cameraState = new CameraState();
+    FovHooks.Attach(_cameraState);
+
+    _panel = new PluginPanel("MyPlugin")
+        .Add(new LiveSection<CameraState>(_cameraState))
+        .Add(new ConfigSection<PluginConfig>(config));
 }
 
 [PluginExitPoint]
 public static void Unload()
 {
-    _saveController?.Flush();   // write any pending debounced change
-    _saveController?.Dispose(); // remove listeners — before store.Dispose()
+    FovHooks.Detach();
+    _cameraState = null;
+
+    _saveController?.Flush();   // guarantee no debounced write is dropped
+    _saveController?.Dispose(); // remove listeners before the store is disposed
     _saveController = null;
+
     _store?.Save();             // belt-and-suspenders final save
     _store?.Dispose();
     _store = null;
-    _drawer?.Dispose();
-    _drawer = null;
-}
 
-[Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
-public static void PreDrawUI()
-{
-    if (API.IsDrawingUI())
-        _drawer?.Draw();
-    _saveController?.Tick();
+    _panel?.Dispose();
+    _panel = null;
 }
 ```
 
----
-
-## 📚 Dependencies
-
-Assemblies are referenced locally from two folders populated by `scripts/setup_reframework_deps.bat` (see [Scripts](#-scripts) below). Neither folder is committed to source control.
-
-**`dependencies/reframework/api/`** — REFramework C# API and ImGui bindings:
-
-| Assembly | Purpose |
-|---|---|
-| `REFramework.NET` | REFramework managed plugin host API |
-| `Hexa.NET.ImGui` | ImGui bindings for in-game UI |
-| `HexaGen.Runtime` | Runtime support for Hexa bindings |
-| `AssemblyGenerator` | REFramework assembly generator |
-| `REFCoreDeps` | REFramework core dependencies |
-| `Microsoft.CodeAnalysis` / `Microsoft.CodeAnalysis.CSharp` | Roslyn support bundled with the C# API |
-
-**`dependencies/reframework/generated/`** — Game-specific binding assemblies generated on first game launch with the C# API installed:
-
-| Assembly | Purpose |
-|---|---|
-| `REFramework.NET.application` | Generated RE Engine application bindings |
-| `REFramework.NET.viacore` | Generated RE Engine viacore bindings |
-| `REFramework.NET._System.Private.CoreLib` | Generated CoreLib bindings |
-
----
-
-## 📜 Scripts
-
-All scripts live in the `scripts/` folder. They are Windows batch files and PowerShell scripts; no additional tooling is required beyond PowerShell (included with Windows 10 and later).
-
----
-
-### `setup_reframework_deps.bat` — One-Time Dev Environment Setup
-
-A thin launcher that invokes `setup_reframework_deps.ps1` with PowerShell. Run it once before opening the solution for the first time, and again whenever you need to refresh the API DLLs or pick up newly generated game bindings.
-
-The underlying PowerShell script can also be called directly when automation is needed:
-
-```powershell
-# Non-interactive: skip all optional prompts
-.\scripts\setup_reframework_deps.ps1 -NoPrompt
-
-# Pre-supply the game executable path to bypass the file browser
-.\scripts\setup_reframework_deps.ps1 -GamePath "C:\SteamLibrary\...\re9.exe"
-```
-
-**What it does, step by step:**
-
-1. **Downloads the C# API** — queries the [REFramework-nightly GitHub Releases API](https://api.github.com/repos/praydog/REFramework-nightly/releases) for the latest release, downloads `csharp-api.zip`, and extracts it to a temporary directory.
-2. **Copies API DLLs** — copies `REFramework.NET.dll` and all files from `reframework/plugins/managed/dependencies/` inside the zip into `dependencies/reframework/api/` at the solution root.
-3. **Configures the game executable** — opens a file browser to select your RE Engine game executable (`.exe`). The game directory is written to `game_dir.local.txt` and the full executable path to `game_exe.local.txt` at the solution root. Both files are gitignored; no game paths are ever committed. If previously configured, shows the current settings and lets you keep, change, or skip them.
-4. **Copies generated game bindings** — if the C# API is already installed and the game has been launched at least once, the generated binding assemblies are copied from `{game}/reframework/plugins/managed/generated/` into `dependencies/reframework/generated/`.
-5. **Offers to install the C# API into the game** — if the C# API is not yet installed, the script offers to copy the full contents of the downloaded zip into the game root, preserving the directory structure.
-6. **Configures a Visual Studio debug profile** *(optional)* — creates or updates `Umbra.SDK/Properties/launchSettings.json` with an executable launch profile pointing to the configured game, enabling F5 debugging in Visual Studio.
-
-> **⚡ First-Time Setup Order**
-> 1. Run `setup_reframework_deps.bat`.
-> 2. Select your game executable when prompted.
-> 3. If the C# API was not installed, let the script install it, then launch your RE Engine game once and close it.
-> 4. Run `setup_reframework_deps.bat` again to copy the generated bindings into `dependencies/reframework/generated/`.
-> 5. Open the solution — both projects should resolve all references and build.
-
----
-
-### `kill_re9.bat` — Pre-Build Event *(Debug only)*
-
-Registered as a **pre-build event** in both `Umbra.SDK.csproj` and `Umbra.SamplePlugin.csproj`.
-
-Checks whether `re9.exe` is currently running and, if so, terminates it with `taskkill /F` before the build starts. This releases file locks on plugin assemblies already loaded by the game, preventing "file in use" errors when MSBuild tries to overwrite the output DLLs. Always exits with code `0` so a missing or already-stopped process never fails the build.
-
----
-
-### `deploy_reframework_deps.bat` — Post-Build Event for `Umbra.SDK` *(Debug only)*
-
-Reads `game_dir.local.txt` from the solution root and copies all files matching `Umbra.SDK.*` into:
-
-```
-{game}\reframework\plugins\managed\dependencies\
-```
-
-This deploys the SDK support library into the REFramework managed dependencies folder so plugins that depend on it can find it at runtime.
-
----
-
-### `deploy_reframework_plugin.bat` — Post-Build Event for `Umbra.SamplePlugin` *(Debug only)*
-
-Reads `game_dir.local.txt` from the solution root and copies all files matching `Umbra.SamplePlugin.*` into:
-
-```
-{game}\reframework\plugins\managed\
-```
-
-This deploys the plugin directly into the REFramework managed plugins folder so the game loads it automatically on the next launch.
-
----
-
-### Other Files
-
-| File | Description |
-|---|---|
-| `setup_reframework_deps.ps1` | PowerShell implementation invoked by `setup_reframework_deps.bat`. Can also be called directly; supports `-NoPrompt` (skip optional prompts) and `-GamePath "path\to\game.exe"` (bypass the file browser). |
-| `game_dir.local.txt` | Written by `setup_reframework_deps.bat`; read by both deploy scripts. Contains a single line: the absolute path to your RE Engine game root directory. Gitignored — no local paths are ever committed. |
-| `game_exe.local.txt` | Written by `setup_reframework_deps.bat`. Contains the full path to the configured game executable. Used to populate `launchSettings.json` and remembered between runs. Gitignored. |
+> **Always call `DeferredSaveController.Flush()` before `Dispose()`** — `Dispose` does not flush,
+> so an in-flight debounced numeric change would be silently dropped without the explicit `Flush`.
