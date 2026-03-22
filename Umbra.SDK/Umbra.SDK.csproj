@@ -13,12 +13,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Games\**" />
-	  <EmbeddedResource Remove="Games\**" />
-	  <None Remove="Games\**" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Reference Include="AssemblyGenerator">
 			<HintPath>..\dependencies\reframework\api\AssemblyGenerator.dll</HintPath>
 		</Reference>

@@ -6,7 +6,9 @@
 
     All targets are gated on Exists() checks so they are harmless on CI runners and on
     machines without a local game install. The $(MSBuildThisFileDirectory) prefix anchors
-    all paths to the solution root regardless of how the build is invoked.
+    the script paths used directly in this file to the solution root. Each participating
+    project sets $(UmbraDeployScript) to an absolute path via $(MSBuildProjectDirectory),
+    so deployment works regardless of how the build is invoked.
   -->
 
   <!-- Terminate the game process before any Debug build so that locked DLLs can be replaced. -->
