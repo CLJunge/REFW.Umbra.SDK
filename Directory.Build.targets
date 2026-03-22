@@ -1,0 +1,34 @@
+<Project>
+  <!--
+    Developer-only local build hooks. These targets are intentionally kept here, outside of
+    the individual project files, to avoid polluting the SDK and plugin .csproj files with
+    game-process management concerns.
+
+    All targets are gated on Exists() checks so they are harmless on CI runners and on
+    machines without a local game install. The $(MSBuildThisFileDirectory) prefix anchors
+    the script paths used directly in this file to the solution root. Each participating
+    project sets $(UmbraDeployScript) to an absolute path via $(MSBuildProjectDirectory),
+    so deployment works regardless of how the build is invoked.
+  -->
+
+  <!-- Terminate the game process before any Debug build so that locked DLLs can be replaced. -->
+  <Target Name="PreBuild_KillGame"
+          BeforeTargets="PreBuildEvent"
+          Condition="'$(Configuration)' == 'Debug' And Exists('$(MSBuildThisFileDirectory)scripts\kill_re9.bat')">
+    <Exec Command="call &quot;$(MSBuildThisFileDirectory)scripts\kill_re9.bat&quot;" />
+  </Target>
+
+  <!--
+    Deploy build output to the local game directory after a successful Debug build.
+
+    Each participating project sets $(UmbraDeployScript) in its own PropertyGroup to the
+    absolute path of the appropriate deployment batch file. Projects that leave the property
+    empty (the default) are silently skipped by the Condition below.
+  -->
+  <Target Name="PostBuild_DeployLocal"
+          AfterTargets="PostBuildEvent"
+          Condition="'$(Configuration)' == 'Debug' And '$(UmbraDeployScript)' != '' And Exists('$(UmbraDeployScript)')">
+    <Exec Command="call &quot;$(UmbraDeployScript)&quot; &quot;$(TargetDir)$(TargetName)*&quot;" />
+  </Target>
+
+</Project>
