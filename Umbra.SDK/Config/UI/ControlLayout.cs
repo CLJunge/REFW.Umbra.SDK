@@ -55,7 +55,7 @@ internal readonly struct ControlLayout
         if (_desc is not null)
         {
             ImGui.SameLine();
-            ImGuiControls.DrawHelpMarker(_desc);
+            ImGuiWidgets.DrawHelpMarker(_desc);
         }
         ImGui.SameLine();
         // Advance to the shared column position (plus optional per-group margin); never

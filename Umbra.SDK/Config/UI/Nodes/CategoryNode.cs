@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Hexa.NET.ImGui;
 using Umbra.SDK.Config.Attributes;
-using Umbra.SDK.UI;
 
 namespace Umbra.SDK.Config.UI.Nodes;
 
@@ -59,7 +58,7 @@ internal sealed class CategoryNode(
     /// <summary>Renders the category as an <c>ImGui.SeparatorText</c> header followed by its child controls.</summary>
     private void DrawAsHeader()
     {
-        ImGuiControls.DrawSectionHeader(label);
+        ImGui.SeparatorText(label);
         foreach (var child in Children)
             child.Draw();
     }
