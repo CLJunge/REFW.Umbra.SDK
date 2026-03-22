@@ -9,7 +9,7 @@
 		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
-		<UmbraDeployScript>$(SolutionDir)scripts\deploy_reframework_deps.bat</UmbraDeployScript>
+		<UmbraDeployScript>$(MSBuildProjectDirectory)\..\scripts\deploy_reframework_deps.bat</UmbraDeployScript>
 	</PropertyGroup>
 
 	<ItemGroup>
