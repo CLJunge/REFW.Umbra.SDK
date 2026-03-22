@@ -8,7 +8,7 @@
 		<RootNamespace>Umbra.SamplePlugin</RootNamespace>
 		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 		<!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
-		<UmbraDeployScript>$(SolutionDir)scripts\deploy_reframework_plugin.bat</UmbraDeployScript>
+		<UmbraDeployScript>$(MSBuildProjectDirectory)\..\scripts\deploy_reframework_plugin.bat</UmbraDeployScript>
 	</PropertyGroup>
 
 	<ItemGroup>
