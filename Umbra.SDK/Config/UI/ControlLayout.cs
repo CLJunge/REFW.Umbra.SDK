@@ -34,11 +34,11 @@ internal readonly struct ControlLayout
         float controlWidth,
         string hiddenLabel)
     {
-        _label        = label;
-        _desc         = desc;
-        _alignGroup   = alignGroup;
+        _label = label;
+        _desc = desc;
+        _alignGroup = alignGroup;
         _controlWidth = controlWidth;
-        HiddenLabel   = hiddenLabel;
+        HiddenLabel = hiddenLabel;
     }
 
     /// <summary>

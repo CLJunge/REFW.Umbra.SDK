@@ -41,12 +41,13 @@ public interface IParameter
     /// value differs from the current one.
     /// </summary>
     /// <param name="value">
-    /// The new value to assign. Must be assignable to <see cref="ValueType"/>,
-    /// or <see langword="null"/> if the type is nullable.
+    /// The new value to assign. Must be assignable to <see cref="ValueType"/>.
+    /// <see langword="null"/> is only valid when <see cref="ValueType"/> is a nullable type.
     /// </param>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="value"/> is non-<see langword="null"/> and is not
-    /// assignable to <see cref="ValueType"/>.
+    /// Thrown when <paramref name="value"/> is not assignable to <see cref="ValueType"/>,
+    /// or when <paramref name="value"/> is <see langword="null"/> and <see cref="ValueType"/>
+    /// is a non-nullable value type.
     /// </exception>
     void SetValue(object? value);
 
@@ -61,8 +62,13 @@ public interface IParameter
     /// Useful for initializing or restoring persisted values without triggering side effects.
     /// </summary>
     /// <param name="value">
-    /// The new value to assign. Must be assignable to <see cref="ValueType"/>,
-    /// or <see langword="null"/> if the type is nullable.
+    /// The new value to assign. Must be assignable to <see cref="ValueType"/>.
+    /// <see langword="null"/> is only valid when <see cref="ValueType"/> is a nullable type.
     /// </param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="value"/> is not assignable to <see cref="ValueType"/>,
+    /// or when <paramref name="value"/> is <see langword="null"/> and <see cref="ValueType"/>
+    /// is a non-nullable value type.
+    /// </exception>
     void SetValueWithoutNotify(object? value);
 }

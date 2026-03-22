@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Reflection;
 using Umbra.SDK.Config.Attributes;
 
@@ -79,13 +78,13 @@ internal sealed class TypeDrawMetadata
         bool isAutoRegisterSettings,
         PropertyInfo[] properties)
     {
-        Category              = category;
-        Indent                = indent;
-        CollapseAttr          = collapseAttr;
-        LabelMargin           = labelMargin;
-        NestedGroupDrawer     = nestedGroupDrawer;
+        Category = category;
+        Indent = indent;
+        CollapseAttr = collapseAttr;
+        LabelMargin = labelMargin;
+        NestedGroupDrawer = nestedGroupDrawer;
         IsAutoRegisterSettings = isAutoRegisterSettings;
-        Properties            = properties;
+        Properties = properties;
     }
 
     /// <summary>
@@ -97,21 +96,21 @@ internal sealed class TypeDrawMetadata
 
     private static TypeDrawMetadata Build(Type type)
     {
-        string? category                          = null;
-        IndentAttribute? indent                   = null;
-        CollapseAsTreeAttribute? collapseAttr     = null;
-        LabelMarginAttribute? labelMargin         = null;
+        string? category = null;
+        IndentAttribute? indent = null;
+        CollapseAsTreeAttribute? collapseAttr = null;
+        LabelMarginAttribute? labelMargin = null;
         INestedGroupDrawerAttribute? nestedDrawer = null;
-        bool isAutoRegister                       = false;
+        var isAutoRegister = false;
 
         foreach (var a in type.GetCustomAttributes(inherit: true))
         {
-            if (a is CategoryAttribute cat)           { category    = cat.Name; continue; }
-            if (a is IndentAttribute ind)             { indent      = ind;      continue; }
-            if (a is CollapseAsTreeAttribute col)     { collapseAttr = col;     continue; }
-            if (a is LabelMarginAttribute lm)         { labelMargin = lm;       continue; }
-            if (a is INestedGroupDrawerAttribute ngd) { nestedDrawer = ngd;     continue; }
-            if (a is AutoRegisterSettingsAttribute)   isAutoRegister = true;
+            if (a is CategoryAttribute cat) { category = cat.Name; continue; }
+            if (a is IndentAttribute ind) { indent = ind; continue; }
+            if (a is CollapseAsTreeAttribute col) { collapseAttr = col; continue; }
+            if (a is LabelMarginAttribute lm) { labelMargin = lm; continue; }
+            if (a is INestedGroupDrawerAttribute ngd) { nestedDrawer = ngd; continue; }
+            if (a is AutoRegisterSettingsAttribute) isAutoRegister = true;
         }
 
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);

@@ -40,8 +40,8 @@ internal static class VisibilityPredicateResolver
     {
         if (hideIf is null) return static () => true;
 
-        var memberName  = hideIf.MemberName;
-        var hasValue    = hideIf.HasValue;
+        var memberName = hideIf.MemberName;
+        var hasValue = hideIf.HasValue;
         var compareValue = hideIf.BoxedValue;
 
         var ownerType = owner.GetType();
