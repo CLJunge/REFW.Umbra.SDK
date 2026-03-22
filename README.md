@@ -11,7 +11,7 @@
 | Project | Description |
 |---|---|
 | `Umbra.SDK` | Reusable support library: logging, configuration, ImGui helpers, keyboard utilities. |
-| `Umbra.SamplePlugin` | Example plugin that uses `Umbra.SDK` to expose a configurable enhanced camera for RE9. |
+| `Umbra.SamplePlugin` | Example plugin demonstrating `Umbra.SDK` features: settings, config UI, panel sections, custom drawers, and plugin lifecycle. |
 
 ---
 
@@ -130,17 +130,30 @@ The draw tree for the UI is built once at construction — no per-frame reflecti
 3. Call `Load()` to get a fully populated config instance. **This must happen before step 4.**
 4. Optionally wrap the store in a `DeferredSaveController<TConfig>` for automatic change-triggered saves.
 5. Pass the config instance to `ConfigDrawer<TConfig>` (or `ConfigSection<TConfig>`) to render a settings panel.
-6. On plugin unload: `Flush()` + `Dispose()` the controller, then `Save()` + `Dispose()` the store.
+6. Call `Draw()` and `Tick()` each frame from a `[Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]` static method.
+7. On plugin unload: `Flush()` + `Dispose()` the controller, then `Save()` + `Dispose()` the store.
 
 ```csharp
 [PluginEntryPoint]
 public static void Load()
 {
     var configPath  = Path.Combine(API.GetPluginDirectory(typeof(MyPlugin).Assembly), "config.json");
+
     _store          = new SettingsStore<PluginConfig>(configPath);
-    var config      = _store.Load();                               // Load FIRST
+    var config      = _store.Load();                                // Load FIRST
     _saveController = new DeferredSaveController<PluginConfig>(_store); // THEN construct
-    _drawer         = new ConfigDrawer<PluginConfig>(config, "MyPlugin");
+
+    _panel = new PluginPanel("MyPlugin")
+        .Add(new ConfigSection<PluginConfig>(config));
+}
+
+[Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
+public static void PreDrawUI()
+{
+    if (API.IsDrawingUI())
+        _panel?.Draw();        // render UI on the game's draw thread each frame
+
+    _saveController?.Tick();   // evaluate pending saves; lightweight no-op when idle
 }
 
 [PluginExitPoint]
@@ -149,11 +162,13 @@ public static void Unload()
     _saveController?.Flush();   // write any pending debounced change
     _saveController?.Dispose(); // remove listeners before the store is disposed
     _saveController = null;
+
     _store?.Save();             // final save
     _store?.Dispose();
     _store = null;
-    _drawer?.Dispose();
-    _drawer = null;
+
+    _panel?.Dispose();
+    _panel = null;
 }
 ```
 
@@ -228,8 +243,8 @@ debouncing for numeric parameters. Construct after `Load()` and call `Tick()` ev
 |---|---|
 | `DebounceWindow` | The cooldown after the last numeric change before writing to disk. Read-only; set at construction. |
 | `Tick()` | Evaluates pending saves; call once per frame from an ImGui callback. Lightweight no-op when nothing is pending. |
-| `Flush()` | Forces an immediate save and clears all pending state. Always call before `Dispose()`. |
-| `Dispose()` | Unregisters all parameter-change listeners. Call `Flush()` first, then dispose this before the store. |
+| `Flush()` | Forces an immediate save and clears all pending state. |
+| `Dispose()` | Calls `Flush()` internally, then unregisters all parameter-change listeners. Dispose this before the store. |
 
 **Ordering requirements:** `Load()` → construct controller → `Tick()` per frame → `Flush()` → `Dispose()` controller → `Save()` + `Dispose()` store.
 
@@ -241,6 +256,10 @@ _saveController = new DeferredSaveController<PluginConfig>(_store);
 // Optional: shorten the debounce window to 500 ms:
 // _saveController = new DeferredSaveController<PluginConfig>(_store, TimeSpan.FromMilliseconds(500));
 ```
+
+> **Call `DeferredSaveController.Flush()` explicitly before `Dispose()`** — `Dispose()` calls
+> `Flush()` internally, but making the save intent explicit at the call site is recommended
+> practice and makes the unload sequence self-documenting.
 
 ---
 
@@ -282,12 +301,12 @@ _saveController = new DeferredSaveController<PluginConfig>(_store);
 | `[SpacingAfter(count = 1)]` | Inserts `count` `ImGui.Spacing()` calls **below** the control. |
 | `[Indent(amount = 0f)]` | Indents this control only; overrides any class-level `[Indent]`. |
 | `[ParameterOrder(int)]` | Explicit render order within the category. Lower = earlier; unordered parameters sort last. |
-| `[HideIf<T>("MemberName")]` | Hides the control while the named `bool` member on the same config class is `true`. |
-| `[HideIf<T>("MemberName", value)]` | Hides the control while the named member equals `value`. |
+| `[HideIf<T>("MemberName")]` | Hides the control while the named `bool` member on the same config class is `true`. The member may be a plain `bool` property or a `Parameter<bool>` — the value is automatically unwrapped. |
+| `[HideIf<T>("MemberName", value)]` | Hides the control while the named member equals `value`. When the member is a `Parameter<T>`, its `.Value` is automatically unwrapped before the comparison. |
 | `[CustomDrawer<TDrawer>]` | Full custom rendering via `IParameterDrawer`. Bypasses label column and all standard layout. |
 | `[TwoColumnCustomDrawer<TDrawer>]` | Custom widget via `ITwoColumnParameterDrawer`. Retains the standard two-column label layout. |
 
-**`ButtonStyle` enum:** `Default` · `Primary` (blue) · `Success` (green) · `Warning` (orange) · `Danger` (red) · `Custom` (requires `[CustomButtonColors]`).
+**`ButtonStyle` enum:** `Default` · `Primary` (blue) · `Success` (green) · `Warning` (orange) · `Danger` (red) · `Custom` (requires `[CustomButtonColors]`; `ButtonDrawer` logs a one-time warning and falls back to `Default` when `[CustomButtonColors]` is absent).
 
 ---
 
@@ -546,7 +565,7 @@ public static void Load()
     var configPath = Path.Combine(API.GetPluginDirectory(typeof(MyPlugin).Assembly), "config.json");
 
     _store          = new SettingsStore<PluginConfig>(configPath);
-    var config      = _store.Load();                               // Load FIRST
+    var config      = _store.Load();                                // Load FIRST
     _saveController = new DeferredSaveController<PluginConfig>(_store); // THEN construct
 
     _cameraState = new CameraState();
@@ -555,6 +574,15 @@ public static void Load()
     _panel = new PluginPanel("MyPlugin")
         .Add(new LiveSection<CameraState>(_cameraState))
         .Add(new ConfigSection<PluginConfig>(config));
+}
+
+[Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
+public static void PreDrawUI()
+{
+    if (API.IsDrawingUI())
+        _panel?.Draw();        // render UI on the game's draw thread each frame
+
+    _saveController?.Tick();   // evaluate pending saves; lightweight no-op when idle
 }
 
 [PluginExitPoint]
@@ -576,5 +604,6 @@ public static void Unload()
 }
 ```
 
-> **Always call `DeferredSaveController.Flush()` before `Dispose()`** — `Dispose` does not flush,
-> so an in-flight debounced numeric change would be silently dropped without the explicit `Flush`.
+> **Call `DeferredSaveController.Flush()` explicitly before `Dispose()`** — `Dispose()` calls
+> `Flush()` internally, but making the save intent explicit at the call site is recommended
+> practice and makes the unload sequence self-documenting.
