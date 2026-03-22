@@ -64,7 +64,12 @@ jobs:
           cp "$EXTRACT/reframework/plugins/REFramework.NET.dll" \
              dependencies/reframework/api/
 
-          cp "$EXTRACT/reframework/plugins/managed/dependencies/"*.dll \
+          # Copy only the two managed dependencies directly referenced by the SDK and
+          # plugin projects. AssemblyGenerator, REFCoreDeps, and Microsoft.CodeAnalysis.*
+          # are REFramework host internals; they are not referenced by any project code.
+          cp "$EXTRACT/reframework/plugins/managed/dependencies/Hexa.NET.ImGui.dll" \
+             dependencies/reframework/api/
+          cp "$EXTRACT/reframework/plugins/managed/dependencies/HexaGen.Runtime.dll" \
              dependencies/reframework/api/
 
           echo "Staged API DLLs:"

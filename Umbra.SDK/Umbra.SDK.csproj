@@ -1,47 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<PlatformTarget>x64</PlatformTarget>
-		<RootNamespace>Umbra.SDK</RootNamespace>
-		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
-		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-		<!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
-		<UmbraDeployScript>$(MSBuildProjectDirectory)\..\scripts\deploy_reframework_deps.bat</UmbraDeployScript>
-	</PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PlatformTarget>x64</PlatformTarget>
+        <RootNamespace>Umbra.SDK</RootNamespace>
+        <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
+        <UmbraDeployScript>$(SolutionDir)scripts\deploy_reframework_deps.bat</UmbraDeployScript>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<Reference Include="AssemblyGenerator">
-			<HintPath>..\dependencies\reframework\api\AssemblyGenerator.dll</HintPath>
-		</Reference>
-		<Reference Include="Hexa.NET.ImGui">
-			<HintPath>..\dependencies\reframework\api\Hexa.NET.ImGui.dll</HintPath>
-		</Reference>
-		<Reference Include="HexaGen.Runtime">
-			<HintPath>..\dependencies\reframework\api\HexaGen.Runtime.dll</HintPath>
-		</Reference>
-		<Reference Include="Microsoft.CodeAnalysis">
-			<HintPath>..\dependencies\reframework\api\Microsoft.CodeAnalysis.dll</HintPath>
-		</Reference>
-		<Reference Include="Microsoft.CodeAnalysis.CSharp">
-			<HintPath>..\dependencies\reframework\api\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-		</Reference>
-		<Reference Include="REFCoreDeps">
-			<HintPath>..\dependencies\reframework\api\REFCoreDeps.dll</HintPath>
-		</Reference>
-		<Reference Include="REFramework.NET">
-			<HintPath>..\dependencies\reframework\api\REFramework.NET.dll</HintPath>
-		</Reference>
-	</ItemGroup>
+    <ItemGroup>
+        <Reference Include="Hexa.NET.ImGui">
+            <HintPath>..\dependencies\reframework\api\Hexa.NET.ImGui.dll</HintPath>
+        </Reference>
+        <Reference Include="HexaGen.Runtime">
+            <HintPath>..\dependencies\reframework\api\HexaGen.Runtime.dll</HintPath>
+        </Reference>
+        <Reference Include="REFramework.NET">
+            <HintPath>..\dependencies\reframework\api\REFramework.NET.dll</HintPath>
+        </Reference>
+    </ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Properties\" />
-	</ItemGroup>
-	<ItemGroup>
-		<!-- Explicitly opt out of the implicit System.Linq global using to enforce the no-LINQ rule. -->
-		<Using Remove="System.Linq" />
-	</ItemGroup>
+    <ItemGroup>
+        <Folder Include="Properties\" />
+    </ItemGroup>
+    <ItemGroup>
+        <!-- Explicitly opt out of the implicit System.Linq global using to enforce the no-LINQ rule. -->
+        <Using Remove="System.Linq" />
+    </ItemGroup>
 
 </Project>

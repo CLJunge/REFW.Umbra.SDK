@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     REFramework C# API dependency setup.
@@ -153,13 +153,22 @@ function Copy-ApiDlls {
         Write-Host '[WARN] Expected file not found: reframework\plugins\REFramework.NET.dll'
     }
 
-    # reframework/plugins/managed/dependencies/*.dll  (reference assemblies)
+    # reframework/plugins/managed/dependencies/ — copy only the two DLLs directly
+    # referenced by the SDK and plugin projects. AssemblyGenerator, REFCoreDeps, and
+    # Microsoft.CodeAnalysis.* are REFramework host internals and are not referenced
+    # by any project code; staging them would only add noise to the dependencies folder.
     $depsDir = Join-Path $ExtractDir 'reframework\plugins\managed\dependencies'
+    $sdkDeps = @('Hexa.NET.ImGui.dll', 'HexaGen.Runtime.dll')
     if (Test-Path $depsDir) {
-        foreach ($f in Get-ChildItem -Path $depsDir -Filter '*.dll') {
-            Copy-Item -Path $f.FullName -Destination $ApiDest -Force
-            Write-Host "    + $($f.Name)"
-            $count++
+        foreach ($name in $sdkDeps) {
+            $src = Join-Path $depsDir $name
+            if (Test-Path $src) {
+                Copy-Item -Path $src -Destination $ApiDest -Force
+                Write-Host "    + $name"
+                $count++
+            } else {
+                Write-Host "[WARN] Expected file not found in managed/dependencies: $name"
+            }
         }
     } else {
         Write-Host '[WARN] Expected folder not found: reframework\plugins\managed\dependencies'
