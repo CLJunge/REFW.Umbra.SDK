@@ -93,13 +93,23 @@ public class Parameter<T> : IParameter
     /// <param name="value">The value to assign silently.</param>
     public void SetWithoutNotify(T? value) => _value = value;
 
+    /// <summary>
+    /// Sets the parameter's value, raising <see cref="ValueChanged"/> if the value changes
+    /// and passes validation. Convenience alias for assigning to <see cref="Value"/> directly;
+    /// prefer this form when the calling site already holds the typed parameter reference
+    /// (e.g. inside <c>INestedGroupDrawer&lt;T&gt;.Draw</c>) to avoid the double-<c>.Value</c>
+    /// repetition of <c>parameter.Value.Value = x</c>.
+    /// </summary>
+    /// <param name="value">The new value to assign.</param>
+    public void Set(T? value) => Value = value;
+
     /// <inheritdoc/>
     object? IParameter.GetValue() => Value;
 
     /// <inheritdoc/>
     void IParameter.SetValue(object? value)
     {
-        if (value is not T && value != null)
+        if (value is not T and not null)
             throw new ArgumentException($"Value must be of type {typeof(T)} or null.", nameof(value));
 
         SetValue((T?)value);

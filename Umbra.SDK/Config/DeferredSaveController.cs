@@ -109,7 +109,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         // synchronously within Parameter<T>.SetValue before the next Tick() call, so registration
         // order does not affect correctness.
         _onNumericChanged = MarkSliderDirty;
-        _onAnyChanged     = () => _anyPending = true;
+        _onAnyChanged = () => _anyPending = true;
 
         _store.AddListenerToAll(IsNumericParameter, _onNumericChanged);
         _store.AddListenerToAll(_onAnyChanged);

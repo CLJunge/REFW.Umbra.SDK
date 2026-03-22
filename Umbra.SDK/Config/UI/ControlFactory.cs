@@ -1,9 +1,7 @@
 using System.Numerics;
 using Hexa.NET.ImGui;
-using Umbra.SDK.Config.Attributes;
 using Umbra.SDK.Config.UI.ParameterDrawers;
 using Umbra.SDK.Logging;
-using Umbra.SDK.UI;
 
 namespace Umbra.SDK.Config.UI;
 
@@ -351,4 +349,4 @@ internal static class ControlFactory
         return new ControlLayout(label, meta.Description, alignGroup, meta.ControlWidth ?? -1f, hiddenLabel);
     }
 
-    }
+}
