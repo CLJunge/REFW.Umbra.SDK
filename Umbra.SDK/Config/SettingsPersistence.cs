@@ -67,7 +67,7 @@ internal static class SettingsPersistence
             var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json, _jsonOptions);
             if (dict == null) return;
 
-            int applied = 0;
+            var applied = 0;
             foreach (var (key, element) in dict)
             {
                 if (!parameters.TryGetValue(key, out var param)) continue;

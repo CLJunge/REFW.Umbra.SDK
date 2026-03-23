@@ -1,10 +1,7 @@
-using Hexa.NET.ImGui;
 using System.Numerics;
-using System.Reflection;
-using Umbra.SDK.Config.Attributes;
+using Hexa.NET.ImGui;
 using Umbra.SDK.Config.UI.ParameterDrawers;
 using Umbra.SDK.Logging;
-using Umbra.SDK.UI;
 
 namespace Umbra.SDK.Config.UI;
 
@@ -37,10 +34,15 @@ internal static class ControlFactory
 
     /// <summary>
     /// Builds a per-frame draw <see cref="Action"/> for <paramref name="parameter"/>,
-    /// dispatching first to a <see cref="CustomDrawerAttribute{TDrawer}"/>, then to the
+    /// dispatching first to a custom drawer recorded in <see cref="ParameterMetadata"/>, then to the
     /// primitive type table, then to the enum fallback, then to a read-only label.
     /// </summary>
-    /// <param name="prop">The reflected property that declared <paramref name="parameter"/>.</param>
+    /// <remarks>
+    /// Custom drawer types are pre-resolved during <c>SettingsStore.Load()</c> by
+    /// <c>ParameterMetadataReader</c> and stored in <see cref="ParameterMetadata.CustomDrawerType"/>
+    /// and <see cref="ParameterMetadata.TwoColumnCustomDrawerType"/>, eliminating the need to scan
+    /// property attributes at draw-tree construction time.
+    /// </remarks>
     /// <param name="parameter">The parameter whose value the action will render and edit.</param>
     /// <param name="label">The display label passed to the ImGui control.</param>
     /// <param name="alignGroup">
@@ -55,42 +57,42 @@ internal static class ControlFactory
     /// only for custom drawers that override <see cref="IDisposable.Dispose"/>.
     /// </returns>
     internal static (Action draw, IDisposable? resource) BuildDrawAction(
-        PropertyInfo prop, IParameter parameter, string label, LabelAlignmentGroup alignGroup)
+        IParameter parameter, string label, LabelAlignmentGroup alignGroup)
     {
+        var meta = parameter.Metadata;
+
         // 1. Custom drawer — explicit opt-in, highest priority.
-        // ICustomDrawerAttribute marker avoids fragile runtime generic type inspection.
-        var customAttr = prop.GetDrawerAttribute<ICustomDrawerAttribute>();
-        if (customAttr is not null)
+        // DrawerType is pre-resolved by ParameterMetadataReader; no attribute scan needed here.
+        if (meta.CustomDrawerType is { } customDrawerType)
         {
             try
             {
-                var drawer = (IParameterDrawer)Activator.CreateInstance(customAttr.DrawerType)!;
+                var drawer = (IParameterDrawer)Activator.CreateInstance(customDrawerType)!;
                 return (() => drawer.Draw(label, parameter), drawer);
             }
             catch (Exception ex)
             {
-                Logger.Exception(ex, $"ConfigDrawer: failed to instantiate custom drawer '{customAttr.DrawerType.Name}'.");
+                Logger.Exception(ex, $"ConfigDrawer: failed to instantiate custom drawer '{customDrawerType.Name}'.");
             }
         }
 
         // 2. Two-column custom drawer — factory owns layout; drawer renders widget only.
-        var twoColAttr = prop.GetDrawerAttribute<ITwoColumnCustomDrawerAttribute>();
-        if (twoColAttr is not null)
+        // DrawerType is pre-resolved by ParameterMetadataReader; no attribute scan needed here.
+        if (meta.TwoColumnCustomDrawerType is { } twoColDrawerType)
         {
             try
             {
-                var drawer = (ITwoColumnParameterDrawer)Activator.CreateInstance(twoColAttr.DrawerType)!;
-                var (_, pre, post) = GetControlLayout(label, parameter, parameter.Metadata, alignGroup);
+                var drawer = (ITwoColumnParameterDrawer)Activator.CreateInstance(twoColDrawerType)!;
+                var layout = GetControlLayout(label, parameter, meta, alignGroup);
                 return (() =>
                 {
-                    pre();
+                    layout.Pre();
                     drawer.Draw(parameter);
-                    post?.Invoke();
                 }, drawer);
             }
             catch (Exception ex)
             {
-                Logger.Exception(ex, $"ConfigDrawer: failed to instantiate two-column custom drawer '{twoColAttr.DrawerType.Name}'.");
+                Logger.Exception(ex, $"ConfigDrawer: failed to instantiate two-column custom drawer '{twoColDrawerType.Name}'.");
             }
         }
 
@@ -114,13 +116,12 @@ internal static class ControlFactory
     private static Action BuildBoolDraw(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
         var p = (Parameter<bool>)parameter;
-        var (ctrlLabel, pre, post) = GetControlLayout(label, parameter, p.Metadata, alignGroup);
+        var layout = GetControlLayout(label, parameter, p.Metadata, alignGroup);
         return () =>
         {
             var v = p.Value;
-            pre();
-            if (ImGui.Checkbox(ctrlLabel, ref v)) p.Value = v;
-            post?.Invoke();
+            layout.Pre();
+            if (ImGui.Checkbox(layout.HiddenLabel, ref v)) p.Value = v;
         };
     }
 
@@ -137,7 +138,7 @@ internal static class ControlFactory
         var p = (Parameter<int>)parameter;
         var meta = p.Metadata;
         var fmt = meta.Format ?? "%d";
-        var (ctrlLabel, pre, post) = GetControlLayout(label, parameter, meta, alignGroup);
+        var layout = GetControlLayout(label, parameter, meta, alignGroup);
 
         if (meta.Min is not null && meta.Max is not null)
         {
@@ -146,9 +147,8 @@ internal static class ControlFactory
             return () =>
             {
                 var v = p.Value;
-                pre();
-                if (ImGui.SliderInt(ctrlLabel, ref v, iMin, iMax, fmt)) p.Value = v;
-                post?.Invoke();
+                layout.Pre();
+                if (ImGui.SliderInt(layout.HiddenLabel, ref v, iMin, iMax, fmt)) p.Value = v;
             };
         }
 
@@ -157,9 +157,8 @@ internal static class ControlFactory
         {
             var v = p.Value;
             var step = meta.Step.HasValue ? (float)meta.Step : 1f;
-            pre();
-            if (ImGui.DragInt(ctrlLabel, ref v, step, 0, 0, fmt)) p.Value = v;
-            post?.Invoke();
+            layout.Pre();
+            if (ImGui.DragInt(layout.HiddenLabel, ref v, step, 0, 0, fmt)) p.Value = v;
         };
     }
 
@@ -175,8 +174,10 @@ internal static class ControlFactory
     {
         var p = (Parameter<float>)parameter;
         var meta = p.Metadata;
-        var fmt = meta.Format ?? FallbackFloatFormat(meta.Step);
-        var (ctrlLabel, pre, post) = GetControlLayout(label, parameter, meta, alignGroup);
+        // InferredFloatFormat is precomputed by ParameterMetadataReader during SettingsStore.Load();
+        // no format-string construction or Number.FormatFloat overhead at draw-tree build time.
+        var fmt = meta.InferredFloatFormat;
+        var layout = GetControlLayout(label, parameter, meta, alignGroup);
 
         if (meta.Min is not null && meta.Max is not null)
         {
@@ -185,9 +186,8 @@ internal static class ControlFactory
             return () =>
             {
                 var v = p.Value;
-                pre();
-                if (ImGui.SliderFloat(ctrlLabel, ref v, fMin, fMax, fmt)) p.Value = v;
-                post?.Invoke();
+                layout.Pre();
+                if (ImGui.SliderFloat(layout.HiddenLabel, ref v, fMin, fMax, fmt)) p.Value = v;
             };
         }
 
@@ -195,9 +195,8 @@ internal static class ControlFactory
         {
             var v = p.Value;
             var step = meta.Step.HasValue ? (float)meta.Step : 1f;
-            pre();
-            if (ImGui.DragFloat(ctrlLabel, ref v, step, 0f, 0f, fmt)) p.Value = v;
-            post?.Invoke();
+            layout.Pre();
+            if (ImGui.DragFloat(layout.HiddenLabel, ref v, step, 0f, 0f, fmt)) p.Value = v;
         };
     }
 
@@ -214,8 +213,10 @@ internal static class ControlFactory
     {
         var p = (Parameter<double>)parameter;
         var meta = p.Metadata;
-        var fmt = meta.Format ?? FallbackFloatFormat(meta.Step);
-        var (ctrlLabel, pre, post) = GetControlLayout(label, parameter, meta, alignGroup);
+        // InferredFloatFormat is precomputed by ParameterMetadataReader during SettingsStore.Load();
+        // no format-string construction or Number.FormatFloat overhead at draw-tree build time.
+        var fmt = meta.InferredFloatFormat;
+        var layout = GetControlLayout(label, parameter, meta, alignGroup);
 
         if (meta.Min is not null && meta.Max is not null)
         {
@@ -224,9 +225,8 @@ internal static class ControlFactory
             return () =>
             {
                 var v = (float)p.Value;
-                pre();
-                if (ImGui.SliderFloat(ctrlLabel, ref v, fMin, fMax, fmt)) p.Value = (double)v;
-                post?.Invoke();
+                layout.Pre();
+                if (ImGui.SliderFloat(layout.HiddenLabel, ref v, fMin, fMax, fmt)) p.Value = (double)v;
             };
         }
 
@@ -234,9 +234,8 @@ internal static class ControlFactory
         {
             var v = (float)p.Value;
             var step = meta.Step.HasValue ? (float)meta.Step : 1f;
-            pre();
-            if (ImGui.DragFloat(ctrlLabel, ref v, step, 0f, 0f, fmt)) p.Value = (double)v;
-            post?.Invoke();
+            layout.Pre();
+            if (ImGui.DragFloat(layout.HiddenLabel, ref v, step, 0f, 0f, fmt)) p.Value = (double)v;
         };
     }
 
@@ -256,7 +255,7 @@ internal static class ControlFactory
         var p = (Parameter<string>)parameter;
         var meta = p.Metadata;
         var maxLen = meta.MaxLength ?? 256u;
-        var (ctrlLabel, pre, post) = GetControlLayout(label, parameter, meta, alignGroup);
+        var layout = GetControlLayout(label, parameter, meta, alignGroup);
 
         if (meta.MultilineLines is int lines)
         {
@@ -264,20 +263,18 @@ internal static class ControlFactory
             {
                 var v = p.Value ?? string.Empty;
                 var height = ImGui.GetTextLineHeightWithSpacing() * lines;
-                pre();
-                // Pass Vector2(0, height): SetNextItemWidth in pre() governs x; height is fixed.
-                if (ImGui.InputTextMultiline(ctrlLabel, ref v, maxLen, new Vector2(0f, height)))
+                layout.Pre();
+                // Pass Vector2(0, height): SetNextItemWidth in Pre() governs x; height is fixed.
+                if (ImGui.InputTextMultiline(layout.HiddenLabel, ref v, maxLen, new Vector2(0f, height)))
                     p.Value = v;
-                post?.Invoke();
             };
         }
 
         return () =>
         {
             var v = p.Value ?? string.Empty;
-            pre();
-            if (ImGui.InputText(ctrlLabel, ref v, maxLen)) p.Value = v;
-            post?.Invoke();
+            layout.Pre();
+            if (ImGui.InputText(layout.HiddenLabel, ref v, maxLen)) p.Value = v;
         };
     }
 
@@ -294,22 +291,21 @@ internal static class ControlFactory
         var values = new object[rawValues.Length];
         for (var i = 0; i < rawValues.Length; i++)
             values[i] = rawValues.GetValue(i)!;
-        var (ctrlLabel, pre, post) = GetControlLayout(label, parameter, parameter.Metadata, alignGroup);
+        var layout = GetControlLayout(label, parameter, parameter.Metadata, alignGroup);
         return () =>
         {
             var current = parameter.GetValue();
             var idx = Array.IndexOf(values, current);
             if (idx < 0) idx = 0;
-            pre();
-            if (ImGui.Combo(ctrlLabel, ref idx, names, names.Length))
+            layout.Pre();
+            if (ImGui.Combo(layout.HiddenLabel, ref idx, names, names.Length))
                 parameter.SetValue(values[idx]);
-            post?.Invoke();
         };
     }
 
     /// <summary>
-    /// Computes the hidden ImGui control label and the unconditional pre-draw action for every
-    /// parameter row. All rows use a two-column layout: the visible label (and optional
+    /// Constructs a <see cref="ControlLayout"/> capturing the pre-computed layout state for a
+    /// single parameter row. All rows use a two-column layout: the visible label (and optional
     /// <c>(?)</c> help marker) on the left; the editing widget on the right at the column x
     /// position determined by <paramref name="alignGroup"/>.
     /// </summary>
@@ -338,62 +334,19 @@ internal static class ControlFactory
     /// </list>
     /// </remarks>
     /// <param name="label">The display label resolved for the parameter.</param>
-    /// <param name="parameter">The parameter being rendered; its <see cref="IParameter.Key"/> is used for the hidden ImGui label.</param>
+    /// <param name="parameter">The parameter being rendered; its <see cref="IParameter.Key"/> is used as the hidden ImGui label fallback when <see cref="ParameterMetadata.HiddenLabel"/> is <see langword="null"/>.</param>
     /// <param name="meta">The parameter metadata holding layout options.</param>
     /// <param name="alignGroup">The shared alignment group for the owning category or root scope.</param>
     /// <returns>
-    /// A tuple of <c>(controlLabel, preControl, null)</c>. Callers must invoke <c>preControl</c>
+    /// A <see cref="ControlLayout"/> value capturing the label, description, alignment group,
+    /// and pre-computed hidden ImGui label for the row. Callers must invoke <see cref="ControlLayout.Pre"/>
     /// immediately before the ImGui widget call to set up layout and alignment state.
     /// </returns>
-    private static (string controlLabel, Action preControl, Action? postControl) GetControlLayout(
+    private static ControlLayout GetControlLayout(
         string label, IParameter parameter, ParameterMetadata meta, LabelAlignmentGroup alignGroup)
     {
-        var desc = meta.Description;
-        var hiddenLabel = "##" + parameter.Key;
-        var controlWidth = meta.ControlWidth ?? -1f;
-
-        void pre()
-        {
-            alignGroup.Observe(label, desc is not null);
-            var startX = ImGui.GetCursorPosX();
-            ImGui.Text(label);
-            if (desc is not null)
-            {
-                ImGui.SameLine();
-                ImGuiControls.DrawHelpMarker(desc);
-            }
-            ImGui.SameLine();
-            // Advance to the shared column position (plus optional per-group margin); never
-            // move backward so that on frame 1 (before the committed max is available) labels
-            // wider than the current max still place their control immediately to the right
-            // rather than overlapping.
-            var columnX = startX + alignGroup.LabelWidth + alignGroup.Margin + ImGui.GetStyle().ItemSpacing.X;
-            if (ImGui.GetCursorPosX() < columnX)
-                ImGui.SetCursorPosX(columnX);
-            ImGui.SetNextItemWidth(controlWidth);
-        }
-
-        return (hiddenLabel, pre, null);
+        var hiddenLabel = meta.HiddenLabel ?? string.Concat("##", parameter.Key);
+        return new ControlLayout(label, meta.Description, alignGroup, meta.ControlWidth ?? -1f, hiddenLabel);
     }
 
-    /// <summary>
-    /// Derives a printf float format string from the number of decimal places in
-    /// <paramref name="step"/>. Used as a fallback when no <c>[Format]</c> attribute
-    /// is present.
-    /// </summary>
-    /// <param name="step">
-    /// The step value whose decimal place count determines the format precision,
-    /// or <see langword="null"/> / <c>0</c> to use the default <c>"%.2f"</c>.
-    /// </param>
-    /// <returns>
-    /// A printf-style format string such as <c>"%.2f"</c> (default), <c>"%.0f"</c> (integer step),
-    /// or <c>"%.Nf"</c> where N is the number of decimal places in <paramref name="step"/>.
-    /// </returns>
-    private static string FallbackFloatFormat(double? step)
-    {
-        if (step is null or 0) return "%.2f";
-        var s = step.Value.ToString("G");
-        var dot = s.IndexOf('.');
-        return dot < 0 ? "%.0f" : $"%.{s.Length - dot - 1}f";
-    }
 }

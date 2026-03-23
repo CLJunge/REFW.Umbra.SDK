@@ -1,4 +1,4 @@
-﻿using Hexa.NET.ImGui;
+using Hexa.NET.ImGui;
 
 namespace Umbra.SDK.Config.UI.Nodes;
 

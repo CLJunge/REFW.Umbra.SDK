@@ -1,4 +1,5 @@
 using Hexa.NET.ImGui;
+using Umbra.SDK.Input;
 using Umbra.SDK.UI;
 
 namespace Umbra.SDK.Config.UI.ParameterDrawers;
@@ -42,7 +43,25 @@ public sealed class HotkeyDrawer : IParameterDrawer
 
         // Use the parameter key as the stable unique button ID so two parameters with the
         // same display label do not share an ImGui button ID within the same window.
-        ImGuiControls.DrawHotKeySetting(label, p.Key, ref _waiting, ref v, otherWaiting);
+        if (_waiting)
+        {
+            ImGui.Text($"{label}: Press any key...");
+            ImGui.SameLine();
+            if (ImGui.Button($"Cancel##{p.Key}"))
+                _waiting = false;
+            else if (KeyboardInput.TryCaptureKeyboardKey(out var captured))
+            {
+                v = captured;
+                _waiting = false;
+            }
+        }
+        else
+        {
+            ImGui.Text($"{label}: {KeyboardInput.GetKeyName(v)}");
+            ImGui.SameLine();
+            if (ImGui.Button($"Change##{p.Key}") && !otherWaiting)
+                _waiting = true;
+        }
 
         // Keep the shared counter in sync when this drawer's capture state changes.
         if (_waiting != wasWaiting)
@@ -54,7 +73,7 @@ public sealed class HotkeyDrawer : IParameterDrawer
         if (metadata.Description is not null)
         {
             ImGui.SameLine();
-            ImGuiControls.DrawHelpMarker(metadata.Description);
+            ImGuiWidgets.DrawHelpMarker(metadata.Description);
         }
     }
 
@@ -75,4 +94,5 @@ public sealed class HotkeyDrawer : IParameterDrawer
             _waiting = false;
         }
     }
+
 }

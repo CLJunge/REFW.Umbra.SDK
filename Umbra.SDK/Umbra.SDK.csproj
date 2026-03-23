@@ -1,53 +1,58 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<PlatformTarget>x64</PlatformTarget>
-		<RootNamespace>Umbra.SDK</RootNamespace>
-		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
-		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-	</PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PlatformTarget>x64</PlatformTarget>
+        <RootNamespace>Umbra.SDK</RootNamespace>
+        <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
-	<ItemGroup>
-		<Reference Include="AssemblyGenerator">
-			<HintPath>..\dependencies\reframework\api\AssemblyGenerator.dll</HintPath>
-		</Reference>
-		<Reference Include="Hexa.NET.ImGui">
-			<HintPath>..\dependencies\reframework\api\Hexa.NET.ImGui.dll</HintPath>
-		</Reference>
-		<Reference Include="HexaGen.Runtime">
-			<HintPath>..\dependencies\reframework\api\HexaGen.Runtime.dll</HintPath>
-		</Reference>
-		<Reference Include="Microsoft.CodeAnalysis">
-			<HintPath>..\dependencies\reframework\api\Microsoft.CodeAnalysis.dll</HintPath>
-		</Reference>
-		<Reference Include="Microsoft.CodeAnalysis.CSharp">
-			<HintPath>..\dependencies\reframework\api\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-		</Reference>
-		<Reference Include="REFCoreDeps">
-			<HintPath>..\dependencies\reframework\api\REFCoreDeps.dll</HintPath>
-		</Reference>
-		<Reference Include="REFramework.NET">
-			<HintPath>..\dependencies\reframework\api\REFramework.NET.dll</HintPath>
-		</Reference>
-	</ItemGroup>
+        <IsPackable>true</IsPackable>
+        <PackageId>Umbra.SDK</PackageId>
+        <Version>0.0.0-dev</Version>
+        <Authors>CLJunge</Authors>
+        <Company>CLJunge</Company>
+        <Description>A support library for REFramework mod and plugin development.</Description>
+        <PackageTags>REFramework;REEngine;ImGui;modding;plugin;SDK</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/CLJunge/REFW.Umbra.SDK</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/CLJunge/REFW.Umbra.SDK</PackageProjectUrl>
+        <AssemblyTitle>Umbra.SDK</AssemblyTitle>
+        <AssemblyDescription>A support library for REFramework mod and plugin development.</AssemblyDescription>
+        <AssemblyCompany>CLJunge</AssemblyCompany>
+        <AssemblyProduct>Umbra.SDK</AssemblyProduct>
+        <Copyright>Copyright © 2026 Chris-Lennart Junge — MIT License</Copyright>
 
-	<ItemGroup>
-	  <Folder Include="Properties\" />
-	</ItemGroup>
-	<ItemGroup>
-		<!-- Explicitly opt out of the implicit System.Linq global using to enforce the no-LINQ rule. -->
-		<Using Remove="System.Linq" />
-	</ItemGroup>
+        <!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
+        <UmbraDeployScript>$(MSBuildProjectDirectory)\..\scripts\deploy_reframework_deps.bat</UmbraDeployScript>
+    </PropertyGroup>
 
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="$(Configuration) == Debug And Exists('$(SolutionDir)scripts\deploy_reframework_deps.bat')">
-		<Exec Command="call &quot;$(SolutionDir)scripts\deploy_reframework_deps.bat&quot; &quot;$(TargetDir)$(TargetName)*&quot;" />
-	</Target>
+    <ItemGroup>
+        <None Include="..\LICENSE.txt" Pack="true" PackagePath="" Visible="false" />
+        <None Include="..\README.md" Pack="true" PackagePath="" Visible="false" />
+    </ItemGroup>
 
-	<Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="$(Configuration) == Debug And Exists('$(SolutionDir)scripts\kill_re9.bat')">
-		<Exec Command="call &quot;$(SolutionDir)scripts\kill_re9.bat&quot;" />
-	</Target>
+    <ItemGroup>
+        <Reference Include="Hexa.NET.ImGui">
+            <HintPath>..\dependencies\reframework\api\Hexa.NET.ImGui.dll</HintPath>
+        </Reference>
+        <Reference Include="HexaGen.Runtime">
+            <HintPath>..\dependencies\reframework\api\HexaGen.Runtime.dll</HintPath>
+        </Reference>
+        <Reference Include="REFramework.NET">
+            <HintPath>..\dependencies\reframework\api\REFramework.NET.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Explicitly opt out of the implicit System.Linq global using to enforce the no-LINQ rule. -->
+        <Using Remove="System.Linq" />
+    </ItemGroup>
 
 </Project>

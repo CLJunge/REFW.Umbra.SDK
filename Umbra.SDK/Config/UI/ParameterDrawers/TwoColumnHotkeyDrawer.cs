@@ -1,6 +1,5 @@
 using Hexa.NET.ImGui;
 using Umbra.SDK.Input;
-using Umbra.SDK.UI;
 
 namespace Umbra.SDK.Config.UI.ParameterDrawers;
 
@@ -48,9 +47,9 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
 
         if (_waiting)
         {
-            ImGui.Text(ImGuiControls.HotkeyCapturingPrompt);
+            ImGui.Text("Press any key...");
             ImGui.SameLine();
-            if (ImGui.Button($"{ImGuiControls.HotkeyCancelLabel}##{p.Key}"))
+            if (ImGui.Button($"Cancel##{p.Key}"))
                 _waiting = false;
             else if (KeyboardInput.TryCaptureKeyboardKey(out var captured))
             {
@@ -63,7 +62,7 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
             // Right-column widget: key name only, no label prefix.
             ImGui.Text(KeyboardInput.GetKeyName(v));
             ImGui.SameLine();
-            if (ImGui.Button($"{ImGuiControls.HotkeyChangeLabel}##{p.Key}") && !otherWaiting)
+            if (ImGui.Button($"Change##{p.Key}") && !otherWaiting)
                 _waiting = true;
         }
 

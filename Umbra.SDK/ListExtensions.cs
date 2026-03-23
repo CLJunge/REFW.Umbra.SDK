@@ -3,7 +3,7 @@ namespace Umbra.SDK;
 /// <summary>
 /// Provides extension methods for working with <see cref="List{T}"/> instances.
 /// </summary>
-public static class ListExtensions
+internal static class ListExtensions
 {
     /// <summary>
     /// Sorts <paramref name="list"/> in place using a stable insertion sort, ordered ascending

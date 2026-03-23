@@ -8,19 +8,55 @@ namespace Umbra.SDK.Config;
 /// </summary>
 /// <remarks>
 /// <para>
+/// <strong>Behaviour</strong><br/>
 /// Changes to non-numeric parameters (booleans, strings, enums) are saved on the very next
-/// <see cref="Tick"/> call — effectively immediate from the user's perspective.
-/// </para>
-/// <para>
+/// <see cref="Tick"/> call — effectively immediate from the user's perspective.<br/>
 /// Changes to numeric parameters (<see cref="int"/>, <see cref="float"/>, <see cref="double"/>)
 /// are coalesced: the save is deferred until <see cref="DebounceWindow"/> has elapsed since
-/// the last change, so rapid slider interaction produces only one disk write.
+/// the last change, so rapid slider interaction produces only one disk write instead of one
+/// per frame.
 /// </para>
 /// <para>
-/// Call <see cref="Tick"/> once per frame from an <c>ImGuiDrawUI</c> callback to drive the
-/// save logic. Call <see cref="Flush"/> before plugin unload to guarantee any pending
-/// changes are written. Dispose alongside the owning <see cref="SettingsStore{TConfig}"/>
-/// to unregister all event subscriptions.
+/// <strong>Ordering requirement</strong><br/>
+/// Construct <see cref="DeferredSaveController{TConfig}"/> <em>after</em> calling
+/// <see cref="SettingsStore{TConfig}.Load"/>. The constructor immediately attaches listeners
+/// to every parameter registered in the store. If the store has not been loaded yet its
+/// parameter dictionary is empty and no listeners will be attached, causing the controller
+/// to never observe any changes.
+/// </para>
+/// <para>
+/// <strong>Per-frame driving</strong><br/>
+/// Call <see cref="Tick"/> once per frame from an <c>ImGuiDrawUI</c> callback or equivalent
+/// game-loop hook. <see cref="Tick"/> is a lightweight no-op when there is nothing pending,
+/// so it is safe to call unconditionally every frame.
+/// </para>
+/// <para>
+/// <strong>Unload sequence</strong><br/>
+/// Before plugin unload, call <see cref="Flush"/> (to guarantee any debounced write is not
+/// lost) and then <see cref="Dispose"/> (to unregister event listeners). Dispose this
+/// instance <em>before</em> or <em>alongside</em> the owning
+/// <see cref="SettingsStore{TConfig}"/> — disposing the store first would throw
+/// <see cref="ObjectDisposedException"/> when the controller tries to remove its listeners.
+/// </para>
+/// <para>
+/// <strong>Typical lifecycle</strong>
+/// <code>
+/// // Entry point — always after Load():
+/// _store          = new SettingsStore&lt;PluginConfig&gt;(configPath);
+/// var config      = _store.Load();
+/// _saveController = new DeferredSaveController&lt;PluginConfig&gt;(_store);
+///
+/// // ImGuiDrawUI callback — once per frame:
+/// _saveController.Tick();
+///
+/// // Exit point — Flush first, then Dispose, then dispose the store:
+/// _saveController.Flush();
+/// _saveController.Dispose();
+/// _saveController = null;
+/// _store.Save();   // belt-and-suspenders final save
+/// _store.Dispose();
+/// _store = null;
+/// </code>
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">
@@ -29,15 +65,18 @@ namespace Umbra.SDK.Config;
 public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig : class, new()
 {
     /// <summary>Gets the cooldown after the last numeric change before writing to disk.</summary>
+    /// <remarks>
+    /// The timer is reset on every numeric parameter change, so the save only fires once
+    /// the user stops interacting with a slider for this duration.
+    /// Defaults to 1 second when not supplied at construction.
+    /// </remarks>
     public TimeSpan DebounceWindow { get; }
 
     private readonly SettingsStore<TConfig> _store;
 
     // Stored as fields so the exact delegate instances can be passed to RemoveListenerFromAll.
     private readonly Action _onAnyChanged;
-    private readonly Action<int?, int?> _onIntChanged;
-    private readonly Action<float?, float?> _onFloatChanged;
-    private readonly Action<double?, double?> _onDoubleChanged;
+    private readonly Action _onNumericChanged;
 
     private bool _anyPending;
     private bool _sliderPending;
@@ -48,9 +87,16 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// Initializes a new <see cref="DeferredSaveController{TConfig}"/> and begins listening
     /// for parameter changes on <paramref name="store"/>.
     /// </summary>
-    /// <param name="store">The settings store to drive saves for.</param>
+    /// <param name="store">
+    /// The settings store to drive saves for. <strong>Must have already been loaded via
+    /// <see cref="SettingsStore{TConfig}.Load"/> before this constructor is called.</strong>
+    /// If the store has not been loaded, its parameter dictionary is empty and no listeners
+    /// will be attached, causing the controller to silently observe nothing.
+    /// </param>
     /// <param name="debounceWindow">
     /// How long to wait after the last numeric parameter change before writing to disk.
+    /// The timer restarts on every subsequent numeric change, so the save only fires once
+    /// the user stops interacting with sliders for this duration.
     /// Defaults to 1 second when <see langword="null"/>.
     /// </param>
     public DeferredSaveController(SettingsStore<TConfig> store, TimeSpan? debounceWindow = null)
@@ -58,17 +104,14 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         _store = store;
         DebounceWindow = debounceWindow ?? TimeSpan.FromSeconds(1);
 
-        // Typed numeric listeners set _sliderPending; the untyped listener sets _anyPending.
-        // Both fire synchronously within Parameter<T>.SetValue and both complete before the
-        // next Tick() call, so listener registration order does not affect correctness.
-        _onIntChanged = (_, _) => MarkSliderDirty();
-        _onFloatChanged = (_, _) => MarkSliderDirty();
-        _onDoubleChanged = (_, _) => MarkSliderDirty();
+        // _onNumericChanged fires only for int/float/double parameters and starts the debounce
+        // timer. _onAnyChanged fires for every parameter and marks the pending flag. Both fire
+        // synchronously within Parameter<T>.SetValue before the next Tick() call, so registration
+        // order does not affect correctness.
+        _onNumericChanged = MarkSliderDirty;
         _onAnyChanged = () => _anyPending = true;
 
-        _store.AddListenerToAll(_onIntChanged);
-        _store.AddListenerToAll(_onFloatChanged);
-        _store.AddListenerToAll(_onDoubleChanged);
+        _store.AddListenerToAll(IsNumericParameter, _onNumericChanged);
         _store.AddListenerToAll(_onAnyChanged);
     }
 
@@ -76,6 +119,25 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// Evaluates pending saves and flushes to disk when appropriate.
     /// Must be called once per frame, typically from an <c>ImGuiDrawUI</c> callback.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This method is a lightweight no-op when there are no pending changes, so it is safe
+    /// to call unconditionally every frame.
+    /// </para>
+    /// <para>
+    /// Decision logic per call:
+    /// <list type="bullet">
+    /// <item>If nothing is pending, returns immediately.</item>
+    /// <item>If a non-numeric change is pending (and no numeric change is also pending),
+    ///   calls <see cref="Flush"/> immediately.</item>
+    /// <item>If a numeric change is pending, waits until <see cref="DebounceWindow"/> has
+    ///   elapsed since the last numeric change before calling <see cref="Flush"/>.</item>
+    /// </list>
+    /// </para>
+    /// <para>
+    /// After disposal this method is a permanent no-op.
+    /// </para>
+    /// </remarks>
     public void Tick()
     {
         if (_disposed || !_anyPending) return;
@@ -94,8 +156,16 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
 
     /// <summary>
     /// Forces an immediate save and clears all pending state, regardless of the debounce timer.
-    /// Call this before plugin unload to ensure no changes are lost.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Always call this before plugin unload (before <see cref="Dispose"/>) to ensure no
+    /// debounced numeric change is silently dropped when the plugin exits.
+    /// </para>
+    /// <para>
+    /// After disposal this method is a permanent no-op.
+    /// </para>
+    /// </remarks>
     public void Flush()
     {
         if (_disposed) return;
@@ -108,16 +178,19 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// <summary>
     /// Unregisters all parameter-change listeners attached at construction time and marks
     /// this instance as disposed. After disposal, <see cref="Tick"/> and <see cref="Flush"/>
-    /// become no-ops.
+    /// become permanent no-ops.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Always dispose this instance before or alongside the owning <see cref="SettingsStore{TConfig}"/>
-    /// to ensure listener cleanup is coordinated correctly.
+    /// Always call <see cref="Flush"/> before <see cref="Dispose"/> to guarantee any
+    /// debounced write still pending at unload time is not silently dropped.
     /// </para>
     /// <para>
-    /// Calls <see cref="Flush"/> before releasing resources so any debounced write that is
-    /// still pending at unload time is not silently dropped.
+    /// Dispose this instance <em>before</em> or <em>alongside</em> the owning
+    /// <see cref="SettingsStore{TConfig}"/>. Disposing the store first causes the store to
+    /// enter a disposed state, and this controller's subsequent call to
+    /// <see cref="SettingsStore{TConfig}.RemoveListenerFromAll(Action)"/> will throw
+    /// <see cref="ObjectDisposedException"/>.
     /// </para>
     /// </remarks>
     public void Dispose()
@@ -127,9 +200,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         _disposed = true;
 
         _store.RemoveListenerFromAll(_onAnyChanged);
-        _store.RemoveListenerFromAll(_onIntChanged);
-        _store.RemoveListenerFromAll(_onFloatChanged);
-        _store.RemoveListenerFromAll(_onDoubleChanged);
+        _store.RemoveListenerFromAll(IsNumericParameter, _onNumericChanged);
 
         GC.SuppressFinalize(this);
     }
@@ -143,4 +214,12 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         _sliderChangedAt = Stopwatch.GetTimestamp();
         _sliderPending = true;
     }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="p"/> holds a numeric value type
+    /// (<see cref="int"/>, <see cref="float"/>, or <see cref="double"/>) whose changes should
+    /// be debounced rather than saved immediately.
+    /// </summary>
+    private static bool IsNumericParameter(IParameter p)
+        => p.ValueType == typeof(int) || p.ValueType == typeof(float) || p.ValueType == typeof(double);
 }

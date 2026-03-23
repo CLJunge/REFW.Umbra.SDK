@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     REFramework C# API dependency setup.
@@ -22,6 +22,7 @@ $ErrorActionPreference = 'Stop'
 # ---------------------------------------------------------------
 $AssetName   = 'csharp-api.zip'
 $ReleasesApi = 'https://api.github.com/repos/praydog/REFramework-nightly/releases'
+$UserAgent   = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 $ApiDest     = Join-Path $PSScriptRoot '..\dependencies\reframework\api'
 $GenDest     = Join-Path $PSScriptRoot '..\dependencies\reframework\generated'
 $TempDir     = Join-Path $env:TEMP "refw_setup_$(Get-Random)"
@@ -88,7 +89,7 @@ function Get-LatestReleaseUrl {
     Write-Host '[1/4] Fetching latest nightly release info from GitHub...'
     Write-Host ''
     try {
-        $releases = Invoke-RestMethod -Uri $ReleasesApi -Headers @{ 'User-Agent' = 'REFWSetup/1.0' }
+        $releases = Invoke-RestMethod -Uri $ReleasesApi -Headers @{ 'User-Agent' = $UserAgent }
         $asset    = $releases[0].assets | Where-Object { $_.name -eq $AssetName } | Select-Object -First 1
         if (-not $asset) { throw "Asset '$AssetName' was not found in the latest release." }
         Write-Host "  Asset : $AssetName"
@@ -153,13 +154,22 @@ function Copy-ApiDlls {
         Write-Host '[WARN] Expected file not found: reframework\plugins\REFramework.NET.dll'
     }
 
-    # reframework/plugins/managed/dependencies/*.dll  (reference assemblies)
+    # reframework/plugins/managed/dependencies/ — copy only the two DLLs directly
+    # referenced by the SDK and plugin projects. AssemblyGenerator, REFCoreDeps, and
+    # Microsoft.CodeAnalysis.* are REFramework host internals and are not referenced
+    # by any project code; staging them would only add noise to the dependencies folder.
     $depsDir = Join-Path $ExtractDir 'reframework\plugins\managed\dependencies'
+    $sdkDeps = @('Hexa.NET.ImGui.dll', 'HexaGen.Runtime.dll')
     if (Test-Path $depsDir) {
-        foreach ($f in Get-ChildItem -Path $depsDir -Filter '*.dll') {
-            Copy-Item -Path $f.FullName -Destination $ApiDest -Force
-            Write-Host "    + $($f.Name)"
-            $count++
+        foreach ($name in $sdkDeps) {
+            $src = Join-Path $depsDir $name
+            if (Test-Path $src) {
+                Copy-Item -Path $src -Destination $ApiDest -Force
+                Write-Host "    + $name"
+                $count++
+            } else {
+                Write-Host "[WARN] Expected file not found in managed/dependencies: $name"
+            }
         }
     } else {
         Write-Host '[WARN] Expected folder not found: reframework\plugins\managed\dependencies'

@@ -9,11 +9,44 @@
 ## REFramework-specific guidance
 - Prefer patterns that work inside the REFramework managed plugin host.
 - Use `REFramework.NET` APIs when interacting with the host environment.
-- For logging, prefer the existing `Umbra.SDK.Logging.Logger` wrapper, which forwards to `REFrameworkNET.API.LogInfo`, `API.LogWarning`, and `API.LogError`.
-  - `Logger` has an optional static `Prefix` property; set it once at plugin startup to tag all log messages.
-  - All `Logger` methods are exception-safe and silently suppress errors to avoid disrupting the game process.
-  - `Logger.Exception(Exception ex, string message)` logs a context message followed by the exception type, message, and stack trace via `API.LogError`. Use this — **not** `Logger.Error` — when logging exceptions.
+- For logging in plugin code, use `Umbra.SDK.Logging.PluginLogger` — an **instance class** that forwards to `REFrameworkNET.API.LogInfo`, `API.LogWarning`, and `API.LogError`.
+  - Declare the logger as a `private static readonly PluginLogger _log = new("PluginName");` field on the plugin class. Never set it in the entry point — initialise it inline so it is always available and never shared with other plugins.
+  - Do **not** use `Logger.Prefix`, `Logger.PrefixFormat`, or `Logger.MinLevel`. These properties no longer exist on the static `Logger` class. All managed plugins load into the same AppDomain; any static prefix written by one plugin would silently overwrite every other plugin's prefix.
+  - `PluginLogger` exposes `Prefix`, `PrefixFormat`, and `MinLevel` as instance properties, fully isolated per plugin.
+  - All `PluginLogger` methods are exception-safe and silently suppress errors to avoid disrupting the game process. Formatted overloads (`...(string format, params object[] args)`) also swallow any exception thrown by `string.Format`, so an invalid format string or mismatched arguments causes the message to be silently discarded rather than propagated.
+  - `_log.Exception(Exception ex, string message)` logs a context message followed by the exception type, message, and stack trace via `API.LogError`. Use this — **not** `_log.Error` — when logging exceptions.
+  - The static `Logger` class still exists as a raw, unconditional forwarding facade (no prefix, no level filter). It is intended for SDK-internal use only.
 - Assume game-facing code may run in a constrained plugin environment where resilience is preferred over hard failures.
+
+## Thread safety — hooks and callbacks
+
+- `[MethodHook]` methods and REFramework callbacks (e.g. ImGui pre-draw) **must be static**. This means any dedicated hook class uses a `private static` field to hold a reference to the state it writes.
+- A `private static` field is scoped to its declaring type, which is scoped to its assembly. All managed plugins share one `AppDomain`, but each plugin assembly has its own type identity — cross-plugin contamination of a hook class's static field is not possible without explicit reflection.
+- Hooks fire on whichever thread the hooked method runs on. ImGui callbacks fire on the game's render/update thread. For most RE Engine camera and gameplay hooks these are the same thread, but this is not guaranteed.
+- **Use the swap-instance pattern** when a hook or callback writes multiple fields to a shared state object. Build a fresh instance, populate it fully, then replace the reference in a single volatile write. This ensures readers always see a consistent snapshot. The static field holding the reference should be volatile. Always null it in `[PluginExitPoint]` so post-unload hook calls are no-ops. Example:
+```csharp
+internal static class FovHooks
+{
+    // volatile ensures the reference write is visible across threads without a lock.
+    private static volatile CameraState? _target;
+
+    internal static void Attach(CameraState target) => _target = target;
+    internal static void Detach()                   => _target = null;
+
+    [MethodHook(typeof(app.PlayerCameraFOVCalc), nameof(app.PlayerCameraFOVCalc.getFOV), MethodHookType.Post)]
+    public static void OnGetFOVPost(ref ulong retval)
+    {
+        if (_target is null) return;
+
+        float fov = BitConverter.UInt32BitsToSingle((uint)(retval & 0xFFFFFFFF));
+
+        // Swap-instance: build the new snapshot, then replace the reference atomically.
+        _target = new CameraState { Fov = fov, Mode = _target.Mode };
+    }
+}
+```
+- Always call `Detach()` (or equivalent null-assignment) in `[PluginExitPoint]` so any hook that fires after unload becomes a safe no-op.
+- The same pattern applies to ImGui pre-draw or any other static callback that writes shared state consumed by another part of the plugin.
 
 ## UI and input
 - UI should be implemented with **ImGui**, using `Hexa.NET.ImGui`.
@@ -40,7 +73,8 @@
   - `[Step(step)]` — drag speed for unconstrained numeric controls; also infers the fallback float format's decimal precision.
   - `[Format("...")]` — printf-style format string override for numeric controls (e.g. `"%.0f°"`, `"%d px"`). Overrides the `[Step]`-derived format.
   - `[MaxLength(uint)]` — maximum character count for `string` input fields (default `256`).
-  - `[Spacing(count = 1)]` — inserts one or more `ImGui.Spacing()` calls above the control.
+  - `[SpacingBefore(count = 1)]` — inserts one or more `ImGui.Spacing()` calls **above** the control.
+  - `[SpacingAfter(count = 1)]` — inserts one or more `ImGui.Spacing()` calls **below** the control.
   - `[Indent(amount = 0f)]` — indents the control (or all controls in a group class) using `ImGui.Indent`/`Unindent`; `0` uses ImGui's default spacing. Can be applied at the class or property level.
   - `[HideIf<T>("MemberName")]` — hides the control while the named `bool` member on the same config class is `true`.
   - `[HideIf<T>("MemberName", value)]` — hides the control while the named member equals `value`.
@@ -99,39 +133,132 @@ public partial record NestedConfigGroup
 - `ConfigDrawer<TConfig>` is `IDisposable`; dispose it when the settings window is closed or the plugin unloads.
 - Custom controls are implemented via `IParameterDrawer` (in `Umbra.SDK.Config.UI`) and applied with `[CustomDrawer<TDrawer>]` on the parameter property.
 - For two-column-aware custom controls that participate in the standard label layout, use `ITwoColumnParameterDrawer` with `[TwoColumnCustomDrawer<TDrawer>]`.
+- To render an entire nested configuration group with a fully custom ImGui layout, apply `[NestedGroupDrawer<TDrawer>]` to the **nested group type** (not the property) and implement `INestedGroupDrawer<T>` in the drawer class:
+  - `[NestedGroupDrawer<TDrawer>]` is declared on `AttributeTargets.Class | AttributeTargets.Struct`. Apply it to the nested `record`/`class` decorated with `[AutoRegisterSettings]`.
+  - `TDrawer` must implement `INestedGroupDrawer<T>` (where `T` is the nested group type) and have a public parameterless constructor.
+  - When `ConfigDrawer` encounters a property typed as the decorated class, it instantiates the drawer once at build time and calls `Draw(groupInstance)` each frame instead of recursing into the class's individual parameters.
+  - The drawer has full ImGui layout control; no label, column alignment, or section header is emitted by the factory.
+  - Property-level attributes `[Category]`, `[SpacingBefore]`, `[SpacingAfter]`, and `[HideIf]` on the **parent property** are still honoured. `[CollapseAsTree]` is applied to the nested group **type** itself, not the parent property.
+  - `INestedGroupDrawer<T>` extends `IDisposable`. The default `Dispose` implementation calls `GC.SuppressFinalize`; override it when the drawer holds resources that must be released on plugin unload.
+  - Nested group properties should still be modeled as `Parameter<T>` fields with `[SettingsParameter]` so they participate in `SettingsStore` persistence, even though the custom drawer handles all rendering.
+
+```csharp
+// Nested group type: apply [NestedGroupDrawer<>] here, on the type itself.
+[AutoRegisterSettings]
+[Category("My Group")]
+[SettingsPrefix("myGroup")]
+[CollapseAsTree]
+[NestedGroupDrawer<MyGroupDrawer>]
+public record MyGroup
+{
+    [SettingsParameter]
+    public Parameter<int> Value { get; set; } = new(42);
+}
+
+// Custom drawer: full ImGui layout control for the group.
+internal class MyGroupDrawer : INestedGroupDrawer<MyGroup>
+{
+    public void Draw(MyGroup groupInstance)
+    {
+        ImGui.Text($"Value: {groupInstance.Value.Value}");
+        int v = groupInstance.Value.Value;
+        if (ImGui.SliderInt("##value", ref v, 0, 100))
+            groupInstance.Value.Set(v);
+    }
+}
+```
+
+## Plugin panel system
+
+`PluginPanel` (in `Umbra.SDK.UI.Panel`) is the recommended top-level UI type for plugins. It composes an ordered list of `IPanelSection` instances under a shared ImGui ID scope and owns their lifetimes. Use `ConfigDrawer<TConfig>` directly only when the plugin needs a settings panel with no live state.
+
+**Section types:**
+- `ConfigSection<TConfig>` — wraps `ConfigDrawer<TConfig>` as a panel section. Accepts an optional `idScope` that defaults to the config type name.
+- `LiveSection<T>` — renders live game state via an `ILiveSectionDrawer<T>` declared on the state type. Accepts an optional instance (for hook-written state the plugin owns) or constructs one internally.
+
+**Declaring a live state drawer:**
+
+Apply `[LiveSectionDrawer<TDrawer>]` to the state class, not the drawer. The state class is a plain mutable POCO whose fields are written by `[MethodHook]` callbacks and read by the drawer each frame. Use the swap-instance pattern for multi-field updates.
+
+```csharp
+[LiveSectionDrawer<CameraStatusDrawer>]
+public sealed class CameraState
+{
+    public float      Fov  { get; set; }
+    public CameraMode Mode { get; set; }
+}
+
+internal sealed class CameraStatusDrawer : ILiveSectionDrawer<CameraState>
+{
+    public void Draw(CameraState state)
+    {
+        ImGui.Text($"FOV: {state.Fov:F1}");
+        ImGui.Text($"Mode: {state.Mode}");
+    }
+}
+```
+
+**Hook-to-state wiring:**
+
+The plugin owns the state instance. The hook class holds a `private static volatile` reference to it, set via `Attach`/`Detach`. Always call `Detach()` in `[PluginExitPoint]`.
+
+```csharp
+internal static class FovHooks
+{
+    private static volatile CameraState? _target;
+
+    internal static void Attach(CameraState target) => _target = target;
+    internal static void Detach()                   => _target = null;
+
+    [MethodHook(typeof(app.PlayerCameraFOVCalc), nameof(app.PlayerCameraFOVCalc.getFOV), MethodHookType.Post)]
+    public static void OnGetFOVPost(ref ulong retval)
+    {
+        if (_target is null) return;
+        float fov = BitConverter.UInt32BitsToSingle((uint)(retval & 0xFFFFFFFF));
+        _target = new CameraState { Fov = fov, Mode = _target.Mode };
+    }
+}
+```
 
 ## Plugin lifecycle
 - Mark the plugin entry point with `[PluginEntryPoint]` and the exit point with `[PluginExitPoint]` (from `REFrameworkNET.Attributes`).
-- Initialize `SettingsStore<TConfig>` and `ConfigDrawer<TConfig>` in the entry point; dispose and null both in the exit point.
-- Always pass a unique plugin identifier string as `idScope` to `ConfigDrawer<TConfig>` so that all ImGui widget IDs rendered by the drawer are scoped with `ImGui.PushID` / `ImGui.PopID`. This prevents duplicate-ID warnings when multiple plugins render settings panels in the same ImGui window.
-- Always call `Save()` before `Dispose()` on the store so the last in-memory values are flushed to disk on unload.
+- Construct `PluginPanel` in the entry point with all required sections; dispose and null it in the exit point.
+- The `idScope` passed to `PluginPanel` scopes all ImGui widget IDs for the entire panel. Individual sections may optionally push a sub-scope via their own `idScope` parameter.
+- Always call `Save()` before `Dispose()` on `SettingsStore` so the last in-memory values are flushed to disk on unload.
 - Null out all static references in the exit point to avoid stale state if the plugin is reloaded in the same process session.
 
-```
-    private static ConfigDrawer<PluginConfig>? _drawer;
-    private static SettingsStore<PluginConfig>? _store;
+```csharp
+    private static PluginPanel?                   _panel;
+    private static SettingsStore<PluginConfig>?   _store;
+    private static CameraState?                   _cameraState;
 
     [PluginEntryPoint]
     public static void Load()
     {
-        //System.Diagnostics.Debugger.Launch();
-
         var configPath = GetConfigPath();
-        _store = new SettingsStore<PluginConfig>(configPath);
-        var config = _store.Load();
+        _store       = new SettingsStore<PluginConfig>(configPath);
+        var config   = _store.Load();
 
-        _drawer = new ConfigDrawer<PluginConfig>(config, idScope: "MyPlugin");
+        _cameraState = new CameraState();
+        FovHooks.Attach(_cameraState);
+
+        _panel = new PluginPanel("MyPlugin")
+            .Add(new LiveSection<CameraState>(_cameraState))
+            .Add(new ConfigSection<PluginConfig>(config));
     }
 
     [PluginExitPoint]
     public static void Unload()
     {
+        FovHooks.Detach();
+        _cameraState = null;
+
         _store?.Save();
         _store?.Dispose();
         _store = null;
 
-        _drawer?.Dispose();
-        _drawer = null;
+        _panel?.Dispose();
+        _panel = null;
     }
 ```
 

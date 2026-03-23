@@ -1,6 +1,6 @@
+using System.Diagnostics;
 using Hexa.NET.ImGui;
 using Umbra.SDK.Config.Attributes;
-using Umbra.SDK.UI;
 
 namespace Umbra.SDK.Config.UI.Nodes;
 
@@ -26,6 +26,7 @@ namespace Umbra.SDK.Config.UI.Nodes;
 /// entire category output — header and child controls — in a matching
 /// <c>ImGui.Indent</c>/<c>ImGui.Unindent</c> scope using the attribute's pixel amount.
 /// </param>
+[DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
 internal sealed class CategoryNode(
     string label,
     CollapseAsTreeAttribute? collapseAttr,
@@ -57,7 +58,7 @@ internal sealed class CategoryNode(
     /// <summary>Renders the category as an <c>ImGui.SeparatorText</c> header followed by its child controls.</summary>
     private void DrawAsHeader()
     {
-        ImGuiControls.DrawSectionHeader(label);
+        ImGui.SeparatorText(label);
         foreach (var child in Children)
             child.Draw();
     }
@@ -79,4 +80,6 @@ internal sealed class CategoryNode(
 
         ImGui.TreePop();
     }
+
+    private string GetDebuggerDisplay() => $"Category: {label} ({Children.Count} children)";
 }

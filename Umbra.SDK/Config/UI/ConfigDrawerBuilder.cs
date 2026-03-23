@@ -1,7 +1,10 @@
-using Hexa.NET.ImGui;
+using System.Linq.Expressions;
 using System.Reflection;
+using Hexa.NET.ImGui;
 using Umbra.SDK.Config.Attributes;
 using Umbra.SDK.Config.UI.Nodes;
+using Umbra.SDK.Config.UI.ParameterDrawers;
+using Umbra.SDK.Logging;
 
 namespace Umbra.SDK.Config.UI;
 
@@ -47,14 +50,26 @@ internal sealed class ConfigDrawerBuilder
     /// This is distinct from the class-level <see cref="IndentAttribute"/> on
     /// <paramref name="type"/>, which only affects individual parameter controls as a fallback.
     /// </param>
+    /// <remarks>
+    /// Returns immediately without emitting any nodes when <paramref name="type"/> is decorated
+    /// with <see cref="INestedGroupDrawerAttribute"/>. Such types are rendered entirely by their
+    /// custom drawer; expanding their parameters here would duplicate what the drawer manages.
+    /// </remarks>
     internal void Collect(object obj, Type type, IndentAttribute? propertyIndentOverride = null)
     {
-        var classCategory = type.GetCustomAttribute<CategoryAttribute>()?.Name;
-        var classIndent = type.GetCustomAttribute<IndentAttribute>();
-        var classCollapseAttr = type.GetCustomAttribute<CollapseAsTreeAttribute>();
-        var classLabelMargin = type.GetCustomAttribute<LabelMarginAttribute>();
+        // A type decorated with [NestedGroupDrawer<TDrawer>] is rendered entirely by its
+        // custom drawer. Expanding its parameters here would duplicate what that drawer
+        // manages, so bail out immediately regardless of how Collect was reached.
+        var typeMeta = TypeDrawMetadata.For(type);
+        if (typeMeta.NestedGroupDrawer is not null)
+            return;
 
-        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        var classCategory = typeMeta.Category;
+        var classIndent = typeMeta.Indent;
+        var classCollapseAttr = typeMeta.CollapseAttr;
+        var classLabelMargin = typeMeta.LabelMargin;
+
+        foreach (var prop in typeMeta.Properties)
         {
             var propType = prop.PropertyType;
 
@@ -64,10 +79,10 @@ internal sealed class ConfigDrawerBuilder
                 if (prop.GetValue(obj) is not IParameter parameter) continue;
 
                 var meta = parameter.Metadata;
-                var label = meta.DisplayName ?? prop.Name.ToDisplayName();
-                var cat = meta.Category
-                         ?? prop.GetCustomAttribute<CategoryAttribute>()?.Name
-                         ?? classCategory;
+                var label = meta.ResolvedLabel;
+                // meta.Category is already populated by ParameterMetadataReader.ReadFrom during
+                // SettingsStore.Load(), so the per-property GetCustomAttribute fallback is redundant.
+                var cat = meta.Category ?? classCategory;
 
                 // propertyIndentOverride wraps the entire category block (header + children).
                 EmitCategoryHeader(cat, classCollapseAttr, propertyIndentOverride);
@@ -77,30 +92,43 @@ internal sealed class ConfigDrawerBuilder
 
                 var group = cat is not null ? _currentCategoryNode!.AlignmentGroup : _rootAlignmentGroup;
                 if (classLabelMargin is not null) group.Margin = classLabelMargin.Pixels;
-                var (draw, resource) = ControlFactory.BuildDrawAction(prop, parameter, label, group);
+                var (draw, resource) = ControlFactory.BuildDrawAction(parameter, label, group);
                 if (resource is not null) Disposables.Add(resource);
 
-                // Property-level [Indent] takes priority; falls back to class-level.
-                var indent = prop.GetCustomAttribute<IndentAttribute>() ?? classIndent;
-                if (indent is not null)
+                // Property-level Indent (pre-populated in metadata by ParameterMetadataReader) takes
+                // priority; falls back to the class-level IndentAttribute read once per Collect call.
+                var indentAmount = meta.Indent ?? classIndent?.Amount;
+                if (indentAmount.HasValue)
                 {
-                    var amount = indent.Amount; // capture before closure
+                    var amount = indentAmount.Value; // capture before closure
                     var inner = draw;
                     draw = () => { ImGui.Indent(amount); inner(); ImGui.Unindent(amount); };
                 }
 
-                var spacingCount = prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0;
-                var spacingAfterCount = prop.GetCustomAttribute<SpacingAfterAttribute>()?.Count ?? 0;
+                var spacingCount = meta.SpacingBefore;
+                var spacingAfterCount = meta.SpacingAfter;
                 var order = parameter.Metadata.Order ?? int.MaxValue;
-                targetList.Add(new ParameterNode(VisibilityPredicateResolver.Build(prop, obj), draw, order, spacingCount, spacingAfterCount));
+                // Fast path: most parameters carry no HideIf condition; return the cached static
+                // always-true delegate directly to avoid the function-call overhead of Build.
+                var isVisible = meta.HideIf is not null
+                    ? VisibilityPredicateResolver.Build(meta.HideIf, obj)
+                    : static () => true;
+                targetList.Add(new ParameterNode(isVisible, draw, order, spacingCount, spacingAfterCount));
                 continue;
             }
 
             // ── Branch: nested settings group ─────────────────────────────
-            if (propType.GetCustomAttribute<AutoRegisterSettingsAttribute>() is not null
+            var propTypeMeta = TypeDrawMetadata.For(propType);
+            if (propTypeMeta.IsAutoRegisterSettings
                 && prop.GetValue(obj) is { } nested)
             {
-                Collect(nested, propType, prop.GetCustomAttribute<IndentAttribute>());
+                // Class-level [NestedGroupDrawer<TDrawer>] — skip recursion and render the
+                // group instance directly via the custom drawer.
+                var nestedDrawerAttr = propTypeMeta.NestedGroupDrawer;
+                if (nestedDrawerAttr is not null)
+                    EmitNestedGroupDrawerNode(prop, propType, propTypeMeta, nested, obj, classCategory);
+                else
+                    Collect(nested, propType, prop.GetCustomAttribute<IndentAttribute>());
             }
         }
     }
@@ -143,12 +171,109 @@ internal sealed class ConfigDrawerBuilder
     }
 
     /// <summary>
+    /// Instantiates the <see cref="INestedGroupDrawer{T}"/> declared on
+    /// <paramref name="propTypeMeta"/>, compiles a zero-reflection draw delegate, routes the
+    /// resulting <see cref="ParameterNode"/> into the correct category bucket, and registers
+    /// the drawer as a disposable resource if it implements <see cref="IDisposable"/>.
+    /// </summary>
+    /// <remarks>
+    /// Extracted from <see cref="Collect"/> to keep tree-walking logic separate from the
+    /// one-time drawer instantiation and expression-compilation concern.
+    /// </remarks>
+    /// <param name="prop">The property on the parent config that holds the nested group.</param>
+    /// <param name="propType">The runtime type of the nested group.</param>
+    /// <param name="propTypeMeta">Pre-cached type-level metadata for <paramref name="propType"/>.</param>
+    /// <param name="nested">The live nested group instance retrieved from <paramref name="prop"/>.</param>
+    /// <param name="owner">The parent config instance that owns <paramref name="prop"/>.</param>
+    /// <param name="classCategory">The inherited category from the parent config type, used as a fallback.</param>
+    private void EmitNestedGroupDrawerNode(
+        PropertyInfo prop,
+        Type propType,
+        TypeDrawMetadata propTypeMeta,
+        object nested,
+        object owner,
+        string? classCategory)
+    {
+        var nestedDrawerAttr = propTypeMeta.NestedGroupDrawer!;
+        try
+        {
+            var drawerInstance = Activator.CreateInstance(nestedDrawerAttr.DrawerType)!;
+
+            Type? genericIface = null;
+            Type? groupType = null;
+            foreach (var iface in nestedDrawerAttr.DrawerType.GetInterfaces())
+            {
+                if (!iface.IsGenericType)
+                    continue;
+
+                if (iface.GetGenericTypeDefinition() != typeof(INestedGroupDrawer<>))
+                    continue;
+
+                var candidateGroupType = iface.GetGenericArguments()[0];
+                // Ensure the drawer's group type is compatible with the nested group's actual type.
+                if (!candidateGroupType.IsAssignableFrom(propType))
+                    continue;
+
+                genericIface = iface;
+                groupType = candidateGroupType;
+                break;
+            }
+
+            if (genericIface is null || groupType is null)
+            {
+                Logger.Error(
+                    $"ConfigDrawer: nested group drawer '{nestedDrawerAttr.DrawerType.Name}' does not support group type '{propType.FullName}'.");
+                return;
+            }
+
+            if (drawerInstance is IDisposable disposable)
+                Disposables.Add(disposable);
+
+            var drawMethod = genericIface.GetMethod("Draw")!;
+            var callExpr = Expression.Call(
+                Expression.Convert(Expression.Constant(drawerInstance), genericIface),
+                drawMethod,
+                Expression.Convert(Expression.Constant(nested), groupType));
+            var drawAction = Expression.Lambda<Action>(callExpr).Compile();
+
+            // Category: property override → nested class attribute → parent class attribute.
+            var cat = prop.GetCustomAttribute<CategoryAttribute>()?.Name
+                     ?? propTypeMeta.Category
+                     ?? classCategory;
+
+            EmitCategoryHeader(
+                cat,
+                propTypeMeta.CollapseAttr,
+                prop.GetCustomAttribute<IndentAttribute>());
+
+            var targetList = cat is not null ? _currentCategoryNode!.Children : Nodes;
+
+            IHideIfAttribute? propHideIf = null;
+            foreach (var a in prop.GetCustomAttributes(false))
+            {
+                if (a is IHideIfAttribute h) { propHideIf = h; break; }
+            }
+
+            targetList.Add(new ParameterNode(
+                VisibilityPredicateResolver.Build(propHideIf, owner),
+                drawAction,
+                order: prop.GetCustomAttribute<ParameterOrderAttribute>()?.Order ?? int.MaxValue,
+                spacingBefore: prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0,
+                spacingAfter: prop.GetCustomAttribute<SpacingAfterAttribute>()?.Count ?? 0));
+        }
+        catch (Exception ex)
+        {
+            Logger.Exception(ex, $"ConfigDrawer: failed to instantiate nested group drawer '{nestedDrawerAttr.DrawerType.Name}'.");
+        }
+    }
+
+    /// <summary>
     /// Applies a stable sort to parameter nodes within every category context, ordering them
     /// by their <see cref="ParameterNode.Order"/> value ascending.
     /// </summary>
     /// <remarks>
     /// Call this once after <see cref="Collect"/> has finished walking the entire config tree.
-    /// Nodes without an explicit <c>[Order]</c> attribute receive an implicit key of
+    /// Nodes without an explicit <c>[ParameterOrder]</c> attribute receive an implicit key of
     /// <see cref="int.MaxValue"/>, placing them after all explicitly ordered entries while
     /// preserving original declaration order among equals. Both per-category children and the
     /// flat top-level <see cref="Nodes"/> list are sorted in place via
@@ -158,10 +283,7 @@ internal sealed class ConfigDrawerBuilder
     /// </remarks>
     internal void SortAll()
     {
-        static int NodeOrder(IDrawNode n)
-        {
-            return n is ParameterNode p ? p.Order : int.MaxValue;
-        }
+        static int NodeOrder(IDrawNode n) => n is ParameterNode p ? p.Order : int.MaxValue;
 
         foreach (var cat in _allCategoryNodes)
             cat.Children.StableSortBy(NodeOrder);

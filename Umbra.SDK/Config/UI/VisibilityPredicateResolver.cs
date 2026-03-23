@@ -12,32 +12,37 @@ namespace Umbra.SDK.Config.UI;
 internal static class VisibilityPredicateResolver
 {
     /// <summary>
-    /// Resolves a <see cref="HideIfAttribute{T}"/> on <paramref name="member"/> into a
-    /// <see cref="Func{Boolean}"/> that returns <see langword="true"/> when the parameter
-    /// should be visible (i.e. the hide condition is NOT met).
+    /// Resolves a cached <see cref="IHideIfAttribute"/> into a <see cref="Func{Boolean}"/> that
+    /// returns <see langword="true"/> when the parameter should be visible (i.e. the hide
+    /// condition is NOT met).
     /// </summary>
     /// <remarks>
     /// The raw property or field accessor is compiled once into a delegate at build time so
     /// that per-frame evaluation does not pay the cost of <see cref="PropertyInfo.GetValue"/>
     /// reflection. The compiled delegate reads directly from the closed-over
     /// <paramref name="owner"/> instance.
+    /// <para>
+    /// Callers that have already determined <paramref name="hideIf"/> is
+    /// <see langword="null"/> should short-circuit with <c>static () =&gt; true</c> and skip
+    /// this call entirely to avoid the function-call overhead for the common no-condition case.
+    /// </para>
     /// </remarks>
-    /// <param name="member">The reflected property decorated with the optional <see cref="HideIfAttribute{T}"/>.</param>
-    /// <param name="owner">The configuration object instance that owns <paramref name="member"/>.</param>
+    /// <param name="hideIf">
+    /// The pre-cached hide-condition data from <see cref="ParameterMetadata.HideIf"/>, or
+    /// <see langword="null"/> when the parameter carries no hide condition.
+    /// </param>
+    /// <param name="owner">The configuration object instance that owns the parameter.</param>
     /// <returns>
     /// A predicate that returns <see langword="true"/> when the control should be rendered;
-    /// always returns <see langword="true"/> when no <see cref="HideIfAttribute{T}"/> is present.
+    /// always returns <see langword="true"/> when <paramref name="hideIf"/> is <see langword="null"/>.
     /// </returns>
-    internal static Func<bool> Build(MemberInfo member, object owner)
+    internal static Func<bool> Build(IHideIfAttribute? hideIf, object owner)
     {
-        var attr = member.GetCustomGenericAttribute(typeof(HideIfAttribute<>));
+        if (hideIf is null) return static () => true;
 
-        if (attr is null) return static () => true;
-
-        var attrType = attr.GetType();
-        var memberName = (string)attrType.GetProperty("MemberName")!.GetValue(attr)!;
-        var hasValue = (bool)attrType.GetProperty("HasValue")!.GetValue(attr)!;
-        var compareValue = attrType.GetProperty("Value")!.GetValue(attr);
+        var memberName = hideIf.MemberName;
+        var hasValue = hideIf.HasValue;
+        var compareValue = hideIf.BoxedValue;
 
         var ownerType = owner.GetType();
         var targetProp = ownerType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);

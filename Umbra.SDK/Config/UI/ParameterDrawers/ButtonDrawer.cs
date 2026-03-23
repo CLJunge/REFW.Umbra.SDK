@@ -1,6 +1,7 @@
-using Hexa.NET.ImGui;
 using System.Numerics;
+using Hexa.NET.ImGui;
 using Umbra.SDK.Config.Attributes;
+using Umbra.SDK.Logging;
 using Umbra.SDK.UI;
 
 namespace Umbra.SDK.Config.UI.ParameterDrawers;
@@ -43,12 +44,20 @@ namespace Umbra.SDK.Config.UI.ParameterDrawers;
 /// </list>
 /// </para>
 /// <para>
+/// Using <see cref="ButtonStyle.Custom"/> without a <c>[CustomButtonColors]</c> attribute on
+/// the same property is a misconfiguration. The drawer logs a one-time warning and falls back
+/// to <see cref="ButtonStyle.Default"/> rather than throwing, so the game process is never
+/// disrupted by a configuration error in a per-frame draw path.
+/// </para>
+/// <para>
 /// The backing <see cref="Action"/> is intentionally not persisted to JSON; the settings
 /// persistence layer skips all delegate-typed parameters during save and load.
 /// </para>
 /// </remarks>
 public sealed class ButtonDrawer : IParameterDrawer
 {
+    private bool _warnedAboutMissingColors;
+
     /// <inheritdoc/>
     public void Draw(string label, IParameter parameter)
     {
@@ -63,9 +72,21 @@ public sealed class ButtonDrawer : IParameterDrawer
         var size = new Vector2(meta.ButtonWidth ?? 0f, 0f);
         bool colorsPushed;
 
+        // Guard: ButtonStyle.Custom without [CustomButtonColors] is a misconfiguration.
+        // Log once and fall back to Default rather than throwing from a per-frame draw path,
+        // which would crash the game process on every frame.
         if (style == ButtonStyle.Custom && meta.CustomButtonColors is null)
-            throw new InvalidOperationException(
-                $"ButtonStyle.Custom requires a [CustomButtonColors] attribute on the same property (label: '{label}').");
+        {
+            if (!_warnedAboutMissingColors)
+            {
+                _warnedAboutMissingColors = true;
+                Logger.Warning(
+                    $"ButtonDrawer: '{label}' uses ButtonStyle.Custom without a [CustomButtonColors] attribute; " +
+                    "falling back to ButtonStyle.Default. Add [CustomButtonColors(...)] to suppress this warning.");
+            }
+
+            style = ButtonStyle.Default;
+        }
 
         if (meta.CustomButtonColors is { } custom)
             colorsPushed = ButtonStyleColors.Push(custom.Normal, custom.Hovered, custom.Active);
@@ -80,7 +101,8 @@ public sealed class ButtonDrawer : IParameterDrawer
         if (meta.Description is not null)
         {
             ImGui.SameLine();
-            ImGuiControls.DrawHelpMarker(meta.Description);
+            ImGuiWidgets.DrawHelpMarker(meta.Description);
         }
     }
+
 }

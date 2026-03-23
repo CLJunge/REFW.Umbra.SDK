@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace Umbra.SDK.Config;
 
@@ -10,6 +10,13 @@ namespace Umbra.SDK.Config;
 [DebuggerDisplay("{Key}: {Value} (Default: {DefaultValue})")]
 public class Parameter<T> : IParameter
 {
+    /// <summary>
+    /// Cached flag indicating whether <typeparamref name="T"/> is a non-nullable value type.
+    /// Evaluated once per closed generic type to avoid repeated reflection on every call.
+    /// </summary>
+    private static readonly bool IsNonNullableValueType =
+        typeof(T).IsValueType && Nullable.GetUnderlyingType(typeof(T)) == null;
+
     private T? _value;
     private Action? _interfaceValueChanged;
 
@@ -91,30 +98,62 @@ public class Parameter<T> : IParameter
     /// Useful for initializing or restoring persisted values without triggering side effects.
     /// </summary>
     /// <param name="value">The value to assign silently.</param>
-    public void SetWithoutNotify(T? value)
-    {
-        _value = value;
-    }
+    public void SetWithoutNotify(T? value) => _value = value;
+
+    /// <summary>
+    /// Sets the parameter's value, raising <see cref="ValueChanged"/> if the value changes
+    /// and passes validation. Convenience alias for assigning to <see cref="Value"/> directly;
+    /// prefer this form when the calling site already holds the typed parameter reference
+    /// (e.g. inside <c>INestedGroupDrawer&lt;T&gt;.Draw</c>) to avoid the double-<c>.Value</c>
+    /// repetition of <c>parameter.Value.Value = x</c>.
+    /// </summary>
+    /// <param name="value">The new value to assign.</param>
+    public void Set(T? value) => Value = value;
 
     /// <inheritdoc/>
-    object? IParameter.GetValue()
-    {
-        return Value;
-    }
+    object? IParameter.GetValue() => Value;
 
     /// <inheritdoc/>
-    void IParameter.SetValue(object? value)
-    {
-        if (value is not T && value != null)
-            throw new ArgumentException($"Value must be of type {typeof(T)} or null.", nameof(value));
-
-        SetValue((T?)value);
-    }
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="value"/> is <see langword="null"/> and <typeparamref name="T"/>
+    /// is a non-nullable value type, or when <paramref name="value"/> is non-<see langword="null"/>
+    /// and is not assignable to <typeparamref name="T"/>.
+    /// </exception>
+    void IParameter.SetValue(object? value) => SetValue(CoerceValue(value));
 
     /// <inheritdoc/>
-    void IParameter.SetValueWithoutNotify(object? value)
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="value"/> is <see langword="null"/> and <typeparamref name="T"/>
+    /// is a non-nullable value type, or when <paramref name="value"/> is non-<see langword="null"/>
+    /// and is not assignable to <typeparamref name="T"/>.
+    /// </exception>
+    void IParameter.SetValueWithoutNotify(object? value) => _value = CoerceValue(value);
+
+    /// <summary>
+    /// Validates and coerces an untyped <paramref name="value"/> to <typeparamref name="T"/>.
+    /// </summary>
+    /// <param name="value">The value to coerce.</param>
+    /// <returns>The coerced value of type <typeparamref name="T"/>.</returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="value"/> is <see langword="null"/> and <typeparamref name="T"/>
+    /// is a non-nullable value type, or when <paramref name="value"/> is not assignable to
+    /// <typeparamref name="T"/>.
+    /// </exception>
+    private static T? CoerceValue(object? value)
     {
-        _value = (T?)value;
+        if (value is null)
+        {
+            if (IsNonNullableValueType)
+                throw new ArgumentException(
+                    $"null is not valid for non-nullable value type {typeof(T)}.", nameof(value));
+
+            return default;
+        }
+
+        if (value is not T typed)
+            throw new ArgumentException($"Value must be of type {typeof(T)}.", nameof(value));
+
+        return typed;
     }
 
     /// <summary>
@@ -180,4 +219,16 @@ public class Parameter<T> : IParameter
     {
         return parameter.Value;
     }
+
+    /// <summary>
+    /// Returns the string representation of the current <see cref="Value"/>, or
+    /// <see langword="null"/> when <see cref="Value"/> is <see langword="null"/>.
+    /// This ensures that string interpolation and <c>ToString()</c> calls produce
+    /// the same result as the implicit <typeparamref name="T"/> conversion operator.
+    /// </summary>
+    /// <returns>
+    /// <c>Value?.ToString()</c>, or <see langword="null"/> if <see cref="Value"/> is
+    /// <see langword="null"/>.
+    /// </returns>
+    public override string? ToString() => Value?.ToString();
 }

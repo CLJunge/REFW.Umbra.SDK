@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Hexa.NET.ImGui;
 
 namespace Umbra.SDK.Config.UI;
@@ -13,6 +14,7 @@ namespace Umbra.SDK.Config.UI;
 /// convergence delay occurs on the very first render. From the second frame onward
 /// <see cref="LabelWidth"/> is stable and all controls in the group are column-aligned.
 /// </remarks>
+[DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
 internal sealed class LabelAlignmentGroup
 {
     private float _committedMax;
@@ -60,5 +62,22 @@ internal sealed class LabelAlignmentGroup
         if (hasDescription)
             w += ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize("(?)").X;
         if (w > _runningMax) _runningMax = w;
+    }
+
+    /// <summary>
+    /// Builds a human-readable summary string for debugger visualizers.
+    /// </summary>
+    /// <returns>
+    /// A string containing the current <see cref="LabelWidth"/> and, when non-zero,
+    /// the configured <see cref="Margin"/>.
+    /// </returns>
+    private string GetDebuggerDisplay()
+    {
+        var displayString = "LabelAlignmentGroup: LabelWidth=" + LabelWidth;
+
+        if (Margin != 0f)
+            displayString += ", Margin=" + Margin;
+
+        return displayString;
     }
 }

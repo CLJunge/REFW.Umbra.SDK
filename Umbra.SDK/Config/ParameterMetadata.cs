@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Numerics;
 using Umbra.SDK.Config.Attributes;
 
@@ -31,6 +31,15 @@ public sealed class ParameterMetadata
     /// Sourced from <c>DisplayNameAttribute</c>. <see langword="null"/> if not specified.
     /// </summary>
     public string? DisplayName { get; init; }
+
+    /// <summary>
+    /// Gets the fully resolved display label for this parameter. Equals <see cref="DisplayName"/>
+    /// when a <c>[DisplayName(...)]</c> attribute is present; otherwise the property name
+    /// converted to a human-readable form (e.g. <c>"FieldOfView"</c> → <c>"Field Of View"</c>).
+    /// Pre-computed by <c>ParameterMetadataReader</c> during <c>SettingsStore.Load()</c> to
+    /// avoid repeated <c>StringBuilder</c> allocations at draw-tree construction time.
+    /// </summary>
+    public string ResolvedLabel { get; init; } = string.Empty;
 
     /// <summary>
     /// Gets the descriptive text for the parameter, typically rendered as a tooltip
@@ -144,9 +153,81 @@ public sealed class ParameterMetadata
     /// Lower values appear first; parameters without an order value sort after all explicitly
     /// ordered entries (using <see cref="int.MaxValue"/> as an implicit sentinel), with
     /// original declaration order preserved among equals via stable sort.
-    /// Sourced from <c>OrderAttribute</c>. <see langword="null"/> when not specified.
+    /// Sourced from <c>ParameterOrderAttribute</c>. <see langword="null"/> when not specified.
     /// </summary>
     public int? Order { get; init; }
+
+    /// <summary>
+    /// Gets the number of <c>ImGui.Spacing()</c> calls inserted <em>above</em> this parameter's control.
+    /// Sourced from <c>SpacingBeforeAttribute</c>. Defaults to <c>0</c> (no extra spacing) when the
+    /// attribute is absent.
+    /// </summary>
+    public int SpacingBefore { get; init; }
+
+    /// <summary>
+    /// Gets the number of <c>ImGui.Spacing()</c> calls inserted <em>below</em> this parameter's control.
+    /// Sourced from <c>SpacingAfterAttribute</c>. Defaults to <c>0</c> (no extra spacing) when the
+    /// attribute is absent.
+    /// </summary>
+    public int SpacingAfter { get; init; }
+
+    /// <summary>
+    /// Gets the indentation width in pixels to apply around this parameter's control, or
+    /// <see langword="null"/> when no indentation is requested.
+    /// Sourced from the property-level <c>IndentAttribute</c>.
+    /// <c>0f</c> means use ImGui's default indent spacing (<c>ImGui.GetStyle().IndentSpacing</c>);
+    /// a positive value specifies an explicit pixel width.
+    /// <see langword="null"/> when the attribute is absent — the class-level <c>IndentAttribute</c>
+    /// (if any) is used as fallback by <c>ConfigDrawerBuilder</c>.
+    /// </summary>
+    public float? Indent { get; init; }
+
+    /// <summary>
+    /// Gets the concrete <see cref="Umbra.SDK.Config.UI.ParameterDrawers.IParameterDrawer"/> type used
+    /// to render this parameter, or <see langword="null"/> when no <c>[CustomDrawer&lt;TDrawer&gt;]</c>
+    /// attribute is present. When non-<see langword="null"/>, <c>ControlFactory</c> instantiates this
+    /// type and delegates all rendering to it; the default two-column layout is bypassed entirely.
+    /// Sourced from <c>CustomDrawerAttribute&lt;TDrawer&gt;</c> via a single attribute scan in
+    /// <c>ParameterMetadataReader</c>.
+    /// </summary>
+    public Type? CustomDrawerType { get; init; }
+
+    /// <summary>
+    /// Gets the concrete <see cref="Umbra.SDK.Config.UI.ParameterDrawers.ITwoColumnParameterDrawer"/> type
+    /// used to render this parameter's editing widget, or <see langword="null"/> when no
+    /// <c>[TwoColumnCustomDrawer&lt;TDrawer&gt;]</c> attribute is present. When non-<see langword="null"/>,
+    /// <c>ControlFactory</c> instantiates this type and delegates widget rendering to it while retaining
+    /// the standard two-column label layout.
+    /// Sourced from <c>TwoColumnCustomDrawerAttribute&lt;TDrawer&gt;</c> via a single attribute scan in
+    /// <c>ParameterMetadataReader</c>.
+    /// </summary>
+    public Type? TwoColumnCustomDrawerType { get; init; }
+
+    /// <summary>
+    /// Gets the cached hide-condition data sourced from <see cref="HideIfAttribute{T}"/> on this
+    /// parameter's declaring member, or <see langword="null"/> when no such attribute is present.
+    /// Consumed by <c>VisibilityPredicateResolver</c> to compile the per-frame visibility predicate
+    /// without requiring a second attribute scan at draw-tree construction time.
+    /// </summary>
+    public IHideIfAttribute? HideIf { get; init; }
+
+    /// <summary>
+    /// Gets the fully resolved printf format string used by float and double ImGui controls.
+    /// Equals <see cref="Format"/> when a <c>[Format(...)]</c> attribute is present; otherwise
+    /// the value inferred from the decimal-place count of <see cref="Step"/>, defaulting to
+    /// <c>"%.2f"</c>. Precomputed by <c>ParameterMetadataReader</c> during
+    /// <c>SettingsStore.Load()</c> to eliminate <c>Number.FormatFloat</c> overhead at
+    /// draw-tree construction time.
+    /// </summary>
+    public string InferredFloatFormat { get; init; } = "%.2f";
+
+    /// <summary>
+    /// Gets the pre-computed hidden ImGui control label (<c>"##" + Key</c>) for this parameter,
+    /// or <see langword="null"/> when the parameter key was not available at metadata-read time.
+    /// Cached by <c>ParameterMetadataReader</c> during <c>SettingsStore.Load()</c> to avoid
+    /// a <c>string.Concat</c> allocation per parameter per <c>ConfigDrawer{TConfig}</c> construction.
+    /// </summary>
+    public string? HiddenLabel { get; init; }
 
     /// <summary>
     /// Returns a concise, human-readable summary of all non-null metadata fields,
@@ -174,6 +255,14 @@ public sealed class ParameterMetadata
         if (ControlWidth.HasValue) parts.Add($"ControlWidth: {ControlWidth.Value}");
         if (MultilineLines.HasValue) parts.Add($"MultilineLines: {MultilineLines.Value}");
         if (Order.HasValue) parts.Add($"Order: {Order.Value}");
+        if (SpacingBefore > 0) parts.Add($"SpacingBefore: {SpacingBefore}");
+        if (SpacingAfter > 0) parts.Add($"SpacingAfter: {SpacingAfter}");
+        if (Indent.HasValue) parts.Add($"Indent: {Indent.Value}");
+        if (CustomDrawerType is not null) parts.Add($"CustomDrawer: {CustomDrawerType.Name}");
+        if (TwoColumnCustomDrawerType is not null) parts.Add($"TwoColumnCustomDrawer: {TwoColumnCustomDrawerType.Name}");
+        if (HideIf is not null) parts.Add($"HideIf: {HideIf.MemberName}");
+        if (InferredFloatFormat != "%.2f") parts.Add($"InferredFloatFormat: {InferredFloatFormat}");
+        if (HiddenLabel is not null) parts.Add($"HiddenLabel: {HiddenLabel}");
 
         return string.Join(", ", parts);
     }

@@ -94,7 +94,7 @@ internal static class SettingsRegistrar
             {
                 var key = Combine(currentPrefix, paramAttr.KeyOverride ?? prop.Name.ToCamelCase());
                 parameter.Key = key;
-                parameter.Metadata = ParameterMetadataReader.ReadFrom(prop, currentCategory);
+                parameter.Metadata = ParameterMetadataReader.ReadFrom(prop, currentCategory, key);
                 parameters[key] = parameter;
             }
             else

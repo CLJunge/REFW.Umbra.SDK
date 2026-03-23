@@ -1,5 +1,5 @@
-using Hexa.NET.ImGui;
 using System.Numerics;
+using Hexa.NET.ImGui;
 using Umbra.SDK.Config.Attributes;
 
 namespace Umbra.SDK.Config.UI;
@@ -75,8 +75,5 @@ internal static class ButtonStyleColors
     /// Pops the three color slots pushed by <see cref="Push"/>.
     /// Must only be called when <see cref="Push"/> returned <see langword="true"/>.
     /// </summary>
-    internal static void Pop()
-    {
-        ImGui.PopStyleColor(3);
-    }
+    internal static void Pop() => ImGui.PopStyleColor(3);
 }
