@@ -23,7 +23,9 @@ public static class SamplePlugin
     [PluginEntryPoint]
     public static void Load()
     {
+#if DEBUG
         System.Diagnostics.Debugger.Launch();
+#endif
 
         _log.Info("Loading...");
 

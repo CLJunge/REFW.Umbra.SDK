@@ -219,4 +219,16 @@ public class Parameter<T> : IParameter
     {
         return parameter.Value;
     }
+
+    /// <summary>
+    /// Returns the string representation of the current <see cref="Value"/>, or
+    /// <see langword="null"/> when <see cref="Value"/> is <see langword="null"/>.
+    /// This ensures that string interpolation and <c>ToString()</c> calls produce
+    /// the same result as the implicit <typeparamref name="T"/> conversion operator.
+    /// </summary>
+    /// <returns>
+    /// <c>Value?.ToString()</c>, or <see langword="null"/> if <see cref="Value"/> is
+    /// <see langword="null"/>.
+    /// </returns>
+    public override string? ToString() => Value?.ToString();
 }
