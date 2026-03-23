@@ -88,6 +88,7 @@ In **Debug** configuration, a post-build event automatically deploys:
 ### Minimal plugin
 
 ```csharp
+using REFrameworkNET;
 using REFrameworkNET.Attributes;
 using REFrameworkNET.Callbacks;
 using Umbra.SDK.Config;
