@@ -69,8 +69,7 @@ public sealed class PluginPanel : IDisposable
     /// </exception>
     public PluginPanel Add(IPanelSection section)
     {
-        if (section is null)
-            throw new ArgumentNullException(nameof(section));
+        ArgumentNullException.ThrowIfNull(section);
 
         if (_disposed)
             throw new ObjectDisposedException(nameof(PluginPanel), "Cannot add sections to a disposed panel.");
