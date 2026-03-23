@@ -22,6 +22,7 @@ $ErrorActionPreference = 'Stop'
 # ---------------------------------------------------------------
 $AssetName   = 'csharp-api.zip'
 $ReleasesApi = 'https://api.github.com/repos/praydog/REFramework-nightly/releases'
+$UserAgent   = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 $ApiDest     = Join-Path $PSScriptRoot '..\dependencies\reframework\api'
 $GenDest     = Join-Path $PSScriptRoot '..\dependencies\reframework\generated'
 $TempDir     = Join-Path $env:TEMP "refw_setup_$(Get-Random)"
@@ -88,7 +89,7 @@ function Get-LatestReleaseUrl {
     Write-Host '[1/4] Fetching latest nightly release info from GitHub...'
     Write-Host ''
     try {
-        $releases = Invoke-RestMethod -Uri $ReleasesApi -Headers @{ 'User-Agent' = 'REFWSetup/1.0' }
+        $releases = Invoke-RestMethod -Uri $ReleasesApi -Headers @{ 'User-Agent' = $UserAgent }
         $asset    = $releases[0].assets | Where-Object { $_.name -eq $AssetName } | Select-Object -First 1
         if (-not $asset) { throw "Asset '$AssetName' was not found in the latest release." }
         Write-Host "  Asset : $AssetName"
