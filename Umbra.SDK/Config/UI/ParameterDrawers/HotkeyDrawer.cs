@@ -33,8 +33,8 @@ public sealed class HotkeyDrawer : IParameterDrawer
             return;
         }
 
-        var v        = p.Value;
-        var prev     = v;
+        var v = p.Value;
+        var prev = v;
         var wasWaiting = _waiting;
 
         // Prevent multiple drawers from capturing input simultaneously.
@@ -51,7 +51,7 @@ public sealed class HotkeyDrawer : IParameterDrawer
                 _waiting = false;
             else if (KeyboardInput.TryCaptureKeyboardKey(out var captured))
             {
-                v        = captured;
+                v = captured;
                 _waiting = false;
             }
         }
@@ -95,4 +95,4 @@ public sealed class HotkeyDrawer : IParameterDrawer
         }
     }
 
-    }
+}

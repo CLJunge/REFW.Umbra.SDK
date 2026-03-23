@@ -20,9 +20,10 @@ public enum ButtonStyle
     /// Signals that a fully custom color set supplied via
     /// <c>[CustomButtonColors(...)]</c> should be used.
     /// <para>
-    /// <see cref="Umbra.SDK.Config.UI.ParameterDrawers.ButtonDrawer"/> will throw an
-    /// <see cref="InvalidOperationException"/> at render time when this value is set but no
-    /// <c>[CustomButtonColors]</c> attribute is present on the same property.
+    /// When this value is set but no <c>[CustomButtonColors]</c> attribute is present on the
+    /// same property, <see cref="Umbra.SDK.Config.UI.ParameterDrawers.ButtonDrawer"/> logs a
+    /// one-time warning and falls back to <see cref="Default"/> rather than throwing, so the
+    /// game process is never disrupted by a configuration error in a per-frame draw path.
     /// </para>
     /// </summary>
     Custom,
