@@ -8,6 +8,7 @@
         <RootNamespace>Umbra.SDK</RootNamespace>
         <AssemblyName>$(MSBuildProjectName)</AssemblyName>
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
@@ -20,6 +21,7 @@
         <PackageTags>REFramework;REEngine;ImGui;modding;plugin;SDK</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/CLJunge/REFW.Umbra.SDK</RepositoryUrl>
         <PackageProjectUrl>https://github.com/CLJunge/REFW.Umbra.SDK</PackageProjectUrl>
