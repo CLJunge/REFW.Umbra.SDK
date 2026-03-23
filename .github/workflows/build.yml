@@ -181,7 +181,6 @@ jobs:
 
             Install `Umbra.SDK` using one of the following options:
 
-            - Download the NuGet package from `https://example.com/umbra.sdk` and install it in your project.
             - Download the NuGet package files from the release assets and install the SDK from the `.nupkg` / `.snupkg` files.
             - Download **`Umbra.SDK.zip`** from the release assets and reference `Umbra.SDK.dll` directly in your project.
 
