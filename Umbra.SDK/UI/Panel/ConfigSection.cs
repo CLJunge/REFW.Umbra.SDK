@@ -12,7 +12,7 @@ namespace Umbra.SDK.UI.Panel;
 /// so that parameter metadata is already populated at construction time.
 /// </para>
 /// <para>
-/// The <paramref name="idScope"/> defaults to the config type name when not supplied.
+/// The <c>idScope</c> defaults to the config type name when not supplied.
 /// <see cref="PluginPanel"/> pushes a top-level ImGui ID scope before calling
 /// <see cref="Draw"/>; this sub-scope nests inside it, preventing widget ID collisions
 /// when two config sections of the same type appear in the same panel.

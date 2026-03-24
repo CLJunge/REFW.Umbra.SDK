@@ -18,13 +18,19 @@ internal static class VisibilityPredicateResolver
     /// </summary>
     /// <remarks>
     /// The raw property or field accessor is compiled once into a delegate at build time so
-    /// that per-frame evaluation does not pay the cost of <see cref="PropertyInfo.GetValue"/>
+    /// that per-frame evaluation does not pay the cost of <see cref="PropertyInfo.GetValue(object)"/>
     /// reflection. The compiled delegate reads directly from the closed-over
     /// <paramref name="owner"/> instance.
     /// <para>
     /// Callers that have already determined <paramref name="hideIf"/> is
     /// <see langword="null"/> should short-circuit with <c>static () =&gt; true</c> and skip
     /// this call entirely to avoid the function-call overhead for the common no-condition case.
+    /// </para>
+    /// <para>
+    /// When an explicit comparison value is present, a typed
+    /// <see cref="EqualityComparer{T}.Default"/> delegate is compiled once at build time via
+    /// <see cref="BuildTypedEquals"/> so that per-frame equality checks use
+    /// <see cref="IEquatable{T}"/> rather than virtual <see cref="object.Equals(object)"/> dispatch.
     /// </para>
     /// </remarks>
     /// <param name="hideIf">
@@ -65,14 +71,69 @@ internal static class VisibilityPredicateResolver
 
         // If the target is a Parameter<T>, unwrap its live Value via the IParameter interface.
         var rawType = (targetProp?.PropertyType ?? targetField!.FieldType)!;
-        var getValue = rawType.IsGenericType && rawType.GetGenericTypeDefinition() == typeof(Parameter<>)
+        var isParameter = rawType.IsGenericType && rawType.GetGenericTypeDefinition() == typeof(Parameter<>);
+        var getValue = isParameter
             ? () => (getRaw() as IParameter)?.GetValue()
             : getRaw;
 
         // No explicit value: treat member as bool — visible while NOT true.
         if (!hasValue) return () => getValue() is not true;
 
-        // Explicit value: visible while member value does NOT equal compareValue.
-        return () => !Equals(getValue(), compareValue);
+        // Explicit value: compile a typed EqualityComparer<T>.Default.Equals delegate once
+        // so per-frame evaluation uses IEquatable<T> rather than object.Equals dispatch.
+        var valueType = isParameter ? rawType.GetGenericArguments()[0] : rawType;
+        var typedEquals = BuildTypedEquals(valueType, compareValue);
+        return () => !typedEquals(getValue());
+    }
+
+    /// <summary>
+    /// Builds a compiled <see cref="Func{Object, Boolean}"/> that compares a boxed runtime
+    /// value against <paramref name="compareValue"/> using
+    /// <see cref="EqualityComparer{T}.Default"/> for the concrete <paramref name="valueType"/>.
+    /// </summary>
+    /// <remarks>
+    /// The compiled delegate unboxes the incoming <c>object?</c> to <c>T</c> and calls
+    /// <see cref="EqualityComparer{T}.Equals(T, T)"/>, which respects
+    /// <see cref="IEquatable{T}"/> implementations and avoids virtual
+    /// <see cref="object.Equals(object)"/> dispatch on each frame. <paramref name="compareValue"/>
+    /// is captured as a typed constant so it is never re-boxed on subsequent calls.
+    /// <para>
+    /// Falls back to <c>x =&gt; Equals(x, compareValue)</c> if expression compilation fails —
+    /// for example when there is a type mismatch between the attribute value and the member's
+    /// declared type.
+    /// </para>
+    /// </remarks>
+    /// <param name="valueType">
+    /// The concrete <c>T</c> used to parameterise the comparer; derived from the member's
+    /// declared type or from the inner generic argument of <c>Parameter&lt;T&gt;</c>.
+    /// </param>
+    /// <param name="compareValue">
+    /// The boxed value to compare against. Must be assignable to <paramref name="valueType"/>;
+    /// a type mismatch triggers the fallback path rather than an exception.
+    /// </param>
+    /// <returns>
+    /// A compiled predicate that returns <see langword="true"/> when the runtime value equals
+    /// <paramref name="compareValue"/> according to <see cref="EqualityComparer{T}.Default"/>.
+    /// </returns>
+    private static Func<object?, bool> BuildTypedEquals(Type valueType, object? compareValue)
+    {
+        try
+        {
+            var comparerType = typeof(EqualityComparer<>).MakeGenericType(valueType);
+            var defaultComparer = comparerType.GetProperty("Default")!.GetValue(null)!;
+            var equalsMethod = comparerType.GetMethod("Equals", [valueType, valueType])!;
+
+            var xParam = Expression.Parameter(typeof(object), "x");
+            var comparerExpr = Expression.Constant(defaultComparer, comparerType);
+            var xConverted = Expression.Convert(xParam, valueType);
+            var yConst = Expression.Constant(compareValue, valueType);
+            var equalsCall = Expression.Call(comparerExpr, equalsMethod, xConverted, yConst);
+
+            return Expression.Lambda<Func<object?, bool>>(equalsCall, xParam).Compile();
+        }
+        catch
+        {
+            return x => Equals(x, compareValue);
+        }
     }
 }

@@ -61,13 +61,13 @@ internal sealed class ConfigDrawerBuilder
         // custom drawer. Expanding its parameters here would duplicate what that drawer
         // manages, so bail out immediately regardless of how Collect was reached.
         var typeMeta = TypeDrawMetadata.For(type);
-        if (typeMeta.NestedGroupDrawer is not null)
+        if (typeMeta.NestedGroupDrawerAttr is not null)
             return;
 
         var classCategory = typeMeta.Category;
-        var classIndent = typeMeta.Indent;
+        var classIndent = typeMeta.IndentAttr;
         var classCollapseAttr = typeMeta.CollapseAttr;
-        var classLabelMargin = typeMeta.LabelMargin;
+        var classLabelMargin = typeMeta.LabelMarginAttr;
 
         foreach (var prop in typeMeta.Properties)
         {
@@ -124,7 +124,7 @@ internal sealed class ConfigDrawerBuilder
             {
                 // Class-level [NestedGroupDrawer<TDrawer>] — skip recursion and render the
                 // group instance directly via the custom drawer.
-                var nestedDrawerAttr = propTypeMeta.NestedGroupDrawer;
+                var nestedDrawerAttr = propTypeMeta.NestedGroupDrawerAttr;
                 if (nestedDrawerAttr is not null)
                     EmitNestedGroupDrawerNode(prop, propType, propTypeMeta, nested, obj, classCategory);
                 else
@@ -194,7 +194,7 @@ internal sealed class ConfigDrawerBuilder
         object owner,
         string? classCategory)
     {
-        var nestedDrawerAttr = propTypeMeta.NestedGroupDrawer!;
+        var nestedDrawerAttr = propTypeMeta.NestedGroupDrawerAttr!;
         try
         {
             var drawerInstance = Activator.CreateInstance(nestedDrawerAttr.DrawerType)!;

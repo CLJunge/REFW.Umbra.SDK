@@ -72,8 +72,8 @@ internal static class ButtonStyleColors
     }
 
     /// <summary>
-    /// Pops the three color slots pushed by <see cref="Push"/>.
-    /// Must only be called when <see cref="Push"/> returned <see langword="true"/>.
+    /// Pops the three color slots pushed by <see cref="Push(ButtonStyle)"/> or <see cref="Push(Vector4, Vector4, Vector4)"/>.
+    /// Must only be called when <see cref="Push(ButtonStyle)"/> or <see cref="Push(Vector4, Vector4, Vector4)"/> returned <see langword="true"/>.
     /// </summary>
     internal static void Pop() => ImGui.PopStyleColor(3);
 }

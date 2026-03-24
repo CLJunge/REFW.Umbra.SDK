@@ -21,16 +21,12 @@ namespace Umbra.SDK.Config.UI.Nodes;
 /// When non-<see langword="null"/>, the category renders as a collapsible <c>ImGui.TreeNode</c>
 /// scope; when <see langword="null"/>, a flat <c>ImGui.SeparatorText</c> header is used instead.
 /// </param>
-/// <param name="indentAttr">
-/// An optional <see cref="IndentAttribute"/> that, when non-<see langword="null"/>, wraps the
-/// entire category output — header and child controls — in a matching
-/// <c>ImGui.Indent</c>/<c>ImGui.Unindent</c> scope using the attribute's pixel amount.
-/// </param>
+/// <param name="indentAttr"></param>
 [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
 internal sealed class CategoryNode(
     string label,
-    CollapseAsTreeAttribute? collapseAttr,
-    IndentAttribute? indentAttr
+    CollapseAsTreeAttribute? collapseAttr = null,
+    IndentAttribute? indentAttr = null
 ) : IDrawNode
 {
     /// <summary>
@@ -81,5 +77,13 @@ internal sealed class CategoryNode(
         ImGui.TreePop();
     }
 
-    private string GetDebuggerDisplay() => $"Category: {label} ({Children.Count} children)";
+    private string GetDebuggerDisplay()
+    {
+        var displayString = $"Category: {label}";
+
+        if (Children.Count > 0)
+            displayString += $" ({Children.Count} child node{(Children.Count > 1 ? "s" : "")})";
+
+        return displayString;
+    }
 }

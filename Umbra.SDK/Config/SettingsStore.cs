@@ -180,7 +180,7 @@ public class SettingsStore<TConfig> : IDisposable
     /// </param>
     /// <param name="listener">The callback to invoke whenever a matching parameter's value changes.</param>
     /// <remarks>
-    /// Prefer this overload over <see cref="AddListenerToAll{T}(Action{T?,T?})"/> when the
+    /// Prefer this overload over <see cref="AddListenerToAll{T}(Action{T,T})"/> when the
     /// selection criterion is based on <see cref="IParameter.ValueType"/> (e.g. to detect changes
     /// to numeric parameters), because it avoids the generic type-inference pitfall described
     /// on that overload.
@@ -223,7 +223,7 @@ public class SettingsStore<TConfig> : IDisposable
     /// <typeparam name="T">The parameter value type to filter on.</typeparam>
     /// <param name="listener">The typed callback to remove.</param>
     /// <remarks>
-    /// See <see cref="AddListenerToAll{T}(Action{T?,T?})"/> for the type-inference caveat that
+    /// See <see cref="AddListenerToAll{T}(Action{T,T})"/> for the type-inference caveat that
     /// applies equally here. Supply the type argument explicitly when needed.
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
