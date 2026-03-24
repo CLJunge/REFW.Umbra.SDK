@@ -14,6 +14,9 @@ namespace Umbra.Config.UI.Nodes;
 /// When <paramref name="indentAttr"/> is non-<see langword="null"/>, the entire category
 /// block — both the header and all child controls — is wrapped inside a matching
 /// <c>ImGui.Indent</c>/<c>ImGui.Unindent</c> scope using the attribute's pixel amount.
+/// Both the <c>Indent</c>/<c>Unindent</c> scope and the <c>TreeNode</c>/<c>TreePop</c>
+/// scope are guarded with <c>try/finally</c> so ImGui state remains balanced even if a
+/// child control throws during drawing.
 /// </para>
 /// </remarks>
 /// <param name="label">The category section label displayed in the header or tree node.</param>
@@ -47,12 +50,22 @@ internal sealed class CategoryNode(
     internal readonly List<IDrawNode> Children = [];
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// When <see cref="IndentAttribute"/> is set, the body is wrapped in a <c>try/finally</c>
+    /// so <c>ImGui.Unindent</c> always runs even if a child control throws during drawing.
+    /// </remarks>
     public void Draw()
     {
         if (indentAttr != null) ImGui.Indent(indentAttr.Amount);
-        if (collapseAttr is not null) DrawAsTree();
-        else DrawAsHeader();
-        if (indentAttr != null) ImGui.Unindent(indentAttr.Amount);
+        try
+        {
+            if (collapseAttr is not null) DrawAsTree();
+            else DrawAsHeader();
+        }
+        finally
+        {
+            if (indentAttr != null) ImGui.Unindent(indentAttr.Amount);
+        }
     }
 
     /// <summary>Renders the category as an <c>ImGui.SeparatorText</c> header followed by its child controls.</summary>
