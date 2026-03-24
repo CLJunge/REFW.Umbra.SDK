@@ -2,9 +2,9 @@ using REFrameworkNET;
 using REFrameworkNET.Attributes;
 using REFrameworkNET.Callbacks;
 using Umbra.SamplePlugin.Config;
-using Umbra.SDK.Config;
-using Umbra.SDK.Logging;
-using Umbra.SDK.UI.Panel;
+using Umbra.Config;
+using Umbra.Logging;
+using Umbra.UI.Panel;
 
 namespace Umbra.SamplePlugin;
 

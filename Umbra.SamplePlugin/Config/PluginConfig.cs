@@ -1,6 +1,6 @@
-using Umbra.SDK.Config;
-using Umbra.SDK.Config.Attributes;
-using Umbra.SDK.Config.UI.ParameterDrawers;
+using Umbra.Config;
+using Umbra.Config.Attributes;
+using Umbra.Config.UI.ParameterDrawers;
 
 namespace Umbra.SamplePlugin.Config;
 
