@@ -73,37 +73,63 @@ public static class SamplePlugin
     }
 
     /// <summary>
-    /// Resolves the absolute path to the plugin's JSON configuration file,
-    /// creating the configuration directory if it does not already exist.
+    /// Resolves the absolute path to the plugin's JSON configuration file.
     /// </summary>
     /// <returns>
     /// The absolute path to <c>config.json</c> inside the plugin's
     /// <c>&lt;PluginDir&gt;/data/Umbra/SamplePlugin/</c> directory.
     /// </returns>
     private static string GetConfigPath()
+        => Path.Combine(GetConfigDirectoryPath(), "config.json");
+
+    /// <summary>
+    /// Resolves the absolute path to the sample plugin's configuration directory and ensures it exists.
+    /// </summary>
+    /// <returns>The absolute path to the sample plugin configuration directory.</returns>
+    private static string GetConfigDirectoryPath()
     {
         var pluginDir = API.GetPluginDirectory(typeof(SamplePlugin).Assembly);
         var configDir = Path.Combine(pluginDir, "data", "Umbra", nameof(SamplePlugin));
-
-        if (!Directory.Exists(configDir))
-        {
-            _log.Info($"Config directory not found, creating: {configDir}");
-            Directory.CreateDirectory(configDir);
-        }
-
-        return Path.Combine(configDir, "config.json");
+        EnsureConfigDirectoryExists(configDir);
+        return configDir;
     }
 
     /// <summary>
-    /// ImGui pre-draw callback. Renders the plugin settings UI while the game's UI draw pass is
-    /// active, and advances the deferred-save controller on every callback so pending writes can flush.
+    /// Creates <paramref name="configDir"/> when it does not already exist.
+    /// </summary>
+    /// <param name="configDir">The absolute configuration directory path.</param>
+    private static void EnsureConfigDirectoryExists(string configDir)
+    {
+        if (Directory.Exists(configDir))
+            return;
+
+        _log.Info($"Config directory not found, creating: {configDir}");
+        Directory.CreateDirectory(configDir);
+    }
+
+    /// <summary>
+    /// ImGui pre-draw callback. Delegates drawing and deferred-save ticking to focused helpers so
+    /// UI rendering and persistence timing remain separate concerns.
     /// </summary>
     [Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
     public static void PreDrawUI()
     {
+        DrawPanelIfUiIsActive();
+        TickDeferredSaveController();
+    }
+
+    /// <summary>
+    /// Draws the plugin panel only while the REFramework UI draw pass is active.
+    /// </summary>
+    private static void DrawPanelIfUiIsActive()
+    {
         if (API.IsDrawingUI())
             _panel?.Draw();
-
-        _saveController?.Tick();
     }
+
+    /// <summary>
+    /// Advances deferred-save timing so pending configuration changes can flush to disk.
+    /// </summary>
+    private static void TickDeferredSaveController()
+        => _saveController?.Tick();
 }
