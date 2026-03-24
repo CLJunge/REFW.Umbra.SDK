@@ -13,7 +13,9 @@ namespace Umbra.SDK.Config.Attributes;
 /// <para>
 /// When constructed with both a <c>memberName</c> and a <c>value</c>,
 /// the parameter is hidden while the member's current value equals <c>value</c>.
-/// Comparison is performed with <see cref="object.Equals(object, object)"/>.
+/// Comparison is performed using <c>EqualityComparer&lt;T&gt;.Default</c> where possible,
+/// so <see cref="System.IEquatable{T}"/> implementations are respected; if a typed
+/// comparer cannot be used, the resolver falls back to <see cref="object.Equals(object, object)"/>.
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
