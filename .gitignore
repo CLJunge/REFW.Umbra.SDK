@@ -367,3 +367,6 @@ FodyWeavers.xsd
 **/launchSettings.json
 game_dir.local.txt
 game_exe.local.txt
+
+# Props file for local development overrides.
+Umbra/Umbra.Local.props
