@@ -138,30 +138,30 @@ public partial record NestedConfigGroup
 - `ConfigDrawer<TConfig>` is `IDisposable`; dispose it when the settings window is closed or the plugin unloads.
 - Custom controls are implemented via `IParameterDrawer` (in `Umbra.Config.UI`) and applied with `[CustomDrawer<TDrawer>]` on the parameter property.
 - For two-column-aware custom controls that participate in the standard label layout, use `ITwoColumnParameterDrawer` with `[TwoColumnCustomDrawer<TDrawer>]`.
-- To render an entire nested configuration group with a fully custom ImGui layout, apply `[NestedGroupDrawer<TDrawer>]` to the **nested group type** (not the property) and implement `INestedGroupDrawer<T>` in the drawer class:
-  - `[NestedGroupDrawer<TDrawer>]` is declared on `AttributeTargets.Class | AttributeTargets.Struct`. Apply it to the nested `record`/`class` decorated with `[AutoRegisterSettings]`.
+- To render an entire nested configuration group with a fully custom ImGui layout, apply `[NestedGroupDrawer<TDrawer>]` to the **parent property** that exposes the nested group, and implement `INestedGroupDrawer<T>` in the drawer class:
+  - `[NestedGroupDrawer<TDrawer>]` is declared on `AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct`. Placing it on the parent property is the **preferred** approach. Applying it to the nested `record`/`class` is supported for backward compatibility only and acts as a fallback when the property carries no drawer attribute.
   - `TDrawer` must implement `INestedGroupDrawer<T>` (where `T` is the nested group type) and have a public parameterless constructor.
-  - When `ConfigDrawer` encounters a property typed as the decorated class, it instantiates the drawer once at build time and calls `Draw(groupInstance)` each frame instead of recursing into the class's individual parameters.
+  - When `ConfigDrawer` encounters a property that carries the attribute (or whose type declares it as a fallback), it instantiates the drawer once at build time and calls `Draw(groupInstance)` each frame instead of recursing into the class's individual parameters.
   - The drawer has full ImGui layout control; no label, column alignment, or section header is emitted by the factory.
-  - Property-level attributes `[Category]`, `[SpacingBefore]`, `[SpacingAfter]`, and `[HideIf]` on the **parent property** are still honoured. `[CollapseAsTree]` is applied to the nested group **type** itself, not the parent property.
+  - Property-level attributes `[Category]`, `[CollapseAsTree]`, `[SpacingBefore]`, `[SpacingAfter]`, and `[HideIf]` on the **parent property** are still honoured around the drawer output.
   - `INestedGroupDrawer<T>` extends `IDisposable`. The default `Dispose` implementation calls `GC.SuppressFinalize`; override it when the drawer holds resources that must be released on plugin unload.
   - Nested group properties on the parent config should be regular `[SettingsParameter]` object properties; inside the nested group itself, individual persisted values remain `Parameter<T>` properties.
 
 ```csharp
-// Nested group type: apply [NestedGroupDrawer<>] here, on the type itself.
+// Nested group type: no [NestedGroupDrawer<>] here when using the preferred property-level placement.
 [AutoRegisterSettings]
 [Category("My Group")]
 [CollapseAsTree]
-[NestedGroupDrawer<MyGroupDrawer>]
 public record MyGroup
 {
     [SettingsParameter]
     public Parameter<int> Value { get; set; } = new(42);
 }
 
-// Parent config property: [SettingsPrefix] goes here (preferred placement).
+// Parent config property: apply [NestedGroupDrawer<>] here (preferred placement).
 [SettingsParameter]
 [SettingsPrefix("myGroup")]
+[NestedGroupDrawer<MyGroupDrawer>]
 public MyGroup Group { get; set; } = new();
 
 // Custom drawer: full ImGui layout control for the group.
