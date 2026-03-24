@@ -361,6 +361,8 @@ function Update-LaunchSettings {
         return
     }
 
+    $null = New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force
+
     $profileName   = $exe.BaseName.ToUpper()
     $launchProfile = [ordered]@{ commandName = 'Executable'; executablePath = $exe.FullName }
 
