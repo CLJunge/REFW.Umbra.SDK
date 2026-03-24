@@ -65,7 +65,8 @@ internal sealed class CategoryNode(
 
     /// <summary>
     /// Renders the category as an <c>ImGui.TreeNode</c>, drawing all child controls inside the
-    /// expanded scope. <c>ImGui.TreePop()</c> is always called when the node is open.
+    /// expanded scope. <c>ImGui.TreePop()</c> is always called when the node is open, even if
+    /// a child throws while drawing.
     /// </summary>
     private void DrawAsTree()
     {
@@ -75,10 +76,15 @@ internal sealed class CategoryNode(
         var open = ImGui.TreeNodeEx(label, flags);
         if (!open) return;
 
-        foreach (var child in Children)
-            child.Draw();
-
-        ImGui.TreePop();
+        try
+        {
+            foreach (var child in Children)
+                child.Draw();
+        }
+        finally
+        {
+            ImGui.TreePop();
+        }
     }
 
     private string GetDebuggerDisplay()

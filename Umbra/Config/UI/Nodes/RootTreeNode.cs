@@ -17,8 +17,14 @@ internal sealed class RootTreeNode(string label, bool defaultOpen, List<IDrawNod
     {
         var flags = defaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
         if (!ImGui.TreeNodeEx(label, flags)) return;
-        foreach (var child in children)
-            child.Draw();
-        ImGui.TreePop();
+        try
+        {
+            foreach (var child in children)
+                child.Draw();
+        }
+        finally
+        {
+            ImGui.TreePop();
+        }
     }
 }

@@ -85,8 +85,14 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
         if (_disposed) return;
 
         if (_idScope is not null) ImGui.PushID(_idScope);
-        _drawAction();
-        if (_idScope is not null) ImGui.PopID();
+        try
+        {
+            _drawAction();
+        }
+        finally
+        {
+            if (_idScope is not null) ImGui.PopID();
+        }
     }
 
     /// <inheritdoc/>
