@@ -12,10 +12,12 @@ namespace Umbra.SDK.UI.Panel;
 /// zero-overhead per-frame draw delegate.
 /// </para>
 /// <para>
-/// The live state class itself should be a plain mutable class whose fields are written by
-/// <c>[MethodHook]</c> callbacks and read by the drawer. Prefer the
-/// swap-instance pattern for multi-field updates to guarantee a consistent snapshot across
-/// threads.
+/// The live state class itself should be a stable object identity for the lifetime of the
+/// owning <see cref="LiveSection{T}"/>. Hooks and callbacks may mutate fields on that object,
+/// or the object may expose a field or property that points to an immutable snapshot updated
+/// atomically between frames. Do not replace the bound state object itself unless the section
+/// is also reconstructed, because <see cref="LiveSection{T}"/> renders the exact instance it
+/// was created with.
 /// </para>
 /// <example>
 /// <code>

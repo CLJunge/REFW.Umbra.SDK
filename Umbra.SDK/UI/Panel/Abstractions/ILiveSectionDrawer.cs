@@ -24,7 +24,8 @@ public interface ILiveSectionDrawer<T> : IDisposable
     /// Renders ImGui controls for the provided live state instance.
     /// </summary>
     /// <param name="state">
-    /// The live state instance to render. Written to by hooks or callbacks between frames;
+    /// The live state instance bound to the owning <see cref="LiveSection{T}"/> for the
+    /// section's lifetime. Hooks or callbacks may update this instance between frames; it is
     /// always non-<see langword="null"/> when this method is called.
     /// </param>
     void Draw(T state);

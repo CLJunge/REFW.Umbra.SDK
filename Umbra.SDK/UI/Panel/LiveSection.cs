@@ -14,14 +14,15 @@ namespace Umbra.SDK.UI.Panel;
 /// zero-overhead draw delegate; no reflection occurs during rendering.
 /// </para>
 /// <para>
-/// The live state instance is typically owned by the plugin class and written to by
-/// <c>[MethodHook]</c> callbacks between frames. Pass the plugin-owned instance to the
-/// constructor so the same reference is shared between the hook and the drawer. When no
-/// instance is supplied, the section constructs one internally.
+/// The draw delegate captures the exact state instance passed to the constructor and calls
+/// the drawer with that same instance on every frame. For hook-driven data, keep a stable
+/// holder object bound to the section and either mutate that object's fields in place or
+/// publish an atomically swapped snapshot on a field or property inside the holder. Replacing
+/// the holder object itself in hook code will not update the instance rendered by this section.
 /// </para>
 /// <para>
-/// Use the swap-instance pattern in hooks that update multiple fields to guarantee the
-/// drawer always reads a consistent snapshot.
+/// When no external writer needs access to the bound instance, the parameterless constructor
+/// can be used to let the section create and own the state object internally.
 /// </para>
 /// </remarks>
 /// <typeparam name="T">
@@ -40,8 +41,9 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// Initialises a new live section bound to the provided state instance.
     /// </summary>
     /// <param name="context">
-    /// The live state instance written to by hooks and read by the drawer each frame.
-    /// The plugin should retain its own reference to this instance so hooks can write to it.
+    /// The live state instance bound to this section for its entire lifetime and read by the
+    /// drawer each frame. The plugin should retain its own reference to this instance so hooks
+    /// or callbacks can update it between frames.
     /// </param>
     /// <param name="idScope">
     /// Optional ImGui ID sub-scope pushed around the drawer's output. When supplied,
@@ -64,9 +66,9 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     public int Order => _order;
 
     /// <summary>
-    /// Initialises a new live section, constructing the state instance internally.
-    /// Use this overload when the section owns the state and no external writer (hook) needs
-    /// the reference — for example, when the drawer queries game state directly.
+    /// Initialises a new live section, constructing the bound state instance internally.
+    /// Use this overload when the section owns the state and no external writer needs a
+    /// reference to that instance — for example, when the drawer queries game state directly.
     /// </summary>
     /// <param name="idScope">
     /// Optional ImGui ID sub-scope. See the primary constructor for details.

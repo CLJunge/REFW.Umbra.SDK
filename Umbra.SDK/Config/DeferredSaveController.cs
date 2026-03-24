@@ -9,12 +9,13 @@ namespace Umbra.SDK.Config;
 /// <remarks>
 /// <para>
 /// <strong>Behaviour</strong><br/>
-/// Changes to non-numeric parameters (booleans, strings, enums) are saved on the very next
-/// <see cref="Tick"/> call — effectively immediate from the user's perspective.<br/>
+/// Changes to non-numeric parameters (booleans, strings, enums) are saved on the next
+/// <see cref="Tick"/> call when no numeric debounce is currently pending.<br/>
 /// Changes to numeric parameters (<see cref="int"/>, <see cref="float"/>, <see cref="double"/>)
 /// are coalesced: the save is deferred until <see cref="DebounceWindow"/> has elapsed since
 /// the last change, so rapid slider interaction produces only one disk write instead of one
-/// per frame.
+/// per frame. If a non-numeric change arrives while a numeric debounce is already pending,
+/// both changes are flushed together when the debounced save fires.
 /// </para>
 /// <para>
 /// <strong>Ordering requirement</strong><br/>
@@ -32,9 +33,11 @@ namespace Umbra.SDK.Config;
 /// </para>
 /// <para>
 /// <strong>Unload sequence</strong><br/>
-/// Before plugin unload, call <see cref="Flush"/> (to guarantee any debounced write is not
-/// lost) and then <see cref="Dispose"/> (to unregister event listeners). Dispose this
-/// instance <em>before</em> or <em>alongside</em> the owning
+/// <see cref="Dispose"/> automatically calls <see cref="Flush"/> before unregistering
+/// listeners, so pending changes are not lost if the plugin unloads while a debounce is active.
+/// Call <see cref="Flush"/> explicitly only when you need the save to happen earlier in the
+/// unload sequence or before some other operation. Dispose this instance <em>before</em> or
+/// <em>alongside</em> the owning
 /// <see cref="SettingsStore{TConfig}"/> — disposing the store first would throw
 /// <see cref="ObjectDisposedException"/> when the controller tries to remove its listeners.
 /// </para>
@@ -49,8 +52,7 @@ namespace Umbra.SDK.Config;
 /// // ImGuiDrawUI callback — once per frame:
 /// _saveController.Tick();
 ///
-/// // Exit point — Flush first, then Dispose, then dispose the store:
-/// _saveController.Flush();
+/// // Exit point — Dispose flushes any pending write before removing listeners:
 /// _saveController.Dispose();
 /// _saveController = null;
 /// _store.Save();   // belt-and-suspenders final save
@@ -159,8 +161,8 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Always call this before plugin unload (before <see cref="Dispose"/>) to ensure no
-    /// debounced numeric change is silently dropped when the plugin exits.
+    /// Use this when you need a pending save to happen immediately rather than waiting for the
+    /// debounce window or the eventual <see cref="Dispose"/> call.
     /// </para>
     /// <para>
     /// After disposal this method is a permanent no-op.
@@ -182,8 +184,8 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Always call <see cref="Flush"/> before <see cref="Dispose"/> to guarantee any
-    /// debounced write still pending at unload time is not silently dropped.
+    /// <see cref="Dispose"/> calls <see cref="Flush"/> before unregistering listeners, so any
+    /// debounced write still pending at unload time is persisted automatically.
     /// </para>
     /// <para>
     /// Dispose this instance <em>before</em> or <em>alongside</em> the owning
