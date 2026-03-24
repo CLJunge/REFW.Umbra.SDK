@@ -129,7 +129,6 @@ public partial record NestedConfigGroup
     [SettingsParameter, DisplayName("MaxItems"), Description("Maximum number of items."), Range(1, 100), Step(1)]
     public Parameter<int> MaxItems { get; set; } = new(10);
 }
-`````````
 
 ## Settings UI — ConfigDrawer
 - `ConfigDrawer<TConfig>` (in `Umbra.Config.UI`) renders a full ImGui settings panel from a config instance.
