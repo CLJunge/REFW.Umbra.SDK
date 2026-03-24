@@ -7,7 +7,7 @@ namespace Umbra.Config;
 /// and notifies listeners when that value changes.
 /// </summary>
 /// <typeparam name="T">The type of value stored by this parameter.</typeparam>
-[DebuggerDisplay("{Key}: {Value} (Default: {DefaultValue})")]
+[DebuggerDisplay("{Key}: {Value} (Default: {DefaultValue}, Modified: {IsModified})")]
 public class Parameter<T> : IParameter
 {
     /// <summary>
@@ -52,6 +52,18 @@ public class Parameter<T> : IParameter
     public Type ValueType => typeof(T);
 
     /// <summary>
+    /// Gets a value indicating whether the current <see cref="Value"/> differs from
+    /// <see cref="DefaultValue"/>.
+    /// </summary>
+    /// <remarks>
+    /// This value is computed on demand rather than tracked separately, so it always reflects
+    /// changes made through <see cref="Value"/>, <see cref="Set"/>, <see cref="SetWithoutNotify"/>,
+    /// <see cref="IParameter.SetValue"/>, <see cref="IParameter.SetValueWithoutNotify"/>, and
+    /// <see cref="Reset"/>.
+    /// </remarks>
+    public bool IsModified => !EqualityComparer<T?>.Default.Equals(_value, DefaultValue);
+
+    /// <summary>
     /// Gets or sets the current value of this parameter.
     /// Setting this property raises <see cref="ValueChanged"/> if the value changes
     /// and passes validation defined by <see cref="ParameterMetadata.Min"/> and
@@ -82,15 +94,28 @@ public class Parameter<T> : IParameter
     /// <summary>
     /// Resets the value to its default state, optionally raising the value changed event.
     /// </summary>
-    /// <remarks>If raiseEvent is set to false, the value is reset without notifying listeners of the change.
-    /// Use this option when you need to update the value silently without triggering event handlers.</remarks>
+    /// <remarks>
+    /// <para>
+    /// If <paramref name="raiseEvent"/> is <see langword="false"/>, the value is reset without
+    /// notifying listeners of the change.
+    /// </para>
+    /// <para>
+    /// Validation is intentionally bypassed during reset so that <see cref="IsModified"/> is
+    /// guaranteed to be <see langword="false"/> after this call, regardless of the current
+    /// <see cref="ParameterMetadata.Min"/>/<see cref="ParameterMetadata.Max"/> bounds.
+    /// </para>
+    /// </remarks>
     /// <param name="raiseEvent">true to raise the value changed event after resetting; otherwise, false.</param>
     public void Reset(bool raiseEvent = true)
     {
-        if (raiseEvent)
-            Value = DefaultValue;
-        else
-            SetWithoutNotify(DefaultValue);
+        var oldValue = _value;
+        _value = DefaultValue;
+
+        if (raiseEvent && !EqualityComparer<T?>.Default.Equals(oldValue, _value))
+        {
+            ValueChanged?.Invoke(oldValue, _value);
+            _interfaceValueChanged?.Invoke();
+        }
     }
 
     /// <summary>
@@ -181,8 +206,8 @@ public class Parameter<T> : IParameter
             }
             catch (InvalidCastException)
             {
-                // T does not implement IConvertible or the double bounds cannot be
-                // narrowed to T; skip validation rather than blocking the assignment.
+                // T cannot be converted to the bounds value type (e.g. mismatched numeric types
+                // from runtime metadata); skip bounds validation and treat the value as valid.
                 return true;
             }
         }
