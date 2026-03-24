@@ -1,7 +1,7 @@
 # Copilot instructions for REFW.Umbra
 
 ## Project context
-- `Umbra.SDK` is a support library for REFramework mod/plugin development.
+- `Umbra` is a support library for REFramework mod/plugin development.
 - The primary runtime target is **REFramework**, specifically **REFramework.NET**.
 - Code in this repository is intended to run inside the game process through the REFramework managed plugin environment, not as a standalone desktop or web application.
 - The workspace targets `.NET 10` and `x64`.
@@ -9,7 +9,7 @@
 ## REFramework-specific guidance
 - Prefer patterns that work inside the REFramework managed plugin host.
 - Use `REFramework.NET` APIs when interacting with the host environment.
-- For logging in plugin code, use `Umbra.SDK.Logging.PluginLogger` — an **instance class** that forwards to `REFrameworkNET.API.LogInfo`, `API.LogWarning`, and `API.LogError`.
+- For logging in plugin code, use `Umbra.Logging.PluginLogger` — an **instance class** that forwards to `REFrameworkNET.API.LogInfo`, `API.LogWarning`, and `API.LogError`.
   - Declare the logger as a `private static readonly PluginLogger _log = new("PluginName");` field on the plugin class. Never set it in the entry point — initialise it inline so it is always available and never shared with other plugins.
   - Do **not** use `Logger.Prefix`, `Logger.PrefixFormat`, or `Logger.MinLevel`. These properties no longer exist on the static `Logger` class. All managed plugins load into the same AppDomain; any static prefix written by one plugin would silently overwrite every other plugin's prefix.
   - `PluginLogger` exposes `Prefix`, `PrefixFormat`, and `MinLevel` as instance properties, fully isolated per plugin.
@@ -51,21 +51,25 @@ internal static class FovHooks
 ## UI and input
 - UI should be implemented with **ImGui**, using `Hexa.NET.ImGui`.
 - Do not suggest WPF, WinForms, MAUI, Blazor, or ASP.NET for in-game UI.
-- For hotkeys and keyboard capture, use the helpers in `Umbra.ImGuiHelper` and `Umbra.KeyboardUtil` (both are in the `Umbra` namespace, not `Umbra.SDK`).
-  - `ImGuiHelper` provides: `DrawHotKeySetting`, `DrawSlider`, `DrawIntSlider`, `DrawCheckbox`, `DrawComboBox`, `DrawSectionHeader`, `DrawHelpMarker`.
-  - `KeyboardUtil` provides: `TryCaptureKeyboardKey(out int)`, `GetKeyName(int)`, `IsValidKey(int)`, and modifier-state properties `IsCtrlHeld`, `IsShiftHeld`, `IsAltHeld`.
+- For hotkeys and keyboard capture, use `Umbra.Input.KeyboardInput`.
+  - `KeyboardInput` provides: `TryCaptureKeyboardKey(out int)`, `GetKeyName(int)`, `IsValidKey(int)`, and modifier-state properties `IsCtrlHeld`, `IsShiftHeld`, `IsAltHeld`.
   - Hotkey values are stored as `int` (an `ImGuiKey` cast to `int`).
+- For reusable ImGui helpers, use `Umbra.UI.ImGuiWidgets`.
+  - `ImGuiWidgets` currently provides `DrawHelpMarker(string description)`.
+- For config-backed hotkey controls, prefer the built-in drawers in `Umbra.Config.UI.ParameterDrawers` such as `HotkeyDrawer` and `TwoColumnHotkeyDrawer`.
 
 ## Settings/configuration
-- Prefer the existing configuration model in `Umbra.SDK.Config`.
+- Prefer the existing configuration model in `Umbra.Config`.
 - Settings flow:
   1. Create a config class with `[AutoRegisterSettings]` (and optionally `[SettingsPrefix("...")]` and/or `[Category("...")]` at the class level).
-  2. Declare each setting as a `Parameter<T>` property decorated with `[SettingsParameter]` (optionally with a `keyOverride` string).
-  3. Instantiate `SettingsStore<TConfig>` with the absolute path to the JSON file.
-  4. Call `settingsStore.Load()` to obtain a populated config instance; call `settingsStore.Save()` to persist current values.
+  2. Declare leaf settings as `Parameter<T>` properties decorated with `[SettingsParameter]` (optionally with a `keyOverride` string).
+  3. Declare nested settings groups as regular properties decorated with `[SettingsParameter]`, where the nested type is also decorated with `[AutoRegisterSettings]`.
+  4. Instantiate `SettingsStore<TConfig>` with the absolute path to the JSON file.
+  5. Call `settingsStore.Load()` to obtain a populated config instance; call `settingsStore.Save()` to persist current values.
 - `SettingsStore<TConfig>` requires `TConfig : class, new()`. `record` types satisfy this constraint and are the preferred style for config classes.
 - Key derivation: dot-separated; the prefix from `[SettingsPrefix]` is prepended to each property name (camelCased), unless a `keyOverride` is provided on `[SettingsParameter]`.
-- Metadata attributes available from `Umbra.SDK.Config.Attributes`:
+- For nested settings groups, use a local prefix segment on the nested type (for example `[SettingsPrefix("nested")]` under a parent prefix of `example` becomes `example.nested...`). Do not repeat the full parent prefix on the nested type.
+- Metadata attributes available from `Umbra.Config.Attributes`:
   - `[DisplayName("...")]` — human-readable UI label.
   - `[Description("...")]` — tooltip or help text shown via a `(?)` help marker.
   - `[Category("...")]` — groups related parameters in the UI; can be placed on the class or a specific property.
@@ -79,6 +83,7 @@ internal static class FovHooks
   - `[HideIf<T>("MemberName")]` — hides the control while the named `bool` member on the same config class is `true`.
   - `[HideIf<T>("MemberName", value)]` — hides the control while the named member equals `value`.
   - `[CustomDrawer<TDrawer>]` — renders the control using a custom `IParameterDrawer` implementation instead of the default; `TDrawer` must implement `IParameterDrawer` and have a public parameterless constructor.
+  - `[TwoColumnCustomDrawer<TDrawer>]` — renders the control using an `ITwoColumnParameterDrawer` implementation that participates in the standard two-column label layout.
 - Supported `Parameter<T>` value types for JSON persistence: `bool`, `int`, `float`, `double`, `string`, and any `enum`.
 - `SettingsStore<TConfig>` additional API:
   - `CopyValuesTo(target, setWithoutNotifying)` — mirrors all parameter values into another store instance.
@@ -87,15 +92,15 @@ internal static class FovHooks
   - `IDisposable` — always dispose `SettingsStore` to clean up event subscriptions.
 - Persistence uses `System.Text.Json` with camelCase property naming and enums serialized as strings.
 - Do not introduce unrelated configuration frameworks.
-- Nested settings groups are supported: declare a nested `record` also decorated with `[AutoRegisterSettings]`, `[SettingsPrefix]`, and `[Category]`, then expose it as a `[SettingsParameter]` property on the parent config. `ConfigDrawer` recurses into nested groups automatically.
+- Nested settings groups are supported: declare a nested `record` also decorated with `[AutoRegisterSettings]`, `[SettingsPrefix]`, and optionally `[Category]`, then expose it as a regular `[SettingsParameter]` property on the parent config. `ConfigDrawer` recurses into nested groups automatically.
 
-Example config class demonstrating all major patterns:
+Example config class demonstrating the current nested-settings pattern:
 
 ````````
-using Umbra.SDK.Config;
-using System.Text.Json.Serialization;
+using Umbra.Config;
+using Umbra.Config.Attributes;
 
-[AutoRegisterSettings, SettingsPrefix("Example"), Category("Example Plugin")]
+[AutoRegisterSettings, SettingsPrefix("example"), Category("Example Plugin")]
 public partial record PluginConfig
 {
     [SettingsParameter, DisplayName("Enabled"), Description("Is the plugin enabled?")]
@@ -110,11 +115,11 @@ public partial record PluginConfig
     [SettingsParameter, DisplayName("Username"), Description("The user's name."), MaxLength(80)]
     public Parameter<string> UserName { get; set; } = new("Player");
 
-    [SettingsParameter, DisplayName("Nested Settings"), Category("Advanced Settings")]
-    public Parameter<NestedConfigGroup> NestingExample { get; set; } = new(new());
+    [SettingsParameter]
+    public NestedConfigGroup NestingExample { get; set; } = new();
 }
 
-[AutoRegisterSettings, SettingsPrefix("Example.Nested"), Category("Example Plugin/Nested")]
+[AutoRegisterSettings, SettingsPrefix("nested"), Category("Advanced Settings")]
 public partial record NestedConfigGroup
 {
     [SettingsParameter("advancedFeature"), DisplayName("UseAdvancedFeature"), Description("Enable advanced feature?")]
@@ -126,12 +131,12 @@ public partial record NestedConfigGroup
 ````````
 
 ## Settings UI — ConfigDrawer
-- `ConfigDrawer<TConfig>` (in `Umbra.SDK.Config.UI`) renders a full ImGui settings panel from a config instance.
+- `ConfigDrawer<TConfig>` (in `Umbra.Config.UI`) renders a full ImGui settings panel from a config instance.
 - The draw tree is built once at construction via a single reflection pass; `Draw()` walks the pre-built node list with no per-frame reflection.
 - Construct with the `TConfig` instance returned by `SettingsStore<TConfig>.Load()` so that `ParameterMetadata` is already populated.
 - Call `Draw()` from inside an active ImGui window or child window each frame.
 - `ConfigDrawer<TConfig>` is `IDisposable`; dispose it when the settings window is closed or the plugin unloads.
-- Custom controls are implemented via `IParameterDrawer` (in `Umbra.SDK.Config.UI`) and applied with `[CustomDrawer<TDrawer>]` on the parameter property.
+- Custom controls are implemented via `IParameterDrawer` (in `Umbra.Config.UI`) and applied with `[CustomDrawer<TDrawer>]` on the parameter property.
 - For two-column-aware custom controls that participate in the standard label layout, use `ITwoColumnParameterDrawer` with `[TwoColumnCustomDrawer<TDrawer>]`.
 - To render an entire nested configuration group with a fully custom ImGui layout, apply `[NestedGroupDrawer<TDrawer>]` to the **nested group type** (not the property) and implement `INestedGroupDrawer<T>` in the drawer class:
   - `[NestedGroupDrawer<TDrawer>]` is declared on `AttributeTargets.Class | AttributeTargets.Struct`. Apply it to the nested `record`/`class` decorated with `[AutoRegisterSettings]`.
@@ -140,7 +145,7 @@ public partial record NestedConfigGroup
   - The drawer has full ImGui layout control; no label, column alignment, or section header is emitted by the factory.
   - Property-level attributes `[Category]`, `[SpacingBefore]`, `[SpacingAfter]`, and `[HideIf]` on the **parent property** are still honoured. `[CollapseAsTree]` is applied to the nested group **type** itself, not the parent property.
   - `INestedGroupDrawer<T>` extends `IDisposable`. The default `Dispose` implementation calls `GC.SuppressFinalize`; override it when the drawer holds resources that must be released on plugin unload.
-  - Nested group properties should still be modeled as `Parameter<T>` fields with `[SettingsParameter]` so they participate in `SettingsStore` persistence, even though the custom drawer handles all rendering.
+  - Nested group properties on the parent config should be regular `[SettingsParameter]` object properties; inside the nested group itself, individual persisted values remain `Parameter<T>` properties.
 
 ```csharp
 // Nested group type: apply [NestedGroupDrawer<>] here, on the type itself.
@@ -154,6 +159,10 @@ public record MyGroup
     [SettingsParameter]
     public Parameter<int> Value { get; set; } = new(42);
 }
+
+// Parent config property: regular nested-group property, not Parameter<MyGroup>.
+[SettingsParameter]
+public MyGroup Group { get; set; } = new();
 
 // Custom drawer: full ImGui layout control for the group.
 internal class MyGroupDrawer : INestedGroupDrawer<MyGroup>
@@ -170,7 +179,7 @@ internal class MyGroupDrawer : INestedGroupDrawer<MyGroup>
 
 ## Plugin panel system
 
-`PluginPanel` (in `Umbra.SDK.UI.Panel`) is the recommended top-level UI type for plugins. It composes an ordered list of `IPanelSection` instances under a shared ImGui ID scope and owns their lifetimes. Use `ConfigDrawer<TConfig>` directly only when the plugin needs a settings panel with no live state.
+`PluginPanel` (in `Umbra.UI.Panel`) is the recommended top-level UI type for plugins. It composes an ordered list of `IPanelSection` instances under a shared ImGui ID scope and owns their lifetimes. Use `ConfigDrawer<TConfig>` directly only when the plugin needs a settings panel with no live state.
 
 **Section types:**
 - `ConfigSection<TConfig>` — wraps `ConfigDrawer<TConfig>` as a panel section. Accepts an optional `idScope` that defaults to the config type name.
@@ -263,10 +272,10 @@ internal static class FovHooks
 ```
 
 ## Dependencies and references
-- REFramework-related assemblies are referenced from the local `Libs/reframework` layout.
+- REFramework-related assemblies are referenced from the local `dependencies/reframework` layout.
 - The project references:
-  - `REFramework.NET`
-  - generated game bindings such as `application`, `viacore`, and `_System.Private.CoreLib`
+  - `REFramework.NET` from `dependencies/reframework/api`
+  - generated game bindings such as `application`, `viacore`, and `_System.Private.CoreLib` from `dependencies/reframework/generated`
   - ImGui support via `Hexa.NET.ImGui`
 - Keep solutions compatible with this local reference-based setup unless explicitly asked to change it.
 

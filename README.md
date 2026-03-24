@@ -1,4 +1,4 @@
-# Umbra.SDK
+# REFW.Umbra
 
 A support library for [REFramework](https://github.com/praydog/REFramework) mod and plugin development on RE Engine titles. It runs inside the game process through the REFramework.NET managed plugin host and provides configuration, settings UI, live-state rendering, logging, and input utilities so plugin authors can focus on game logic rather than infrastructure.
 
@@ -20,8 +20,8 @@ A support library for [REFramework](https://github.com/praydog/REFramework) mod 
 ## Architecture Summary
 
 ```
-REFW.Umbra.SDK (solution)
-├── Umbra.SDK                     # SDK library (ship this as a dependency)
+REFW.Umbra (solution)
+├── Umbra                     # SDK library (ship this as a dependency)
 │   ├── Config/                   # Parameter<T>, SettingsStore<T>, DeferredSaveController<T>
 │   │   ├── Attributes/           # [AutoRegisterSettings], [SettingsParameter], [Range], [HideIf], …
 │   │   └── UI/                   # ConfigDrawer<T>, ConfigDrawerBuilder, ControlFactory, parameter drawers
@@ -71,14 +71,14 @@ This downloads the latest `csharp-api.zip` from REFramework-nightly, extracts th
 
 ### 2. Build
 
-Open `REFW.Umbra.SDK.sln` in Visual Studio 2022 and build, or use the CLI:
+Open `REFW.Umbra.slnx` in Visual Studio 2026 and build, or use the CLI:
 
 ```bash
 dotnet build
 ```
 
 In **Debug** configuration, a post-build event automatically deploys:
-- `Umbra.SDK` → `<GameDir>\reframework\plugins\managed\dependencies\`
+- `Umbra` → `<GameDir>\reframework\plugins\managed\dependencies\`
 - Plugin assemblies → `<GameDir>\reframework\plugins\managed\`
 
 ---
@@ -91,9 +91,9 @@ In **Debug** configuration, a post-build event automatically deploys:
 using REFrameworkNET;
 using REFrameworkNET.Attributes;
 using REFrameworkNET.Callbacks;
-using Umbra.SDK.Config;
-using Umbra.SDK.Logging;
-using Umbra.SDK.UI.Panel;
+using Umbra.Config;
+using Umbra.Logging;
+using Umbra.UI.Panel;
 
 public static class MyPlugin
 {
@@ -147,8 +147,8 @@ public static class MyPlugin
 ### Minimal config class
 
 ```csharp
-using Umbra.SDK.Config;
-using Umbra.SDK.Config.Attributes;
+using Umbra.Config;
+using Umbra.Config.Attributes;
 
 [AutoRegisterSettings, SettingsPrefix("myPlugin"), Category("My Plugin")]
 public record MyConfig

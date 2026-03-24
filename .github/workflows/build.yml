@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build Umbra.SDK
+    name: Build Umbra
     runs-on: ubuntu-latest
     if: github.event_name != 'create' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))
     permissions:
@@ -80,7 +80,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.value }}
         run: >
-          dotnet build Umbra.SDK/Umbra.SDK.csproj
+          dotnet build Umbra/Umbra.csproj
           --configuration Release
           --verbosity minimal
           -p:Version=${VERSION}
@@ -92,7 +92,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.value }}
         run: >
-          dotnet pack Umbra.SDK/Umbra.SDK.csproj
+          dotnet pack Umbra/Umbra.csproj
           --configuration Release
           --no-build
           --output artifacts/nuget
@@ -104,16 +104,16 @@ jobs:
       - name: Stage ZIP contents
         run: |
           mkdir -p staging/reframework/plugins/managed/dependencies
-          cp Umbra.SDK/bin/Release/net10.0/Umbra.SDK.dll \
+          cp Umbra/bin/Release/net10.0/REFW.Umbra.dll \
              staging/reframework/plugins/managed/dependencies/
 
-      - name: Create Umbra.SDK.zip
-        run: cd staging && zip -r ../Umbra.SDK.zip reframework/
+      - name: Create REFW.Umbra.zip
+        run: cd staging && zip -r ../REFW.Umbra.zip reframework/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Umbra.SDK
+          name: REFW.Umbra
           path: |
             staging/
             artifacts/nuget/
@@ -130,8 +130,8 @@ jobs:
         run: |
           shopt -s nullglob
 
-          nupkg=(artifacts/nuget/Umbra.SDK.${VERSION}.nupkg)
-          snupkg=(artifacts/nuget/Umbra.SDK.${VERSION}.snupkg)
+          nupkg=(artifacts/nuget/refw.umbra.${VERSION}.nupkg)
+          snupkg=(artifacts/nuget/refw.umbra.${VERSION}.snupkg)
 
           if (( ${#nupkg[@]} == 0 )); then
             echo "No .nupkg file was produced."
@@ -166,12 +166,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            Umbra.SDK.zip
+            REFW.Umbra.zip
             artifacts/nuget/*.nupkg
             artifacts/nuget/*.snupkg
           generate_release_notes: true
           body: |
-            ## Umbra.SDK `v${{ steps.version.outputs.value }}`
+            ## REFW.Umbra `v${{ steps.version.outputs.value }}`
 
             > A support library for [REFramework](https://github.com/praydog/REFramework) mod and plugin development targeting RE Engine titles.
 
@@ -179,18 +179,18 @@ jobs:
 
             ### 🛠️ For Plugin Developers
 
-            Install `Umbra.SDK` using one of the following options:
+            Install `REFW.Umbra` using one of the following options:
 
-            - NuGet package page: `https://www.nuget.org/packages/Umbra.SDK`
-            - CLI install: `dotnet add package Umbra.SDK`
+            - NuGet package page: `https://www.nuget.org/packages/refw.umbra`
+            - CLI install: `dotnet add package refw.umbra`
             - Release assets: download the `.nupkg` / `.snupkg` files and install the package from those files
-            - Direct reference: download **`Umbra.SDK.zip`** from the release assets and reference `Umbra.SDK.dll` in your project
+            - Direct reference: download **`REFW.Umbra.zip`** from the release assets and reference `REFW.Umbra.dll` in your project
 
             ---
 
             ### 🎮 For Players / Game Installation
 
-            Download **`Umbra.SDK.zip`** from the release assets and extract it into the game root folder.
+            Download **`REFW.Umbra.zip`** from the release assets and extract it into the game root folder so dependent plugins can automatically use the latest installed `REFW.Umbra` version.
 
             The ZIP preserves the `reframework/plugins/managed/dependencies/` layout used by REFramework plugin deployments.
 
