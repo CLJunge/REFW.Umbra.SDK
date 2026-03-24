@@ -35,6 +35,8 @@
         <Title>REFW.Umbra</Title>
     </PropertyGroup>
 
+    <Import Project="Umbra.Local.props" Condition="Exists('Umbra.Local.props')" />
+
     <ItemGroup>
         <None Include="..\LICENSE.txt" Pack="true" PackagePath="" Visible="false" />
         <None Include="..\README.md" Pack="true" PackagePath="" Visible="false" />

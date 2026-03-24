@@ -57,8 +57,8 @@ internal static class VisibilityPredicateResolver
         var compareValue = hideIf.BoxedValue;
 
         var ownerType = owner.GetType();
-        var targetProp = ownerType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);
-        var targetField = ownerType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance);
+        var targetProp = ownerType.GetProperty(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        var targetField = ownerType.GetField(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
         if (targetProp is null && targetField is null)
         {

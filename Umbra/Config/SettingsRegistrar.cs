@@ -25,7 +25,13 @@ internal static class SettingsRegistrar
     {
         var parameters = new Dictionary<string, IParameter>();
 #pragma warning disable IDE0028 // Simplify collection initialization
-        RegisterRecursive(config, "", null, parameters, new HashSet<object>(ReferenceEqualityComparer.Instance));
+        var rootType = config.GetType();
+        RegisterRecursive(
+            config,
+            GetSettingsPrefix(rootType) ?? "",
+            GetCategory(rootType),
+            parameters,
+            new HashSet<object>(ReferenceEqualityComparer.Instance));
 #pragma warning restore IDE0028 // Simplify collection initialization
         return parameters;
     }
@@ -46,15 +52,28 @@ internal static class SettingsRegistrar
     /// <paramref name="visited"/> guards against object-graph cycles: if the same instance is
     /// encountered a second time the branch is skipped, preventing a <see cref="StackOverflowException"/>.
     /// </para>
+    /// <para>
+    /// Prefix resolution for nested groups uses a property-first strategy: if
+    /// <see cref="SettingsPrefixAttribute"/> is present on the parent property, that value is
+    /// used. If not, the attribute is looked up on the nested type itself (backwards-compatible
+    /// fallback). Placing the prefix on the property is the preferred approach.
+    /// </para>
+    /// <para>
+    /// Category resolution follows the same priority order: property-level
+    /// <see cref="CategoryAttribute"/> wins over type-level.
+    /// </para>
     /// </remarks>
     /// <param name="obj">The current object being inspected.</param>
-    /// <param name="parentPrefix">
-    /// The dot-separated key prefix accumulated from ancestor objects,
-    /// used to build fully-qualified setting keys.
+    /// <param name="currentPrefix">
+    /// The fully resolved dot-separated key prefix for <paramref name="obj"/>, already including
+    /// the prefix segment selected for this branch of the object tree. For nested groups the
+    /// segment is sourced from the parent property's <see cref="SettingsPrefixAttribute"/> when
+    /// present, or from the nested type's attribute as a fallback.
     /// </param>
-    /// <param name="parentCategory">
-    /// The category name inherited from the nearest ancestor that declared a
-    /// <see cref="CategoryAttribute"/>, or <see langword="null"/> if none has been encountered yet.
+    /// <param name="currentCategory">
+    /// The effective category inherited by child parameters of <paramref name="obj"/>, resolved
+    /// from the parent property's <see cref="CategoryAttribute"/> when present, or from the
+    /// nested type's attribute as a fallback.
     /// </param>
     /// <param name="parameters">
     /// The dictionary that discovered <see cref="IParameter"/> instances are added to.
@@ -65,8 +84,8 @@ internal static class SettingsRegistrar
     /// </param>
     private static void RegisterRecursive(
         object obj,
-        string parentPrefix,
-        string? parentCategory,
+        string currentPrefix,
+        string? currentCategory,
         Dictionary<string, IParameter> parameters,
         HashSet<object> visited)
     {
@@ -75,12 +94,6 @@ internal static class SettingsRegistrar
         var type = obj.GetType();
         if (!Attribute.IsDefined(type, typeof(AutoRegisterSettingsAttribute)))
             return;
-
-        var prefixAttr = type.GetCustomAttribute<SettingsPrefixAttribute>();
-        var currentPrefix = Combine(parentPrefix, prefixAttr?.Prefix ?? "");
-
-        var categoryAttr = type.GetCustomAttribute<CategoryAttribute>();
-        var currentCategory = categoryAttr?.Name ?? parentCategory;
 
         foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
@@ -92,17 +105,35 @@ internal static class SettingsRegistrar
 
             if (value is IParameter parameter)
             {
-                var key = Combine(currentPrefix, paramAttr.KeyOverride ?? prop.Name.ToCamelCase());
+                var key = Combine(currentPrefix, paramAttr.KeyOverride ?? prop.Name.ToCamelCase()!);
                 parameter.Key = key;
                 parameter.Metadata = ParameterMetadataReader.ReadFrom(prop, currentCategory, key);
                 parameters[key] = parameter;
             }
             else
             {
-                RegisterRecursive(value, currentPrefix, currentCategory, parameters, visited);
+                var nestedPrefix = Combine(currentPrefix, GetSettingsPrefix(prop) ?? GetSettingsPrefix(value.GetType()) ?? "");
+                var nestedCategory = GetCategory(prop) ?? GetCategory(value.GetType()) ?? currentCategory;
+                RegisterRecursive(value, nestedPrefix, nestedCategory, parameters, visited);
             }
         }
     }
+
+    /// <summary>
+    /// Returns the <see cref="SettingsPrefixAttribute.Prefix"/> declared on <paramref name="member"/>,
+    /// or <see langword="null"/> when the member declares no <see cref="SettingsPrefixAttribute"/>.
+    /// </summary>
+    /// <param name="member">The reflected property or type to inspect.</param>
+    private static string? GetSettingsPrefix(MemberInfo member)
+        => member.GetCustomAttribute<SettingsPrefixAttribute>()?.Prefix;
+
+    /// <summary>
+    /// Returns the <see cref="CategoryAttribute.Name"/> declared on <paramref name="member"/>, or
+    /// <see langword="null"/> when the member declares no <see cref="CategoryAttribute"/>.
+    /// </summary>
+    /// <param name="member">The reflected property or type to inspect.</param>
+    private static string? GetCategory(MemberInfo member)
+        => member.GetCustomAttribute<CategoryAttribute>()?.Name;
 
     /// <summary>
     /// Combines two dot-separated key segments into a single key, omitting the separator

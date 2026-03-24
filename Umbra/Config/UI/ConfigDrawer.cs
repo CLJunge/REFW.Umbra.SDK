@@ -21,8 +21,11 @@ namespace Umbra.Config.UI;
 /// attributes directly when metadata fields are absent.
 /// </para>
 /// <para>
-/// Apply <see cref="CollapseAsTreeAttribute"/> to any nested settings group class to render its
-/// category as a collapsible <c>ImGui.TreeNode</c> instead of a flat separator header.
+/// For nested settings groups, prefer applying presentation attributes such as
+/// <see cref="CategoryAttribute"/>, <see cref="CollapseAsTreeAttribute"/>,
+/// <see cref="LabelMarginAttribute"/>, and <see cref="NestedGroupDrawerAttribute{TDrawer}"/>
+/// to the parent property that exposes the group; equivalent type-level declarations remain
+/// supported as backward-compatible fallbacks.
 /// Apply <see cref="ConfigRootNodeAttribute"/> to the root config class to wrap the entire panel
 /// inside a single top-level <c>ImGui.TreeNode</c>.
 /// </para>
@@ -85,7 +88,8 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// <para>
     /// All widget IDs rendered during this call are bracketed by <c>ImGui.PushID(idScope)</c> /
     /// <c>ImGui.PopID()</c>, making every <c>##key</c> label unique across plugins without any
-    /// changes to individual controls or custom drawers.
+    /// changes to individual controls or custom drawers. The scope is always popped before this
+    /// method returns, even if a node throws while drawing.
     /// </para>
     /// <para>
     /// A no-op when the instance has been disposed; logs a warning rather than throwing so
@@ -100,9 +104,15 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
             return;
         }
         ImGui.PushID(_idScope);
-        foreach (var node in _nodes)
-            node.Draw();
-        ImGui.PopID();
+        try
+        {
+            foreach (var node in _nodes)
+                node.Draw();
+        }
+        finally
+        {
+            ImGui.PopID();
+        }
     }
 
     /// <summary>
@@ -113,7 +123,8 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     public void Dispose()
     {
         if (_disposed) return;
-        foreach (var d in _disposables) d.Dispose();
         _disposed = true;
+        foreach (var d in _disposables) d.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
