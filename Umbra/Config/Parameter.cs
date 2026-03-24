@@ -95,17 +95,27 @@ public class Parameter<T> : IParameter
     /// Resets the value to its default state, optionally raising the value changed event.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// If <paramref name="raiseEvent"/> is <see langword="false"/>, the value is reset without
-    /// notifying listeners of the change. After a successful reset, <see cref="IsModified"/>
-    /// becomes <see langword="false"/>.
+    /// notifying listeners of the change.
+    /// </para>
+    /// <para>
+    /// Validation is intentionally bypassed during reset so that <see cref="IsModified"/> is
+    /// guaranteed to be <see langword="false"/> after this call, regardless of the current
+    /// <see cref="ParameterMetadata.Min"/>/<see cref="ParameterMetadata.Max"/> bounds.
+    /// </para>
     /// </remarks>
     /// <param name="raiseEvent">true to raise the value changed event after resetting; otherwise, false.</param>
     public void Reset(bool raiseEvent = true)
     {
-        if (raiseEvent)
-            Value = DefaultValue;
-        else
-            SetWithoutNotify(DefaultValue);
+        var oldValue = _value;
+        _value = DefaultValue;
+
+        if (raiseEvent && !EqualityComparer<T?>.Default.Equals(oldValue, _value))
+        {
+            ValueChanged?.Invoke(oldValue, _value);
+            _interfaceValueChanged?.Invoke();
+        }
     }
 
     /// <summary>
@@ -196,6 +206,8 @@ public class Parameter<T> : IParameter
             }
             catch (InvalidCastException)
             {
+                // T cannot be converted to the bounds value type (e.g. mismatched numeric types
+                // from runtime metadata); skip bounds validation and treat the value as valid.
                 return true;
             }
         }
