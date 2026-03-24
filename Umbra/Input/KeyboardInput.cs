@@ -87,14 +87,13 @@ public static class KeyboardInput
             var name = Enum.GetName(key);
             if (string.IsNullOrEmpty(name)) continue;
 
-            var lname = name.ToLowerInvariant();
-            if (lname.StartsWith("mouse") ||
-                lname.Contains("pad") ||
-                lname.Contains("joy") ||
-                lname.Contains("button") ||
-                lname.Contains("wheel") ||
-                lname.Contains("reserved") ||
-                lname.Contains("mod"))
+            if (name.StartsWith("mouse", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("pad", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("joy", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("button", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("wheel", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("reserved", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("mod", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }

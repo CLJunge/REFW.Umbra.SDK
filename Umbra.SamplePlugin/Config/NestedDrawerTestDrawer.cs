@@ -1,23 +1,69 @@
 using Hexa.NET.ImGui;
 using Umbra.Config.UI.ParameterDrawers;
-using static Umbra.SamplePlugin.Config.PluginConfig;
 
 namespace Umbra.SamplePlugin.Config;
 
-internal class NestedDrawerTestDrawer : INestedGroupDrawer<NestedDrawerTest>
+/// <summary>
+/// Renders a custom editable layout for <see cref="PluginConfig.NestedDrawerTest"/>.
+/// </summary>
+internal sealed class NestedDrawerTestDrawer : INestedGroupDrawer<PluginConfig.NestedDrawerTest>
 {
-    public void Draw(NestedDrawerTest groupInstance)
+    /// <summary>
+    /// Draws the nested group and writes changed values back to the underlying parameters.
+    /// </summary>
+    /// <param name="groupInstance">The nested configuration group being rendered.</param>
+    public void Draw(PluginConfig.NestedDrawerTest groupInstance)
     {
-        ImGui.Text("This is a custom drawer for the NestedDrawerTest group. It has full control over the layout and styling of its contents.");
+        ImGui.TextWrapped("This custom nested-group drawer demonstrates full ImGui layout control while still editing persisted Umbra parameters.");
         ImGui.Separator();
-        ImGui.Text($"Value1: {groupInstance.Value1}");
-        ImGui.Separator();
-        ImGui.Text($"Value2: {groupInstance.Value2}");
-        ImGui.Separator();
-        ImGui.Text($"Value3: {groupInstance.Value3}");
-        ImGui.Separator();
-        ImGui.Text($"Value4: {groupInstance.Value4}");
-        ImGui.Separator();
-        ImGui.Text("You can add any ImGui controls here to allow users to edit the values, or display them in a custom way.");
+
+        DrawValue1(groupInstance);
+        DrawValue2(groupInstance);
+        DrawValue3(groupInstance);
+        DrawValue4(groupInstance);
+    }
+
+    /// <summary>
+    /// Draws and updates the sample integer parameter.
+    /// </summary>
+    /// <param name="groupInstance">The nested configuration group being rendered.</param>
+    private static void DrawValue1(PluginConfig.NestedDrawerTest groupInstance)
+    {
+        var value = groupInstance.Value1.Value;
+        if (ImGui.InputInt("Value 1", ref value))
+            groupInstance.Value1.Value = value;
+    }
+
+    /// <summary>
+    /// Draws and updates the sample boolean parameter.
+    /// </summary>
+    /// <param name="groupInstance">The nested configuration group being rendered.</param>
+    private static void DrawValue2(PluginConfig.NestedDrawerTest groupInstance)
+    {
+        var value = groupInstance.Value2.Value;
+        if (ImGui.Checkbox("Value 2", ref value))
+            groupInstance.Value2.Value = value;
+    }
+
+    /// <summary>
+    /// Draws and updates the sample string parameter.
+    /// </summary>
+    /// <param name="groupInstance">The nested configuration group being rendered.</param>
+    private static void DrawValue3(PluginConfig.NestedDrawerTest groupInstance)
+    {
+        var value = groupInstance.Value3.Value ?? string.Empty;
+        if (ImGui.InputText("Value 3", ref value, 256u))
+            groupInstance.Value3.Value = value;
+    }
+
+    /// <summary>
+    /// Draws and updates the sample float parameter.
+    /// </summary>
+    /// <param name="groupInstance">The nested configuration group being rendered.</param>
+    private static void DrawValue4(PluginConfig.NestedDrawerTest groupInstance)
+    {
+        var value = groupInstance.Value4.Value;
+        if (ImGui.DragFloat("Value 4", ref value, 0.01f, 0f, 0f, "%.2f"))
+            groupInstance.Value4.Value = value;
     }
 }

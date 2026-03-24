@@ -18,13 +18,16 @@ public static class StringExtensions
     /// or the original string if it is <see langword="null"/>, empty, or already starts with
     /// a lowercase character.
     /// </returns>
-    public static string ToCamelCase(this string value)
+    public static string? ToCamelCase(this string? value)
     {
         if (string.IsNullOrEmpty(value) || char.IsLower(value[0]))
             return value;
-        var sb = new StringBuilder(value);
-        sb[0] = char.ToLowerInvariant(sb[0]);
-        return sb.ToString();
+
+        return string.Create(value.Length, value, static (span, source) =>
+        {
+            source.AsSpan().CopyTo(span);
+            span[0] = char.ToLowerInvariant(span[0]);
+        });
     }
 
     /// <summary>

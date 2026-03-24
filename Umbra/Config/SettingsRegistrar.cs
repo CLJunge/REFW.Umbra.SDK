@@ -52,15 +52,28 @@ internal static class SettingsRegistrar
     /// <paramref name="visited"/> guards against object-graph cycles: if the same instance is
     /// encountered a second time the branch is skipped, preventing a <see cref="StackOverflowException"/>.
     /// </para>
+    /// <para>
+    /// Prefix resolution for nested groups uses a property-first strategy: if
+    /// <see cref="SettingsPrefixAttribute"/> is present on the parent property, that value is
+    /// used. If not, the attribute is looked up on the nested type itself (backwards-compatible
+    /// fallback). Placing the prefix on the property is the preferred approach.
+    /// </para>
+    /// <para>
+    /// Category resolution follows the same priority order: property-level
+    /// <see cref="CategoryAttribute"/> wins over type-level.
+    /// </para>
     /// </remarks>
     /// <param name="obj">The current object being inspected.</param>
     /// <param name="currentPrefix">
     /// The fully resolved dot-separated key prefix for <paramref name="obj"/>, already including
-    /// any property-level or type-level prefix segment selected for this branch of the object tree.
+    /// the prefix segment selected for this branch of the object tree. For nested groups the
+    /// segment is sourced from the parent property's <see cref="SettingsPrefixAttribute"/> when
+    /// present, or from the nested type's attribute as a fallback.
     /// </param>
     /// <param name="currentCategory">
-    /// The effective category inherited by child parameters of <paramref name="obj"/>, after resolving
-    /// any property-level or type-level category for this branch.
+    /// The effective category inherited by child parameters of <paramref name="obj"/>, resolved
+    /// from the parent property's <see cref="CategoryAttribute"/> when present, or from the
+    /// nested type's attribute as a fallback.
     /// </param>
     /// <param name="parameters">
     /// The dictionary that discovered <see cref="IParameter"/> instances are added to.
@@ -92,7 +105,7 @@ internal static class SettingsRegistrar
 
             if (value is IParameter parameter)
             {
-                var key = Combine(currentPrefix, paramAttr.KeyOverride ?? prop.Name.ToCamelCase());
+                var key = Combine(currentPrefix, paramAttr.KeyOverride ?? prop.Name.ToCamelCase()!);
                 parameter.Key = key;
                 parameter.Metadata = ParameterMetadataReader.ReadFrom(prop, currentCategory, key);
                 parameters[key] = parameter;

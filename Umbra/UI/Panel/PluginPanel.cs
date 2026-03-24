@@ -82,13 +82,24 @@ public sealed class PluginPanel : IDisposable
     /// Renders all sections in order. Must be called from within an active ImGui window or
     /// child window, typically from the plugin's ImGui pre-draw callback each frame.
     /// </summary>
+    /// <remarks>
+    /// The pushed top-level ImGui ID scope is always popped before this method returns,
+    /// even if a section throws while drawing.
+    /// </remarks>
     public void Draw()
     {
         if (_disposed) return;
 
         ImGui.PushID(_idScope);
-        foreach (var section in _sections) section.Draw();
-        ImGui.PopID();
+        try
+        {
+            foreach (var section in _sections)
+                section.Draw();
+        }
+        finally
+        {
+            ImGui.PopID();
+        }
     }
 
     /// <summary>
