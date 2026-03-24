@@ -83,7 +83,7 @@ internal static class ControlFactory
             try
             {
                 var drawer = (ITwoColumnParameterDrawer)Activator.CreateInstance(twoColDrawerType)!;
-                var layout = GetControlLayout(label, parameter, meta, alignGroup);
+                var layout = GetControlLayout(label, parameter, alignGroup);
                 return (() =>
                 {
                     layout.Pre();
@@ -116,7 +116,7 @@ internal static class ControlFactory
     private static Action BuildBoolDraw(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
         var p = (Parameter<bool>)parameter;
-        var layout = GetControlLayout(label, parameter, p.Metadata, alignGroup);
+        var layout = GetControlLayout(label, parameter, alignGroup);
         return () =>
         {
             var v = p.Value;
@@ -138,7 +138,7 @@ internal static class ControlFactory
         var p = (Parameter<int>)parameter;
         var meta = p.Metadata;
         var fmt = meta.Format ?? "%d";
-        var layout = GetControlLayout(label, parameter, meta, alignGroup);
+        var layout = GetControlLayout(label, parameter, alignGroup);
 
         if (meta.Min is not null && meta.Max is not null)
         {
@@ -177,7 +177,7 @@ internal static class ControlFactory
         // InferredFloatFormat is precomputed by ParameterMetadataReader during SettingsStore.Load();
         // no format-string construction or Number.FormatFloat overhead at draw-tree build time.
         var fmt = meta.InferredFloatFormat;
-        var layout = GetControlLayout(label, parameter, meta, alignGroup);
+        var layout = GetControlLayout(label, parameter, alignGroup);
 
         if (meta.Min is not null && meta.Max is not null)
         {
@@ -216,7 +216,7 @@ internal static class ControlFactory
         // InferredFloatFormat is precomputed by ParameterMetadataReader during SettingsStore.Load();
         // no format-string construction or Number.FormatFloat overhead at draw-tree build time.
         var fmt = meta.InferredFloatFormat;
-        var layout = GetControlLayout(label, parameter, meta, alignGroup);
+        var layout = GetControlLayout(label, parameter, alignGroup);
 
         if (meta.Min is not null && meta.Max is not null)
         {
@@ -255,7 +255,7 @@ internal static class ControlFactory
         var p = (Parameter<string>)parameter;
         var meta = p.Metadata;
         var maxLen = meta.MaxLength ?? 256u;
-        var layout = GetControlLayout(label, parameter, meta, alignGroup);
+        var layout = GetControlLayout(label, parameter, alignGroup);
 
         if (meta.MultilineLines is int lines)
         {
@@ -291,7 +291,7 @@ internal static class ControlFactory
         var values = new object[rawValues.Length];
         for (var i = 0; i < rawValues.Length; i++)
             values[i] = rawValues.GetValue(i)!;
-        var layout = GetControlLayout(label, parameter, parameter.Metadata, alignGroup);
+        var layout = GetControlLayout(label, parameter, alignGroup);
         return () =>
         {
             var current = parameter.GetValue();
@@ -326,7 +326,7 @@ internal static class ControlFactory
     ///   <item>
     ///     <term>Widget width</term>
     ///     <description>
-    ///       <c>[ControlWidth(px)]</c> fixes the widget to <paramref name="px"/> pixels via
+    ///       <c>[ControlWidth(px)]</c> fixes the widget to the specified number of pixels via
     ///       <c>SetNextItemWidth</c>. When no <c>[ControlWidth]</c> is present, <c>-1f</c> is
     ///       used, which fills to the right content-region edge.
     ///     </description>
@@ -335,7 +335,6 @@ internal static class ControlFactory
     /// </remarks>
     /// <param name="label">The display label resolved for the parameter.</param>
     /// <param name="parameter">The parameter being rendered; its <see cref="IParameter.Key"/> is used as the hidden ImGui label fallback when <see cref="ParameterMetadata.HiddenLabel"/> is <see langword="null"/>.</param>
-    /// <param name="meta">The parameter metadata holding layout options.</param>
     /// <param name="alignGroup">The shared alignment group for the owning category or root scope.</param>
     /// <returns>
     /// A <see cref="ControlLayout"/> value capturing the label, description, alignment group,
@@ -343,8 +342,9 @@ internal static class ControlFactory
     /// immediately before the ImGui widget call to set up layout and alignment state.
     /// </returns>
     private static ControlLayout GetControlLayout(
-        string label, IParameter parameter, ParameterMetadata meta, LabelAlignmentGroup alignGroup)
+        string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
+        var meta = parameter.Metadata;
         var hiddenLabel = meta.HiddenLabel ?? string.Concat("##", parameter.Key);
         return new ControlLayout(label, meta.Description, alignGroup, meta.ControlWidth ?? -1f, hiddenLabel);
     }

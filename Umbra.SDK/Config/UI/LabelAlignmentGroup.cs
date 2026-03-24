@@ -10,7 +10,7 @@ namespace Umbra.SDK.Config.UI;
 /// the group.
 /// </summary>
 /// <remarks>
-/// Width is measured at draw time via <see cref="ImGui.CalcTextSize"/>, so a one-frame
+/// Width is measured at draw time via <see cref="ImGui.CalcTextSize(string)"/>, so a one-frame
 /// convergence delay occurs on the very first render. From the second frame onward
 /// <see cref="LabelWidth"/> is stable and all controls in the group are column-aligned.
 /// </remarks>

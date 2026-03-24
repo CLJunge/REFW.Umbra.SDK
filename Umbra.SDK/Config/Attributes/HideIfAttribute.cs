@@ -7,13 +7,15 @@ namespace Umbra.SDK.Config.Attributes;
 /// <typeparam name="T">The type of the member value to compare against.</typeparam>
 /// <remarks>
 /// <para>
-/// When constructed with only a <paramref name="memberName"/>, the referenced member must
+/// When constructed with only a <c>memberName</c>, the referenced member must
 /// be a <c>bool</c>; the parameter is hidden while that member is <c>true</c>.
 /// </para>
 /// <para>
-/// When constructed with both a <paramref name="memberName"/> and a <paramref name="value"/>,
-/// the parameter is hidden while the member's current value equals <paramref name="value"/>.
-/// Comparison is performed with <see cref="object.Equals(object, object)"/>.
+/// When constructed with both a <c>memberName</c> and a <c>value</c>,
+/// the parameter is hidden while the member's current value equals <c>value</c>.
+/// Comparison is performed using <c>EqualityComparer&lt;T&gt;.Default</c> where possible,
+/// so <see cref="System.IEquatable{T}"/> implementations are respected; if a typed
+/// comparer cannot be used, the resolver falls back to <see cref="object.Equals(object, object)"/>.
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
