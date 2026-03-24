@@ -58,7 +58,8 @@ public interface IParameter
 
     /// <summary>
     /// Resets the object to its initial state, optionally raising a change event.
-    /// After a successful reset, <see cref="IsModified"/> becomes <see langword="false"/>.
+    /// Validation is bypassed so that <see cref="IsModified"/> is always
+    /// <see langword="false"/> after this call.
     /// </summary>
     /// <param name="raiseEvent">true to raise a change event after resetting; otherwise, false.</param>
     void Reset(bool raiseEvent = true);
