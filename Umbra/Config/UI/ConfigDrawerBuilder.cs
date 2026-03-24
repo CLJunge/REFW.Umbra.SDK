@@ -344,7 +344,18 @@ internal sealed class ConfigDrawerBuilder
                 {
                     var amount = indentAmount.Value;
                     var inner = draw;
-                    draw = () => { ImGui.Indent(amount); inner(); ImGui.Unindent(amount); };
+                    draw = () =>
+                    {
+                        ImGui.Indent(amount);
+                        try
+                        {
+                            inner();
+                        }
+                        finally
+                        {
+                            ImGui.Unindent(amount);
+                        }
+                    };
                 }
 
                 var isVisible = meta.HideIf is not null
