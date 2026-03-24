@@ -2,7 +2,7 @@
 ::
 :: deploy_reframework_deps.bat  <source-glob>
 ::
-:: Called by the Umbra.SDK post-build event in Debug configuration.
+:: Called by the Umbra post-build event in Debug configuration.
 :: Copies the built files matching <source-glob> to the REFramework
 :: managed dependencies folder inside the configured game directory.
 ::
