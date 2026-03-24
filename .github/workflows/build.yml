@@ -181,7 +181,7 @@ jobs:
 
             Install `REFW.Umbra` using one of the following options:
 
-            - NuGet package page: `https://www.nuget.org/packages/REFW.Umbra`
+            - NuGet package page: `https://www.nuget.org/packages/refw.umbra`
             - CLI install: `dotnet add package refw.umbra`
             - Release assets: download the `.nupkg` / `.snupkg` files and install the package from those files
             - Direct reference: download **`REFW.Umbra.zip`** from the release assets and reference `REFW.Umbra.dll` in your project
