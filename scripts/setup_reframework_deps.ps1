@@ -354,7 +354,7 @@ function Copy-GeneratedBindings {
 
 function Update-LaunchSettings {
     param([string]$GameExePath)
-    $dest = Join-Path $PSScriptRoot '..\Umbra.SDK\Properties\launchSettings.json'
+    $dest = Join-Path $PSScriptRoot '..\Umbra\Properties\launchSettings.json'
     $exe  = Get-Item -Path $GameExePath -ErrorAction SilentlyContinue
     if (-not $exe) {
         Write-Host "   [INFO] Configured exe not found: $GameExePath - skipping."
@@ -390,7 +390,7 @@ function Update-LaunchSettings {
     } else {
         $newSettings = [ordered]@{
             profiles = [ordered]@{
-                'Umbra.SDK'  = [ordered]@{ commandName = 'Project' }
+                'Umbra'  = [ordered]@{ commandName = 'Project' }
                 $profileName = $launchProfile
             }
         }

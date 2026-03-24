@@ -12,7 +12,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Umbra.SDK\Umbra.SDK.csproj" />
+        <ProjectReference Include="..\Umbra\Umbra.csproj" />
     </ItemGroup>
 
     <ItemGroup>
