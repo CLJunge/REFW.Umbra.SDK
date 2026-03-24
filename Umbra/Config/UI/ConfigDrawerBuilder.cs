@@ -262,7 +262,7 @@ internal sealed class ConfigDrawerBuilder
             : _rootAlignmentGroup;
 
         var tempNodes = new List<IDrawNode>();
-        CollectFlatParameterNodes(tempNodes, alignmentGroup, nested, propType, collapseOverride, labelMarginOverride);
+        CollectFlatParameterNodes(tempNodes, alignmentGroup, nested, propType, labelMarginOverride);
         tempNodes.StableSortBy(static n => n is ParameterNode p ? p.Order : int.MaxValue);
 
         var isVisible = propHideIf is not null
@@ -311,14 +311,12 @@ internal sealed class ConfigDrawerBuilder
     /// </param>
     /// <param name="obj">The nested settings object instance to reflect over.</param>
     /// <param name="type">The compile-time type of <paramref name="obj"/>.</param>
-    /// <param name="collapseOverride">Effective collapse attribute for the nested group.</param>
     /// <param name="labelMarginOverride">Effective label-margin attribute for the nested group.</param>
     private void CollectFlatParameterNodes(
         List<IDrawNode> target,
         LabelAlignmentGroup alignmentGroup,
         object obj,
         Type type,
-        CollapseAsTreeAttribute? collapseOverride,
         LabelMarginAttribute? labelMarginOverride)
     {
         var typeMeta = TypeDrawMetadata.For(type);
@@ -362,13 +360,12 @@ internal sealed class ConfigDrawerBuilder
                 continue;
 
             var nestedDrawerAttr = GetNestedGroupDrawerAttribute(prop, propTypeMeta);
-            var nestedCollapseAttr = prop.GetCustomAttribute<CollapseAsTreeAttribute>() ?? propTypeMeta.CollapseAttr;
             var nestedLabelMargin = prop.GetCustomAttribute<LabelMarginAttribute>() ?? propTypeMeta.LabelMarginAttr;
 
             if (nestedDrawerAttr is not null)
                 CollectFlatNestedDrawerNode(target, prop, propType, nestedDrawerAttr, nested, obj);
             else
-                CollectFlatParameterNodes(target, alignmentGroup, nested, propType, nestedCollapseAttr, nestedLabelMargin);
+                CollectFlatParameterNodes(target, alignmentGroup, nested, propType, nestedLabelMargin);
         }
     }
 
