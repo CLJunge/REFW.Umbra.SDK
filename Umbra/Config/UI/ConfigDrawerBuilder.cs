@@ -70,8 +70,9 @@ internal sealed class ConfigDrawerBuilder
     /// When a plain nested settings-group property carries wrapper-style property metadata such as
     /// <see cref="HideIfAttribute{T}"/>, <see cref="SpacingBeforeAttribute"/>,
     /// <see cref="SpacingAfterAttribute"/>, or <see cref="ParameterOrderAttribute"/>, the nested
-    /// group's emitted nodes are built into a temporary sub-tree and wrapped in a single
-    /// conditional node so the entire section participates in that property-level behavior.
+    /// group's parameter nodes are collected via <see cref="CollectFlatParameterNodes"/> using
+    /// the parent's shared category and alignment state, then wrapped in a single conditional
+    /// <see cref="ParameterNode"/> that participates in the correct category scope's sort order.
     /// </remarks>
     internal void Collect(
         object obj,
@@ -187,26 +188,45 @@ internal sealed class ConfigDrawerBuilder
     }
 
     /// <summary>
-    /// Builds a plain nested settings group into an isolated sub-tree and wraps that sub-tree in
-    /// a single conditional node so property-level visibility, spacing, and ordering can apply to
-    /// the entire group section.
+    /// Emits the category header for a wrapped nested group on <c>this</c> builder (sharing the
+    /// parent's category map and alignment state), collects the group's parameter nodes into a
+    /// temporary flat list, and wraps that list in a single conditional <see cref="ParameterNode"/>
+    /// so property-level visibility, spacing, and ordering apply to the entire section.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Unlike an approach that uses a separate <see cref="ConfigDrawerBuilder"/> instance, this
+    /// method emits the category header via the parent's <see cref="EmitCategoryHeader"/> call,
+    /// ensuring that the category node and label-alignment group are shared with the rest of the
+    /// build pass. This prevents duplicate category headers when the same category name is
+    /// encountered elsewhere in the config and keeps label-column alignment consistent across the
+    /// entire category scope.
+    /// </para>
+    /// <para>
+    /// The wrapper <see cref="ParameterNode"/> is routed into the same target list that other
+    /// nodes in the resolved category use — <see cref="CategoryNode.Children"/> when a category
+    /// is resolved, or the top-level <see cref="Nodes"/> list when the group is uncategorized.
+    /// This ensures that <see cref="ParameterOrderAttribute"/> sorting is scoped to the category
+    /// rather than mixing the wrapper into the top-level ordering pass.
+    /// </para>
+    /// </remarks>
     /// <param name="propType">The compile-time type of the nested settings group.</param>
     /// <param name="nested">The live nested settings group instance.</param>
     /// <param name="owner">The parent configuration object that owns the nested-group property.</param>
     /// <param name="propertyIndent">
     /// The property-level <see cref="IndentAttribute"/> declared on the parent property, forwarded
-    /// into the nested sub-builder so category blocks preserve the existing indent behavior.
+    /// to <see cref="EmitCategoryHeader"/> so the category block is indented correctly.
     /// </param>
     /// <param name="categoryOverride">
-    /// The effective category inherited by parameters in the nested group, resolved from the
-    /// parent property first and the nested type second.
+    /// The effective category for the nested group, resolved from the parent property first and
+    /// the nested type second. When non-<see langword="null"/>, the category header is emitted on
+    /// <c>this</c> builder and the wrapper node is added to <see cref="CategoryNode.Children"/>.
     /// </param>
     /// <param name="collapseOverride">
-    /// The effective collapse behaviour for category headers emitted by the nested group.
+    /// The effective collapse behaviour for the category header emitted by this group.
     /// </param>
     /// <param name="labelMarginOverride">
-    /// The effective label-column margin applied to standard controls emitted by the nested group.
+    /// The effective label-column margin applied to controls collected from the nested group.
     /// </param>
     /// <param name="propHideIf">
     /// Optional property-level <see cref="HideIfAttribute{T}"/> that determines whether the entire
@@ -228,28 +248,204 @@ internal sealed class ConfigDrawerBuilder
         int spacingBefore,
         int spacingAfter)
     {
-        var nestedBuilder = new ConfigDrawerBuilder();
-        nestedBuilder.Collect(nested, propType, propertyIndent, categoryOverride, collapseOverride, labelMarginOverride);
-        nestedBuilder.SortAll();
+        // Emit the category header on this builder so the CategoryNode and its
+        // LabelAlignmentGroup are shared with the rest of the build pass.
+        // This prevents duplicate headers and aligns the wrapped group's label
+        // column with all other parameters in the same category.
+        EmitCategoryHeader(categoryOverride, collapseOverride, propertyIndent);
 
-        foreach (var disposable in nestedBuilder.Disposables)
-            Disposables.Add(disposable);
+        // Route the wrapper node into the same list as other nodes in the resolved
+        // category scope, so ParameterOrder sorting is scoped correctly.
+        var targetList = categoryOverride is not null ? _currentCategoryNode!.Children : Nodes;
+        var alignmentGroup = categoryOverride is not null
+            ? _currentCategoryNode!.AlignmentGroup
+            : _rootAlignmentGroup;
 
-        var nestedNodes = nestedBuilder.Nodes;
+        var tempNodes = new List<IDrawNode>();
+        CollectFlatParameterNodes(tempNodes, alignmentGroup, nested, propType, collapseOverride, labelMarginOverride);
+        tempNodes.StableSortBy(static n => n is ParameterNode p ? p.Order : int.MaxValue);
+
         var isVisible = propHideIf is not null
             ? VisibilityPredicateResolver.Build(propHideIf, owner)
             : static () => true;
 
-        Nodes.Add(new ParameterNode(
+        targetList.Add(new ParameterNode(
             isVisible,
             () =>
             {
-                foreach (var node in nestedNodes)
+                foreach (var node in tempNodes)
                     node.Draw();
             },
             order,
             spacingBefore,
             spacingAfter));
+    }
+
+    /// <summary>
+    /// Collects <see cref="ParameterNode"/> entries from a nested settings group directly into a
+    /// caller-provided list, using a specified <see cref="LabelAlignmentGroup"/>, without emitting
+    /// or interacting with category headers.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This method is the flat-collection counterpart to <see cref="Collect"/>. It is called when
+    /// building a wrapped nested group via <see cref="EmitNestedGroupNode"/>: the category header
+    /// has already been emitted on the parent builder, so only the parameter leaf nodes need to be
+    /// gathered into a temporary list that the wrapper <see cref="ParameterNode"/> will iterate.
+    /// </para>
+    /// <para>
+    /// Sub-nested-group properties that carry a <see cref="INestedGroupDrawerAttribute"/> are
+    /// instantiated and their draw action appended to <paramref name="target"/> directly via
+    /// <see cref="CollectFlatNestedDrawerNode"/>. Plain sub-nested-groups (without a custom
+    /// drawer) are recursed into flatly, sharing the same <paramref name="alignmentGroup"/>.
+    /// Property-level wrapper attributes (<see cref="HideIfAttribute{T}"/>, spacing, ordering) on
+    /// sub-nested-group properties within a flat section are not processed; they apply only at the
+    /// outermost wrapped-group level.
+    /// </para>
+    /// </remarks>
+    /// <param name="target">The list to append collected <see cref="ParameterNode"/> entries to.</param>
+    /// <param name="alignmentGroup">
+    /// The <see cref="LabelAlignmentGroup"/> shared with the parent category scope. All controls
+    /// collected here observe their label widths into this group so column alignment is consistent
+    /// with other parameters rendered in the same category.
+    /// </param>
+    /// <param name="obj">The nested settings object instance to reflect over.</param>
+    /// <param name="type">The compile-time type of <paramref name="obj"/>.</param>
+    /// <param name="collapseOverride">Effective collapse attribute for the nested group.</param>
+    /// <param name="labelMarginOverride">Effective label-margin attribute for the nested group.</param>
+    private void CollectFlatParameterNodes(
+        List<IDrawNode> target,
+        LabelAlignmentGroup alignmentGroup,
+        object obj,
+        Type type,
+        CollapseAsTreeAttribute? collapseOverride,
+        LabelMarginAttribute? labelMarginOverride)
+    {
+        var typeMeta = TypeDrawMetadata.For(type);
+        var classIndent = typeMeta.IndentAttr;
+        var classLabelMargin = labelMarginOverride ?? typeMeta.LabelMarginAttr;
+
+        foreach (var prop in typeMeta.Properties)
+        {
+            var propType = prop.PropertyType;
+
+            // ── Leaf: Parameter<T> ────────────────────────────────────────
+            if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Parameter<>))
+            {
+                if (prop.GetValue(obj) is not IParameter parameter) continue;
+
+                var meta = parameter.Metadata;
+                var label = meta.ResolvedLabel;
+                var group = alignmentGroup;
+                if (classLabelMargin is not null) group.Margin = classLabelMargin.Pixels;
+                var (draw, resource) = ControlFactory.BuildDrawAction(parameter, label, group);
+                if (resource is not null) Disposables.Add(resource);
+
+                var indentAmount = meta.Indent ?? classIndent?.Amount;
+                if (indentAmount.HasValue)
+                {
+                    var amount = indentAmount.Value;
+                    var inner = draw;
+                    draw = () => { ImGui.Indent(amount); inner(); ImGui.Unindent(amount); };
+                }
+
+                var isVisible = meta.HideIf is not null
+                    ? VisibilityPredicateResolver.Build(meta.HideIf, obj)
+                    : static () => true;
+                target.Add(new ParameterNode(isVisible, draw, meta.Order ?? int.MaxValue, meta.SpacingBefore, meta.SpacingAfter));
+                continue;
+            }
+
+            // ── Branch: nested settings group ─────────────────────────────
+            var propTypeMeta = TypeDrawMetadata.For(propType);
+            if (!propTypeMeta.IsAutoRegisterSettings || prop.GetValue(obj) is not { } nested)
+                continue;
+
+            var nestedDrawerAttr = GetNestedGroupDrawerAttribute(prop, propTypeMeta);
+            var nestedCollapseAttr = prop.GetCustomAttribute<CollapseAsTreeAttribute>() ?? propTypeMeta.CollapseAttr;
+            var nestedLabelMargin = prop.GetCustomAttribute<LabelMarginAttribute>() ?? propTypeMeta.LabelMarginAttr;
+
+            if (nestedDrawerAttr is not null)
+                CollectFlatNestedDrawerNode(target, prop, propType, nestedDrawerAttr, nested, obj);
+            else
+                CollectFlatParameterNodes(target, alignmentGroup, nested, propType, nestedCollapseAttr, nestedLabelMargin);
+        }
+    }
+
+    /// <summary>
+    /// Instantiates the resolved <see cref="INestedGroupDrawer{T}"/>, compiles a zero-reflection
+    /// draw delegate, and appends a <see cref="ParameterNode"/> directly to the provided
+    /// <paramref name="target"/> list. Used when a custom-drawer nested group is encountered
+    /// during flat collection inside a wrapped section.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="EmitNestedGroupDrawerNode"/>, this method does not interact with the
+    /// parent builder's category state: no category header is emitted, and the node is added to
+    /// <paramref name="target"/> rather than being routed through <see cref="CategoryNode.Children"/>.
+    /// </remarks>
+    /// <param name="target">The list to append the resulting <see cref="ParameterNode"/> to.</param>
+    /// <param name="prop">The property on the parent config that holds the nested group.</param>
+    /// <param name="propType">The runtime type of the nested group.</param>
+    /// <param name="nestedDrawerAttr">The resolved nested-group drawer attribute.</param>
+    /// <param name="nested">The live nested group instance retrieved from <paramref name="prop"/>.</param>
+    /// <param name="owner">The parent config instance that owns <paramref name="prop"/>.</param>
+    private void CollectFlatNestedDrawerNode(
+        List<IDrawNode> target,
+        PropertyInfo prop,
+        Type propType,
+        INestedGroupDrawerAttribute nestedDrawerAttr,
+        object nested,
+        object owner)
+    {
+        try
+        {
+            var drawerInstance = Activator.CreateInstance(nestedDrawerAttr.DrawerType)!;
+
+            Type? genericIface = null;
+            Type? groupType = null;
+            foreach (var iface in nestedDrawerAttr.DrawerType.GetInterfaces())
+            {
+                if (!iface.IsGenericType || iface.GetGenericTypeDefinition() != typeof(INestedGroupDrawer<>))
+                    continue;
+
+                var candidateGroupType = iface.GetGenericArguments()[0];
+                if (!candidateGroupType.IsAssignableFrom(propType))
+                    continue;
+
+                genericIface = iface;
+                groupType = candidateGroupType;
+                break;
+            }
+
+            if (genericIface is null || groupType is null)
+            {
+                Logger.Error(
+                    $"ConfigDrawer: nested group drawer '{nestedDrawerAttr.DrawerType.Name}' does not support group type '{propType.FullName}'.");
+                return;
+            }
+
+            if (drawerInstance is IDisposable disposable)
+                Disposables.Add(disposable);
+
+            var drawMethod = genericIface.GetMethod("Draw")!;
+            var callExpr = Expression.Call(
+                Expression.Convert(Expression.Constant(drawerInstance), genericIface),
+                drawMethod,
+                Expression.Convert(Expression.Constant(nested), groupType));
+            var drawAction = Expression.Lambda<Action>(callExpr).Compile();
+
+            var propHideIf = GetHideIfAttribute(prop);
+            target.Add(new ParameterNode(
+                VisibilityPredicateResolver.Build(propHideIf, owner),
+                drawAction,
+                order: prop.GetCustomAttribute<ParameterOrderAttribute>()?.Order ?? int.MaxValue,
+                spacingBefore: prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0,
+                spacingAfter: prop.GetCustomAttribute<SpacingAfterAttribute>()?.Count ?? 0));
+        }
+        catch (Exception ex)
+        {
+            Logger.Exception(ex, $"ConfigDrawer: failed to instantiate nested group drawer '{nestedDrawerAttr.DrawerType.Name}'.");
+        }
     }
 
     /// <summary>
