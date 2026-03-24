@@ -27,7 +27,7 @@
         <AssemblyTitle>REFW.$(MSBuildProjectName)</AssemblyTitle>
         <AssemblyDescription>A support library for REFramework mod and plugin development.</AssemblyDescription>
         <AssemblyCompany>CLJunge</AssemblyCompany>
-        <AssemblyProduct>Umbra</AssemblyProduct>
+        <AssemblyProduct>REFW.Umbra</AssemblyProduct>
         <Copyright>Copyright © 2026 Chris-Lennart Junge — MIT License</Copyright>
 
         <!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
