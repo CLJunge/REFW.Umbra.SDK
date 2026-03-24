@@ -13,7 +13,7 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
         <IsPackable>true</IsPackable>
-        <PackageId>refw.umbra</PackageId>
+        <PackageId>REFW.Umbra</PackageId>
         <Version>0.0.0-dev</Version>
         <Authors>CLJunge</Authors>
         <Company>CLJunge</Company>
