@@ -104,16 +104,16 @@ jobs:
       - name: Stage ZIP contents
         run: |
           mkdir -p staging/reframework/plugins/managed/dependencies
-          cp Umbra/bin/Release/net10.0/Umbra.dll \
+          cp Umbra/bin/Release/net10.0/REFW.Umbra.dll \
              staging/reframework/plugins/managed/dependencies/
 
-      - name: Create Umbra.zip
-        run: cd staging && zip -r ../Umbra.zip reframework/
+      - name: Create REFW.Umbra.zip
+        run: cd staging && zip -r ../REFW.Umbra.zip reframework/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Umbra
+          name: REFW.Umbra
           path: |
             staging/
             artifacts/nuget/
@@ -130,8 +130,8 @@ jobs:
         run: |
           shopt -s nullglob
 
-          nupkg=(artifacts/nuget/Umbra.${VERSION}.nupkg)
-          snupkg=(artifacts/nuget/Umbra.${VERSION}.snupkg)
+          nupkg=(artifacts/nuget/refw.umbra.${VERSION}.nupkg)
+          snupkg=(artifacts/nuget/refw.umbra.${VERSION}.snupkg)
 
           if (( ${#nupkg[@]} == 0 )); then
             echo "No .nupkg file was produced."
@@ -181,16 +181,16 @@ jobs:
 
             Install `Umbra` using one of the following options:
 
-            - NuGet package page: `https://www.nuget.org/packages/Umbra`
-            - CLI install: `dotnet add package Umbra`
+            - NuGet package page: `https://www.nuget.org/packages/REFW.Umbra`
+            - CLI install: `dotnet add package REFW.Umbra`
             - Release assets: download the `.nupkg` / `.snupkg` files and install the package from those files
-            - Direct reference: download **`Umbra.zip`** from the release assets and reference `Umbra.dll` in your project
+            - Direct reference: download **`REFW.Umbra.zip`** from the release assets and reference `REFW.Umbra.dll` in your project
 
             ---
 
             ### 🎮 For Players / Game Installation
 
-            Download **`Umbra.zip`** from the release assets and extract it into the game root folder.
+            Download **`REFW.Umbra.zip`** from the release assets and extract it into the game root folder.
 
             The ZIP preserves the `reframework/plugins/managed/dependencies/` layout used by REFramework plugin deployments.
 
