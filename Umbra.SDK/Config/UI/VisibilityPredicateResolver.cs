@@ -31,6 +31,12 @@ internal static class VisibilityPredicateResolver
     /// <see cref="EqualityComparer{T}.Default"/> delegate is compiled once at build time via
     /// <see cref="BuildTypedEquals"/> so that per-frame equality checks use
     /// <see cref="IEquatable{T}"/> rather than virtual <see cref="object.Equals(object)"/> dispatch.
+    /// If <see cref="IParameter.GetValue"/> returns <see langword="null"/> at runtime (e.g. when
+    /// a <c>Parameter&lt;T&gt;</c> value has been cleared via <c>SetWithoutNotify</c>), the
+    /// compiled comparer is <em>not</em> invoked; the predicate instead treats
+    /// <see langword="null"/> as equal to <paramref name="hideIf"/>'s comparison value only when
+    /// that comparison value is itself <see langword="null"/>, preventing an
+    /// <see cref="InvalidCastException"/> from unboxing <see langword="null"/> to a value type.
     /// </para>
     /// </remarks>
     /// <param name="hideIf">
@@ -83,7 +89,17 @@ internal static class VisibilityPredicateResolver
         // so per-frame evaluation uses IEquatable<T> rather than object.Equals dispatch.
         var valueType = isParameter ? rawType.GetGenericArguments()[0] : rawType;
         var typedEquals = BuildTypedEquals(valueType, compareValue);
-        return () => !typedEquals(getValue());
+
+        // Guard against null: getValue() may return null when Parameter<T>.Value has been
+        // cleared (e.g. via SetWithoutNotify). Unboxing null to a value type inside the
+        // compiled comparer would throw InvalidCastException, breaking the per-frame UI loop.
+        // Treat null as equal to compareValue only when compareValue is also null.
+        return () =>
+        {
+            var val = getValue();
+            if (val is null) return compareValue is not null;
+            return !typedEquals(val);
+        };
     }
 
     /// <summary>
