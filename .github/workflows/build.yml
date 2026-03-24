@@ -171,7 +171,7 @@ jobs:
             artifacts/nuget/*.snupkg
           generate_release_notes: true
           body: |
-            ## Umbra `v${{ steps.version.outputs.value }}`
+            ## REFW.Umbra `v${{ steps.version.outputs.value }}`
 
             > A support library for [REFramework](https://github.com/praydog/REFramework) mod and plugin development targeting RE Engine titles.
 
@@ -179,7 +179,7 @@ jobs:
 
             ### 🛠️ For Plugin Developers
 
-            Install `Umbra` using one of the following options:
+            Install `REFW.Umbra` using one of the following options:
 
             - NuGet package page: `https://www.nuget.org/packages/REFW.Umbra`
             - CLI install: `dotnet add package refw.umbra`
