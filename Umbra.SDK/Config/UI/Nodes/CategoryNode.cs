@@ -22,9 +22,9 @@ namespace Umbra.SDK.Config.UI.Nodes;
 /// scope; when <see langword="null"/>, a flat <c>ImGui.SeparatorText</c> header is used instead.
 /// </param>
 /// <param name="indentAttr">
-/// An optional <see cref="IndentAttribute"/> that, when non-<see langword="null"/>, wraps the
-/// entire category output — header and child controls — in a matching
-/// <c>ImGui.Indent</c>/<c>ImGui.Unindent</c> scope using the attribute's pixel amount.
+/// Optional category-wide <see cref="IndentAttribute"/> that, when non-<see langword="null"/>,
+/// wraps the header and all child controls in a matching <c>ImGui.Indent</c>/<c>ImGui.Unindent</c>
+/// scope using the attribute's pixel amount.
 /// </param>
 [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
 internal sealed class CategoryNode(
