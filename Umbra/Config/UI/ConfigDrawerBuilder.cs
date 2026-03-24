@@ -156,7 +156,8 @@ internal sealed class ConfigDrawerBuilder
                 var nestedCollapseAttr = prop.GetCustomAttribute<CollapseAsTreeAttribute>()
                     ?? propTypeMeta.CollapseAttr;
                 var nestedLabelMargin = prop.GetCustomAttribute<LabelMarginAttribute>()
-                    ?? propTypeMeta.LabelMarginAttr;
+                    ?? propTypeMeta.LabelMarginAttr
+                    ?? labelMarginOverride;
                 if (nestedDrawerAttr is not null)
                     EmitNestedGroupDrawerNode(prop, propType, nestedDrawerAttr, nested, obj, nestedCategory, nestedCollapseAttr);
                 else
