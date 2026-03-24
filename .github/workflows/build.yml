@@ -130,8 +130,8 @@ jobs:
         run: |
           shopt -s nullglob
 
-          nupkg=(artifacts/nuget/refw.umbra.${VERSION}.nupkg)
-          snupkg=(artifacts/nuget/refw.umbra.${VERSION}.snupkg)
+          nupkg=(artifacts/nuget/REFW.Umbra.${VERSION}.nupkg)
+          snupkg=(artifacts/nuget/REFW.Umbra.${VERSION}.snupkg)
 
           if (( ${#nupkg[@]} == 0 )); then
             echo "No .nupkg file was produced."
@@ -181,8 +181,8 @@ jobs:
 
             Install `REFW.Umbra` using one of the following options:
 
-            - NuGet package page: `https://www.nuget.org/packages/refw.umbra`
-            - CLI install: `dotnet add package refw.umbra`
+            - NuGet package page: `https://www.nuget.org/packages/REFW.Umbra`
+            - CLI install: `dotnet add package REFW.Umbra`
             - Release assets: download the `.nupkg` / `.snupkg` files and install the package from those files
             - Direct reference: download **`REFW.Umbra.zip`** from the release assets and reference `REFW.Umbra.dll` in your project
 
