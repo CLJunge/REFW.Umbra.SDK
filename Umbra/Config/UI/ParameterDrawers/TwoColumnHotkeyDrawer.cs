@@ -89,5 +89,7 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
             HotkeyCaptureState.WaitingCount--;
             _waiting = false;
         }
+
+        GC.SuppressFinalize(this);
     }
 }

@@ -93,6 +93,8 @@ public sealed class HotkeyDrawer : IParameterDrawer
             HotkeyCaptureState.WaitingCount--;
             _waiting = false;
         }
+
+        GC.SuppressFinalize(this);
     }
 
 }
