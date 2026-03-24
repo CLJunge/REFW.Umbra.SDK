@@ -312,7 +312,12 @@ internal sealed class ConfigDrawerBuilder
     /// </param>
     /// <param name="obj">The nested settings object instance to reflect over.</param>
     /// <param name="type">The compile-time type of <paramref name="obj"/>.</param>
-    /// <param name="labelMarginOverride">Effective label-margin attribute for the nested group.</param>
+    /// <param name="labelMarginOverride">
+    /// Effective label-margin attribute inherited from the enclosing scope. Applies to this group's
+    /// leaf parameters and propagates as a fallback into any sub-nested groups that do not declare
+    /// their own <see cref="LabelMarginAttribute"/>, so a property-level override applies to the
+    /// entire nested-group subtree.
+    /// </param>
     private void CollectFlatParameterNodes(
         List<IDrawNode> target,
         LabelAlignmentGroup alignmentGroup,
@@ -372,7 +377,9 @@ internal sealed class ConfigDrawerBuilder
                 continue;
 
             var nestedDrawerAttr = GetNestedGroupDrawerAttribute(prop, propTypeMeta);
-            var nestedLabelMargin = prop.GetCustomAttribute<LabelMarginAttribute>() ?? propTypeMeta.LabelMarginAttr;
+            var nestedLabelMargin = prop.GetCustomAttribute<LabelMarginAttribute>()
+                ?? propTypeMeta.LabelMarginAttr
+                ?? labelMarginOverride;
 
             if (nestedDrawerAttr is not null)
                 CollectFlatNestedDrawerNode(target, prop, propType, nestedDrawerAttr, nested, obj);
