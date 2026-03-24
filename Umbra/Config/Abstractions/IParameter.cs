@@ -29,6 +29,11 @@ public interface IParameter
     Type ValueType { get; }
 
     /// <summary>
+    /// Gets a value indicating whether the current value differs from the parameter's default value.
+    /// </summary>
+    bool IsModified { get; }
+
+    /// <summary>
     /// Returns the current value of this parameter as an untyped <see cref="object"/>.
     /// </summary>
     /// <returns>
@@ -53,6 +58,8 @@ public interface IParameter
 
     /// <summary>
     /// Resets the object to its initial state, optionally raising a change event.
+    /// Validation is bypassed so that <see cref="IsModified"/> is always
+    /// <see langword="false"/> after this call.
     /// </summary>
     /// <param name="raiseEvent">true to raise a change event after resetting; otherwise, false.</param>
     void Reset(bool raiseEvent = true);
