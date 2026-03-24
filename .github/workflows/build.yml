@@ -131,7 +131,6 @@ jobs:
           shopt -s nullglob
 
           nupkg=(artifacts/nuget/REFW.Umbra.${VERSION}.nupkg)
-          snupkg=(artifacts/nuget/REFW.Umbra.${VERSION}.snupkg)
 
           if (( ${#nupkg[@]} == 0 )); then
             echo "No .nupkg file was produced."
@@ -150,13 +149,6 @@ jobs:
               --source "https://api.nuget.org/v3/index.json" \
               --api-key "${NUGET_API_KEY}" \
               --skip-duplicate
-
-            if (( ${#snupkg[@]} > 0 )); then
-              dotnet nuget push "${snupkg[0]}" \
-                --source "https://api.nuget.org/v3/index.json" \
-                --api-key "${NUGET_API_KEY}" \
-                --skip-duplicate
-            fi
           else
             echo "NUGET_API_KEY is not set; skipping nuget.org publish."
           fi
