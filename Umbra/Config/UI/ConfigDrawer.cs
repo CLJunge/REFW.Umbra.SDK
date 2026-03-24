@@ -21,8 +21,11 @@ namespace Umbra.Config.UI;
 /// attributes directly when metadata fields are absent.
 /// </para>
 /// <para>
-/// Apply <see cref="CollapseAsTreeAttribute"/> to any nested settings group class to render its
-/// category as a collapsible <c>ImGui.TreeNode</c> instead of a flat separator header.
+/// For nested settings groups, prefer applying presentation attributes such as
+/// <see cref="CategoryAttribute"/>, <see cref="CollapseAsTreeAttribute"/>,
+/// <see cref="LabelMarginAttribute"/>, and <see cref="NestedGroupDrawerAttribute{TDrawer}"/>
+/// to the parent property that exposes the group; equivalent type-level declarations remain
+/// supported as backward-compatible fallbacks.
 /// Apply <see cref="ConfigRootNodeAttribute"/> to the root config class to wrap the entire panel
 /// inside a single top-level <c>ImGui.TreeNode</c>.
 /// </para>

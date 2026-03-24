@@ -12,7 +12,9 @@ namespace Umbra.Config.Attributes;
 /// <see cref="SettingsStore{TConfig}.Load()"/>, no parameters are discovered
 /// and the returned instance will hold only its property default values.
 /// Nested group types exposed via <c>SettingsParameterAttribute</c> properties must also
-/// carry this attribute to be traversed.
+/// carry this attribute to be traversed, even when other nested-group behaviour such as
+/// <c>[SettingsPrefix]</c>, <c>[Category]</c>, <c>[CollapseAsTree]</c>, or
+/// <c>[NestedGroupDrawer]</c> is declared on the parent property instead of on the nested type.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class AutoRegisterSettingsAttribute : Attribute { }

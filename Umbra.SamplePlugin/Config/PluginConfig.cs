@@ -36,10 +36,16 @@ public record PluginConfig
 
     /// <summary>Gets or sets the field-of-view settings group.</summary>
     [SettingsParameter]
+    [Category("FOV")]
+    [SettingsPrefix("fov")]
+    [CollapseAsTree]
     public FovSettings Fov { get; set; } = new();
 
     /// <summary>Gets or sets the film grain settings group.</summary>
     [SettingsParameter]
+    [Category("Film Grain")]
+    [SettingsPrefix("filmGrain")]
+    [CollapseAsTree]
     public FilmGrainSettings FilmGrain { get; set; } = new();
 
     /// <summary>Gets or sets the sample nested settings group rendered by a custom group drawer.</summary>
@@ -85,9 +91,6 @@ public record PluginConfig
     /// view mode and aiming state combination.
     /// </summary>
     [AutoRegisterSettings]
-    [Category("FOV")]
-    [SettingsPrefix("fov")]
-    [CollapseAsTree]
     public record FovSettings
     {
         private const float _minFov = 10f;
@@ -156,9 +159,6 @@ public record PluginConfig
     /// including a master disable toggle and an opacity slider.
     /// </summary>
     [AutoRegisterSettings]
-    [Category("Film Grain")]
-    [SettingsPrefix("filmGrain")]
-    [CollapseAsTree]
     public record FilmGrainSettings
     {
         /// <summary>Gets or sets whether the film grain post-processing effect is disabled entirely.</summary>
