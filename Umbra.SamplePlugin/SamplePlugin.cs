@@ -8,6 +8,10 @@ using Umbra.SDK.UI.Panel;
 
 namespace Umbra.SamplePlugin;
 
+/// <summary>
+/// Sample REFramework.NET plugin that demonstrates Umbra settings registration,
+/// automatic deferred persistence, and panel-based ImGui rendering.
+/// </summary>
 public static class SamplePlugin
 {
     private static readonly PluginLogger _log = new("SamplePlugin");
@@ -18,7 +22,8 @@ public static class SamplePlugin
 
     /// <summary>
     /// Plugin entry point. Resolves the configuration file path, loads persisted settings from disk
-    /// (or writes defaults if no file exists), and constructs the plugin panel.
+    /// (or writes defaults if no file exists), wires the sample button action, starts deferred
+    /// save handling, and constructs the plugin panel.
     /// </summary>
     [PluginEntryPoint]
     public static void Load()
@@ -44,8 +49,9 @@ public static class SamplePlugin
     }
 
     /// <summary>
-    /// Plugin exit point. Persists the current configuration to disk, then disposes and nulls
-    /// all static resources to prevent stale state if the plugin is reloaded in the same process session.
+    /// Plugin exit point. Flushes and disposes deferred-save handling before the settings store,
+    /// performs a final explicit save, then disposes and nulls all static resources to prevent
+    /// stale state if the plugin is reloaded in the same process session.
     /// </summary>
     [PluginExitPoint]
     public static void Unload()
@@ -89,7 +95,8 @@ public static class SamplePlugin
     }
 
     /// <summary>
-    /// ImGui pre-draw callback. Renders the plugin settings UI each frame when the game's UI draw pass is active.
+    /// ImGui pre-draw callback. Renders the plugin settings UI while the game's UI draw pass is
+    /// active, and advances the deferred-save controller on every callback so pending writes can flush.
     /// </summary>
     [Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
     public static void PreDrawUI()

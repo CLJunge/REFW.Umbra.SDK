@@ -6,8 +6,8 @@ namespace Umbra.SamplePlugin.Config;
 
 /// <summary>
 /// Root configuration record for the sample plugin.
-/// Contains the enable toggle, hotkey bindings, and nested settings groups
-/// for field-of-view and film grain adjustments.
+/// Contains the enable toggle, hotkey bindings, nested settings groups for field-of-view and
+/// film grain adjustments, a custom nested-group drawer demo, and action-backed button parameters.
 /// </summary>
 [AutoRegisterSettings]
 [ConfigRootNode("Sample Plugin v1.0")]
@@ -42,6 +42,7 @@ public record PluginConfig
     [SettingsParameter]
     public FilmGrainSettings FilmGrain { get; set; } = new();
 
+    /// <summary>Gets or sets the sample nested settings group rendered by a custom group drawer.</summary>
     [SettingsParameter]
     public NestedDrawerTest DrawerTest { get; set; } = new();
 
