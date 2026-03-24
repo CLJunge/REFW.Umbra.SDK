@@ -1,4 +1,4 @@
-# Umbra
+# REFW.Umbra
 
 A support library for [REFramework](https://github.com/praydog/REFramework) mod and plugin development on RE Engine titles. It runs inside the game process through the REFramework.NET managed plugin host and provides configuration, settings UI, live-state rendering, logging, and input utilities so plugin authors can focus on game logic rather than infrastructure.
 
