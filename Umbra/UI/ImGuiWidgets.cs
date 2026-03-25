@@ -15,7 +15,7 @@ public static class ImGuiWidgets
     /// <summary>
     /// Renders an inline <c>(?)</c> marker that shows a tooltip containing
     /// <paramref name="description"/> when hovered.
-    /// Call this after <c>ImGui.SameLine()</c> so it appears on the same row as its control.
+    /// Call this after <see cref="ImGui.SameLine()"/> so it appears on the same row as its control.
     /// </summary>
     /// <param name="description">The tooltip text to display on hover.</param>
     public static void DrawHelpMarker(string description)

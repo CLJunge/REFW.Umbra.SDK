@@ -104,7 +104,7 @@ public class SettingsStore<TConfig> : IDisposable
     /// </summary>
     /// <param name="target">The destination <see cref="SettingsStore{TConfig}"/> to copy values into.</param>
     /// <param name="setWithoutNotifying">
-    /// When <see langword="true"/>, values are applied without raising <c>ValueChanged</c> events.
+    /// When <see langword="true"/>, values are applied without raising <see cref="IParameter.ValueChanged"/> events.
     /// When <see langword="false"/>, normal change notification is triggered.
     /// </param>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
@@ -123,7 +123,7 @@ public class SettingsStore<TConfig> : IDisposable
     }
 
     /// <summary>
-    /// Subscribes a callback to the <c>ValueChanged</c> event of every registered parameter,
+    /// Subscribes a callback to the <see cref="IParameter.ValueChanged"/> event of every registered parameter,
     /// and registers cleanup so it is removed on <see cref="Dispose"/>.
     /// </summary>
     /// <param name="listener">The callback to invoke whenever any parameter value changes.</param>
@@ -136,7 +136,7 @@ public class SettingsStore<TConfig> : IDisposable
     }
 
     /// <summary>
-    /// Subscribes a typed callback to the <c>ValueChanged</c> event of every <see cref="Parameter{T}"/>
+    /// Subscribes a typed callback to the <see cref="Parameter{T}.ValueChanged"/> event of every <see cref="Parameter{T}"/>
     /// whose value type matches <typeparamref name="T"/>, and registers cleanup so it is removed on <see cref="Dispose"/>.
     /// </summary>
     /// <typeparam name="T">The parameter value type to filter on.</typeparam>
@@ -168,7 +168,7 @@ public class SettingsStore<TConfig> : IDisposable
     }
 
     /// <summary>
-    /// Subscribes a callback to the <c>ValueChanged</c> event of every registered parameter
+    /// Subscribes a callback to the <see cref="IParameter.ValueChanged"/> event of every registered parameter
     /// that satisfies <paramref name="predicate"/>, and registers cleanup so it is removed on <see cref="Dispose"/>.
     /// </summary>
     /// <param name="predicate">
@@ -206,7 +206,7 @@ public class SettingsStore<TConfig> : IDisposable
     }
 
     /// <summary>
-    /// Removes a previously added callback from the <c>ValueChanged</c> event of every registered parameter.
+    /// Removes a previously added callback from the <see cref="IParameter.ValueChanged"/> event of every registered parameter.
     /// </summary>
     /// <param name="listener">The callback to remove.</param>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
@@ -217,7 +217,7 @@ public class SettingsStore<TConfig> : IDisposable
     }
 
     /// <summary>
-    /// Removes a previously added typed callback from the <c>ValueChanged</c> event of every
+    /// Removes a previously added typed callback from the <see cref="Parameter{T}.ValueChanged"/> event of every
     /// <see cref="Parameter{T}"/> whose value type matches <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">The parameter value type to filter on.</typeparam>
@@ -235,7 +235,7 @@ public class SettingsStore<TConfig> : IDisposable
     }
 
     /// <summary>
-    /// Removes a previously added callback from the <c>ValueChanged</c> event of every registered
+    /// Removes a previously added callback from the <see cref="IParameter.ValueChanged"/> event of every registered
     /// parameter that satisfies <paramref name="predicate"/>.
     /// </summary>
     /// <param name="predicate">
@@ -257,7 +257,7 @@ public class SettingsStore<TConfig> : IDisposable
     }
 
     /// <summary>
-    /// Resets every registered parameter to its default value, raising <c>ValueChanged</c>
+    /// Resets every registered parameter to its default value, raising <see cref="IParameter.ValueChanged"/>
     /// for each parameter whose value actually changes.
     /// </summary>
     /// <remarks>

@@ -1,4 +1,5 @@
 using Hexa.NET.ImGui;
+using Umbra.Config;
 
 namespace Umbra.UI.Config;
 
@@ -22,7 +23,7 @@ internal readonly struct ControlLayout
 
     /// <summary>
     /// The hidden ImGui control label (<c>"##" + parameter.Key</c>) pre-computed during
-    /// <c>SettingsStore.Load()</c> and stored in <see cref="Umbra.Config.ParameterMetadata.HiddenLabel"/>.
+    /// <see cref="SettingsStore{TConfig}.Load()"/> and stored in <see cref="ParameterMetadata.HiddenLabel"/>.
     /// </summary>
     internal readonly string HiddenLabel;
 
