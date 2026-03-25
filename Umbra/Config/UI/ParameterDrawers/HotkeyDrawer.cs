@@ -3,7 +3,7 @@ using Umbra.Config;
 using Umbra.Input;
 using Umbra.UI;
 
-namespace Umbra.UI.Config.Drawers;
+namespace Umbra.Config.UI.ParameterDrawers;
 
 /// <summary>
 /// An <see cref="IParameterDrawer"/> implementation that renders a hotkey-capture control
