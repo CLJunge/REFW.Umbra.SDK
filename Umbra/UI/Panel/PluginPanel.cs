@@ -55,6 +55,7 @@ public sealed class PluginPanel : IDisposable
     private readonly string? _rootNodeLabel;
     private readonly bool _rootNodeDefaultOpen;
     private readonly bool _drawSeparator;
+    private readonly bool _scopeRegistered;
     private readonly List<IPanelSection> _sections = [];
     private bool _disposed;
 
@@ -91,9 +92,11 @@ public sealed class PluginPanel : IDisposable
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null or whitespace.", nameof(idScope));
 
+        bool registered;
         lock (_scopeLock)
         {
-            if (!_registeredScopes.Add(idScope))
+            registered = _registeredScopes.Add(idScope);
+            if (!registered)
             {
                 Logger.Warning(
                     $"[PluginPanel] DEVELOPER WARNING — Duplicate idScope '{idScope}' detected.\n" +
@@ -111,6 +114,7 @@ public sealed class PluginPanel : IDisposable
         }
 
         _idScope = idScope;
+        _scopeRegistered = registered;
         _rootNodeLabel = rootNodeLabel;
         _rootNodeDefaultOpen = rootNodeDefaultOpen;
         _drawSeparator = drawSeparator;
@@ -217,7 +221,7 @@ public sealed class PluginPanel : IDisposable
 
         lock (_scopeLock)
         {
-            _registeredScopes.Remove(_idScope);
+            if (_scopeRegistered) _registeredScopes.Remove(_idScope);
         }
 
         foreach (var section in _sections) section.Dispose();

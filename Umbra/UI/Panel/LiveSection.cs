@@ -52,10 +52,12 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// or callbacks can update it between frames.
     /// </param>
     /// <param name="idScope">
-    /// Optional ImGui ID sub-scope pushed around the drawer's output. When supplied,
-    /// <c>ImGui.PushID(idScope)</c> is called before rendering and <c>ImGui.PopID()</c>
-    /// after. The owning <see cref="PluginPanel"/> already pushes a top-level scope, so
-    /// this is only needed when two live sections of the same type exist in the same panel.
+    /// Optional stable ImGui widget ID sub-scope for this section. When supplied, this value is
+    /// used as both the <see cref="SectionId"/> and the string passed to
+    /// <c>ImGui.PushID</c> around the drawer's output each frame. When omitted,
+    /// <c>typeof(<typeparamref name="T"/>).Name</c> is used instead — a stable
+    /// fallback that still provides correct per-section widget ID isolation. Supply an
+    /// explicit value only when two live sections of the same type exist in the same panel.
     /// </param>
     /// <param name="treeNodeLabel">
     /// Optional label for a collapsible <c>ImGui.TreeNode</c> that wraps this section's
@@ -107,6 +109,7 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// </summary>
     /// <param name="idScope">
     /// Optional ImGui ID sub-scope. See the primary constructor for details.
+    /// When omitted, <c>typeof(<typeparamref name="T"/>).Name</c> is used as a stable fallback.
     /// </param>
     /// <param name="treeNodeLabel">
     /// Optional tree node label. See the primary constructor for details.
@@ -127,15 +130,14 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     {
         if (_disposed) return;
 
-        var hasIdScope = _idScope is not null;
-        if (hasIdScope) ImGui.PushID(_idScope);
+        ImGui.PushID(SectionId);
         try
         {
             _drawAction();
         }
         finally
         {
-            if (hasIdScope) ImGui.PopID();
+            ImGui.PopID();
         }
     }
 
