@@ -1,4 +1,5 @@
 using Hexa.NET.ImGui;
+using Umbra.Logging;
 
 namespace Umbra.UI.Panel;
 
@@ -12,6 +13,16 @@ namespace Umbra.UI.Panel;
 /// display both configuration settings and live game state in a single panel.
 /// For plugins that only require a settings panel, <see cref="Config.UI.ConfigDrawer{TConfig}"/>
 /// may be used directly.
+/// </para>
+/// <para>
+/// The <c>idScope</c> string is the sole mechanism that separates this panel's ImGui widget
+/// IDs from every other panel rendered into the same REFramework window. All managed plugins
+/// share one AppDomain and one ImGui context; a duplicate <c>idScope</c> causes every widget
+/// in both panels to share the same hash, silently corrupting state. A warning is logged at
+/// construction time when a duplicate is detected, and the scope is released on
+/// <see cref="Dispose"/> so reloaded plugins do not falsely re-trigger the check.
+/// Use a value that is guaranteed unique across all plugins, such as
+/// <c>nameof(MyPlugin)</c> or <c>typeof(MyPlugin).FullName</c>.
 /// </para>
 /// <para>
 /// When <c>rootNodeLabel</c> is supplied, the entire section list is wrapped inside
@@ -33,6 +44,13 @@ namespace Umbra.UI.Panel;
 /// </remarks>
 public sealed class PluginPanel : IDisposable
 {
+    // Cross-plugin duplicate-scope registry. Because all managed plugins share one AppDomain,
+    // this static set tracks every live idScope across all PluginPanel instances in the process.
+    // Construction logs a warning on duplicate; Dispose removes the entry so plugin reloads
+    // do not falsely re-trigger the check.
+    private static readonly HashSet<string> _registeredScopes = [];
+    private static readonly object _scopeLock = new();
+
     private readonly string _idScope;
     private readonly string? _rootNodeLabel;
     private readonly bool _rootNodeDefaultOpen;
@@ -43,9 +61,12 @@ public sealed class PluginPanel : IDisposable
     /// Initialises a new panel with the given top-level ImGui ID scope.
     /// </summary>
     /// <param name="idScope">
-    /// A plugin-unique identifier string (e.g. <c>"MyPlugin"</c>) used to scope all ImGui
-    /// widget IDs rendered by this panel's sections via <c>ImGui.PushID</c> /
-    /// <c>ImGui.PopID</c>. Must be non-null and non-whitespace.
+    /// A globally unique identifier string for this plugin (e.g. <c>nameof(MyPlugin)</c> or
+    /// <c>typeof(MyPlugin).FullName</c>). All managed plugins share one AppDomain and one ImGui
+    /// context; this is the only separator between this panel's widget IDs and every other panel
+    /// in the process. A duplicate causes every widget in both panels to share the same ImGui
+    /// hash, silently corrupting state — a warning is logged at construction time if a duplicate
+    /// is detected. Must be non-null and non-whitespace.
     /// </param>
     /// <param name="rootNodeLabel">
     /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
@@ -65,8 +86,27 @@ public sealed class PluginPanel : IDisposable
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null or whitespace.", nameof(idScope));
 
-        _idScope             = idScope;
-        _rootNodeLabel       = rootNodeLabel;
+        lock (_scopeLock)
+        {
+            if (!_registeredScopes.Add(idScope))
+            {
+                Logger.Warning(
+                    $"[PluginPanel] DEVELOPER WARNING — Duplicate idScope '{idScope}' detected.\n" +
+                    $"\n" +
+                    $"  Impact : All ImGui widget IDs produced by this panel share the same hash as the\n" +
+                    $"           existing panel using the same scope. Buttons, sliders, checkboxes, and\n" +
+                    $"           tree nodes in both panels will silently share state across plugins.\n" +
+                    $"\n" +
+                    $"  Fix    : Pass a globally unique string to new PluginPanel(idScope), e.g.:\n" +
+                    $"             new PluginPanel(nameof(MyPlugin))\n" +
+                    $"             new PluginPanel(typeof(MyPlugin).FullName!)\n" +
+                    $"\n" +
+                    $"  Stack  :\n{Environment.StackTrace}");
+            }
+        }
+
+        _idScope = idScope;
+        _rootNodeLabel = rootNodeLabel;
         _rootNodeDefaultOpen = rootNodeDefaultOpen;
     }
 
@@ -144,7 +184,9 @@ public sealed class PluginPanel : IDisposable
     }
 
     /// <summary>
-    /// Disposes all sections and clears the section list.
+    /// Disposes all sections, clears the section list, and releases this panel's
+    /// <c>idScope</c> from the cross-plugin registry so a reloaded plugin can register
+    /// the same scope without a spurious duplicate warning.
     /// </summary>
     /// <remarks>
     /// Call this in the plugin's <c>[PluginExitPoint]</c> before nulling the panel reference.
@@ -155,6 +197,11 @@ public sealed class PluginPanel : IDisposable
         if (_disposed) return;
         _disposed = true;
 
+        lock (_scopeLock)
+        {
+            _registeredScopes.Remove(_idScope);
+        }
+
         foreach (var section in _sections) section.Dispose();
         _sections.Clear();
 
@@ -164,20 +211,31 @@ public sealed class PluginPanel : IDisposable
     /// <summary>
     /// Iterates over all sections and renders each one, optionally wrapping it inside a
     /// per-section <c>ImGui.TreeNode</c> when the section declares a
-    /// <see cref="IPanelSection.TreeNodeLabel"/>. Each section is pushed into its own
-    /// <c>ImGui.PushID(index)</c> scope to prevent label-based ID conflicts between sections
-    /// that share the same tree node label string.
+    /// <see cref="IPanelSection.TreeNodeLabel"/>.
     /// </summary>
+    /// <remarks>
+    /// Sections that declare a tree node have <c>ImGui.PushID(<see cref="IPanelSection.SectionId"/>)</c>
+    /// pushed before <c>ImGui.TreeNodeEx</c> so the tree node's effective ID is
+    /// <c>hash(panelScope + SectionId + TreeNodeLabel)</c> rather than
+    /// <c>hash(panelScope + TreeNodeLabel)</c>, preventing label-based ID collisions between
+    /// sections that happen to share the same label string. The scope is always popped in a
+    /// <c>finally</c> block so ImGui state remains balanced even when a section throws.
+    /// Sections without a tree node have no external scope pushed by the panel; they own
+    /// their full widget-ID scope internally via <c>ConfigDrawer</c> or
+    /// <see cref="LiveSection{T}"/>'s own <c>ImGui.PushID</c> calls.
+    /// </remarks>
     private void DrawSections()
     {
-        for (int i = 0; i < _sections.Count; i++)
+        foreach (var section in _sections)
         {
-            var section = _sections[i];
-            ImGui.PushID(i);
-            try
+            var label = section.TreeNodeLabel;
+            if (label is not null)
             {
-                var label = section.TreeNodeLabel;
-                if (label is not null)
+                // Push a stable named scope so the tree node's ID is:
+                //   hash(panelScope + SectionId + label)
+                // This prevents two sections with the same label from sharing ImGui state.
+                ImGui.PushID(section.SectionId);
+                try
                 {
                     var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
                     if (ImGui.TreeNodeEx(label, flags))
@@ -186,14 +244,16 @@ public sealed class PluginPanel : IDisposable
                         finally { ImGui.TreePop(); }
                     }
                 }
-                else
+                finally
                 {
-                    section.Draw();
+                    ImGui.PopID();
                 }
             }
-            finally
+            else
             {
-                ImGui.PopID();
+                // Flat section: no external scope pushed. The section manages its own
+                // widget-ID scoping internally (ConfigDrawer.Draw / LiveSection.Draw).
+                section.Draw();
             }
         }
     }

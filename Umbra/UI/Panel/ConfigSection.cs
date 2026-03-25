@@ -30,6 +30,7 @@ namespace Umbra.UI.Panel;
 public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class, new()
 {
     private readonly ConfigDrawer<TConfig> _drawer;
+    private readonly string _sectionId;
     private readonly int _order;
     private readonly string? _treeNodeLabel;
     private readonly bool _treeNodeDefaultOpen;
@@ -43,8 +44,10 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <see cref="Config.SettingsStore{TConfig}.Load()"/>.
     /// </param>
     /// <param name="idScope">
-    /// ImGui widget ID sub-scope for this section. Defaults to
-    /// <c>typeof(<typeparamref name="TConfig"/>).Name</c> when not supplied.
+    /// Stable ImGui widget ID scope for this section, used both as the
+    /// <see cref="IPanelSection.SectionId"/> pushed by <see cref="PluginPanel"/> before the
+    /// section's tree node and as the inner scope passed to <see cref="ConfigDrawer{TConfig}"/>.
+    /// Defaults to <c>typeof(<typeparamref name="TConfig"/>).Name</c> when not supplied.
     /// </param>
     /// <param name="treeNodeLabel">
     /// Explicit tree node label that overrides any <see cref="ConfigRootNodeAttribute"/>
@@ -65,13 +68,14 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         string? treeNodeLabel = null, bool treeNodeDefaultOpen = false,
         bool suppressTreeNode = false)
     {
-        _order = typeof(TConfig).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
+        _sectionId = idScope ?? typeof(TConfig).Name;
+        _order     = typeof(TConfig).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
 
         if (!suppressTreeNode)
         {
             if (treeNodeLabel is not null)
             {
-                _treeNodeLabel      = treeNodeLabel;
+                _treeNodeLabel       = treeNodeLabel;
                 _treeNodeDefaultOpen = treeNodeDefaultOpen;
             }
             else
@@ -79,7 +83,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
                 var attr = typeof(TConfig).GetDrawerAttribute<ConfigRootNodeAttribute>();
                 if (attr is not null)
                 {
-                    _treeNodeLabel      = attr.Label ?? typeof(TConfig).Name.ToDisplayName();
+                    _treeNodeLabel       = attr.Label ?? typeof(TConfig).Name.ToDisplayName();
                     _treeNodeDefaultOpen = attr.DefaultOpen;
                 }
             }
@@ -87,11 +91,21 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 
         // Always suppress the drawer's own root tree node: PluginPanel renders it via
         // IPanelSection.TreeNodeLabel so the wrapping is not duplicated.
-        _drawer = new ConfigDrawer<TConfig>(config, idScope ?? typeof(TConfig).Name, suppressRootNode: true);
+        _drawer = new ConfigDrawer<TConfig>(config, _sectionId, suppressRootNode: true);
     }
 
     /// <inheritdoc/>
     public int Order => _order;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Returns the effective <c>idScope</c> value — either the explicitly supplied scope or
+    /// <c>typeof(<typeparamref name="TConfig"/>).Name</c>. This value is the same string
+    /// passed to the inner <see cref="ConfigDrawer{TConfig}"/>, so the
+    /// <see cref="PluginPanel"/>-level push and the drawer's own internal push nest cleanly
+    /// under the same named scope.
+    /// </remarks>
+    public string SectionId => _sectionId;
 
     /// <inheritdoc/>
     public string? TreeNodeLabel => _treeNodeLabel;

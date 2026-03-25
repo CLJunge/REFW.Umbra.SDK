@@ -49,6 +49,31 @@ public interface IPanelSection : IDisposable
     bool TreeNodeDefaultOpen => false;
 
     /// <summary>
+    /// Gets the stable string identifier used by the owning <see cref="PluginPanel"/> as
+    /// an <c>ImGui.PushID</c> scope before rendering this section's tree node.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This value is only consumed by <see cref="PluginPanel.Draw"/> when
+    /// <see cref="TreeNodeLabel"/> is non-<see langword="null"/>. It is pushed as an invisible
+    /// ImGui ID scope immediately before <c>ImGui.TreeNodeEx</c> so that the tree node's
+    /// effective ID becomes <c>hash(panelScope + SectionId + TreeNodeLabel)</c> rather than
+    /// just <c>hash(panelScope + TreeNodeLabel)</c>, preventing two sections that share the
+    /// same label from colliding.
+    /// </para>
+    /// <para>
+    /// The value must be stable for the lifetime of the panel — changing it between frames
+    /// resets ImGui's persisted open/closed state for the tree node. The default implementation
+    /// returns the concrete class name; override when two sections of the same concrete type
+    /// are added to the same panel.
+    /// <see cref="ConfigSection{TConfig}"/> returns the config type name;
+    /// <see cref="LiveSection{T}"/> returns the state type name (or the explicit
+    /// <c>idScope</c> when one was provided).
+    /// </para>
+    /// </remarks>
+    string SectionId => GetType().Name;
+
+    /// <summary>
     /// Renders the section. Must be called from within an active ImGui window or child window.
     /// </summary>
     /// <remarks>
