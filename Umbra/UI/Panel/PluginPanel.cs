@@ -1,4 +1,4 @@
-using Hexa.NET.ImGui;
+﻿using Hexa.NET.ImGui;
 using Umbra.Logging;
 
 namespace Umbra.UI.Panel;
@@ -54,6 +54,7 @@ public sealed class PluginPanel : IDisposable
     private readonly string _idScope;
     private readonly string? _rootNodeLabel;
     private readonly bool _rootNodeDefaultOpen;
+    private readonly bool _drawSeparator;
     private readonly List<IPanelSection> _sections = [];
     private bool _disposed;
 
@@ -78,10 +79,14 @@ public sealed class PluginPanel : IDisposable
     /// Ignored when <paramref name="rootNodeLabel"/> is <see langword="null"/>.
     /// Defaults to <see langword="false"/> (collapsed).
     /// </param>
+    /// <param name="drawSeparator">
+    /// When <see langword="true"/> (the default), a horizontal separator is drawn after
+    /// all sections. Pass <see langword="false"/> to suppress it.
+    /// </param>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="idScope"/> is <see langword="null"/> or whitespace.
     /// </exception>
-    public PluginPanel(string idScope, string? rootNodeLabel = null, bool rootNodeDefaultOpen = false)
+    public PluginPanel(string idScope, string? rootNodeLabel = null, bool rootNodeDefaultOpen = false, bool drawSeparator = true)
     {
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null or whitespace.", nameof(idScope));
@@ -108,6 +113,7 @@ public sealed class PluginPanel : IDisposable
         _idScope = idScope;
         _rootNodeLabel = rootNodeLabel;
         _rootNodeDefaultOpen = rootNodeDefaultOpen;
+        _drawSeparator = drawSeparator;
     }
 
     /// <summary>
@@ -155,6 +161,13 @@ public sealed class PluginPanel : IDisposable
     /// <see cref="IPanelSection.TreeNodeLabel"/> is additionally wrapped in its own nested
     /// tree node rendered inside the root node (or at the top level when no root node is set).
     /// </para>
+    /// <para>
+    /// When enabled via the <c>drawSeparator</c> constructor parameter (default
+    /// <see langword="true"/>), a horizontal separator is drawn after all sections.
+    /// When a root tree node is present the separator is rendered inside the open node
+    /// (before the tree pop) and is only visible while the node is expanded. When no
+    /// root tree node is used, the separator appears at the end of the panel output.
+    /// </para>
     /// </remarks>
     public void Draw()
     {
@@ -168,13 +181,18 @@ public sealed class PluginPanel : IDisposable
                 var flags = _rootNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
                 if (ImGui.TreeNodeEx(_rootNodeLabel, flags))
                 {
-                    try { DrawSections(); }
+                    try
+                    {
+                        DrawSections();
+                        if (_drawSeparator) ImGui.Separator();
+                    }
                     finally { ImGui.TreePop(); }
                 }
             }
             else
             {
                 DrawSections();
+                if (_drawSeparator) ImGui.Separator();
             }
         }
         finally
