@@ -58,6 +58,7 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// <c>typeof(<typeparamref name="T"/>).Name</c> is used instead — a stable
     /// fallback that still provides correct per-section widget ID isolation. Supply an
     /// explicit value only when two live sections of the same type exist in the same panel.
+    /// Must not be empty or whitespace when supplied.
     /// </param>
     /// <param name="treeNodeLabel">
     /// Optional label for a collapsible <c>ImGui.TreeNode</c> that wraps this section's
@@ -69,6 +70,9 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// <paramref name="treeNodeLabel"/> is <see langword="null"/>.
     /// Defaults to <see langword="false"/> (collapsed).
     /// </param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.
+    /// </exception>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <typeparamref name="T"/> is not decorated with
     /// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>.
@@ -76,6 +80,8 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     public LiveSection(T context, string? idScope = null,
         string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
     {
+        if (idScope is not null && string.IsNullOrWhiteSpace(idScope))
+            throw new ArgumentException("idScope cannot be empty or whitespace when supplied.", nameof(idScope));
         _idScope = idScope;
         _treeNodeLabel = treeNodeLabel;
         _treeNodeDefaultOpen = treeNodeDefaultOpen;

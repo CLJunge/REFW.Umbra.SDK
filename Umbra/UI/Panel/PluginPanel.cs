@@ -11,7 +11,7 @@ namespace Umbra.UI.Panel;
 /// <para>
 /// <see cref="PluginPanel"/> is the recommended top-level UI type for plugins that need to
 /// display both configuration settings and live game state in a single panel.
-/// For plugins that only require a settings panel, <see cref="Config.ConfigDrawer{TConfig}"/>
+/// For plugins that only require a settings panel, <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/>
 /// may be used directly.
 /// </para>
 /// <para>
@@ -96,21 +96,22 @@ public sealed class PluginPanel : IDisposable
         lock (_scopeLock)
         {
             registered = _registeredScopes.Add(idScope);
-            if (!registered)
-            {
-                Logger.Warning(
-                    $"[PluginPanel] DEVELOPER WARNING — Duplicate idScope '{idScope}' detected.\n" +
-                    $"\n" +
-                    $"  Impact : All ImGui widget IDs produced by this panel share the same hash as the\n" +
-                    $"           existing panel using the same scope. Buttons, sliders, checkboxes, and\n" +
-                    $"           tree nodes in both panels will silently share state across plugins.\n" +
-                    $"\n" +
-                    $"  Fix    : Pass a globally unique string to new PluginPanel(idScope), e.g.:\n" +
-                    $"             new PluginPanel(nameof(MyPlugin))\n" +
-                    $"             new PluginPanel(typeof(MyPlugin).FullName!)\n" +
-                    $"\n" +
-                    $"  Stack  :\n{Environment.StackTrace}");
-            }
+        }
+
+        if (!registered)
+        {
+            Logger.Warning(
+                $"[PluginPanel] DEVELOPER WARNING — Duplicate idScope '{idScope}' detected.\n" +
+                $"\n" +
+                $"  Impact : All ImGui widget IDs produced by this panel share the same hash as the\n" +
+                $"           existing panel using the same scope. Buttons, sliders, checkboxes, and\n" +
+                $"           tree nodes in both panels will silently share state across plugins.\n" +
+                $"\n" +
+                $"  Fix    : Pass a globally unique string to new PluginPanel(idScope), e.g.:\n" +
+                $"             new PluginPanel(nameof(MyPlugin))\n" +
+                $"             new PluginPanel(typeof(MyPlugin).FullName!)\n" +
+                $"\n" +
+                $"  Stack  :\n{Environment.StackTrace}");
         }
 
         _idScope = idScope;
