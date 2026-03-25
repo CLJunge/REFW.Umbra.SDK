@@ -1,9 +1,8 @@
 using Hexa.NET.ImGui;
 using Umbra.Config;
 using Umbra.Input;
-using Umbra.UI;
 
-namespace Umbra.Config.UI.ParameterDrawers;
+namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// An <see cref="IParameterDrawer"/> implementation that renders a hotkey-capture control
@@ -15,7 +14,7 @@ namespace Umbra.Config.UI.ParameterDrawers;
 /// A shared static counter in <see cref="HotkeyCaptureState"/> enforces mutual exclusion
 /// across all <see cref="HotkeyDrawer"/> and <see cref="TwoColumnHotkeyDrawer"/> instances
 /// in the same assembly. <see cref="Dispose"/> must be called (via the owning
-/// <see cref="ConfigDrawer{TConfig}"/>) on plugin unload so that any in-progress capture
+/// <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/>) on plugin unload so that any in-progress capture
 /// does not permanently block future captures.
 /// </remarks>
 public sealed class HotkeyDrawer : IParameterDrawer
@@ -81,7 +80,7 @@ public sealed class HotkeyDrawer : IParameterDrawer
     /// <summary>
     /// Releases this drawer's contribution to the shared capture counter in
     /// <see cref="HotkeyCaptureState"/>. Must be called when the owning
-    /// <see cref="ConfigDrawer{TConfig}"/> is disposed so that a mid-capture plugin unload
+    /// <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/> is disposed so that a mid-capture plugin unload
     /// does not permanently block future captures.
     /// </summary>
     public void Dispose()

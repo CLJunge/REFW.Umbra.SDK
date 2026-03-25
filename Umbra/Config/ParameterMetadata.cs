@@ -92,7 +92,7 @@ public sealed class ParameterMetadata
 
     /// <summary>
     /// Gets the visual color style applied to a button rendered by
-    /// <see cref="Umbra.Config.UI.ParameterDrawers.ButtonDrawer"/>.
+    /// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
     /// Sourced from <c>ButtonStyleAttribute</c>. <see langword="null"/> when not specified;
     /// the drawer defaults to <see cref="ButtonStyle.Default"/>.
     /// </summary>
@@ -103,7 +103,7 @@ public sealed class ParameterMetadata
 
     /// <summary>
     /// Gets the custom RGBA colors applied to a button rendered by
-    /// <see cref="Umbra.Config.UI.ParameterDrawers.ButtonDrawer"/>.
+    /// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
     /// Sourced from <c>CustomButtonColorsAttribute</c>. <see langword="null"/> when not specified.
     /// When present, takes priority over <see cref="ButtonStyle"/>.
     /// </summary>
@@ -111,14 +111,14 @@ public sealed class ParameterMetadata
 
     /// <summary>
     /// Gets the explicit pixel width for a button rendered by
-    /// <see cref="Umbra.Config.UI.ParameterDrawers.ButtonDrawer"/>.
+    /// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
     /// <c>0f</c> = auto-size to label, <c>-1f</c> = fill available width, positive = fixed pixels.
     /// Sourced from <c>ButtonWidthAttribute</c> (which extends <c>ControlWidthAttribute</c>).
     /// <see langword="null"/> when not specified; the drawer defaults to <c>0f</c> (auto-size).
     /// </summary>
     /// <remarks>
     /// Stored separately from <see cref="ControlWidth"/> even though both originate from the same
-    /// attribute hierarchy, because <see cref="Umbra.Config.UI.ParameterDrawers.ButtonDrawer"/>
+    /// attribute hierarchy, because <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>
     /// applies the width via <c>ImGui.Button</c>'s size vector rather than <c>SetNextItemWidth</c>.
     /// When <c>ButtonWidthAttribute</c> is present, <see cref="ControlWidth"/> is left
     /// <see langword="null"/> to keep the two mechanisms independent.
@@ -183,7 +183,7 @@ public sealed class ParameterMetadata
     public float? Indent { get; init; }
 
     /// <summary>
-    /// Gets the concrete <see cref="Umbra.Config.UI.ParameterDrawers.IParameterDrawer"/> type used
+    /// Gets the concrete <see cref="Umbra.UI.Config.Drawers.IParameterDrawer"/> type used
     /// to render this parameter, or <see langword="null"/> when no <c>[CustomDrawer&lt;TDrawer&gt;]</c>
     /// attribute is present. When non-<see langword="null"/>, <c>ControlFactory</c> instantiates this
     /// type and delegates all rendering to it; the default two-column layout is bypassed entirely.
@@ -193,7 +193,7 @@ public sealed class ParameterMetadata
     public Type? CustomDrawerType { get; init; }
 
     /// <summary>
-    /// Gets the concrete <see cref="Umbra.Config.UI.ParameterDrawers.ITwoColumnParameterDrawer"/> type
+    /// Gets the concrete <see cref="Umbra.UI.Config.Drawers.ITwoColumnParameterDrawer"/> type
     /// used to render this parameter's editing widget, or <see langword="null"/> when no
     /// <c>[TwoColumnCustomDrawer&lt;TDrawer&gt;]</c> attribute is present. When non-<see langword="null"/>,
     /// <c>ControlFactory</c> instantiates this type and delegates widget rendering to it while retaining

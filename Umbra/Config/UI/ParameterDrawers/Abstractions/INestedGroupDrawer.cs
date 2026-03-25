@@ -5,9 +5,14 @@ namespace Umbra.UI.Config.Drawers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Apply <c>[NestedGroupDrawer&lt;TDrawer&gt;]</c> to the nested configuration class to bypass the
-/// default recursive parameter expansion performed by <see cref="ConfigDrawer{TConfig}"/> and
-/// hand the group instance directly to this drawer each frame.
+/// Prefer applying <c>[NestedGroupDrawer&lt;TDrawer&gt;]</c> to the parent property that exposes
+/// the nested configuration group, keeping group-specific UI behaviour co-located with the
+/// property declaration. Applying the attribute to the nested configuration class itself is
+/// supported for backward compatibility and acts as a fallback when the parent property
+/// carries no drawer attribute.
+/// When <see cref="ConfigDrawer{TConfig}"/> encounters the attribute (on either the property
+/// or the type), it bypasses the default recursive parameter expansion and hands the group
+/// instance directly to this drawer each frame.
 /// </para>
 /// <para>
 /// The drawer has complete ImGui layout control; no label, column alignment, or section header

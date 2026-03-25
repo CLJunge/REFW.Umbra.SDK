@@ -1,8 +1,8 @@
 using System.Reflection;
 using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
-using Umbra.UI.Config.Nodes;
 using Umbra.Logging;
+using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config;
 
@@ -16,8 +16,8 @@ namespace Umbra.UI.Config;
 /// with no per-frame reflection.
 /// </para>
 /// <para>
-/// Pass a config instance returned by <see cref="SettingsStore{TConfig}.Load()"/> so that
-/// <see cref="ParameterMetadata"/> is already populated; the drawer falls back to reading
+/// Pass a config instance returned by <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so that
+/// <see cref="Umbra.Config.ParameterMetadata"/> is already populated; the drawer falls back to reading
 /// attributes directly when metadata fields are absent.
 /// </para>
 /// <para>
@@ -47,7 +47,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// </summary>
     /// <param name="config">
     /// A fully initialized configuration instance, ideally returned by
-    /// <see cref="SettingsStore{TConfig}.Load()"/> so that <see cref="ParameterMetadata"/>
+    /// <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so that <see cref="Umbra.Config.ParameterMetadata"/>
     /// is already populated on every parameter.
     /// </param>
     /// <param name="idScope">
@@ -58,7 +58,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// in the same ImGui window. Must be non-null and non-whitespace.
     /// </param>
     /// <param name="suppressRootNode">
-    /// When <see langword="true"/>, the <see cref="Attributes.ConfigRootNodeAttribute"/>-driven
+    /// When <see langword="true"/>, the <see cref="ConfigRootNodeAttribute"/>-driven
     /// root <c>ImGui.TreeNode</c> is not rendered even when the attribute is present on
     /// <typeparamref name="TConfig"/>. Defaults to <see langword="false"/>.
     /// Pass <see langword="true"/> when the owning <see cref="Umbra.UI.Panel.ConfigSection{TConfig}"/>

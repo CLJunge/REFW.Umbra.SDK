@@ -11,7 +11,7 @@ namespace Umbra.UI.Panel;
 /// (effectively <see cref="int.MaxValue"/>).
 /// </para>
 /// <para>
-/// This attribute is intentionally separate from <see cref="Config.Attributes.ParameterOrderAttribute"/>,
+/// This attribute is intentionally separate from <see cref="Umbra.Config.Attributes.ParameterOrderAttribute"/>,
 /// which controls the render order of individual parameters within a configuration group.
 /// </para>
 /// </remarks>
