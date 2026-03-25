@@ -1,7 +1,7 @@
 using Hexa.NET.ImGui;
 using Umbra.UI;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Holds the pre-computed layout state for a single parameter row in the two-column

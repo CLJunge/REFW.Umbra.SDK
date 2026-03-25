@@ -22,17 +22,18 @@ A support library for [REFramework](https://github.com/praydog/REFramework) mod 
 ```
 REFW.Umbra (solution)
 ├── Umbra                     # SDK library (ship this as a dependency)
-│   ├── Config/                   # Parameter<T>, SettingsStore<T>, DeferredSaveController<T>
-│   │   ├── Attributes/           # [AutoRegisterSettings], [SettingsParameter], [Range], [HideIf], …
-│   │   └── UI/                   # ConfigDrawer<T>, ConfigDrawerBuilder, ControlFactory, parameter drawers
-│   ├── UI/
-│   │   ├── Panel/                # PluginPanel, ConfigSection<T>, LiveSection<T>, IPanelSection
-│   │   └── ImGuiWidgets.cs       # Stateless ImGui helpers
-│   ├── Logging/                  # PluginLogger, Logger (SDK-internal), LogLevel
-│   └── Input/                    # KeyboardInput
+│   ├── Config/                   # Umbra.Config — Parameter<T>, SettingsStore<T>, DeferredSaveController<T>
+│   │   ├── Attributes/           # Umbra.Config.Attributes — [AutoRegisterSettings], [SettingsParameter], [Range], [HideIf], …
+│   │   └── UI/                   # Umbra.UI.Config — ConfigDrawer<T>, ControlFactory, parameter drawers, draw nodes
+│   ├── UI/                       # Umbra.UI — ImGuiWidgets (stateless ImGui helpers)
+│   │   └── Panel/                # Umbra.UI.Panel — PluginPanel, ConfigSection<T>, LiveSection<T>, IPanelSection
+│   ├── Logging/                  # Umbra.Logging — PluginLogger, Logger (SDK-internal), LogLevel
+│   └── Input/                    # Umbra.Input — KeyboardInput
 └── Umbra.SamplePlugin            # Reference plugin implementation
     └── Config/                   # PluginConfig, nested settings groups, custom drawers
 ```
+
+> **Namespace note:** `Config/UI/` is physically nested under `Config/` but its files declare namespace `Umbra.UI.Config` (and sub-namespaces `Umbra.UI.Config.Nodes`, `Umbra.UI.Config.Drawers`). All rendering code lives under the `Umbra.UI.*` hierarchy; `Umbra.Config.*` is the pure data/persistence layer.
 
 ### Key flows
 

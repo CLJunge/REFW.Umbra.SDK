@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using Umbra.Config.Attributes;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Caches all class-level metadata attributes consulted by <see cref="ConfigDrawerBuilder.Collect"/>

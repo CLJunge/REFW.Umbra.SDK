@@ -1,10 +1,10 @@
 using System.Reflection;
 using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
-using Umbra.Config.UI.Nodes;
+using Umbra.UI.Config.Nodes;
 using Umbra.Logging;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Pre-builds and renders an ImGui settings UI for a typed configuration class.

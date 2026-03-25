@@ -1,4 +1,4 @@
-namespace Umbra.Config.UI.Nodes;
+namespace Umbra.UI.Config.Nodes;
 
 /// <summary>Pre-built draw node that emits one frame of ImGui output.</summary>
 internal interface IDrawNode

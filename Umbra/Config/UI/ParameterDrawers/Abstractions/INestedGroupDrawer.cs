@@ -1,4 +1,4 @@
-namespace Umbra.Config.UI.ParameterDrawers;
+namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// Defines the contract for fully custom rendering of a nested configuration group.

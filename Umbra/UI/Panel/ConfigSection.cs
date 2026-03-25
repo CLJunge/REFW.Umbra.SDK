@@ -1,5 +1,5 @@
 using Umbra.Config.Attributes;
-using Umbra.Config.UI;
+using Umbra.UI.Config;
 
 namespace Umbra.UI.Panel;
 

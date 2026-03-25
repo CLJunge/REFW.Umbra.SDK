@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
 
-namespace Umbra.Config.UI.Nodes;
+namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
 /// Draw node that renders a category header and all child controls either as a flat

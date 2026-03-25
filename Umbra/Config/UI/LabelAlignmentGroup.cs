@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Hexa.NET.ImGui;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Tracks the maximum label-column width observed across all parameters in a shared scope

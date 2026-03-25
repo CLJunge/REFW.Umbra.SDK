@@ -1,4 +1,4 @@
-namespace Umbra.Config.UI.ParameterDrawers;
+namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// Shared mutable state for all hotkey-capture drawers in this assembly.

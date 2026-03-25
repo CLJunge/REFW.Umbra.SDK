@@ -56,7 +56,7 @@ internal static class FovHooks
   - Hotkey values are stored as `int` (an `ImGuiKey` cast to `int`).
 - For reusable ImGui helpers, use `Umbra.UI.ImGuiWidgets`.
   - `ImGuiWidgets` currently provides `DrawHelpMarker(string description)`.
-- For config-backed hotkey controls, prefer the built-in drawers in `Umbra.Config.UI.ParameterDrawers` such as `HotkeyDrawer` and `TwoColumnHotkeyDrawer`.
+- For config-backed hotkey controls, prefer the built-in drawers in `Umbra.UI.Config.Drawers` such as `HotkeyDrawer` and `TwoColumnHotkeyDrawer`.
 
 ## Settings/configuration
 - Prefer the existing configuration model in `Umbra.Config`.
@@ -131,12 +131,12 @@ public partial record NestedConfigGroup
 }
 
 ## Settings UI — ConfigDrawer
-- `ConfigDrawer<TConfig>` (in `Umbra.Config.UI`) renders a full ImGui settings panel from a config instance.
+- `ConfigDrawer<TConfig>` (in `Umbra.UI.Config`) renders a full ImGui settings panel from a config instance.
 - The draw tree is built once at construction via a single reflection pass; `Draw()` walks the pre-built node list with no per-frame reflection.
 - Construct with the `TConfig` instance returned by `SettingsStore<TConfig>.Load()` so that `ParameterMetadata` is already populated.
 - Call `Draw()` from inside an active ImGui window or child window each frame.
 - `ConfigDrawer<TConfig>` is `IDisposable`; dispose it when the settings window is closed or the plugin unloads.
-- Custom controls are implemented via `IParameterDrawer` (in `Umbra.Config.UI`) and applied with `[CustomDrawer<TDrawer>]` on the parameter property.
+- Custom controls are implemented via `IParameterDrawer` (in `Umbra.UI.Config.Drawers`) and applied with `[CustomDrawer<TDrawer>]` on the parameter property.
 - For two-column-aware custom controls that participate in the standard label layout, use `ITwoColumnParameterDrawer` with `[TwoColumnCustomDrawer<TDrawer>]`.
 - To render an entire nested configuration group with a fully custom ImGui layout, apply `[NestedGroupDrawer<TDrawer>]` to the **parent property** that exposes the nested group, and implement `INestedGroupDrawer<T>` in the drawer class:
   - `[NestedGroupDrawer<TDrawer>]` is declared on `AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct`. Placing it on the parent property is the **preferred** approach. Applying it to the nested `record`/`class` is supported for backward compatibility only and acts as a fallback when the property carries no drawer attribute.

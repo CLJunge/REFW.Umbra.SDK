@@ -1,10 +1,11 @@
 using System.Numerics;
 using Hexa.NET.ImGui;
+using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.Logging;
 using Umbra.UI;
 
-namespace Umbra.Config.UI.ParameterDrawers;
+namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// An <see cref="IParameterDrawer"/> implementation that renders an ImGui push-button for a

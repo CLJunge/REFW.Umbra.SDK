@@ -1,9 +1,10 @@
 using System.Linq.Expressions;
 using System.Reflection;
+using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.Logging;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Resolves <see cref="HideIfAttribute{T}"/> declarations into per-frame visibility
