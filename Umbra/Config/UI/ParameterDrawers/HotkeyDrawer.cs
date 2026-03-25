@@ -1,8 +1,9 @@
 using Hexa.NET.ImGui;
+using Umbra.Config;
 using Umbra.Input;
 using Umbra.UI;
 
-namespace Umbra.Config.UI.ParameterDrawers;
+namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// An <see cref="IParameterDrawer"/> implementation that renders a hotkey-capture control

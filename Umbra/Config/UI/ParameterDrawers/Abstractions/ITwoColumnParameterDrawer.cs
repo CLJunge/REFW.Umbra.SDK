@@ -1,4 +1,6 @@
-namespace Umbra.Config.UI.ParameterDrawers;
+using Umbra.Config;
+
+namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// Defines a custom parameter widget renderer that participates in the two-column layout.

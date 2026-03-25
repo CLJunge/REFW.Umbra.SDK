@@ -1,9 +1,11 @@
 using System.Numerics;
 using Hexa.NET.ImGui;
-using Umbra.Config.UI.ParameterDrawers;
+using Umbra.Config;
+using Umbra.Config.Attributes;
+using Umbra.UI.Config.Drawers;
 using Umbra.Logging;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Builds per-frame ImGui draw <see cref="Action"/> instances for each supported parameter

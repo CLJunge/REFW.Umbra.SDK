@@ -2,7 +2,7 @@ using System.Numerics;
 using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Defines the ImGui color table for each <see cref="ButtonStyle"/> variant

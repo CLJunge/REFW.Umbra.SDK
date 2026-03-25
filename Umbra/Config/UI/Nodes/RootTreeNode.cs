@@ -1,6 +1,6 @@
 using Hexa.NET.ImGui;
 
-namespace Umbra.Config.UI.Nodes;
+namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
 /// Draw node that wraps all child nodes inside a single collapsible <c>ImGui.TreeNode</c>.

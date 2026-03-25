@@ -9,7 +9,7 @@ A support library for [REFramework](https://github.com/praydog/REFramework) mod 
 - **Attribute-driven configuration** — declare a `record` with `[AutoRegisterSettings]` and `Parameter<T>` properties; the store handles JSON load/save automatically.
 - **Auto-save controller** — `DeferredSaveController<T>` coalesces rapid slider changes and writes to disk only after the user stops interacting, with immediate saves for boolean/string/enum changes.
 - **Zero-per-frame-reflection settings UI** — `ConfigDrawer<T>` reflects over the config once at construction and walks a pre-built node list every frame. Supports categories, collapsible tree nodes, sliders, hotkey capture, custom drawers, nested groups, and conditional visibility.
-- **Plugin panel system** — `PluginPanel` composes an ordered list of `IPanelSection` instances (`ConfigSection<T>`, `LiveSection<T>`) under a shared ImGui ID scope and owns their lifetimes.
+- **Plugin panel system** — `PluginPanel` composes an ordered list of `IPanelSection` instances (`ConfigSection<T>`, `LiveSection<T>`) under a shared ImGui ID scope and owns their lifetimes. An optional root tree node wraps all sections; each section can additionally declare its own collapsible tree node. A trailing separator is drawn after all sections (toggle via the `drawSeparator` constructor flag). A cross-plugin scope registry detects duplicate `idScope` values at construction and logs a structured developer warning including stack trace.
 - **Live game-state rendering** — `LiveSection<T>` pairs a hook-written state object with an `ILiveSectionDrawer<T>` declared via `[LiveSectionDrawerAttribute]`. Uses the swap-instance pattern for thread-safe multi-field updates.
 - **Isolated per-plugin logging** — `PluginLogger` wraps `REFrameworkNET.API.Log*` with a per-instance prefix, log-level filter, and exception-safe formatted overloads.
 - **Keyboard input helpers** — `KeyboardInput` captures ImGui keyboard keys, names them, and exposes modifier-state properties (`IsCtrlHeld`, `IsShiftHeld`, `IsAltHeld`).
@@ -22,17 +22,18 @@ A support library for [REFramework](https://github.com/praydog/REFramework) mod 
 ```
 REFW.Umbra (solution)
 ├── Umbra                     # SDK library (ship this as a dependency)
-│   ├── Config/                   # Parameter<T>, SettingsStore<T>, DeferredSaveController<T>
-│   │   ├── Attributes/           # [AutoRegisterSettings], [SettingsParameter], [Range], [HideIf], …
-│   │   └── UI/                   # ConfigDrawer<T>, ConfigDrawerBuilder, ControlFactory, parameter drawers
-│   ├── UI/
-│   │   ├── Panel/                # PluginPanel, ConfigSection<T>, LiveSection<T>, IPanelSection
-│   │   └── ImGuiWidgets.cs       # Stateless ImGui helpers
-│   ├── Logging/                  # PluginLogger, Logger (SDK-internal), LogLevel
-│   └── Input/                    # KeyboardInput
+│   ├── Config/                   # Umbra.Config — Parameter<T>, SettingsStore<T>, DeferredSaveController<T>
+│   │   ├── Attributes/           # Umbra.Config.Attributes — [AutoRegisterSettings], [SettingsParameter], [Range], [HideIf], …
+│   │   └── UI/                   # Umbra.UI.Config — ConfigDrawer<T>, ControlFactory, parameter drawers, draw nodes
+│   ├── UI/                       # Umbra.UI — ImGuiWidgets (stateless ImGui helpers)
+│   │   └── Panel/                # Umbra.UI.Panel — PluginPanel, ConfigSection<T>, LiveSection<T>, IPanelSection
+│   ├── Logging/                  # Umbra.Logging — PluginLogger, Logger (SDK-internal), LogLevel
+│   └── Input/                    # Umbra.Input — KeyboardInput
 └── Umbra.SamplePlugin            # Reference plugin implementation
     └── Config/                   # PluginConfig, nested settings groups, custom drawers
 ```
+
+> **Namespace note:** `Config/UI/` is physically nested under `Config/` but its files declare namespace `Umbra.UI.Config` (and sub-namespaces `Umbra.UI.Config.Nodes`, `Umbra.UI.Config.Drawers`). All rendering code lives under the `Umbra.UI.*` hierarchy; `Umbra.Config.*` is the pure data/persistence layer.
 
 ### Key flows
 
@@ -47,7 +48,9 @@ REFW.Umbra (solution)
 - The plugin owns a state object (e.g. `CameraState`).
 - A static hook class holds a `volatile` reference to the state and writes it via `[MethodHook]` callbacks using the swap-instance pattern.
 - `LiveSection<T>` resolves the `[LiveSectionDrawerAttribute]` on the state type and calls the drawer each frame — no per-frame reflection.
-- `PluginPanel` renders all sections under a single `ImGui.PushID` scope to prevent widget ID collisions between plugins.
+- `PluginPanel` renders all sections under a single `ImGui.PushID(_idScope)` scope. A static cross-plugin registry detects duplicate `idScope` values across all loaded plugins at construction time and logs a structured warning (impact, fix, and stack trace) so collisions are caught during development.
+- An optional root tree node (`rootNodeLabel`) wraps all sections; each section can additionally declare its own tree node via `IPanelSection.TreeNodeLabel`. Section tree nodes use ImGui's `##SectionId` suffix for disambiguation — no extra `PushID` is pushed around per-section nodes.
+- Sections render in ascending `[SectionOrder]` order (applied to the state or config type); equal-order sections preserve insertion order.
 
 ---
 
