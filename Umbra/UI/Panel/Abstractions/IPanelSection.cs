@@ -33,8 +33,8 @@ public interface IPanelSection : IDisposable
     /// <see cref="Draw"/> call inside a collapsible <c>ImGui.TreeNode</c> with this label.
     /// Custom <see cref="IPanelSection"/> implementations can override this property to opt in.
     /// <see cref="ConfigSection{TConfig}"/> derives this value from
-    /// <see cref="Config.Attributes.ConfigRootNodeAttribute"/> on the config type, or from an
-    /// explicit constructor argument. <see cref="LiveSection{T}"/> accepts it as a constructor
+    /// <see cref="Umbra.Config.Attributes.ConfigRootNodeAttribute"/> on the config type, or from
+    /// an explicit constructor argument. <see cref="LiveSection{T}"/> accepts it as a constructor
     /// parameter.
     /// </remarks>
     string? TreeNodeLabel => null;
