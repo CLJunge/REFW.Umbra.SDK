@@ -44,9 +44,12 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <see cref="Config.SettingsStore{TConfig}.Load()"/>.
     /// </param>
     /// <param name="idScope">
-    /// Stable ImGui widget ID scope for this section, used both as the
-    /// <see cref="IPanelSection.SectionId"/> pushed by <see cref="PluginPanel"/> before the
-    /// section's tree node and as the inner scope passed to <see cref="ConfigDrawer{TConfig}"/>.
+    /// Stable ImGui widget ID scope for this section, used as the
+    /// <see cref="IPanelSection.SectionId"/> and as the inner scope passed to
+    /// <see cref="ConfigDrawer{TConfig}"/>. When a tree node is rendered,
+    /// <see cref="PluginPanel"/> embeds this value as a <c>##</c> disambiguation
+    /// suffix on the tree node label (e.g. <c>"Settings##MyConfig"</c>) rather than
+    /// pushing an extra <c>ImGui.PushID</c> scope before the node.
     /// Defaults to <c>typeof(<typeparamref name="TConfig"/>).Name</c> when not supplied.
     /// </param>
     /// <param name="treeNodeLabel">
