@@ -14,6 +14,12 @@ namespace Umbra.UI.Panel;
 /// may be used directly.
 /// </para>
 /// <para>
+/// When <c>rootNodeLabel</c> is supplied, the entire section list is wrapped inside
+/// a single collapsible <c>ImGui.TreeNode</c> at the top of the panel. Individual sections may
+/// additionally declare their own tree node via <see cref="IPanelSection.TreeNodeLabel"/>;
+/// these per-section nodes are rendered inside the root node when one is present.
+/// </para>
+/// <para>
 /// Sections are rendered in ascending <see cref="IPanelSection.Order"/>. The internal
 /// list is re-sorted on each call to <see cref="Add"/>, and equal-order sections preserve
 /// their insertion order because a stable sort is used. The panel pushes its <c>idScope</c>
@@ -28,6 +34,8 @@ namespace Umbra.UI.Panel;
 public sealed class PluginPanel : IDisposable
 {
     private readonly string _idScope;
+    private readonly string? _rootNodeLabel;
+    private readonly bool _rootNodeDefaultOpen;
     private readonly List<IPanelSection> _sections = [];
     private bool _disposed;
 
@@ -39,15 +47,27 @@ public sealed class PluginPanel : IDisposable
     /// widget IDs rendered by this panel's sections via <c>ImGui.PushID</c> /
     /// <c>ImGui.PopID</c>. Must be non-null and non-whitespace.
     /// </param>
+    /// <param name="rootNodeLabel">
+    /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
+    /// <c>ImGui.TreeNode</c> with this label. Pass <see langword="null"/> (the default) to
+    /// render sections flat with no root-level wrapping node.
+    /// </param>
+    /// <param name="rootNodeDefaultOpen">
+    /// When <see langword="true"/>, the root tree node starts in its expanded state.
+    /// Ignored when <paramref name="rootNodeLabel"/> is <see langword="null"/>.
+    /// Defaults to <see langword="false"/> (collapsed).
+    /// </param>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="idScope"/> is <see langword="null"/> or whitespace.
     /// </exception>
-    public PluginPanel(string idScope)
+    public PluginPanel(string idScope, string? rootNodeLabel = null, bool rootNodeDefaultOpen = false)
     {
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null or whitespace.", nameof(idScope));
 
-        _idScope = idScope;
+        _idScope             = idScope;
+        _rootNodeLabel       = rootNodeLabel;
+        _rootNodeDefaultOpen = rootNodeDefaultOpen;
     }
 
     /// <summary>
@@ -83,8 +103,18 @@ public sealed class PluginPanel : IDisposable
     /// child window, typically from the plugin's ImGui pre-draw callback each frame.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The pushed top-level ImGui ID scope is always popped before this method returns,
     /// even if a section throws while drawing.
+    /// </para>
+    /// <para>
+    /// When a <c>rootNodeLabel</c> was supplied at construction, all sections are rendered
+    /// inside a single collapsible <c>ImGui.TreeNode</c>; the tree pop is guarded with
+    /// <c>try/finally</c> so ImGui state remains balanced even if a section throws.
+    /// Each section that declares a non-<see langword="null"/>
+    /// <see cref="IPanelSection.TreeNodeLabel"/> is additionally wrapped in its own nested
+    /// tree node rendered inside the root node (or at the top level when no root node is set).
+    /// </para>
     /// </remarks>
     public void Draw()
     {
@@ -93,8 +123,19 @@ public sealed class PluginPanel : IDisposable
         ImGui.PushID(_idScope);
         try
         {
-            foreach (var section in _sections)
-                section.Draw();
+            if (_rootNodeLabel is not null)
+            {
+                var flags = _rootNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+                if (ImGui.TreeNodeEx(_rootNodeLabel, flags))
+                {
+                    try { DrawSections(); }
+                    finally { ImGui.TreePop(); }
+                }
+            }
+            else
+            {
+                DrawSections();
+            }
         }
         finally
         {
@@ -118,5 +159,42 @@ public sealed class PluginPanel : IDisposable
         _sections.Clear();
 
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Iterates over all sections and renders each one, optionally wrapping it inside a
+    /// per-section <c>ImGui.TreeNode</c> when the section declares a
+    /// <see cref="IPanelSection.TreeNodeLabel"/>. Each section is pushed into its own
+    /// <c>ImGui.PushID(index)</c> scope to prevent label-based ID conflicts between sections
+    /// that share the same tree node label string.
+    /// </summary>
+    private void DrawSections()
+    {
+        for (int i = 0; i < _sections.Count; i++)
+        {
+            var section = _sections[i];
+            ImGui.PushID(i);
+            try
+            {
+                var label = section.TreeNodeLabel;
+                if (label is not null)
+                {
+                    var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+                    if (ImGui.TreeNodeEx(label, flags))
+                    {
+                        try { section.Draw(); }
+                        finally { ImGui.TreePop(); }
+                    }
+                }
+                else
+                {
+                    section.Draw();
+                }
+            }
+            finally
+            {
+                ImGui.PopID();
+            }
+        }
     }
 }

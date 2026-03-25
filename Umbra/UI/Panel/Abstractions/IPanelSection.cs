@@ -24,6 +24,31 @@ public interface IPanelSection : IDisposable
     int Order => int.MaxValue;
 
     /// <summary>
+    /// Gets the optional label for the tree node that wraps this section's content within the
+    /// owning <see cref="PluginPanel"/>, or <see langword="null"/> to render the section flat
+    /// with no tree node.
+    /// </summary>
+    /// <remarks>
+    /// When non-<see langword="null"/>, <see cref="PluginPanel.Draw"/> wraps this section's
+    /// <see cref="Draw"/> call inside a collapsible <c>ImGui.TreeNode</c> with this label.
+    /// Custom <see cref="IPanelSection"/> implementations can override this property to opt in.
+    /// <see cref="ConfigSection{TConfig}"/> derives this value from
+    /// <see cref="Config.Attributes.ConfigRootNodeAttribute"/> on the config type, or from an
+    /// explicit constructor argument. <see cref="LiveSection{T}"/> accepts it as a constructor
+    /// parameter.
+    /// </remarks>
+    string? TreeNodeLabel => null;
+
+    /// <summary>
+    /// Gets whether the tree node wrapping this section starts in its open (expanded) state.
+    /// </summary>
+    /// <remarks>
+    /// Ignored when <see cref="TreeNodeLabel"/> is <see langword="null"/>.
+    /// When <see langword="false"/> (the default), the node starts collapsed.
+    /// </remarks>
+    bool TreeNodeDefaultOpen => false;
+
+    /// <summary>
     /// Renders the section. Must be called from within an active ImGui window or child window.
     /// </summary>
     /// <remarks>

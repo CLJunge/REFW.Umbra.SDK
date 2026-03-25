@@ -57,7 +57,14 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// string, preventing duplicate-ID warnings when multiple plugins render settings panels
     /// in the same ImGui window. Must be non-null and non-whitespace.
     /// </param>
-    public ConfigDrawer(TConfig config, string idScope)
+    /// <param name="suppressRootNode">
+    /// When <see langword="true"/>, the <see cref="Attributes.ConfigRootNodeAttribute"/>-driven
+    /// root <c>ImGui.TreeNode</c> is not rendered even when the attribute is present on
+    /// <typeparamref name="TConfig"/>. Defaults to <see langword="false"/>.
+    /// Pass <see langword="true"/> when the owning <see cref="Umbra.UI.Panel.ConfigSection{TConfig}"/>
+    /// is responsible for the tree node so that the wrapping is not duplicated.
+    /// </param>
+    public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)
     {
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null or whitespace when supplied.", nameof(idScope));
@@ -69,7 +76,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
         _disposables = builder.Disposables;
 
         var rootAttr = typeof(TConfig).GetCustomAttribute<ConfigRootNodeAttribute>();
-        if (rootAttr is not null)
+        if (rootAttr is not null && !suppressRootNode)
         {
             var label = rootAttr.Label ?? typeof(TConfig).Name.ToDisplayName();
             _nodes = [new RootTreeNode(label, rootAttr.DefaultOpen, builder.Nodes)];

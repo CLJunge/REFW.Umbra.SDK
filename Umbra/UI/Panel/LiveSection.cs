@@ -24,6 +24,10 @@ namespace Umbra.UI.Panel;
 /// When no external writer needs access to the bound instance, the parameterless constructor
 /// can be used to let the section create and own the state object internally.
 /// </para>
+/// <para>
+/// When <c>treeNodeLabel</c> is supplied, the owning <see cref="PluginPanel"/>
+/// wraps this section's output inside a collapsible <c>ImGui.TreeNode</c> with that label.
+/// </para>
 /// </remarks>
 /// <typeparam name="T">
 /// The live state type. Must be a reference type with a public parameterless constructor
@@ -32,6 +36,8 @@ namespace Umbra.UI.Panel;
 public sealed class LiveSection<T> : IPanelSection where T : class, new()
 {
     private readonly string? _idScope;
+    private readonly string? _treeNodeLabel;
+    private readonly bool _treeNodeDefaultOpen;
     private readonly Action _drawAction;
     private readonly IDisposable _drawerDisposable;
     private readonly int _order;
@@ -51,19 +57,38 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// after. The owning <see cref="PluginPanel"/> already pushes a top-level scope, so
     /// this is only needed when two live sections of the same type exist in the same panel.
     /// </param>
+    /// <param name="treeNodeLabel">
+    /// Optional label for a collapsible <c>ImGui.TreeNode</c> that wraps this section's
+    /// output within the owning <see cref="PluginPanel"/>. Pass <see langword="null"/>
+    /// (the default) to render the section flat with no tree node.
+    /// </param>
+    /// <param name="treeNodeDefaultOpen">
+    /// Whether the section tree node starts expanded. Ignored when
+    /// <paramref name="treeNodeLabel"/> is <see langword="null"/>.
+    /// Defaults to <see langword="false"/> (collapsed).
+    /// </param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <typeparamref name="T"/> is not decorated with
     /// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>.
     /// </exception>
-    public LiveSection(T context, string? idScope = null)
+    public LiveSection(T context, string? idScope = null,
+        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
     {
         _idScope = idScope;
+        _treeNodeLabel = treeNodeLabel;
+        _treeNodeDefaultOpen = treeNodeDefaultOpen;
         _order = typeof(T).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
         _drawAction = LiveSectionDrawerResolver.Resolve(typeof(T), context, out _drawerDisposable);
     }
 
     /// <inheritdoc/>
     public int Order => _order;
+
+    /// <inheritdoc/>
+    public string? TreeNodeLabel => _treeNodeLabel;
+
+    /// <inheritdoc/>
+    public bool TreeNodeDefaultOpen => _treeNodeDefaultOpen;
 
     /// <summary>
     /// Initialises a new live section, constructing the bound state instance internally.
@@ -73,25 +98,34 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// <param name="idScope">
     /// Optional ImGui ID sub-scope. See the primary constructor for details.
     /// </param>
+    /// <param name="treeNodeLabel">
+    /// Optional tree node label. See the primary constructor for details.
+    /// </param>
+    /// <param name="treeNodeDefaultOpen">
+    /// Whether the tree node starts expanded. See the primary constructor for details.
+    /// </param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <typeparamref name="T"/> is not decorated with
     /// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>.
     /// </exception>
-    public LiveSection(string? idScope = null) : this(new T(), idScope) { }
+    public LiveSection(string? idScope = null,
+        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
+        : this(new T(), idScope, treeNodeLabel, treeNodeDefaultOpen) { }
 
     /// <inheritdoc/>
     public void Draw()
     {
         if (_disposed) return;
 
-        if (_idScope is not null) ImGui.PushID(_idScope);
+        var hasIdScope = _idScope is not null;
+        if (hasIdScope) ImGui.PushID(_idScope);
         try
         {
             _drawAction();
         }
         finally
         {
-            if (_idScope is not null) ImGui.PopID();
+            if (hasIdScope) ImGui.PopID();
         }
     }
 

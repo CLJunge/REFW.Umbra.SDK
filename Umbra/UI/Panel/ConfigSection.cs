@@ -1,3 +1,4 @@
+using Umbra.Config.Attributes;
 using Umbra.Config.UI;
 
 namespace Umbra.UI.Panel;
@@ -8,8 +9,13 @@ namespace Umbra.UI.Panel;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Pass the config instance returned by <see cref="Config.SettingsStore{TConfig}.Load()"/>
-/// so that parameter metadata is already populated at construction time.
+/// When the config type carries <see cref="ConfigRootNodeAttribute"/>, the section
+/// automatically exposes <see cref="IPanelSection.TreeNodeLabel"/> and
+/// <see cref="IPanelSection.TreeNodeDefaultOpen"/> so that the owning
+/// <see cref="PluginPanel"/> renders the tree node. An explicit <c>treeNodeLabel</c>
+/// constructor argument overrides the attribute value. Pass
+/// <c>suppressTreeNode = true</c> to opt out entirely even when the
+/// attribute is present.
 /// </para>
 /// <para>
 /// The <c>idScope</c> defaults to the config type name when not supplied.
@@ -25,6 +31,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 {
     private readonly ConfigDrawer<TConfig> _drawer;
     private readonly int _order;
+    private readonly string? _treeNodeLabel;
+    private readonly bool _treeNodeDefaultOpen;
     private bool _disposed;
 
     /// <summary>
@@ -38,14 +46,58 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// ImGui widget ID sub-scope for this section. Defaults to
     /// <c>typeof(<typeparamref name="TConfig"/>).Name</c> when not supplied.
     /// </param>
-    public ConfigSection(TConfig config, string? idScope = null)
+    /// <param name="treeNodeLabel">
+    /// Explicit tree node label that overrides any <see cref="ConfigRootNodeAttribute"/>
+    /// on the config type. When <see langword="null"/> (the default), the label is read from
+    /// the attribute, or no tree node is used when the attribute is absent.
+    /// Ignored when <paramref name="suppressTreeNode"/> is <see langword="true"/>.
+    /// </param>
+    /// <param name="treeNodeDefaultOpen">
+    /// Whether the section tree node starts expanded. Ignored when
+    /// <paramref name="treeNodeLabel"/> resolves to <see langword="null"/> or
+    /// <paramref name="suppressTreeNode"/> is <see langword="true"/>.
+    /// </param>
+    /// <param name="suppressTreeNode">
+    /// When <see langword="true"/>, no tree node is rendered for this section even when
+    /// <see cref="ConfigRootNodeAttribute"/> is present on <typeparamref name="TConfig"/>.
+    /// </param>
+    public ConfigSection(TConfig config, string? idScope = null,
+        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false,
+        bool suppressTreeNode = false)
     {
         _order = typeof(TConfig).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
-        _drawer = new ConfigDrawer<TConfig>(config, idScope ?? typeof(TConfig).Name);
+
+        if (!suppressTreeNode)
+        {
+            if (treeNodeLabel is not null)
+            {
+                _treeNodeLabel      = treeNodeLabel;
+                _treeNodeDefaultOpen = treeNodeDefaultOpen;
+            }
+            else
+            {
+                var attr = typeof(TConfig).GetDrawerAttribute<ConfigRootNodeAttribute>();
+                if (attr is not null)
+                {
+                    _treeNodeLabel      = attr.Label ?? typeof(TConfig).Name.ToDisplayName();
+                    _treeNodeDefaultOpen = attr.DefaultOpen;
+                }
+            }
+        }
+
+        // Always suppress the drawer's own root tree node: PluginPanel renders it via
+        // IPanelSection.TreeNodeLabel so the wrapping is not duplicated.
+        _drawer = new ConfigDrawer<TConfig>(config, idScope ?? typeof(TConfig).Name, suppressRootNode: true);
     }
 
     /// <inheritdoc/>
     public int Order => _order;
+
+    /// <inheritdoc/>
+    public string? TreeNodeLabel => _treeNodeLabel;
+
+    /// <inheritdoc/>
+    public bool TreeNodeDefaultOpen => _treeNodeDefaultOpen;
 
     /// <inheritdoc/>
     public void Draw()

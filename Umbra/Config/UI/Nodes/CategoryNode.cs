@@ -56,7 +56,8 @@ internal sealed class CategoryNode(
     /// </remarks>
     public void Draw()
     {
-        if (indentAttr != null) ImGui.Indent(indentAttr.Amount);
+        var hasIndent = indentAttr != null;
+        if (hasIndent) ImGui.Indent(indentAttr!.Amount);
         try
         {
             if (collapseAttr is not null) DrawAsTree();
@@ -64,7 +65,7 @@ internal sealed class CategoryNode(
         }
         finally
         {
-            if (indentAttr != null) ImGui.Unindent(indentAttr.Amount);
+            if (hasIndent) ImGui.Unindent(indentAttr!.Amount);
         }
     }
 
