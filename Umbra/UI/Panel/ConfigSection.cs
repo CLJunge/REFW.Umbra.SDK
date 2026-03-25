@@ -41,7 +41,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// </summary>
     /// <param name="config">
     /// A fully initialised configuration instance, ideally returned by
-    /// <see cref="Config.SettingsStore{TConfig}.Load()"/>.
+    /// <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/>.
     /// </param>
     /// <param name="idScope">
     /// Stable ImGui widget ID scope for this section, used as the
