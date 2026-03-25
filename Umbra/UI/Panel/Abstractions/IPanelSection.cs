@@ -49,24 +49,25 @@ public interface IPanelSection : IDisposable
     bool TreeNodeDefaultOpen => false;
 
     /// <summary>
-    /// Gets the stable string identifier used by the owning <see cref="PluginPanel"/> as
-    /// an <c>ImGui.PushID</c> scope before rendering this section's tree node.
+    /// Gets the stable string identifier used by the owning <see cref="PluginPanel"/> to
+    /// disambiguate this section's tree node via ImGui's <c>##</c> suffix convention.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This value is only consumed by <see cref="PluginPanel.Draw"/> when
-    /// <see cref="TreeNodeLabel"/> is non-<see langword="null"/>. It is pushed as an invisible
-    /// ImGui ID scope immediately before <c>ImGui.TreeNodeEx</c> so that the tree node's
-    /// effective ID becomes <c>hash(panelScope + SectionId + TreeNodeLabel)</c> rather than
-    /// just <c>hash(panelScope + TreeNodeLabel)</c>, preventing two sections that share the
-    /// same label from colliding.
+    /// When <see cref="TreeNodeLabel"/> is non-<see langword="null"/>, <see cref="PluginPanel"/>
+    /// renders the tree node as <c>ImGui.TreeNodeEx($"{TreeNodeLabel}##{SectionId}", flags)</c>.
+    /// The <c>##</c> suffix is invisible in the UI but changes the ImGui hash, so two sections
+    /// with identical display labels still get distinct persisted open/closed states without
+    /// an additional <c>ImGui.PushID</c> scope level being pushed by the panel around the node.
+    /// Sections own their full internal widget-ID scoping via their own <c>ImGui.PushID</c> calls.
     /// </para>
     /// <para>
     /// The value must be stable for the lifetime of the panel — changing it between frames
     /// resets ImGui's persisted open/closed state for the tree node. The default implementation
     /// returns the concrete class name; override when two sections of the same concrete type
     /// are added to the same panel.
-    /// <see cref="ConfigSection{TConfig}"/> returns the config type name;
+    /// <see cref="ConfigSection{TConfig}"/> returns the config type name (or the explicit
+    /// <c>idScope</c> when one was provided).
     /// <see cref="LiveSection{T}"/> returns the state type name (or the explicit
     /// <c>idScope</c> when one was provided).
     /// </para>

@@ -214,15 +214,22 @@ public sealed class PluginPanel : IDisposable
     /// <see cref="IPanelSection.TreeNodeLabel"/>.
     /// </summary>
     /// <remarks>
-    /// Sections that declare a tree node have <c>ImGui.PushID(<see cref="IPanelSection.SectionId"/>)</c>
-    /// pushed before <c>ImGui.TreeNodeEx</c> so the tree node's effective ID is
-    /// <c>hash(panelScope + SectionId + TreeNodeLabel)</c> rather than
-    /// <c>hash(panelScope + TreeNodeLabel)</c>, preventing label-based ID collisions between
-    /// sections that happen to share the same label string. The scope is always popped in a
-    /// <c>finally</c> block so ImGui state remains balanced even when a section throws.
-    /// Sections without a tree node have no external scope pushed by the panel; they own
-    /// their full widget-ID scope internally via <c>ConfigDrawer</c> or
-    /// <see cref="LiveSection{T}"/>'s own <c>ImGui.PushID</c> calls.
+    /// <para>
+    /// For sections that declare a tree node, <see cref="IPanelSection.SectionId"/> is
+    /// embedded as a <c>##</c> disambiguation suffix in the tree node label — for example
+    /// <c>"General Settings##PluginConfig"</c>. This gives the tree node a unique ImGui
+    /// hash without pushing an additional <c>PushID</c> scope level before it, avoiding a
+    /// redundant double-push with the <c>PushID</c> the section itself issues internally.
+    /// The resulting widget ID chains for both paths are structurally equivalent:
+    /// <list type="bullet">
+    /// <item><description>Flat: <c>panelScope | SectionId | widget</c></description></item>
+    /// <item><description>Tree node: <c>panelScope | "label##SectionId"(treenode) | SectionId | widget</c></description></item>
+    /// </list>
+    /// </para>
+    /// <para>
+    /// The tree pop is always guarded with <c>try/finally</c> so ImGui state remains balanced
+    /// even if a section throws while drawing.
+    /// </para>
     /// </remarks>
     private void DrawSections()
     {
@@ -231,22 +238,15 @@ public sealed class PluginPanel : IDisposable
             var label = section.TreeNodeLabel;
             if (label is not null)
             {
-                // Push a stable named scope so the tree node's ID is:
-                //   hash(panelScope + SectionId + label)
-                // This prevents two sections with the same label from sharing ImGui state.
-                ImGui.PushID(section.SectionId);
-                try
+                // Embed SectionId as a ## suffix so two sections with the same display label
+                // get distinct ImGui persisted states without an extra PushID scope level.
+                // The section's own Draw() pushes SectionId internally, correctly scoping
+                // all widgets inside it — no external push here avoids a double-push.
+                var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+                if (ImGui.TreeNodeEx($"{label}##{section.SectionId}", flags))
                 {
-                    var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
-                    if (ImGui.TreeNodeEx(label, flags))
-                    {
-                        try { section.Draw(); }
-                        finally { ImGui.TreePop(); }
-                    }
-                }
-                finally
-                {
-                    ImGui.PopID();
+                    try { section.Draw(); }
+                    finally { ImGui.TreePop(); }
                 }
             }
             else

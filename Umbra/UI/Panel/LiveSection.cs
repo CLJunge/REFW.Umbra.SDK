@@ -87,10 +87,10 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// <inheritdoc/>
     /// <remarks>
     /// Returns the explicit <c>idScope</c> when one was provided at construction, or
-    /// <c>typeof(<typeparamref name="T"/>).Name</c> as the stable fallback. This is
-    /// consumed by <see cref="PluginPanel"/> as the <c>ImGui.PushID</c> scope before the
-    /// section's tree node, and mirrors the value the section itself pushes inside
-    /// <see cref="Draw"/> when <c>idScope</c> is set.
+    /// <c>typeof(<typeparamref name="T"/>).Name</c> as the stable fallback. When
+    /// <see cref="IPanelSection.TreeNodeLabel"/> is set, the owning <see cref="PluginPanel"/>
+    /// embeds this value as a <c>##</c> suffix on the tree node label to keep its ImGui
+    /// identity distinct from other sections with the same display label.
     /// </remarks>
     public string SectionId => _idScope ?? typeof(T).Name;
 
