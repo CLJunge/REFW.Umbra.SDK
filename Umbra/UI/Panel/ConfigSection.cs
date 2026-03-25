@@ -59,8 +59,10 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// Ignored when <paramref name="suppressTreeNode"/> is <see langword="true"/>.
     /// </param>
     /// <param name="treeNodeDefaultOpen">
-    /// Whether the section tree node starts expanded. Ignored when
-    /// <paramref name="treeNodeLabel"/> resolves to <see langword="null"/> or
+    /// Whether the section tree node starts expanded. Only applies when an explicit
+    /// <paramref name="treeNodeLabel"/> is provided. When the tree node label is derived from
+    /// <see cref="ConfigRootNodeAttribute"/>, the attribute's own <c>DefaultOpen</c> value
+    /// controls the initial state and this parameter is ignored. Also ignored when
     /// <paramref name="suppressTreeNode"/> is <see langword="true"/>.
     /// </param>
     /// <param name="suppressTreeNode">
