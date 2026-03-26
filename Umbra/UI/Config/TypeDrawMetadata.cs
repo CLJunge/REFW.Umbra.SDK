@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
 
 namespace Umbra.UI.Config;
@@ -20,7 +21,7 @@ internal sealed class TypeDrawMetadata
     private static readonly ConcurrentDictionary<Type, TypeDrawMetadata> s_cache = new();
 
     /// <summary>
-    /// Category name from <c>CategoryAttribute</c>, or <see langword="null"/> when absent.
+    /// Category name from <see cref="CategoryAttribute"/>, or <see langword="null"/> when absent.
     /// Used as the fallback category for all leaf parameters that declare no category of their own.
     /// </summary>
     internal string? Category { get; }
@@ -33,14 +34,14 @@ internal sealed class TypeDrawMetadata
     internal IndentAttribute? IndentAttr { get; }
 
     /// <summary>
-    /// <c>CollapseAsTreeAttribute</c>, or <see langword="null"/> when absent.
+    /// <see cref="CollapseAsTreeAttribute"/>, or <see langword="null"/> when absent.
     /// Passed directly to <c>EmitCategoryHeader</c> to control whether the category block renders
-    /// as a collapsible <c>ImGui.TreeNode</c> or a flat <c>ImGui.SeparatorText</c>.
+    /// as a collapsible <see cref="ImGui.TreeNode(string)"/> or a flat <see cref="ImGui.SeparatorText(string)"/>.
     /// </summary>
     internal CollapseAsTreeAttribute? CollapseAttr { get; }
 
     /// <summary>
-    /// <c>LabelMarginAttribute</c>, or <see langword="null"/> when absent.
+    /// <see cref="LabelMarginAttribute"/>, or <see langword="null"/> when absent.
     /// When present, its <see cref="LabelMarginAttribute.Pixels"/> value overrides the
     /// default label-column width for all parameters in this type.
     /// </summary>
@@ -54,8 +55,8 @@ internal sealed class TypeDrawMetadata
     internal INestedGroupDrawerAttribute? NestedGroupDrawerAttr { get; }
 
     /// <summary>
-    /// Whether the type carries <c>AutoRegisterSettingsAttribute</c>.
-    /// Used to detect direct (non-<c>Parameter&lt;T&gt;</c>) nested settings-group properties
+    /// Whether the type carries <see cref="AutoRegisterSettingsAttribute"/>.
+    /// Used to detect direct (non-<see cref="Umbra.Config.Parameter{T}"/>) nested settings-group properties
     /// during the <c>Collect</c> property loop.
     /// </summary>
     internal bool IsAutoRegisterSettings { get; }

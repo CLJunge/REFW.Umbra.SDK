@@ -15,7 +15,7 @@ namespace Umbra.UI.Config;
 /// Each distinct category name maps to exactly one <see cref="CategoryNode"/>; if the same name
 /// is encountered again after nested-group recursion causes a category break, the existing node
 /// is reused instead of creating a duplicate. Tree-node categories manage their
-/// <c>ImGui.TreeNode</c> scope internally.
+/// <see cref="ImGui.TreeNode(string)"/> scope internally.
 /// </summary>
 internal sealed class ConfigDrawerBuilder
 {
@@ -47,7 +47,7 @@ internal sealed class ConfigDrawerBuilder
     /// nested group. When non-<see langword="null"/>, it is forwarded to
     /// <see cref="EmitCategoryHeader"/> and stored on the resulting <see cref="CategoryNode"/>,
     /// which wraps the entire category block — section header and all child controls — inside
-    /// a matching <c>ImGui.Indent</c>/<c>ImGui.Unindent</c> scope.
+    /// a matching <see cref="ImGui.Indent(float)"/>/<see cref="ImGui.Unindent(float)"/> scope.
     /// This is distinct from the class-level <see cref="IndentAttribute"/> on
     /// <paramref name="type"/>, which only affects individual parameter controls as a fallback.
     /// </param>
@@ -471,14 +471,14 @@ internal sealed class ConfigDrawerBuilder
     /// </summary>
     /// <param name="category">The category name to emit, or <see langword="null"/> to skip.</param>
     /// <param name="collapseAttr">
-    /// When non-<see langword="null"/>, the emitted node renders as a collapsible <c>ImGui.TreeNode</c>
-    /// scope; otherwise it renders as a flat <c>ImGui.SeparatorText</c> header.
+    /// When non-<see langword="null"/>, the emitted node renders as a collapsible <see cref="ImGui.TreeNode(string)"/>
+    /// scope; otherwise it renders as a flat <see cref="ImGui.SeparatorText(string)"/> header.
     /// </param>
     /// <param name="indentAttr">
     /// The property-level <see cref="IndentAttribute"/> from the parent's property declaration,
     /// or <see langword="null"/> when no indent was requested. When non-<see langword="null"/>,
     /// the emitted <see cref="CategoryNode"/> wraps its entire output — section header and all
-    /// child controls — inside a matching <c>ImGui.Indent</c>/<c>ImGui.Unindent</c> scope.
+    /// child controls — inside a matching <see cref="ImGui.Indent(float)"/>/<see cref="ImGui.Unindent(float)"/> scope.
     /// </param>
     private void EmitCategoryHeader(string? category, CollapseAsTreeAttribute? collapseAttr, IndentAttribute? indentAttr)
     {

@@ -15,11 +15,11 @@ namespace Umbra.UI.Config.Nodes;
 /// all explicitly ordered ones while preserving original declaration order via stable sort.
 /// </param>
 /// <param name="spacingBefore">
-/// Number of <c>ImGui.Spacing()</c> calls emitted before the draw action when the parameter is visible.
+/// Number of <see cref="ImGui.Spacing()"/> calls emitted before the draw action when the parameter is visible.
 /// Absorbed from <see cref="Umbra.Config.Attributes.SpacingBeforeAttribute"/> during the build pass. Defaults to <c>0</c>.
 /// </param>
 /// <param name="spacingAfter">
-/// Number of <c>ImGui.Spacing()</c> calls emitted after the draw action when the parameter is visible.
+/// Number of <see cref="ImGui.Spacing()"/> calls emitted after the draw action when the parameter is visible.
 /// Absorbed from <see cref="Umbra.Config.Attributes.SpacingAfterAttribute"/> during the build pass. Defaults to <c>0</c>.
 /// </param>
 internal sealed class ParameterNode(

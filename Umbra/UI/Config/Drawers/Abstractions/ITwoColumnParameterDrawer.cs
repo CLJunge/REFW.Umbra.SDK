@@ -1,3 +1,4 @@
+using Hexa.NET.ImGui;
 using Umbra.Config;
 
 namespace Umbra.UI.Config.Drawers;
@@ -5,7 +6,7 @@ namespace Umbra.UI.Config.Drawers;
 /// <summary>
 /// Defines a custom parameter widget renderer that participates in the two-column layout.
 /// The factory handles label rendering, optional <c>(?)</c> help-marker placement, column
-/// alignment, and <c>SetNextItemWidth</c>; the drawer only needs to render the editing widget.
+/// alignment, and <see cref="ImGui.SetNextItemWidth(float)"/>; the drawer only needs to render the editing widget.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,7 +17,7 @@ namespace Umbra.UI.Config.Drawers;
 /// instead.
 /// </para>
 /// <para>
-/// When <see cref="Draw"/> is called, <c>ImGui.SetNextItemWidth</c> has already been applied
+/// When <see cref="Draw"/> is called, <see cref="ImGui.SetNextItemWidth(float)"/> has already been applied
 /// (honouring any <c>[ControlWidth]</c> on the parameter, or <c>-1f</c> fill-to-right-edge by
 /// default), and the cursor is positioned at the shared column x for the owning scope.
 /// The drawer should call its ImGui widget immediately without any additional layout setup.
@@ -33,11 +34,11 @@ public interface ITwoColumnParameterDrawer : IDisposable
     /// <summary>
     /// Renders the editing widget for the parameter. Called each frame after the label
     /// and optional help marker have been drawn and the cursor positioned at the shared
-    /// column x. <c>ImGui.SetNextItemWidth</c> is already set; call the ImGui widget directly.
+    /// column x. <see cref="ImGui.SetNextItemWidth(float)"/> is already set; call the ImGui widget directly.
     /// </summary>
     /// <remarks>
     /// All widget IDs are scoped by the owning <see cref="ConfigDrawer{TConfig}"/> via
-    /// <c>ImGui.PushID</c> / <c>ImGui.PopID</c>. Use <c>$"##{parameter.Key}"</c>
+    /// <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>. Use <c>$"##{parameter.Key}"</c>
     /// as the ImGui widget ID; cross-plugin uniqueness is guaranteed without any extra
     /// effort here.
     /// </remarks>

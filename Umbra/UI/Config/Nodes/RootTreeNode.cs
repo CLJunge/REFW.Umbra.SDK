@@ -3,7 +3,7 @@ using Hexa.NET.ImGui;
 namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
-/// Draw node that wraps all child nodes inside a single collapsible <c>ImGui.TreeNode</c>.
+/// Draw node that wraps all child nodes inside a single collapsible <see cref="ImGui.TreeNode(string)"/>.
 /// Emitted by <see cref="ConfigDrawer{TConfig}"/> when <see cref="Umbra.Config.Attributes.ConfigRootNodeAttribute"/>
 /// is present on the root config class; the entire settings panel lives inside this one node.
 /// </summary>

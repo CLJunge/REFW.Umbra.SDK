@@ -1,3 +1,4 @@
+using Hexa.NET.ImGui;
 using Umbra.UI.Config;
 using Umbra.UI.LiveState;
 
@@ -34,7 +35,7 @@ public interface IPanelSection : IDisposable
     /// <remarks>
     /// <para>
     /// When non-<see langword="null"/>, <see cref="PluginPanel.Draw"/> wraps this section's
-    /// <see cref="Draw"/> call inside a collapsible <c>ImGui.TreeNode</c> with this label.
+    /// <see cref="Draw"/> call inside a collapsible <see cref="ImGui.TreeNode(string)"/> with this label.
     /// Custom <see cref="IPanelSection"/> implementations can override this property to opt in.
     /// <see cref="ConfigSection{TConfig}"/> derives this value from
     /// <see cref="Umbra.Config.Attributes.ConfigRootNodeAttribute"/> on the config type, or from
@@ -53,15 +54,6 @@ public interface IPanelSection : IDisposable
     string? TreeNodeLabel => null;
 
     /// <summary>
-    /// Gets whether the tree node wrapping this section starts in its open (expanded) state.
-    /// </summary>
-    /// <remarks>
-    /// Ignored when <see cref="TreeNodeLabel"/> is <see langword="null"/>.
-    /// When <see langword="false"/> (the default), the node starts collapsed.
-    /// </remarks>
-    bool TreeNodeDefaultOpen => false;
-
-    /// <summary>
     /// Gets the stable string identifier used by the owning <see cref="PluginPanel"/> to
     /// disambiguate this section's tree node via ImGui's <c>##</c> suffix convention.
     /// </summary>
@@ -71,8 +63,8 @@ public interface IPanelSection : IDisposable
     /// renders the tree node as <c>ImGui.TreeNodeEx($"{TreeNodeLabel}##{SectionId}", flags)</c>.
     /// The <c>##</c> suffix is invisible in the UI but changes the ImGui hash, so two sections
     /// with identical display labels still get distinct persisted open/closed states without
-    /// an additional <c>ImGui.PushID</c> scope level being pushed by the panel around the node.
-    /// Sections own their full internal widget-ID scoping via their own <c>ImGui.PushID</c> calls.
+    /// an additional <see cref="ImGui.PushID(string)"/> scope level being pushed by the panel around the node.
+    /// Sections own their full internal widget-ID scoping via their own <see cref="ImGui.PushID(string)"/> calls.
     /// </para>
     /// <para>
     /// The value must be stable for the lifetime of the panel — changing it between frames
