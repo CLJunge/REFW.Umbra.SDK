@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 using Hexa.NET.ImGui;
@@ -34,6 +35,7 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal sealed class ConfigDrawerBuilder
 {
+    private static readonly ConcurrentDictionary<NestedGroupDrawerFactoryKey, NestedGroupDrawerFactory> s_nestedGroupDrawerFactories = new();
     private readonly List<CategoryNode> _allCategoryNodes = [];
 
     /// <summary>The ordered list of draw nodes assembled during the <see cref="Collect"/> pass.</summary>
@@ -69,6 +71,38 @@ internal sealed class ConfigDrawerBuilder
         internal LabelAlignmentGroup RootAlignmentGroup { get; } = rootAlignmentGroup ?? new();
         internal CategoryNode? CurrentCategoryNode { get; set; }
         internal string? LastCategory { get; set; }
+    }
+
+    /// <summary>
+    /// Cache key for one nested-group drawer binding shape.
+    /// </summary>
+    /// <param name="drawerType">The concrete nested-group drawer type being instantiated.</param>
+    /// <param name="groupType">The runtime nested settings-group type exposed by the property.</param>
+    private readonly record struct NestedGroupDrawerFactoryKey(Type DrawerType, Type GroupType);
+
+    /// <summary>
+    /// Cached result of resolving and compiling the draw invoker for one drawer/group type pair.
+    /// </summary>
+    /// <remarks>
+    /// The expensive interface scan and expression compilation happen once per unique pair and are
+    /// reused by all subsequent <see cref="ConfigDrawer{TConfig}"/> builds for the same shape.
+    /// Per-node work is then reduced to creating the drawer instance and binding the cached invoker`r`n    /// to that instance and nested group object.
+    /// </remarks>
+    private sealed class NestedGroupDrawerFactory(
+        bool isSupported,
+        Type? supportedGroupType,
+        Action<object, object>? invoker)
+    {
+        internal bool IsSupported { get; } = isSupported;
+        internal Type? SupportedGroupType { get; } = supportedGroupType;
+
+        internal Action Bind(object drawerInstance, object nested)
+        {
+            if (invoker is null)
+                throw new InvalidOperationException("Cannot bind an unsupported nested-group drawer factory.");
+
+            return () => invoker(drawerInstance, nested);
+        }
     }
 
     /// <summary>Walks <paramref name="obj"/> recursively and populates <see cref="Nodes"/>.</summary>
@@ -113,7 +147,7 @@ internal sealed class ConfigDrawerBuilder
         Nodes.Clear();
 
         var typeMeta = TypeDrawMetadata.For(type);
-        var rootGroupPath = GetSettingsPrefix(type) ?? string.Empty;
+        var rootGroupPath = typeMeta.SettingsPrefix ?? string.Empty;
         var scope = new ScopeState(
             rootGroupPath,
             categoryOverride ?? typeMeta.Category,
@@ -142,19 +176,19 @@ internal sealed class ConfigDrawerBuilder
         var classIndent = typeMeta.IndentAttr;
         var classLabelMargin = scope.LabelMarginAttr;
 
-        foreach (var prop in typeMeta.Properties)
+        foreach (var propMeta in typeMeta.Properties)
         {
-            var propType = prop.PropertyType;
+            var prop = propMeta.Property;
+            var propType = propMeta.PropertyType;
 
-            if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Parameter<>))
+            if (propMeta.IsParameter)
             {
                 if (prop.GetValue(obj) is not IParameter parameter)
                     continue;
 
                 var meta = parameter.Metadata;
                 var label = meta.ResolvedLabel;
-                var explicitCategory = prop.GetCustomAttribute<CategoryAttribute>()?.Name;
-                var category = explicitCategory ?? scope.DefaultCategory;
+                var category = propMeta.Category ?? scope.DefaultCategory;
                 var alignmentGroup = GetAlignmentGroup(scope, category);
                 if (classLabelMargin is not null)
                     alignmentGroup.Margin = classLabelMargin.Pixels;
@@ -197,23 +231,22 @@ internal sealed class ConfigDrawerBuilder
             if (!propTypeMeta.IsAutoRegisterSettings || prop.GetValue(obj) is not { } nested)
                 continue;
 
-            var nestedDrawerAttr = GetNestedGroupDrawerAttribute(prop, propTypeMeta);
-            var propertyCategory = prop.GetCustomAttribute<CategoryAttribute>()?.Name;
-            var nestedLocalCategory = propertyCategory ?? propTypeMeta.Category;
-            var nestedCollapseAttr = prop.GetCustomAttribute<CollapseAsTreeAttribute>()
+            var nestedDrawerAttr = propMeta.NestedGroupDrawerAttr ?? propTypeMeta.NestedGroupDrawerAttr;
+            var nestedLocalCategory = propMeta.Category ?? propTypeMeta.Category;
+            var nestedCollapseAttr = propMeta.CollapseAttr
                 ?? propTypeMeta.CollapseAttr;
-            var nestedLabelMargin = prop.GetCustomAttribute<LabelMarginAttribute>()
+            var nestedLabelMargin = propMeta.LabelMarginAttr
                 ?? propTypeMeta.LabelMarginAttr
                 ?? scope.LabelMarginAttr;
-            var propertyIndent = prop.GetCustomAttribute<IndentAttribute>();
-            var nestedGroupPath = ResolveNestedGroupScopePath(scope.GroupPath, prop, propType);
+            var propertyIndent = propMeta.IndentAttr;
+            var nestedGroupPath = ResolveNestedGroupScopePath(scope.GroupPath, propMeta, propTypeMeta);
 
             if (nestedDrawerAttr is not null)
             {
                 EmitNestedGroupDrawerNode(
                     scope,
                     nestedGroupPath,
-                    prop,
+                    propMeta,
                     propType,
                     nestedDrawerAttr,
                     nested,
@@ -244,9 +277,9 @@ internal sealed class ConfigDrawerBuilder
                 var childContainer = CreateScopeContainerNode(nestedLocalCategory, childScope);
                 var scopedChildNode = CreateIdScopedSubtree(nestedGroupPath, [childContainer]);
 
-                if (TryGetNestedGroupWrapperMetadata(prop, out var propHideIf, out var order, out var spacingBefore, out var spacingAfter))
+                if (propMeta.HasWrapperMetadata)
                 {
-                    AddWrappedScopeNode(scope, [scopedChildNode], obj, propHideIf, order, spacingBefore, spacingAfter, ambientCategory: null);
+                    AddWrappedScopeNode(scope, [scopedChildNode], obj, propMeta.HideIf, propMeta.Order, propMeta.SpacingBefore, propMeta.SpacingAfter, ambientCategory: null);
                 }
                 else
                 {
@@ -258,9 +291,9 @@ internal sealed class ConfigDrawerBuilder
 
             var scopedSubtreeNode = CreateIdScopedSubtree(nestedGroupPath, childScope.Nodes);
 
-            if (TryGetNestedGroupWrapperMetadata(prop, out var inheritedHideIf, out var inheritedOrder, out var inheritedSpacingBefore, out var inheritedSpacingAfter))
+            if (propMeta.HasWrapperMetadata)
             {
-                AddWrappedScopeNode(scope, [scopedSubtreeNode], obj, inheritedHideIf, inheritedOrder, inheritedSpacingBefore, inheritedSpacingAfter, ambientCategory);
+                AddWrappedScopeNode(scope, [scopedSubtreeNode], obj, propMeta.HideIf, propMeta.Order, propMeta.SpacingBefore, propMeta.SpacingAfter, ambientCategory);
             }
             else
             {
@@ -422,7 +455,7 @@ internal sealed class ConfigDrawerBuilder
     /// </summary>
     /// <param name="scope">The local scope that should receive the drawer node.</param>
     /// <param name="groupScopePath">The stable structural path used for the nested group's ImGui ID scope.</param>
-    /// <param name="prop">The property on the parent config that holds the nested group.</param>
+    /// <param name="propMeta">The cached property metadata for the nested-group property.</param>
     /// <param name="propType">The runtime type of the nested group.</param>
     /// <param name="nestedDrawerAttr">The resolved nested-group drawer attribute.</param>
     /// <param name="nested">The live nested group instance retrieved from <paramref name="prop"/>.</param>
@@ -444,7 +477,7 @@ internal sealed class ConfigDrawerBuilder
     private void EmitNestedGroupDrawerNode(
         ScopeState scope,
         string groupScopePath,
-        PropertyInfo prop,
+        TypeDrawMetadata.PropertyDrawMetadata propMeta,
         Type propType,
         INestedGroupDrawerAttribute nestedDrawerAttr,
         object nested,
@@ -470,22 +503,22 @@ internal sealed class ConfigDrawerBuilder
                     localScope,
                     localCategory,
                     new ParameterNode(
-                        VisibilityPredicateResolver.Build(GetHideIfAttribute(prop), owner),
+                        VisibilityPredicateResolver.Build(propMeta.HideIf, owner),
                         drawAction,
-                        order: prop.GetCustomAttribute<ParameterOrderAttribute>()?.Order ?? int.MaxValue,
-                        spacingBefore: prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0,
-                        spacingAfter: prop.GetCustomAttribute<SpacingAfterAttribute>()?.Count ?? 0));
+                        order: propMeta.Order,
+                        spacingBefore: propMeta.SpacingBefore,
+                        spacingAfter: propMeta.SpacingAfter));
 
                 AddNode(scope, null, CreateIdScopedSubtree(groupScopePath, localScope.Nodes));
                 return;
             }
 
             var drawerNode = new ParameterNode(
-                VisibilityPredicateResolver.Build(GetHideIfAttribute(prop), owner),
+                VisibilityPredicateResolver.Build(propMeta.HideIf, owner),
                 drawAction,
-                order: prop.GetCustomAttribute<ParameterOrderAttribute>()?.Order ?? int.MaxValue,
-                spacingBefore: prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0,
-                spacingAfter: prop.GetCustomAttribute<SpacingAfterAttribute>()?.Count ?? 0);
+                order: propMeta.Order,
+                spacingBefore: propMeta.SpacingBefore,
+                spacingAfter: propMeta.SpacingAfter);
 
             AddNode(
                 scope,
@@ -507,8 +540,7 @@ internal sealed class ConfigDrawerBuilder
     /// <param name="nested">The live nested group instance that will be passed into the drawer.</param>
     /// <param name="disposable">Receives the drawer instance when it implements <see cref="IDisposable"/>.</param>
     /// <returns>
-    /// A compiled draw delegate, or <see langword="null"/> when the drawer type does not support
-    /// <paramref name="propType"/>.
+    /// A draw delegate bound to a cached per-type invoker, or <see langword="null"/> when the`r`n    /// drawer type does not support <paramref name="propType"/>.
     /// </returns>
     private static Action? BuildNestedGroupDrawAction(
         INestedGroupDrawerAttribute nestedDrawerAttr,
@@ -517,11 +549,40 @@ internal sealed class ConfigDrawerBuilder
         out IDisposable? disposable)
     {
         disposable = null;
-        var drawerInstance = Activator.CreateInstance(nestedDrawerAttr.DrawerType)!;
+        var drawerType = nestedDrawerAttr.DrawerType;
+        var drawerInstance = Activator.CreateInstance(drawerType)!;
+        var factory = s_nestedGroupDrawerFactories.GetOrAdd(
+            new NestedGroupDrawerFactoryKey(drawerType, propType),
+            static key => CreateNestedGroupDrawerFactory(key.DrawerType, key.GroupType));
 
+        if (!factory.IsSupported)
+        {
+            Logger.Error(
+                $"ConfigDrawer: nested group drawer '{drawerType.Name}' does not support group type '{propType.FullName}'.");
+            return null;
+        }
+
+        if (drawerInstance is IDisposable trackedDisposable)
+            disposable = trackedDisposable;
+
+        return factory.Bind(drawerInstance, nested);
+    }
+
+    /// <summary>
+    /// Resolves and compiles the cached invoker used by nested-group drawers for a specific
+    /// drawer/group type pair.
+    /// </summary>
+    /// <param name="drawerType">The concrete drawer type to inspect.</param>
+    /// <param name="propType">The runtime nested-group type exposed by the property.</param>
+    /// <returns>
+    /// A cached factory describing whether the drawer supports <paramref name="propType"/> and,
+    /// when supported, the precompiled invoker used to bind concrete instances.
+    /// </returns>
+    private static NestedGroupDrawerFactory CreateNestedGroupDrawerFactory(Type drawerType, Type propType)
+    {
         Type? genericIface = null;
         Type? groupType = null;
-        foreach (var iface in nestedDrawerAttr.DrawerType.GetInterfaces())
+        foreach (var iface in drawerType.GetInterfaces())
         {
             if (!iface.IsGenericType)
                 continue;
@@ -539,21 +600,18 @@ internal sealed class ConfigDrawerBuilder
         }
 
         if (genericIface is null || groupType is null)
-        {
-            Logger.Error(
-                $"ConfigDrawer: nested group drawer '{nestedDrawerAttr.DrawerType.Name}' does not support group type '{propType.FullName}'.");
-            return null;
-        }
-
-        if (drawerInstance is IDisposable trackedDisposable)
-            disposable = trackedDisposable;
+            return new NestedGroupDrawerFactory(false, null, null);
 
         var drawMethod = genericIface.GetMethod("Draw")!;
+        var drawerParam = Expression.Parameter(typeof(object), "drawer");
+        var groupParam = Expression.Parameter(typeof(object), "group");
         var callExpr = Expression.Call(
-            Expression.Convert(Expression.Constant(drawerInstance), genericIface),
+            Expression.Convert(drawerParam, genericIface),
             drawMethod,
-            Expression.Convert(Expression.Constant(nested), groupType));
-        return Expression.Lambda<Action>(callExpr).Compile();
+            Expression.Convert(groupParam, groupType));
+        var invoker = Expression.Lambda<Action<object, object>>(callExpr, drawerParam, groupParam).Compile();
+
+        return new NestedGroupDrawerFactory(true, groupType, invoker);
     }
 
     /// <summary>
@@ -571,16 +629,19 @@ internal sealed class ConfigDrawerBuilder
     /// the camel-cased property name.
     /// </summary>
     /// <param name="parentPath">The dot-separated structural path of the parent group.</param>
-    /// <param name="prop">The nested-group property being inspected.</param>
-    /// <param name="propType">The compile-time nested-group type exposed by <paramref name="prop"/>.</param>
+    /// <param name="propMeta">The cached metadata for the nested-group property being inspected.</param>
+    /// <param name="propTypeMeta">The cached metadata for the nested-group type exposed by the property.</param>
     /// <returns>The fully combined dot-separated path used for the nested group's ImGui ID scope.</returns>
-    private static string ResolveNestedGroupScopePath(string parentPath, PropertyInfo prop, Type propType)
+    private static string ResolveNestedGroupScopePath(
+        string parentPath,
+        TypeDrawMetadata.PropertyDrawMetadata propMeta,
+        TypeDrawMetadata propTypeMeta)
     {
-        var segment = GetSettingsPrefix(prop)
-            ?? GetSettingsPrefix(propType)
-            ?? prop.GetCustomAttribute<SettingsParameterAttribute>()?.KeyOverride
-            ?? prop.Name.ToCamelCase()
-            ?? prop.Name;
+        var segment = propMeta.SettingsPrefix
+            ?? propTypeMeta.SettingsPrefix
+            ?? propMeta.SettingsParameterKeyOverride
+            ?? propMeta.Property.Name.ToCamelCase()
+            ?? propMeta.Property.Name;
 
         return CombinePath(parentPath, segment);
     }
@@ -603,69 +664,6 @@ internal sealed class ConfigDrawerBuilder
         return $"{left}.{right}";
     }
 
-    /// <summary>
-    /// Reads property-level metadata that wraps an entire plain nested settings group rather than
-    /// an individual leaf parameter.
-    /// </summary>
-    /// <param name="prop">The parent property that holds the nested settings group.</param>
-    /// <param name="hideIf">Receives the property's optional <see cref="HideIfAttribute{T}"/>.</param>
-    /// <param name="order">Receives the property's optional explicit sort order.</param>
-    /// <param name="spacingBefore">Receives the property's optional spacing inserted above the group.</param>
-    /// <param name="spacingAfter">Receives the property's optional spacing inserted below the group.</param>
-    /// <returns>
-    /// <see langword="true"/> when at least one wrapper-style property attribute is present and the
-    /// nested group should be emitted as a single wrapped section; otherwise <see langword="false"/>.
-    /// </returns>
-    private static bool TryGetNestedGroupWrapperMetadata(
-        PropertyInfo prop,
-        out IHideIfAttribute? hideIf,
-        out int order,
-        out int spacingBefore,
-        out int spacingAfter)
-    {
-        hideIf = GetHideIfAttribute(prop);
-        order = prop.GetCustomAttribute<ParameterOrderAttribute>()?.Order ?? int.MaxValue;
-        spacingBefore = prop.GetCustomAttribute<SpacingBeforeAttribute>()?.Count ?? 0;
-        spacingAfter = prop.GetCustomAttribute<SpacingAfterAttribute>()?.Count ?? 0;
-
-        return hideIf is not null
-            || order != int.MaxValue
-            || spacingBefore != 0
-            || spacingAfter != 0;
-    }
-
-    /// <summary>
-    /// Returns the first property-level hide-condition attribute declared on <paramref name="prop"/>,
-    /// or <see langword="null"/> when none is present.
-    /// </summary>
-    /// <param name="prop">The reflected property to inspect.</param>
-    private static IHideIfAttribute? GetHideIfAttribute(PropertyInfo prop)
-    {
-        foreach (var attribute in prop.GetCustomAttributes(false))
-        {
-            if (attribute is IHideIfAttribute hideIf)
-                return hideIf;
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Returns the nested-group drawer attribute declared on <paramref name="prop"/>, or the
-    /// nested type's cached fallback declaration when the property defines no drawer of its own.
-    /// </summary>
-    /// <param name="prop">The nested-group property being inspected.</param>
-    /// <param name="propTypeMeta">The cached type-level metadata for the nested group type.</param>
-    private static INestedGroupDrawerAttribute? GetNestedGroupDrawerAttribute(PropertyInfo prop, TypeDrawMetadata propTypeMeta)
-    {
-        foreach (var attribute in prop.GetCustomAttributes(false))
-        {
-            if (attribute is INestedGroupDrawerAttribute nestedDrawerAttr)
-                return nestedDrawerAttr;
-        }
-
-        return propTypeMeta.NestedGroupDrawerAttr;
-    }
 
     /// <summary>
     /// Applies a stable sort to parameter nodes within every category context, ordering them
