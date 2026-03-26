@@ -4,6 +4,7 @@ using REFrameworkNET.Callbacks;
 using Umbra.Config;
 using Umbra.Logging;
 using Umbra.SamplePlugin.Config;
+using Umbra.UI.Config;
 using Umbra.UI.Panel;
 
 namespace Umbra.SamplePlugin;
