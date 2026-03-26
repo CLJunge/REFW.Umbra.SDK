@@ -28,9 +28,9 @@ internal static class VisibilityPredicateResolver
     /// <summary>
     /// Cached accessor metadata for a resolved HideIf member.
     /// </summary>
-    /// <param name="IsValid">Whether the referenced member was found successfully.</param>
-    /// <param name="ValueType">The effective value type compared by the visibility predicate.</param>
-    /// <param name="GetValue">The cached accessor that reads the current member value from an owner instance.</param>
+    /// <param name="isValid">Whether the referenced member was found successfully.</param>
+    /// <param name="valueType">The effective value type compared by the visibility predicate.</param>
+    /// <param name="getValue">The cached accessor that reads the current member value from an owner instance.</param>
     private sealed class HideIfAccessorBinding(bool isValid, Type valueType, Func<object, object?> getValue)
     {
         internal bool IsValid { get; } = isValid;
