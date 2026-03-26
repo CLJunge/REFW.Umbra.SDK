@@ -14,9 +14,6 @@ namespace Umbra.UI.Config;
 internal static class VisibilityPredicateResolver
 {
     private static readonly ConcurrentDictionary<HideIfAccessorCacheKey, HideIfAccessorBinding> s_accessorCache = new();
-    private static readonly ConcurrentDictionary<Type, Func<object?, object?, bool>> s_typedEqualsCache = new();
-    private static readonly MethodInfo s_createTypedEqualsCoreMethod = typeof(VisibilityPredicateResolver)
-        .GetMethod(nameof(CreateTypedEqualsCore), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     /// <summary>
     /// Cache key for one owner-type/member-name HideIf accessor shape.
@@ -29,12 +26,10 @@ internal static class VisibilityPredicateResolver
     /// Cached accessor metadata for a resolved HideIf member.
     /// </summary>
     /// <param name="isValid">Whether the referenced member was found successfully.</param>
-    /// <param name="valueType">The effective value type compared by the visibility predicate.</param>
     /// <param name="getValue">The cached accessor that reads the current member value from an owner instance.</param>
-    private sealed class HideIfAccessorBinding(bool isValid, Type valueType, Func<object, object?> getValue)
+    private sealed class HideIfAccessorBinding(bool isValid, Func<object, object?> getValue)
     {
         internal bool IsValid { get; } = isValid;
-        internal Type ValueType { get; } = valueType;
         internal Func<object, object?> GetValue { get; } = getValue;
     }
 
@@ -54,22 +49,10 @@ internal static class VisibilityPredicateResolver
     /// this call entirely to avoid the function-call overhead for the common no-condition case.
     /// </para>
     /// <para>
-    /// When an explicit comparison value is present, a typed
-    /// <see cref="EqualityComparer{T}.Default"/> comparer delegate is compiled once per concrete
-    /// value type and cached in <see cref="s_typedEqualsCache"/> so that per-frame equality checks
-    /// use <see cref="IEquatable{T}"/> rather than virtual <see cref="object.Equals(object)"/>
-    /// dispatch without recompiling a new comparer for each individual hidden node.
-    /// When the member's declared type is <c>Nullable&lt;T&gt;</c> the comparer is keyed and
-    /// created for the underlying <c>T</c> rather than the nullable wrapper, because the CLR
-    /// always boxes a non-null <c>Nullable&lt;T&gt;</c> value as a plain boxed <c>T</c> —
-    /// casting a boxed <c>T</c> to <c>Nullable&lt;T&gt;</c> inside the compiled comparer would
-    /// throw <see cref="InvalidCastException"/>.
-    /// If <see cref="IParameter.GetValue"/> returns <see langword="null"/> at runtime (e.g. when
-    /// a <c>Parameter&lt;T&gt;</c> value has been cleared via <c>SetWithoutNotify</c>), the
-    /// compiled comparer is <em>not</em> invoked; the predicate instead treats
-    /// <see langword="null"/> as equal to <paramref name="hideIf"/>'s comparison value only when
-    /// that comparison value is itself <see langword="null"/>, preventing an
-    /// <see cref="InvalidCastException"/> from unboxing <see langword="null"/> to a value type.
+    /// When an explicit comparison value is present, equality is evaluated with
+    /// <see cref="object.Equals(object?, object?)"/> against the boxed runtime value returned by
+    /// the accessor. This keeps the comparison path simple and works for the primitive, string,
+    /// enum, and nullable values typically used by config-backed <c>[HideIf]</c> conditions.
     /// </para>
     /// </remarks>
     /// <param name="hideIf">
@@ -105,30 +88,7 @@ internal static class VisibilityPredicateResolver
         // No explicit value: treat member as bool — visible while NOT true.
         if (!hasValue) return () => getValue(owner) is not true;
 
-        if (compareValue is null)
-            return () => getValue(owner) is not null;
-
-        if (!CanUseTypedEquals(accessor.ValueType, compareValue))
-            return () => !Equals(getValue(owner), compareValue);
-
-        // Normalize Nullable<T> to T before looking up the comparer. The CLR always boxes a
-        // non-null Nullable<T> as a plain boxed T (not boxed Nullable<T>), so a comparer keyed
-        // on Nullable<T> would cast a boxed T to Nullable<T> and throw InvalidCastException.
-        // Using the underlying type ensures the cast and EqualityComparer<T> are correct for
-        // the actual boxed representation returned by IParameter.GetValue() and raw accessors.
-        var comparerType = Nullable.GetUnderlyingType(accessor.ValueType) ?? accessor.ValueType;
-        var typedEquals = s_typedEqualsCache.GetOrAdd(comparerType, CreateTypedEquals);
-
-        // Guard against null: getValue() may return null when Parameter<T>.Value has been
-        // cleared (e.g. via SetWithoutNotify). Unboxing null to a value type inside the
-        // compiled comparer would throw InvalidCastException, breaking the per-frame UI loop.
-        // Treat null as equal to compareValue only when compareValue is also null.
-        return () =>
-        {
-            var val = getValue(owner);
-            if (val is null) return compareValue is not null;
-            return !typedEquals(val, compareValue);
-        };
+        return () => !Equals(getValue(owner), compareValue);
     }
 
     /// <summary>
@@ -142,17 +102,14 @@ internal static class VisibilityPredicateResolver
         var targetProp = ownerType.GetProperty(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         var targetField = ownerType.GetField(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         if (targetProp is null && targetField is null)
-            return new HideIfAccessorBinding(false, typeof(object), static _ => null);
+            return new HideIfAccessorBinding(false, static _ => null);
 
         var rawType = (targetProp?.PropertyType ?? targetField!.FieldType)!;
         var getRaw = BuildRawAccessor(ownerType, targetProp, targetField);
         if (rawType.IsGenericType && rawType.GetGenericTypeDefinition() == typeof(Parameter<>))
-        {
-            var valueType = rawType.GetGenericArguments()[0];
-            return new HideIfAccessorBinding(true, valueType, owner => (getRaw(owner) as IParameter)?.GetValue());
-        }
+            return new HideIfAccessorBinding(true, owner => (getRaw(owner) as IParameter)?.GetValue());
 
-        return new HideIfAccessorBinding(true, rawType, getRaw);
+        return new HideIfAccessorBinding(true, getRaw);
     }
 
     /// <summary>
@@ -189,74 +146,4 @@ internal static class VisibilityPredicateResolver
         }
     }
 
-    /// <summary>
-    /// Determines whether <paramref name="compareValue"/> can use a cached typed comparer for
-    /// <paramref name="valueType"/>.
-    /// </summary>
-    /// <param name="valueType">The effective value type read by the HideIf accessor.</param>
-    /// <param name="compareValue">The boxed comparison value declared by the HideIf attribute.</param>
-    /// <returns>
-    /// <see langword="true"/> when <paramref name="compareValue"/> is compatible with
-    /// <paramref name="valueType"/> and a typed cached comparer can be used; otherwise
-    /// <see langword="false"/>.
-    /// </returns>
-    private static bool CanUseTypedEquals(Type valueType, object compareValue)
-    {
-        if (valueType.IsInstanceOfType(compareValue))
-            return true;
-
-        var underlyingNullableType = Nullable.GetUnderlyingType(valueType);
-        return underlyingNullableType is not null && underlyingNullableType.IsInstanceOfType(compareValue);
-    }
-
-    /// <summary>
-    /// Creates a cached typed comparer that compares two boxed runtime values using
-    /// <see cref="EqualityComparer{T}.Default"/> for the concrete <paramref name="valueType"/>.
-    /// </summary>
-    /// <remarks>
-    /// The cached delegate unboxes both incoming <c>object?</c> values to <c>T</c> and calls
-    /// <see cref="EqualityComparer{T}.Equals(T, T)"/>, which respects
-    /// <see cref="IEquatable{T}"/> implementations and avoids virtual
-    /// <see cref="object.Equals(object)"/> dispatch on each frame.
-    /// <para>
-    /// The delegate itself is created once per <paramref name="valueType"/> by closing the
-    /// generic <see cref="CreateTypedEqualsCore{T}"/> helper and caching the resulting delegate
-    /// in <see cref="s_typedEqualsCache"/>.
-    /// </para>
-    /// </remarks>
-    /// <param name="valueType">
-    /// The concrete <c>T</c> used to parameterise the comparer; derived from the member's
-    /// declared type or from the inner generic argument of <c>Parameter&lt;T&gt;</c>.
-    /// Must be the underlying non-nullable type when the member is a <c>Nullable&lt;T&gt;</c>:
-    /// callers in <see cref="Build"/> normalise away the nullable wrapper before calling
-    /// <see cref="s_typedEqualsCache.GetOrAdd"/> so that the cast inside
-    /// <see cref="CreateTypedEqualsCore{T}"/> matches the actual boxed representation.
-    /// </param>
-    /// <returns>
-    /// A cached comparer delegate that returns <see langword="true"/> when the two runtime values
-    /// are equal according to <see cref="EqualityComparer{T}.Default"/>.
-    /// </returns>
-    private static Func<object?, object?, bool> CreateTypedEquals(Type valueType)
-    {
-        try
-        {
-            return (Func<object?, object?, bool>)s_createTypedEqualsCoreMethod
-                .MakeGenericMethod(valueType)
-                .Invoke(null, null)!;
-        }
-        catch
-        {
-            return static (left, right) => Equals(left, right);
-        }
-    }
-
-    /// <summary>
-    /// Creates the closed generic comparer implementation for one concrete HideIf value type.
-    /// </summary>
-    /// <typeparam name="T">The concrete value type used by the HideIf member.</typeparam>
-    /// <returns>
-    /// A delegate that compares two boxed values using <see cref="EqualityComparer{T}.Default"/>.
-    /// </returns>
-    private static Func<object?, object?, bool> CreateTypedEqualsCore<T>()
-        => static (left, right) => EqualityComparer<T>.Default.Equals((T)left!, (T)right!);
 }
