@@ -1,15 +1,16 @@
 using Hexa.NET.ImGui;
+using Umbra.UI.Panel;
 
-namespace Umbra.UI.Panel;
+namespace Umbra.UI.LiveState;
 
 /// <summary>
 /// A <see cref="IPanelSection"/> that renders a live game state instance each frame via
-/// an <see cref="ILiveSectionDrawer{T}"/> declared on the state type.
+/// an <see cref="ILiveStateSectionDrawer{T}"/> declared on the state type.
 /// </summary>
 /// <remarks>
 /// <para>
 /// The state type <typeparamref name="T"/> must be decorated with
-/// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>. <see cref="LiveSectionDrawerResolver"/>
+/// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>. <see cref="LiveStateSectionDrawerResolver"/>
 /// discovers and instantiates the drawer once at construction time and compiles a
 /// zero-overhead draw delegate; no reflection occurs during rendering.
 /// </para>
@@ -31,9 +32,9 @@ namespace Umbra.UI.Panel;
 /// </remarks>
 /// <typeparam name="T">
 /// The live state type. Must be a reference type with a public parameterless constructor
-/// and be decorated with <see cref="LiveSectionDrawerAttribute{TDrawer}"/>.
+/// and be decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
 /// </typeparam>
-public sealed class LiveSection<T> : IPanelSection where T : class, new()
+public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
 {
     private readonly string? _idScope;
     private readonly string? _treeNodeLabel;
@@ -44,7 +45,7 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     private bool _disposed;
 
     /// <summary>
-    /// Initialises a new live section bound to the provided state instance.
+    /// Initialises a new live state section bound to the provided state instance.
     /// </summary>
     /// <param name="context">
     /// The live state instance bound to this section for its entire lifetime and read by the
@@ -59,7 +60,7 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// <c>typeof(<typeparamref name="T"/>).Name</c> when <c>FullName</c> is
     /// <see langword="null"/>) is used instead — a stable, namespace-qualified fallback that
     /// keeps sections of identically named types in different namespaces distinct. Supply an
-    /// explicit value only when two live sections of the same type exist in the same panel.
+    /// explicit value only when two live state sections of the same type exist in the same panel.
     /// Must not be empty or whitespace when supplied.
     /// </param>
     /// <param name="treeNodeLabel">
@@ -77,18 +78,18 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// </exception>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <typeparamref name="T"/> is not decorated with
-    /// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>.
+    /// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
     /// </exception>
-    public LiveSection(T context, string? idScope = null,
+    public LiveStateSection(T context, string? idScope = null,
         string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
     {
         if (idScope is not null && string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be empty or whitespace when supplied.", nameof(idScope));
-        _idScope = idScope;
-        _treeNodeLabel = treeNodeLabel;
+        _idScope             = idScope;
+        _treeNodeLabel       = treeNodeLabel;
         _treeNodeDefaultOpen = treeNodeDefaultOpen;
-        _order = typeof(T).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
-        _drawAction = LiveSectionDrawerResolver.Resolve(typeof(T), context, out _drawerDisposable);
+        _order               = typeof(T).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
+        _drawAction          = LiveStateSectionDrawerResolver.Resolve(typeof(T), context, out _drawerDisposable);
     }
 
     /// <inheritdoc/>
@@ -115,7 +116,7 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     public bool TreeNodeDefaultOpen => _treeNodeDefaultOpen;
 
     /// <summary>
-    /// Initialises a new live section, constructing the bound state instance internally.
+    /// Initialises a new live state section, constructing the bound state instance internally.
     /// Use this overload when the section owns the state and no external writer needs a
     /// reference to that instance — for example, when the drawer queries game state directly.
     /// </summary>
@@ -133,9 +134,9 @@ public sealed class LiveSection<T> : IPanelSection where T : class, new()
     /// </param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <typeparamref name="T"/> is not decorated with
-    /// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>.
+    /// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
     /// </exception>
-    public LiveSection(string? idScope = null,
+    public LiveStateSection(string? idScope = null,
         string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
         : this(new T(), idScope, treeNodeLabel, treeNodeDefaultOpen) { }
 

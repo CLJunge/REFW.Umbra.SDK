@@ -1,3 +1,6 @@
+using Umbra.UI.Config;
+using Umbra.UI.LiveState;
+
 namespace Umbra.UI.Panel;
 
 /// <summary>
@@ -6,9 +9,9 @@ namespace Umbra.UI.Panel;
 /// </summary>
 /// <remarks>
 /// Implement this interface directly only when neither <see cref="ConfigSection{TConfig}"/>
-/// nor <see cref="LiveSection{T}"/> suits the use case. For settings UI, use
+/// nor <see cref="LiveStateSection{T}"/> suits the use case. For settings UI, use
 /// <see cref="ConfigSection{TConfig}"/>. For live game state display, use
-/// <see cref="LiveSection{T}"/>.
+/// <see cref="LiveStateSection{T}"/>.
 /// </remarks>
 public interface IPanelSection : IDisposable
 {
@@ -17,7 +20,7 @@ public interface IPanelSection : IDisposable
     /// Lower values render first. Sections that do not override this property sort last.
     /// </summary>
     /// <remarks>
-    /// <see cref="LiveSection{T}"/> and <see cref="ConfigSection{TConfig}"/> derive this value
+    /// <see cref="LiveStateSection{T}"/> and <see cref="ConfigSection{TConfig}"/> derive this value
     /// from a <see cref="SectionOrderAttribute"/> placed on the state or config type.
     /// Custom <see cref="IPanelSection"/> implementations can override this property directly.
     /// </remarks>
@@ -35,7 +38,7 @@ public interface IPanelSection : IDisposable
     /// Custom <see cref="IPanelSection"/> implementations can override this property to opt in.
     /// <see cref="ConfigSection{TConfig}"/> derives this value from
     /// <see cref="Umbra.Config.Attributes.ConfigRootNodeAttribute"/> on the config type, or from
-    /// an explicit constructor argument. <see cref="LiveSection{T}"/> accepts it as a constructor
+    /// an explicit constructor argument. <see cref="LiveStateSection{T}"/> accepts it as a constructor
     /// parameter.
     /// </para>
     /// <para>
@@ -78,7 +81,7 @@ public interface IPanelSection : IDisposable
     /// <c>FullName</c> is <see langword="null"/>. The namespace-qualified name prevents two
     /// custom section types with the same short name in different namespaces from sharing the
     /// same ImGui hash. Override when two sections of the same concrete type are added to the
-    /// same panel. <see cref="ConfigSection{TConfig}"/> and <see cref="LiveSection{T}"/> apply
+    /// same panel. <see cref="ConfigSection{TConfig}"/> and <see cref="LiveStateSection{T}"/> apply
     /// the same <c>FullName ?? Name</c> resolution on their respective type parameters (or use
     /// the explicit <c>idScope</c> when one was provided).
     /// </para>

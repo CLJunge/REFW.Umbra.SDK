@@ -1,9 +1,8 @@
 using System.Numerics;
 using Hexa.NET.ImGui;
 using Umbra.Config;
-using Umbra.Config.Attributes;
-using Umbra.UI.Config.Drawers;
 using Umbra.Logging;
+using Umbra.UI.Config.Drawers;
 
 namespace Umbra.UI.Config;
 
