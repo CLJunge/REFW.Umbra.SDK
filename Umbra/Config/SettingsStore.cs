@@ -57,9 +57,9 @@ public class SettingsStore<TConfig> : IDisposable
     /// <remarks>
     /// <para>
     /// <typeparamref name="TConfig"/> must be decorated with
-    /// <see cref="Umbra.Config.Attributes.AutoRegisterSettingsAttribute"/>; if the attribute is absent,
+    /// <see cref="Attributes.AutoRegisterSettingsAttribute"/>; if the attribute is absent,
     /// no parameters are discovered and the returned instance will hold only its property default values.
-    /// Nested settings group types exposed as <see cref="Umbra.Config.Attributes.SettingsParameterAttribute"/>
+    /// Nested settings group types exposed as <see cref="Attributes.SettingsParameterAttribute"/>
     /// properties must also carry the attribute.
     /// </para>
     /// <para>

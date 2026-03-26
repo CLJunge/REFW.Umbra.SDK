@@ -61,7 +61,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// When <see langword="true"/>, the <see cref="ConfigRootNodeAttribute"/>-driven
     /// root <c>ImGui.TreeNode</c> is not rendered even when the attribute is present on
     /// <typeparamref name="TConfig"/>. Defaults to <see langword="false"/>.
-    /// Pass <see langword="true"/> when the owning <see cref="Umbra.UI.Panel.ConfigSection{TConfig}"/>
+    /// Pass <see langword="true"/> when the owning <see cref="ConfigSection{TConfig}"/>
     /// is responsible for the tree node so that the wrapping is not duplicated.
     /// </param>
     public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)

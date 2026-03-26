@@ -25,7 +25,7 @@ internal static class ParameterMetadataReader
     /// The fully-qualified dot-separated setting key assigned to this parameter by
     /// <see cref="SettingsRegistrar"/>. When provided, <see cref="ParameterMetadata.HiddenLabel"/> is
     /// pre-computed as <c>"##" + parameterKey</c>, avoiding a <c>string.Concat</c> allocation
-    /// per <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/> construction. Pass <see langword="null"/> (the default)
+    /// per <see cref="UI.Config.ConfigDrawer{TConfig}"/> construction. Pass <see langword="null"/> (the default)
     /// when the key is not yet known (e.g. direct or test calls).
     /// </param>
     /// <returns>

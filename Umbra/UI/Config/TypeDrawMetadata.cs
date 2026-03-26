@@ -12,7 +12,7 @@ namespace Umbra.UI.Config;
 /// </summary>
 /// <remarks>
 /// Instances are keyed by <see cref="Type"/> identity in a thread-safe static cache. Types are only
-/// reflected over once per <see cref="System.AppDomain"/> lifetime; subsequent <c>Collect</c>
+/// reflected over once per <see cref="AppDomain"/> lifetime; subsequent <c>Collect</c>
 /// calls for the same type return the cached result immediately.
 /// </remarks>
 internal sealed class TypeDrawMetadata

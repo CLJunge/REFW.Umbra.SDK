@@ -1,7 +1,7 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Instructs <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/> to render the decorated settings group's
+/// Instructs <see cref="UI.Config.ConfigDrawer{TConfig}"/> to render the decorated settings group's
 /// category as a collapsible <c>ImGui.TreeNode</c> instead of an <c>ImGui.SeparatorText</c> header.
 /// </summary>
 /// <remarks>
