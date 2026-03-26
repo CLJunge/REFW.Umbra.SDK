@@ -125,10 +125,19 @@ public sealed class PluginPanel : IDisposable
     /// Appends a section to the panel and re-sorts the section list by <see cref="IPanelSection.Order"/>.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Sections are rendered in ascending <see cref="IPanelSection.Order"/> order. Equal-order
     /// sections preserve their insertion order (stable sort). To control ordering, apply
     /// <see cref="SectionOrderAttribute"/> to the state or config type, or pass a custom
     /// <see cref="IPanelSection"/> implementation that overrides <see cref="IPanelSection.Order"/>.
+    /// </para>
+    /// <para>
+    /// If <paramref name="section"/>.<see cref="IPanelSection.TreeNodeLabel"/> contains the
+    /// ImGui label/ID separator <c>"##"</c>, a developer warning is logged at add-time.
+    /// At render time the <c>"##..."</c> portion is stripped before the <c>##{SectionId}</c>
+    /// disambiguation suffix is appended, so open/closed state remains correctly isolated —
+    /// but the label should be fixed to avoid relying on this fallback.
+    /// </para>
     /// </remarks>
     /// <param name="section">The section to add. Must not be <see langword="null"/>.</param>
     /// <returns>This <see cref="PluginPanel"/> instance, enabling fluent chaining.</returns>
@@ -144,6 +153,24 @@ public sealed class PluginPanel : IDisposable
 
         if (_disposed)
             throw new ObjectDisposedException(nameof(PluginPanel), "Cannot add sections to a disposed panel.");
+
+        if (section.TreeNodeLabel is { } treeLabel && treeLabel.Contains("##", StringComparison.Ordinal))
+        {
+            Logger.Warning(
+                $"[PluginPanel] DEVELOPER WARNING — Section '{section.SectionId}' has a TreeNodeLabel containing \"##\".\n" +
+                $"\n" +
+                $"  Impact : ImGui treats the first \"##\" in a label as the visible-label/ID separator,\n" +
+                $"           so any \"##\" already present in TreeNodeLabel causes the appended\n" +
+                $"           \"##{section.SectionId}\" disambiguation suffix to be silently ignored.\n" +
+                $"           Two sections with identical label prefixes would then share the same\n" +
+                $"           persisted open/closed state and the visible label may be truncated.\n" +
+                $"\n" +
+                $"  Fix    : Remove \"##\" from the TreeNodeLabel of section '{section.SectionId}'.\n" +
+                $"           The panel strips the \"##...\" portion at render time as a fallback.\n" +
+                $"\n" +
+                $"  Stack  :\n{Environment.StackTrace}");
+        }
+
         _sections.Add(section);
         _sections.StableSortBy(s => s.Order);
         return this;
@@ -250,6 +277,14 @@ public sealed class PluginPanel : IDisposable
     /// </list>
     /// </para>
     /// <para>
+    /// If <see cref="IPanelSection.TreeNodeLabel"/> already contains <c>"##"</c> — the ImGui
+    /// label/ID separator — the portion from the first <c>"##"</c> onwards is stripped before
+    /// the <c>##{SectionId}</c> suffix is appended. This prevents the appended suffix from
+    /// being silently ignored by ImGui (which only processes the first <c>"##"</c> occurrence),
+    /// ensuring open/closed state is correctly isolated per section. <see cref="Add"/> emits
+    /// a developer warning when such a label is registered.
+    /// </para>
+    /// <para>
     /// The tree pop is always guarded with <c>try/finally</c> so ImGui state remains balanced
     /// even if a section throws while drawing.
     /// </para>
@@ -261,10 +296,15 @@ public sealed class PluginPanel : IDisposable
             var label = section.TreeNodeLabel;
             if (label is not null)
             {
-                // Embed SectionId as a ## suffix so two sections with the same display label
-                // get distinct ImGui persisted states without an extra PushID scope level.
-                // The section's own Draw() pushes SectionId internally, correctly scoping
-                // all widgets inside it — no external push here avoids a double-push.
+                // Sanitize: ImGui uses the first "##" to split the visible label from the ID.
+                // If the caller's label already contains "##", our "##{SectionId}" suffix would
+                // be silently ignored. Strip any existing "##..." suffix defensively so that the
+                // appended suffix always takes effect. Add() emits a developer warning when this
+                // condition is detected at registration time.
+                var hashIndex = label.IndexOf("##", StringComparison.Ordinal);
+                if (hashIndex >= 0)
+                    label = label[..hashIndex];
+
                 var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
                 if (ImGui.TreeNodeEx($"{label}##{section.SectionId}", flags))
                 {

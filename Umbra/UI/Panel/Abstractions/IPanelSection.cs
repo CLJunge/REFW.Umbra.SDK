@@ -29,6 +29,7 @@ public interface IPanelSection : IDisposable
     /// with no tree node.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// When non-<see langword="null"/>, <see cref="PluginPanel.Draw"/> wraps this section's
     /// <see cref="Draw"/> call inside a collapsible <c>ImGui.TreeNode</c> with this label.
     /// Custom <see cref="IPanelSection"/> implementations can override this property to opt in.
@@ -36,6 +37,15 @@ public interface IPanelSection : IDisposable
     /// <see cref="Umbra.Config.Attributes.ConfigRootNodeAttribute"/> on the config type, or from
     /// an explicit constructor argument. <see cref="LiveSection{T}"/> accepts it as a constructor
     /// parameter.
+    /// </para>
+    /// <para>
+    /// The label must not contain the ImGui label/ID separator <c>"##"</c>. ImGui treats the
+    /// first <c>"##"</c> in a label string as the boundary between the visible text and the
+    /// hidden widget ID; any <c>"##"</c> already present here would prevent the
+    /// <c>##{SectionId}</c> disambiguation suffix appended by <see cref="PluginPanel"/> from
+    /// taking effect. <see cref="PluginPanel.Add"/> logs a developer warning when this is
+    /// detected, and the <c>"##..."</c> suffix is stripped at render time as a fallback.
+    /// </para>
     /// </remarks>
     string? TreeNodeLabel => null;
 
