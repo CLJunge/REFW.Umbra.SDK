@@ -60,7 +60,7 @@ internal sealed class ConfigDrawerBuilder
         CollapseAsTreeAttribute? collapseAttr,
         IndentAttribute? categoryIndentAttr,
         LabelMarginAttribute? labelMarginAttr,
-        LabelAlignmentGroup? rootAlignmentGroup = null)
+        LabelAlignmentGroup? alignmentGroup = null)
     {
         internal string GroupPath { get; } = groupPath;
         internal string? DefaultCategory { get; } = defaultCategory;
@@ -69,7 +69,7 @@ internal sealed class ConfigDrawerBuilder
         internal LabelMarginAttribute? LabelMarginAttr { get; } = labelMarginAttr;
         internal List<IDrawNode> Nodes { get; } = [];
         internal Dictionary<string, CategoryNode> NamedCategories { get; } = [];
-        internal LabelAlignmentGroup RootAlignmentGroup { get; } = rootAlignmentGroup ?? new();
+        internal LabelAlignmentGroup AlignmentGroup { get; } = alignmentGroup ?? new();
         internal CategoryNode? CurrentCategoryNode { get; set; }
         internal string? LastCategory { get; set; }
     }
@@ -261,9 +261,9 @@ internal sealed class ConfigDrawerBuilder
 
             var ambientCategory = nestedLocalCategory is null ? scope.DefaultCategory : null;
             var childDefaultCategory = nestedLocalCategory is null ? ambientCategory : null;
-            LabelAlignmentGroup? rootAlignmentGroup = null;
+            LabelAlignmentGroup? childAlignmentGroup = null;
             if (nestedLocalCategory is null)
-                rootAlignmentGroup = GetAlignmentGroup(scope, ambientCategory);
+                childAlignmentGroup = GetAlignmentGroup(scope, ambientCategory);
 
             var childScope = new ScopeState(
                 nestedGroupPath,
@@ -271,7 +271,7 @@ internal sealed class ConfigDrawerBuilder
                 nestedCollapseAttr,
                 propertyIndent,
                 nestedLabelMargin,
-                rootAlignmentGroup);
+                childAlignmentGroup);
 
             CollectInto(childScope, nested, propType);
 
@@ -401,11 +401,11 @@ internal sealed class ConfigDrawerBuilder
     /// <paramref name="scope"/>, creating the category header on demand when required.
     /// </summary>
     /// <param name="scope">The scope whose alignment state should be consulted.</param>
-    /// <param name="category">The local category name, or <see langword="null"/> for the root alignment group.</param>
+    /// <param name="category">The local category name, or <see langword="null"/> for the scope-wide alignment group.</param>
     private LabelAlignmentGroup GetAlignmentGroup(ScopeState scope, string? category)
     {
         if (category is null)
-            return scope.RootAlignmentGroup;
+            return scope.AlignmentGroup;
 
         EmitCategoryHeader(scope, category);
         return scope.CurrentCategoryNode!.AlignmentGroup;
