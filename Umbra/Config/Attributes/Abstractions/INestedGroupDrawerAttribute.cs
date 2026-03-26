@@ -7,7 +7,12 @@ namespace Umbra.Config.Attributes;
 /// Allows nested-group custom-drawer detection on either a parent property declaration or the
 /// nested group type itself without runtime generic type inspection.
 /// </summary>
-public interface INestedGroupDrawerAttribute
+/// <remarks>
+/// Used exclusively by internal framework machinery (<see cref="UI.Config.ConfigDrawerBuilder"/>
+/// and <see cref="UI.Config.TypeDrawMetadata"/>). Plugin authors never implement or
+/// reference this interface directly.
+/// </remarks>
+internal interface INestedGroupDrawerAttribute
 {
     /// <summary>Gets the concrete <see cref="INestedGroupDrawer{T}"/> type used to render the nested group instance.</summary>
     Type DrawerType { get; }

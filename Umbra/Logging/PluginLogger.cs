@@ -27,6 +27,11 @@ namespace Umbra.Logging;
 /// }
 /// </code>
 /// </para>
+/// <para>
+/// All instance methods also honor the global <see cref="Logger.Enabled"/> and
+/// <see cref="Logger.Suppress()"/> controls, allowing benchmarks and tests to silence all Umbra
+/// logging without mutating each plugin's <see cref="MinLevel"/>.
+/// </para>
 /// </remarks>
 public sealed class PluginLogger
 {
@@ -75,7 +80,7 @@ public sealed class PluginLogger
     /// <param name="message">The message to log.</param>
     public void Info(string message)
     {
-        if (MinLevel > LogLevel.Info) return;
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Info) return;
         try { API.LogInfo(FormatMessage(message)); } catch { }
     }
 
@@ -91,7 +96,7 @@ public sealed class PluginLogger
     /// <param name="args">An array of objects to format.</param>
     public void Info(string format, params object[] args)
     {
-        if (MinLevel > LogLevel.Info) return;
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Info) return;
         string message;
         try { message = string.Format(format, args); } catch { return; }
         Info(message);
@@ -103,7 +108,7 @@ public sealed class PluginLogger
     /// <param name="message">The message to log.</param>
     public void Warning(string message)
     {
-        if (MinLevel > LogLevel.Warning) return;
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Warning) return;
         try { API.LogWarning(FormatMessage(message)); } catch { }
     }
 
@@ -119,7 +124,7 @@ public sealed class PluginLogger
     /// <param name="args">An array of objects to format.</param>
     public void Warning(string format, params object[] args)
     {
-        if (MinLevel > LogLevel.Warning) return;
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Warning) return;
         string message;
         try { message = string.Format(format, args); } catch { return; }
         Warning(message);
@@ -131,7 +136,7 @@ public sealed class PluginLogger
     /// <param name="message">The message to log.</param>
     public void Error(string message)
     {
-        if (MinLevel > LogLevel.Error) return;
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
         try { API.LogError(FormatMessage(message)); } catch { }
     }
 
@@ -147,7 +152,7 @@ public sealed class PluginLogger
     /// <param name="args">An array of objects to format.</param>
     public void Error(string format, params object[] args)
     {
-        if (MinLevel > LogLevel.Error) return;
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
         string message;
         try { message = string.Format(format, args); } catch { return; }
         Error(message);
@@ -161,7 +166,7 @@ public sealed class PluginLogger
     /// <param name="message">A descriptive message providing context for the exception.</param>
     public void Exception(Exception ex, string message)
     {
-        if (MinLevel > LogLevel.Error) return;
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
         try
         {
             var logMessage = $"{FormatMessage(message)}\nException: {ex.GetType().Name}: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
@@ -184,7 +189,7 @@ public sealed class PluginLogger
     /// <param name="args">An array of objects to format.</param>
     public void Exception(Exception ex, string format, params object[] args)
     {
-        if (MinLevel > LogLevel.Error) return;
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
         string message;
         try { message = string.Format(format, args); } catch { return; }
         Exception(ex, message);

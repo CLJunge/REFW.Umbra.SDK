@@ -5,6 +5,8 @@ namespace Umbra.SamplePlugin.Config;
 
 /// <summary>
 /// Renders a custom editable layout for <see cref="PluginConfig.NestedDrawerTest"/>.
+/// The drawer intentionally uses fixed local widget labels such as <c>"Value 1"</c> so multiple
+/// nested-group instances can validate that group-level ImGui ID scoping prevents collisions.
 /// </summary>
 internal sealed class NestedDrawerTestDrawer : INestedGroupDrawer<PluginConfig.NestedDrawerTest>
 {

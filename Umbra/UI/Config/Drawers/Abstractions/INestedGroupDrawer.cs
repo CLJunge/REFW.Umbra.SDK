@@ -9,17 +9,16 @@ namespace Umbra.UI.Config.Drawers;
 /// the nested configuration group, keeping group-specific UI behaviour co-located with the
 /// property declaration. Applying the attribute to the nested configuration class itself is
 /// supported for backward compatibility and acts as a fallback when the parent property
-/// carries no drawer attribute.
-/// When <see cref="ConfigDrawer{TConfig}"/> encounters the attribute (on either the property
-/// or the type), it bypasses the default recursive parameter expansion and hands the group
-/// instance directly to this drawer each frame.
+/// carries no drawer attribute. When <see cref="ConfigDrawer{TConfig}"/> encounters the attribute
+/// (on either the property or the type), it bypasses the default recursive parameter expansion
+/// and hands the group instance directly to this drawer each frame.
 /// </para>
 /// <para>
-/// The drawer has complete ImGui layout control; no label, column alignment, or section header
-/// is emitted by the factory. Property-level attributes such as <c>[Category]</c>,
-/// <c>[SpacingBefore]</c>, <c>[SpacingAfter]</c>, and <c>[HideIf]</c> on the declaration of the
-/// nested-group property in the parent config are still honoured. <c>[CollapseAsTree]</c> is
-/// applied to the nested group <em>type</em> itself rather than the parent property.
+/// The drawer has complete ImGui layout control; no label or column-alignment row is emitted by
+/// the factory. Property-level wrapper attributes such as <c>[Category]</c>,
+/// <c>[CollapseAsTree]</c>, <c>[SpacingBefore]</c>, <c>[SpacingAfter]</c>, and <c>[HideIf]</c>
+/// on the parent property are still honoured around the drawer output. When the parent property
+/// declares a category, that category becomes the visible container for the drawer output.
 /// </para>
 /// <para>
 /// Implements <see cref="IDisposable"/> so drawers that hold per-instance state (e.g. cached

@@ -11,11 +11,12 @@
 - Use `REFramework.NET` APIs when interacting with the host environment.
 - For logging in plugin code, use `Umbra.Logging.PluginLogger` — an **instance class** that forwards to `REFrameworkNET.API.LogInfo`, `API.LogWarning`, and `API.LogError`.
   - Declare the logger as a `private static readonly PluginLogger _log = new("PluginName");` field on the plugin class. Never set it in the entry point — initialise it inline so it is always available and never shared with other plugins.
-  - Do **not** use `Logger.Prefix`, `Logger.PrefixFormat`, or `Logger.MinLevel`. These properties no longer exist on the static `Logger` class. All managed plugins load into the same AppDomain; any static prefix written by one plugin would silently overwrite every other plugin's prefix.
+  - Do **not** use shared static logging configuration for prefixes or minimum levels. All managed plugins load into the same AppDomain; any shared static prefix written by one plugin would silently overwrite every other plugin's prefix.
   - `PluginLogger` exposes `Prefix`, `PrefixFormat`, and `MinLevel` as instance properties, fully isolated per plugin.
   - All `PluginLogger` methods are exception-safe and silently suppress errors to avoid disrupting the game process. Formatted overloads (`...(string format, params object[] args)`) also swallow any exception thrown by `string.Format`, so an invalid format string or mismatched arguments causes the message to be silently discarded rather than propagated.
   - `_log.Exception(Exception ex, string message)` logs a context message followed by the exception type, message, and stack trace via `API.LogError`. Use this — **not** `_log.Error` — when logging exceptions.
-  - The static `Logger` class still exists as a raw, unconditional forwarding facade (no prefix, no level filter). It is intended for SDK-internal use only.
+  - SDK internals should use the static `Logger` facade for raw, unconditional logging with no per-plugin prefix or minimum level.
+  - `Logger.Enabled = false`, `Logger.DisableAll()`, or `using var _ = Logger.Suppress();` silences all Umbra logging, including `PluginLogger`, which is useful for benchmarks and tests.
 - Assume game-facing code may run in a constrained plugin environment where resilience is preferred over hard failures.
 
 ## Thread safety — hooks and callbacks

@@ -18,10 +18,11 @@ namespace Umbra.Config.Attributes;
 /// recursing into the class's individual parameters.
 /// </para>
 /// <para>
-/// The drawer has full ImGui layout control; no label, column alignment, or section header
-/// is emitted by the factory. Property-level wrapper attributes such as <c>[Category]</c>,
-/// <c>[CollapseAsTree]</c>, <c>[SpacingBefore]</c>, <c>[SpacingAfter]</c>, and <c>[HideIf]</c>
-/// are still honoured around the drawer output.
+/// The drawer has full ImGui layout control; no label or column-alignment row is emitted by the
+/// factory. Property-level wrapper attributes such as <c>[Category]</c>, <c>[CollapseAsTree]</c>,
+/// <c>[SpacingBefore]</c>, <c>[SpacingAfter]</c>, and <c>[HideIf]</c> are still honoured around the
+/// drawer output. When the parent property declares a category, that category becomes the visible
+/// container for the drawer output.
 /// </para>
 /// </remarks>
 /// <typeparam name="TDrawer">
