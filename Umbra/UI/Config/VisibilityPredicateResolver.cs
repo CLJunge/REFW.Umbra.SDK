@@ -59,6 +59,11 @@ internal static class VisibilityPredicateResolver
     /// value type and cached in <see cref="s_typedEqualsCache"/> so that per-frame equality checks
     /// use <see cref="IEquatable{T}"/> rather than virtual <see cref="object.Equals(object)"/>
     /// dispatch without recompiling a new comparer for each individual hidden node.
+    /// When the member's declared type is <c>Nullable&lt;T&gt;</c> the comparer is keyed and
+    /// created for the underlying <c>T</c> rather than the nullable wrapper, because the CLR
+    /// always boxes a non-null <c>Nullable&lt;T&gt;</c> value as a plain boxed <c>T</c> —
+    /// casting a boxed <c>T</c> to <c>Nullable&lt;T&gt;</c> inside the compiled comparer would
+    /// throw <see cref="InvalidCastException"/>.
     /// If <see cref="IParameter.GetValue"/> returns <see langword="null"/> at runtime (e.g. when
     /// a <c>Parameter&lt;T&gt;</c> value has been cleared via <c>SetWithoutNotify</c>), the
     /// compiled comparer is <em>not</em> invoked; the predicate instead treats
@@ -106,7 +111,13 @@ internal static class VisibilityPredicateResolver
         if (!CanUseTypedEquals(accessor.ValueType, compareValue))
             return () => !Equals(getValue(owner), compareValue);
 
-        var typedEquals = s_typedEqualsCache.GetOrAdd(accessor.ValueType, CreateTypedEquals);
+        // Normalize Nullable<T> to T before looking up the comparer. The CLR always boxes a
+        // non-null Nullable<T> as a plain boxed T (not boxed Nullable<T>), so a comparer keyed
+        // on Nullable<T> would cast a boxed T to Nullable<T> and throw InvalidCastException.
+        // Using the underlying type ensures the cast and EqualityComparer<T> are correct for
+        // the actual boxed representation returned by IParameter.GetValue() and raw accessors.
+        var comparerType = Nullable.GetUnderlyingType(accessor.ValueType) ?? accessor.ValueType;
+        var typedEquals = s_typedEqualsCache.GetOrAdd(comparerType, CreateTypedEquals);
 
         // Guard against null: getValue() may return null when Parameter<T>.Value has been
         // cleared (e.g. via SetWithoutNotify). Unboxing null to a value type inside the
@@ -216,6 +227,10 @@ internal static class VisibilityPredicateResolver
     /// <param name="valueType">
     /// The concrete <c>T</c> used to parameterise the comparer; derived from the member's
     /// declared type or from the inner generic argument of <c>Parameter&lt;T&gt;</c>.
+    /// Must be the underlying non-nullable type when the member is a <c>Nullable&lt;T&gt;</c>:
+    /// callers in <see cref="Build"/> normalise away the nullable wrapper before calling
+    /// <see cref="s_typedEqualsCache.GetOrAdd"/> so that the cast inside
+    /// <see cref="CreateTypedEqualsCore{T}"/> matches the actual boxed representation.
     /// </param>
     /// <returns>
     /// A cached comparer delegate that returns <see langword="true"/> when the two runtime values
