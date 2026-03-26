@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
-using System.Reflection;
 using Hexa.NET.ImGui;
 using Umbra.Config;
 using Umbra.Config.Attributes;
@@ -25,7 +24,9 @@ namespace Umbra.UI.Config;
 /// When a nested group does not declare its own <see cref="CategoryAttribute"/>, its uncategorized
 /// direct children are injected into the parent scope's current category context. When the nested
 /// group does declare its own category, that category is rendered as a real container node whose
-/// children are the nested group's locally scoped categories and controls.
+/// children are the nested group's uncategorized direct controls plus any additional locally scoped
+/// categories declared within that group. This avoids creating a redundant nested category header
+/// with the same label as the container.
 /// </para>
 /// <para>
 /// Every nested-group subtree is additionally wrapped in a stable ImGui ID scope derived from the
@@ -76,8 +77,8 @@ internal sealed class ConfigDrawerBuilder
     /// <summary>
     /// Cache key for one nested-group drawer binding shape.
     /// </summary>
-    /// <param name="drawerType">The concrete nested-group drawer type being instantiated.</param>
-    /// <param name="groupType">The runtime nested settings-group type exposed by the property.</param>
+    /// <param name="DrawerType">The concrete nested-group drawer type being instantiated.</param>
+    /// <param name="GroupType">The runtime nested settings-group type exposed by the property.</param>
     private readonly record struct NestedGroupDrawerFactoryKey(Type DrawerType, Type GroupType);
 
     /// <summary>
@@ -258,13 +259,14 @@ internal sealed class ConfigDrawerBuilder
             }
 
             var ambientCategory = nestedLocalCategory is null ? scope.DefaultCategory : null;
+            var childDefaultCategory = nestedLocalCategory is null ? ambientCategory : null;
             LabelAlignmentGroup? rootAlignmentGroup = null;
             if (nestedLocalCategory is null)
                 rootAlignmentGroup = GetAlignmentGroup(scope, ambientCategory);
 
             var childScope = new ScopeState(
                 nestedGroupPath,
-                nestedLocalCategory,
+                childDefaultCategory,
                 nestedCollapseAttr,
                 propertyIndent,
                 nestedLabelMargin,
@@ -458,8 +460,8 @@ internal sealed class ConfigDrawerBuilder
     /// <param name="propMeta">The cached property metadata for the nested-group property.</param>
     /// <param name="propType">The runtime type of the nested group.</param>
     /// <param name="nestedDrawerAttr">The resolved nested-group drawer attribute.</param>
-    /// <param name="nested">The live nested group instance retrieved from <paramref name="prop"/>.</param>
-    /// <param name="owner">The parent config instance that owns <paramref name="prop"/>.</param>
+    /// <param name="nested">The live nested group instance retrieved from <paramref name="propType"/>.</param>
+    /// <param name="owner">The parent config instance that owns <paramref name="propType"/>.</param>
     /// <param name="localCategory">
     /// The explicit category declared on the nested-group property or its type, if any. When
     /// <see langword="null"/>, the drawer inherits the parent scope category instead of creating
@@ -613,14 +615,6 @@ internal sealed class ConfigDrawerBuilder
 
         return new NestedGroupDrawerFactory(true, groupType, invoker);
     }
-
-    /// <summary>
-    /// Returns the settings-prefix string declared on <paramref name="member"/>, or
-    /// <see langword="null"/> when the member declares no <see cref="SettingsPrefixAttribute"/>.
-    /// </summary>
-    /// <param name="member">The reflected property or type to inspect.</param>
-    private static string? GetSettingsPrefix(MemberInfo member)
-        => member.GetCustomAttribute<SettingsPrefixAttribute>()?.Prefix;
 
     /// <summary>
     /// Resolves the stable structural ImGui ID path for a nested-group property.
