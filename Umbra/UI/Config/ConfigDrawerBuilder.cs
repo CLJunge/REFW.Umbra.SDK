@@ -556,7 +556,6 @@ internal sealed class ConfigDrawerBuilder
     {
         disposable = null;
         var drawerType = nestedDrawerAttr.DrawerType;
-        var drawerInstance = Activator.CreateInstance(drawerType)!;
         var factory = s_nestedGroupDrawerFactories.GetOrAdd(
             new NestedGroupDrawerFactoryKey(drawerType, propType),
             static key => CreateNestedGroupDrawerFactory(key.DrawerType, key.GroupType));
@@ -567,6 +566,8 @@ internal sealed class ConfigDrawerBuilder
                 $"ConfigDrawer: nested group drawer '{drawerType.Name}' does not support group type '{propType.FullName}'.");
             return null;
         }
+
+        var drawerInstance = Activator.CreateInstance(drawerType)!;
 
         if (drawerInstance is IDisposable trackedDisposable)
             disposable = trackedDisposable;
