@@ -12,8 +12,8 @@ public interface IHideIfAttribute
 
     /// <summary>
     /// Gets a value indicating whether an explicit comparison value was provided.
-    /// When <see langword="false"/>, the member is treated as a <c>bool</c> and the
-    /// parameter is hidden while it is <c>true</c>.
+    /// When <see langword="false"/>, the member is treated as a <see langword="bool"/> and the
+    /// parameter is hidden while it is <see langword="true"/>.
     /// </summary>
     bool HasValue { get; }
 

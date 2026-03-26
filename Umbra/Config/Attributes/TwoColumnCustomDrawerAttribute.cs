@@ -1,4 +1,4 @@
-using Umbra.Config.UI.ParameterDrawers;
+using Umbra.UI.Config.Drawers;
 
 namespace Umbra.Config.Attributes;
 

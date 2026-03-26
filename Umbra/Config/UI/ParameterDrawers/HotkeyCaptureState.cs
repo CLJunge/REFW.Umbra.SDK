@@ -1,4 +1,4 @@
-namespace Umbra.Config.UI.ParameterDrawers;
+namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// Shared mutable state for all hotkey-capture drawers in this assembly.
@@ -9,7 +9,7 @@ namespace Umbra.Config.UI.ParameterDrawers;
 /// <remarks>
 /// ImGui runs single-threaded; the count never exceeds 1 in normal usage.
 /// Drawers are responsible for keeping this counter accurate: increment when entering
-/// capture mode, decrement when leaving it or when <c>Dispose</c> is called while
+/// capture mode, decrement when leaving it or when <see cref="IDisposable.Dispose"/> is called while
 /// the drawer is still waiting.
 /// </remarks>
 internal static class HotkeyCaptureState

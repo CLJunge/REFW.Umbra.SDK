@@ -1,10 +1,10 @@
 using Hexa.NET.ImGui;
 
-namespace Umbra.Config.UI.Nodes;
+namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
 /// Draw node that wraps all child nodes inside a single collapsible <c>ImGui.TreeNode</c>.
-/// Emitted by <see cref="ConfigDrawer{TConfig}"/> when <see cref="Attributes.ConfigRootNodeAttribute"/>
+/// Emitted by <see cref="ConfigDrawer{TConfig}"/> when <see cref="Umbra.Config.Attributes.ConfigRootNodeAttribute"/>
 /// is present on the root config class; the entire settings panel lives inside this one node.
 /// </summary>
 /// <param name="label">The label displayed on the tree node header.</param>

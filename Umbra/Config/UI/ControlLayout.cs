@@ -1,16 +1,16 @@
 using Hexa.NET.ImGui;
-using Umbra.UI;
+using Umbra.Config;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Holds the pre-computed layout state for a single parameter row in the two-column
 /// settings UI. Replaces the heap-allocated <c>Action pre</c> delegate and closure
-/// previously returned by <c>ControlFactory.GetControlLayout</c>.
+/// previously returned by <c>ControlFactory.BuildDrawAction</c>.
 /// </summary>
 /// <remarks>
 /// <see cref="Pre"/> inlines the layout logic that was previously in the <c>void pre()</c>
-/// local function inside <c>GetControlLayout</c>. Storing this state as a value struct
+/// local function inside <c>BuildDrawAction</c>. Storing this state as a value struct
 /// eliminates one closure-object allocation and one delegate allocation per parameter
 /// per <see cref="ConfigDrawer{TConfig}"/> construction.
 /// </remarks>
@@ -23,7 +23,7 @@ internal readonly struct ControlLayout
 
     /// <summary>
     /// The hidden ImGui control label (<c>"##" + parameter.Key</c>) pre-computed during
-    /// <c>SettingsStore.Load()</c> and stored in <see cref="ParameterMetadata.HiddenLabel"/>.
+    /// <see cref="SettingsStore{TConfig}.Load()"/> and stored in <see cref="ParameterMetadata.HiddenLabel"/>.
     /// </summary>
     internal readonly string HiddenLabel;
 

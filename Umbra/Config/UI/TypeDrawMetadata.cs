@@ -2,11 +2,11 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using Umbra.Config.Attributes;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Caches all class-level metadata attributes consulted by <see cref="ConfigDrawerBuilder.Collect"/>
-/// in a single <see cref="MemberInfo.GetCustomAttributes(bool)"/> pass per type, eliminating the five
+/// in a single <see cref="MemberInfo.GetCustomAttributes(bool)"/> pass per type, eliminating the six
 /// repeated per-attribute <c>GetCustomAttribute</c> calls that would otherwise be made on the same
 /// <see cref="Type"/> object at the top of every <c>Collect</c> invocation.
 /// </summary>
@@ -26,9 +26,9 @@ internal sealed class TypeDrawMetadata
     internal string? Category { get; }
 
     /// <summary>
-    /// Class-level <c>IndentAttribute</c>, or <see langword="null"/> when absent.
-    /// Applied as a fallback indent to every parameter control whose own <see cref="ParameterMetadata"/>
-    /// carries no <c>IndentAttribute</c>.
+    /// Class-level <see cref="IndentAttribute"/>, or <see langword="null"/> when absent.
+    /// Applied as a fallback indent to every parameter control whose own <see cref="Umbra.Config.ParameterMetadata"/>
+    /// carries no property-level <see cref="IndentAttribute"/>.
     /// </summary>
     internal IndentAttribute? IndentAttr { get; }
 

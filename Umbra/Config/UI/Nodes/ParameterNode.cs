@@ -1,6 +1,6 @@
 using Hexa.NET.ImGui;
 
-namespace Umbra.Config.UI.Nodes;
+namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
 /// Draw node that conditionally invokes a per-frame draw <see cref="Action"/> based on a visibility predicate.

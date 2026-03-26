@@ -1,12 +1,14 @@
 using Hexa.NET.ImGui;
+using Umbra.Config;
 using Umbra.Input;
+using Umbra.UI;
 
-namespace Umbra.Config.UI.ParameterDrawers;
+namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// An <see cref="ITwoColumnParameterDrawer"/> implementation that renders a hotkey-capture
 /// control for a <see cref="Parameter{T}"/> of type <see cref="int"/> in the two-column layout,
-/// where the value represents an <c>ImGuiKey</c> cast to <c>int</c>.
+/// where the value represents an <see cref="ImGuiKey"/> cast to <see cref="int"/>.
 /// </summary>
 /// <remarks>
 /// The framework renders the parameter label in the left column before calling

@@ -1,4 +1,6 @@
-namespace Umbra.Config.UI.ParameterDrawers;
+using Umbra.Config;
+
+namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// Defines a contract for drawing a UI control for a configuration parameter using ImGui.

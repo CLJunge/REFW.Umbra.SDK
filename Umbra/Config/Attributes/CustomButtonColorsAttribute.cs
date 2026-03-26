@@ -2,7 +2,7 @@ namespace Umbra.Config.Attributes;
 
 /// <summary>
 /// Applies fully custom RGBA button colors to a button parameter rendered by
-/// <see cref="Umbra.Config.UI.ParameterDrawers.ButtonDrawer"/>,
+/// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>,
 /// overriding any <c>[ButtonStyle]</c> preset on the same property.
 /// </summary>
 /// <remarks>

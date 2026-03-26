@@ -1,12 +1,13 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using Hexa.NET.ImGui;
+using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.Config.UI.Nodes;
-using Umbra.Config.UI.ParameterDrawers;
+using Umbra.UI.Config.Nodes;
+using Umbra.UI.Config.Drawers;
 using Umbra.Logging;
 
-namespace Umbra.Config.UI;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// Walks a configuration object tree once at construction time and produces the ordered list of

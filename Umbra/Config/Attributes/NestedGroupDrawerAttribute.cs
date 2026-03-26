@@ -1,4 +1,4 @@
-using Umbra.Config.UI.ParameterDrawers;
+using Umbra.UI.Config.Drawers;
 
 namespace Umbra.Config.Attributes;
 
@@ -12,7 +12,7 @@ namespace Umbra.Config.Attributes;
 /// keeping group-specific UI behaviour next to the property declaration. For backward compatibility
 /// it may also be applied to a nested configuration class also decorated with
 /// <c>[AutoRegisterSettings]</c>, in which case it acts as a fallback when the property itself
-/// declares no <c>[NestedGroupDrawer]</c>. When <see cref="Umbra.Config.UI.ConfigDrawer{TConfig}"/>
+/// declares no <c>[NestedGroupDrawer]</c>. When <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/>
 /// encounters the property, it instantiates <typeparamref name="TDrawer"/> and calls
 /// <see cref="INestedGroupDrawer{TGroup}.Draw"/> with the group instance each frame instead of
 /// recursing into the class's individual parameters.

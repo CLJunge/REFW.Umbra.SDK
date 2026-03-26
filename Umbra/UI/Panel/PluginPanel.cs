@@ -1,4 +1,5 @@
 using Hexa.NET.ImGui;
+using Umbra.Logging;
 
 namespace Umbra.UI.Panel;
 
@@ -10,8 +11,24 @@ namespace Umbra.UI.Panel;
 /// <para>
 /// <see cref="PluginPanel"/> is the recommended top-level UI type for plugins that need to
 /// display both configuration settings and live game state in a single panel.
-/// For plugins that only require a settings panel, <see cref="Config.UI.ConfigDrawer{TConfig}"/>
+/// For plugins that only require a settings panel, <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/>
 /// may be used directly.
+/// </para>
+/// <para>
+/// The <c>idScope</c> string is the sole mechanism that separates this panel's ImGui widget
+/// IDs from every other panel rendered into the same REFramework window. All managed plugins
+/// share one AppDomain and one ImGui context; a duplicate <c>idScope</c> causes every widget
+/// in both panels to share the same hash, silently corrupting state. A warning is logged at
+/// construction time when a duplicate is detected, and the scope is released on
+/// <see cref="Dispose"/> so reloaded plugins do not falsely re-trigger the check.
+/// Use a value that is guaranteed unique across all plugins, such as
+/// <c>nameof(MyPlugin)</c> or <c>typeof(MyPlugin).FullName</c>.
+/// </para>
+/// <para>
+/// When <c>rootNodeLabel</c> is supplied, the entire section list is wrapped inside
+/// a single collapsible <c>ImGui.TreeNode</c> at the top of the panel. Individual sections may
+/// additionally declare their own tree node via <see cref="IPanelSection.TreeNodeLabel"/>;
+/// these per-section nodes are rendered inside the root node when one is present.
 /// </para>
 /// <para>
 /// Sections are rendered in ascending <see cref="IPanelSection.Order"/>. The internal
@@ -27,7 +44,18 @@ namespace Umbra.UI.Panel;
 /// </remarks>
 public sealed class PluginPanel : IDisposable
 {
+    // Cross-plugin duplicate-scope registry. Because all managed plugins share one AppDomain,
+    // this static set tracks every live idScope across all PluginPanel instances in the process.
+    // Construction logs a warning on duplicate; Dispose removes the entry so plugin reloads
+    // do not falsely re-trigger the check.
+    private static readonly HashSet<string> _registeredScopes = [];
+    private static readonly object _scopeLock = new();
+
     private readonly string _idScope;
+    private readonly string? _rootNodeLabel;
+    private readonly bool _rootNodeDefaultOpen;
+    private readonly bool _drawSeparator;
+    private readonly bool _scopeRegistered;
     private readonly List<IPanelSection> _sections = [];
     private bool _disposed;
 
@@ -35,29 +63,81 @@ public sealed class PluginPanel : IDisposable
     /// Initialises a new panel with the given top-level ImGui ID scope.
     /// </summary>
     /// <param name="idScope">
-    /// A plugin-unique identifier string (e.g. <c>"MyPlugin"</c>) used to scope all ImGui
-    /// widget IDs rendered by this panel's sections via <c>ImGui.PushID</c> /
-    /// <c>ImGui.PopID</c>. Must be non-null and non-whitespace.
+    /// A globally unique identifier string for this plugin (e.g. <c>nameof(MyPlugin)</c> or
+    /// <c>typeof(MyPlugin).FullName</c>). All managed plugins share one AppDomain and one ImGui
+    /// context; this is the only separator between this panel's widget IDs and every other panel
+    /// in the process. A duplicate causes every widget in both panels to share the same ImGui
+    /// hash, silently corrupting state — a warning is logged at construction time if a duplicate
+    /// is detected. Must be non-null and non-whitespace.
+    /// </param>
+    /// <param name="rootNodeLabel">
+    /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
+    /// <c>ImGui.TreeNode</c> with this label. Pass <see langword="null"/> (the default) to
+    /// render sections flat with no root-level wrapping node.
+    /// </param>
+    /// <param name="rootNodeDefaultOpen">
+    /// When <see langword="true"/>, the root tree node starts in its expanded state.
+    /// Ignored when <paramref name="rootNodeLabel"/> is <see langword="null"/>.
+    /// Defaults to <see langword="false"/> (collapsed).
+    /// </param>
+    /// <param name="drawSeparator">
+    /// When <see langword="true"/> (the default), a horizontal separator is drawn after
+    /// all sections. Pass <see langword="false"/> to suppress it.
     /// </param>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="idScope"/> is <see langword="null"/> or whitespace.
     /// </exception>
-    public PluginPanel(string idScope)
+    public PluginPanel(string idScope, string? rootNodeLabel = null, bool rootNodeDefaultOpen = false, bool drawSeparator = true)
     {
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null or whitespace.", nameof(idScope));
 
+        bool registered;
+        lock (_scopeLock)
+        {
+            registered = _registeredScopes.Add(idScope);
+        }
+
+        if (!registered)
+        {
+            Logger.Warning(
+                $"[PluginPanel] DEVELOPER WARNING — Duplicate idScope '{idScope}' detected.\n" +
+                $"\n" +
+                $"  Impact : All ImGui widget IDs produced by this panel share the same hash as the\n" +
+                $"           existing panel using the same scope. Buttons, sliders, checkboxes, and\n" +
+                $"           tree nodes in both panels will silently share state across plugins.\n" +
+                $"\n" +
+                $"  Fix    : Pass a globally unique string to new PluginPanel(idScope), e.g.:\n" +
+                $"             new PluginPanel(nameof(MyPlugin))\n" +
+                $"             new PluginPanel(typeof(MyPlugin).FullName!)\n" +
+                $"\n" +
+                $"  Stack  :\n{Environment.StackTrace}");
+        }
+
         _idScope = idScope;
+        _scopeRegistered = registered;
+        _rootNodeLabel = rootNodeLabel;
+        _rootNodeDefaultOpen = rootNodeDefaultOpen;
+        _drawSeparator = drawSeparator;
     }
 
     /// <summary>
     /// Appends a section to the panel and re-sorts the section list by <see cref="IPanelSection.Order"/>.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Sections are rendered in ascending <see cref="IPanelSection.Order"/> order. Equal-order
     /// sections preserve their insertion order (stable sort). To control ordering, apply
     /// <see cref="SectionOrderAttribute"/> to the state or config type, or pass a custom
     /// <see cref="IPanelSection"/> implementation that overrides <see cref="IPanelSection.Order"/>.
+    /// </para>
+    /// <para>
+    /// If <paramref name="section"/>.<see cref="IPanelSection.TreeNodeLabel"/> contains the
+    /// ImGui label/ID separator <c>"##"</c>, a developer warning is logged at add-time.
+    /// At render time the <c>"##..."</c> portion is stripped before the <c>##{SectionId}</c>
+    /// disambiguation suffix is appended, so open/closed state remains correctly isolated —
+    /// but the label should be fixed to avoid relying on this fallback.
+    /// </para>
     /// </remarks>
     /// <param name="section">The section to add. Must not be <see langword="null"/>.</param>
     /// <returns>This <see cref="PluginPanel"/> instance, enabling fluent chaining.</returns>
@@ -73,6 +153,24 @@ public sealed class PluginPanel : IDisposable
 
         if (_disposed)
             throw new ObjectDisposedException(nameof(PluginPanel), "Cannot add sections to a disposed panel.");
+
+        if (section.TreeNodeLabel is { } treeLabel && treeLabel.Contains("##", StringComparison.Ordinal))
+        {
+            Logger.Warning(
+                $"[PluginPanel] DEVELOPER WARNING — Section '{section.SectionId}' has a TreeNodeLabel containing \"##\".\n" +
+                $"\n" +
+                $"  Impact : ImGui treats the first \"##\" in a label as the visible-label/ID separator,\n" +
+                $"           so any \"##\" already present in TreeNodeLabel causes the appended\n" +
+                $"           \"##{section.SectionId}\" disambiguation suffix to be silently ignored.\n" +
+                $"           Two sections with identical label prefixes would then share the same\n" +
+                $"           persisted open/closed state and the visible label may be truncated.\n" +
+                $"\n" +
+                $"  Fix    : Remove \"##\" from the TreeNodeLabel of section '{section.SectionId}'.\n" +
+                $"           The panel strips the \"##...\" portion at render time as a fallback.\n" +
+                $"\n" +
+                $"  Stack  :\n{Environment.StackTrace}");
+        }
+
         _sections.Add(section);
         _sections.StableSortBy(s => s.Order);
         return this;
@@ -83,8 +181,25 @@ public sealed class PluginPanel : IDisposable
     /// child window, typically from the plugin's ImGui pre-draw callback each frame.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The pushed top-level ImGui ID scope is always popped before this method returns,
     /// even if a section throws while drawing.
+    /// </para>
+    /// <para>
+    /// When a <c>rootNodeLabel</c> was supplied at construction, all sections are rendered
+    /// inside a single collapsible <c>ImGui.TreeNode</c>; the tree pop is guarded with
+    /// <c>try/finally</c> so ImGui state remains balanced even if a section throws.
+    /// Each section that declares a non-<see langword="null"/>
+    /// <see cref="IPanelSection.TreeNodeLabel"/> is additionally wrapped in its own nested
+    /// tree node rendered inside the root node (or at the top level when no root node is set).
+    /// </para>
+    /// <para>
+    /// When enabled via the <c>drawSeparator</c> constructor parameter (default
+    /// <see langword="true"/>), a horizontal separator is drawn after all sections.
+    /// When a root tree node is present the separator is rendered inside the open node
+    /// (before the tree pop) and is only visible while the node is expanded. When no
+    /// root tree node is used, the separator appears at the end of the panel output.
+    /// </para>
     /// </remarks>
     public void Draw()
     {
@@ -93,8 +208,24 @@ public sealed class PluginPanel : IDisposable
         ImGui.PushID(_idScope);
         try
         {
-            foreach (var section in _sections)
-                section.Draw();
+            if (_rootNodeLabel is not null)
+            {
+                var flags = _rootNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+                if (ImGui.TreeNodeEx(_rootNodeLabel, flags))
+                {
+                    try
+                    {
+                        DrawSections();
+                        if (_drawSeparator) ImGui.Separator();
+                    }
+                    finally { ImGui.TreePop(); }
+                }
+            }
+            else
+            {
+                DrawSections();
+                if (_drawSeparator) ImGui.Separator();
+            }
         }
         finally
         {
@@ -103,7 +234,9 @@ public sealed class PluginPanel : IDisposable
     }
 
     /// <summary>
-    /// Disposes all sections and clears the section list.
+    /// Disposes all sections, clears the section list, and releases this panel's
+    /// <c>idScope</c> from the cross-plugin registry so a reloaded plugin can register
+    /// the same scope without a spurious duplicate warning.
     /// </summary>
     /// <remarks>
     /// Call this in the plugin's <c>[PluginExitPoint]</c> before nulling the panel reference.
@@ -114,9 +247,77 @@ public sealed class PluginPanel : IDisposable
         if (_disposed) return;
         _disposed = true;
 
+        lock (_scopeLock)
+        {
+            if (_scopeRegistered) _registeredScopes.Remove(_idScope);
+        }
+
         foreach (var section in _sections) section.Dispose();
         _sections.Clear();
 
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Iterates over all sections and renders each one, optionally wrapping it inside a
+    /// per-section <c>ImGui.TreeNode</c> when the section declares a
+    /// <see cref="IPanelSection.TreeNodeLabel"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For sections that declare a tree node, <see cref="IPanelSection.SectionId"/> is
+    /// embedded as a <c>##</c> disambiguation suffix in the tree node label — for example
+    /// <c>"General Settings##PluginConfig"</c>. This gives the tree node a unique ImGui
+    /// hash without pushing an additional <c>PushID</c> scope level before it, avoiding a
+    /// redundant double-push with the <c>PushID</c> the section itself issues internally.
+    /// The resulting widget ID chains for both paths are structurally equivalent:
+    /// <list type="bullet">
+    /// <item><description>Flat: <c>panelScope | SectionId | widget</c></description></item>
+    /// <item><description>Tree node: <c>panelScope | "label##SectionId"(treenode) | SectionId | widget</c></description></item>
+    /// </list>
+    /// </para>
+    /// <para>
+    /// If <see cref="IPanelSection.TreeNodeLabel"/> already contains <c>"##"</c> — the ImGui
+    /// label/ID separator — the portion from the first <c>"##"</c> onwards is stripped before
+    /// the <c>##{SectionId}</c> suffix is appended. This prevents the appended suffix from
+    /// being silently ignored by ImGui (which only processes the first <c>"##"</c> occurrence),
+    /// ensuring open/closed state is correctly isolated per section. <see cref="Add"/> emits
+    /// a developer warning when such a label is registered.
+    /// </para>
+    /// <para>
+    /// The tree pop is always guarded with <c>try/finally</c> so ImGui state remains balanced
+    /// even if a section throws while drawing.
+    /// </para>
+    /// </remarks>
+    private void DrawSections()
+    {
+        foreach (var section in _sections)
+        {
+            var label = section.TreeNodeLabel;
+            if (label is not null)
+            {
+                // Sanitize: ImGui uses the first "##" to split the visible label from the ID.
+                // If the caller's label already contains "##", our "##{SectionId}" suffix would
+                // be silently ignored. Strip any existing "##..." suffix defensively so that the
+                // appended suffix always takes effect. Add() emits a developer warning when this
+                // condition is detected at registration time.
+                var hashIndex = label.IndexOf("##", StringComparison.Ordinal);
+                if (hashIndex >= 0)
+                    label = label[..hashIndex];
+
+                var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+                if (ImGui.TreeNodeEx($"{label}##{section.SectionId}", flags))
+                {
+                    try { section.Draw(); }
+                    finally { ImGui.TreePop(); }
+                }
+            }
+            else
+            {
+                // Flat section: no external scope pushed. The section manages its own
+                // widget-ID scoping internally (ConfigDrawer.Draw / LiveSection.Draw).
+                section.Draw();
+            }
+        }
     }
 }
