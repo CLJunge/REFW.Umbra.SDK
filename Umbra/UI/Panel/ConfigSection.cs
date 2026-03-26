@@ -50,7 +50,10 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <see cref="PluginPanel"/> embeds this value as a <c>##</c> disambiguation
     /// suffix on the tree node label (e.g. <c>"Settings##MyConfig"</c>) rather than
     /// pushing an extra <c>ImGui.PushID</c> scope before the node.
-    /// Defaults to <c>typeof(<typeparamref name="TConfig"/>).Name</c> when not supplied.
+    /// Defaults to <c>typeof(<typeparamref name="TConfig"/>).FullName</c> (falling back to
+    /// <c>typeof(<typeparamref name="TConfig"/>).Name</c> when <c>FullName</c> is
+    /// <see langword="null"/>) when not supplied — a namespace-qualified value that prevents
+    /// two config types with the same short name from colliding.
     /// </param>
     /// <param name="treeNodeLabel">
     /// Explicit tree node label that overrides any <see cref="ConfigRootNodeAttribute"/>
@@ -73,7 +76,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         string? treeNodeLabel = null, bool treeNodeDefaultOpen = false,
         bool suppressTreeNode = false)
     {
-        _sectionId = idScope ?? typeof(TConfig).Name;
+        _sectionId = idScope ?? typeof(TConfig).FullName ?? typeof(TConfig).Name;
         _order     = typeof(TConfig).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
 
         if (!suppressTreeNode)
@@ -105,7 +108,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <inheritdoc/>
     /// <remarks>
     /// Returns the effective <c>idScope</c> value — either the explicitly supplied scope or
-    /// <c>typeof(<typeparamref name="TConfig"/>).Name</c>. This value is the same string
+    /// <c>typeof(<typeparamref name="TConfig"/>).FullName</c> (falling back to
+    /// <c>typeof(<typeparamref name="TConfig"/>).Name</c>). This value is the same string
     /// passed to the inner <see cref="ConfigDrawer{TConfig}"/>, so the
     /// <see cref="PluginPanel"/>-level push and the drawer's own internal push nest cleanly
     /// under the same named scope.
