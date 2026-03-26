@@ -20,9 +20,13 @@ namespace Umbra.UI.Config;
 /// <see cref="Umbra.Config.Attributes.HideIfAttribute{T}"/> cannot narrow the column.
 /// </para>
 /// <para>
-/// A one-frame convergence delay occurs on the very first render before
-/// <see cref="EnsureSeeded"/> has been called; during that frame <see cref="LabelWidth"/> is
-/// zero and each control is placed immediately to the right of its label.
+/// In normal usage, <see cref="ControlLayout.Pre"/> calls <see cref="EnsureSeeded"/> before
+/// any labels are laid out on the first draw frame, so <see cref="LabelWidth"/> is populated
+/// up front and alignment is correct from the first render. The only time a control may
+/// briefly render against a narrower column is when its label is registered after seeding
+/// (for example, dynamically created controls); such late registrations are measured
+/// immediately in <see cref="Register"/> and can only widen the committed width for
+/// subsequent frames.
 /// </para>
 /// </remarks>
 [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
