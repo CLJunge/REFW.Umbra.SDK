@@ -1,17 +1,17 @@
 using System.Linq.Expressions;
 
-namespace Umbra.UI.Panel;
+namespace Umbra.UI.LiveState;
 
 /// <summary>
-/// Reads the <see cref="LiveSectionDrawerAttribute{TDrawer}"/> from a live state type,
-/// instantiates the declared <see cref="ILiveSectionDrawer{T}"/>, and compiles a
+/// Reads the <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/> from a live state type,
+/// instantiates the declared <see cref="ILiveStateSectionDrawer{T}"/>, and compiles a
 /// zero-overhead <see cref="Action"/> delegate that invokes <c>Draw(T)</c> each frame.
 /// </summary>
 /// <remarks>
-/// The compilation pass runs once at <see cref="LiveSection{T}"/> construction time.
+/// The compilation pass runs once at <see cref="LiveStateSection{T}"/> construction time.
 /// Per-frame cost is a single delegate invocation with no reflection overhead.
 /// </remarks>
-internal static class LiveSectionDrawerResolver
+internal static class LiveStateSectionDrawerResolver
 {
     /// <summary>
     /// Resolves the drawer declared on <paramref name="stateType"/> and compiles a draw
@@ -19,7 +19,7 @@ internal static class LiveSectionDrawerResolver
     /// </summary>
     /// <param name="stateType">
     /// The live state <see cref="Type"/> decorated with
-    /// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>.
+    /// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
     /// </param>
     /// <param name="context">
     /// The live state instance that will be passed to the drawer on every
@@ -27,7 +27,7 @@ internal static class LiveSectionDrawerResolver
     /// </param>
     /// <param name="disposable">
     /// Set to the instantiated drawer cast to <see cref="IDisposable"/>. Because
-    /// <see cref="ILiveSectionDrawer{T}"/> extends <see cref="IDisposable"/>, this is always
+    /// <see cref="ILiveStateSectionDrawer{T}"/> extends <see cref="IDisposable"/>, this is always
     /// non-<see langword="null"/> when the method returns successfully.
     /// </param>
     /// <returns>
@@ -36,16 +36,17 @@ internal static class LiveSectionDrawerResolver
     /// </returns>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <paramref name="stateType"/> is not decorated with
-    /// <see cref="LiveSectionDrawerAttribute{TDrawer}"/>, when the declared drawer type
-    /// does not implement <see cref="ILiveSectionDrawer{T}"/> with a generic argument
+    /// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>, when the declared drawer type
+    /// does not implement <see cref="ILiveStateSectionDrawer{T}"/> with a generic argument
     /// compatible with <paramref name="stateType"/>, or when the drawer cannot be
     /// instantiated.
     /// </exception>
     internal static Action Resolve(Type stateType, object context, out IDisposable disposable)
     {
-        var attr = stateType.GetDrawerAttribute<ILiveSectionDrawerAttribute>() ?? throw new InvalidOperationException(
-                $"Live state type '{stateType.Name}' is not decorated with [LiveSectionDrawer<TDrawer>]. " +
+        var attr = stateType.GetDrawerAttribute<ILiveStateSectionDrawerAttribute>() ?? throw new InvalidOperationException(
+                $"Live state type '{stateType.Name}' is not decorated with [LiveStateSectionDrawer<TDrawer>]. " +
                 $"Apply the attribute to the state class to declare its drawer.");
+
         object drawerInstance;
         try
         {
@@ -63,7 +64,7 @@ internal static class LiveSectionDrawerResolver
         Type? genericIface = null;
         foreach (var iface in attr.DrawerType.GetInterfaces())
         {
-            if (!iface.IsGenericType || iface.GetGenericTypeDefinition() != typeof(ILiveSectionDrawer<>))
+            if (!iface.IsGenericType || iface.GetGenericTypeDefinition() != typeof(ILiveStateSectionDrawer<>))
                 continue;
 
             var tState = iface.GetGenericArguments()[0];
@@ -76,7 +77,7 @@ internal static class LiveSectionDrawerResolver
 
         if (genericIface is null)
             throw new InvalidOperationException(
-                $"Drawer type '{attr.DrawerType.Name}' does not implement ILiveSectionDrawer<T> " +
+                $"Drawer type '{attr.DrawerType.Name}' does not implement ILiveStateSectionDrawer<T> " +
                 $"with a generic argument compatible with '{stateType.Name}'.");
 
         disposable = (IDisposable)drawerInstance;

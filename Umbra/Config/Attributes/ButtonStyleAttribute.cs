@@ -2,7 +2,7 @@ namespace Umbra.Config.Attributes;
 
 /// <summary>
 /// Sets the visual color style of a button parameter rendered by
-/// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
+/// <see cref="UI.Config.Drawers.ButtonDrawer"/>.
 /// When absent, the button uses the active ImGui theme's default colors.
 /// </summary>
 /// <remarks>

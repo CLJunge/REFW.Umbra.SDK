@@ -1,6 +1,6 @@
 using REFrameworkNET;
 
-namespace Umbra;
+namespace Umbra.Runtime;
 
 /// <summary>
 /// Provides utilities for resolving native game object addresses into managed

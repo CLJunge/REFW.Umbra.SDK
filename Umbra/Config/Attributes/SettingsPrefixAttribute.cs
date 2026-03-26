@@ -5,7 +5,7 @@ namespace Umbra.Config.Attributes;
 /// the decorated settings class or struct, or within the nested settings group
 /// exposed by the decorated property.
 /// Use this to namespace settings and avoid key collisions across multiple
-/// settings groups registered with <c>SettingsStore</c>.
+/// settings groups registered with <see cref="SettingsStore{TConfig}"/>.
 /// </summary>
 /// <param name="prefix">
 /// The prefix string to prepend to each parameter key, e.g. <c>"Camera"</c>

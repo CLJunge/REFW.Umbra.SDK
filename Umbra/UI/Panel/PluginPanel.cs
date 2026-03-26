@@ -11,7 +11,7 @@ namespace Umbra.UI.Panel;
 /// <para>
 /// <see cref="PluginPanel"/> is the recommended top-level UI type for plugins that need to
 /// display both configuration settings and live game state in a single panel.
-/// For plugins that only require a settings panel, <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/>
+/// For plugins that only require a settings panel, <see cref="Config.ConfigDrawer{TConfig}"/>
 /// may be used directly.
 /// </para>
 /// <para>

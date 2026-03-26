@@ -1,17 +1,20 @@
+using Hexa.NET.ImGui;
+
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Instructs <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/> to render the decorated settings group's
-/// category as a collapsible <c>ImGui.TreeNode</c> instead of an <c>ImGui.SeparatorText</c> header.
+/// Instructs <see cref="UI.Config.ConfigDrawer{TConfig}"/> to render the decorated settings group's
+/// category as a collapsible <see cref="ImGui.TreeNode(string)"/> instead of a
+/// <see cref="ImGui.SeparatorText(string)"/> header.
 /// </summary>
 /// <remarks>
 /// <para>
 /// Apply this attribute to a nested settings-group property to control how that property's
 /// section is rendered in the UI. For backward compatibility it may also be applied to an
-/// <c>AutoRegisterSettingsAttribute</c>-decorated class or struct, in which case it acts as a
+/// <see cref="AutoRegisterSettingsAttribute"/>-decorated class or struct, in which case it acts as a
 /// fallback when the parent property declares no <c>[CollapseAsTree]</c> of its own.
-/// All categories defined by that group will use <c>ImGui.TreeNode</c> for their header, with
-/// all child controls rendered inside the expanded node and <c>ImGui.TreePop()</c> called
+/// All categories defined by that group will use <see cref="ImGui.TreeNode(string)"/> for their header, with
+/// all child controls rendered inside the expanded node and <see cref="ImGui.TreePop()"/> called
 /// automatically when the scope closes.
 /// </para>
 /// <para>

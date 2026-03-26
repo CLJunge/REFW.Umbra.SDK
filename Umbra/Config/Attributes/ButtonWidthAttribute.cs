@@ -2,7 +2,7 @@ namespace Umbra.Config.Attributes;
 
 /// <summary>
 /// Overrides the pixel width of a button parameter rendered by
-/// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
+/// <see cref="UI.Config.Drawers.ButtonDrawer"/>.
 /// Extends <see cref="ControlWidthAttribute"/> with button-specific width semantics.
 /// </summary>
 /// <remarks>

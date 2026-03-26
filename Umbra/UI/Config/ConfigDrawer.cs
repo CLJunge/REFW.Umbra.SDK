@@ -52,16 +52,16 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// </param>
     /// <param name="idScope">
     /// A plugin-unique identifier string (e.g. <c>"MyPlugin"</c>) used to scope all ImGui
-    /// widget IDs rendered by this drawer via <c>ImGui.PushID</c> / <c>ImGui.PopID</c>.
+    /// widget IDs rendered by this drawer via <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>.
     /// Every widget ID within a <see cref="Draw"/> call is internally prefixed with this
     /// string, preventing duplicate-ID warnings when multiple plugins render settings panels
     /// in the same ImGui window. Must be non-null and non-whitespace.
     /// </param>
     /// <param name="suppressRootNode">
     /// When <see langword="true"/>, the <see cref="ConfigRootNodeAttribute"/>-driven
-    /// root <c>ImGui.TreeNode</c> is not rendered even when the attribute is present on
+    /// root <see cref="ImGui.TreeNode(string)"/> is not rendered even when the attribute is present on
     /// <typeparamref name="TConfig"/>. Defaults to <see langword="false"/>.
-    /// Pass <see langword="true"/> when the owning <see cref="Umbra.UI.Panel.ConfigSection{TConfig}"/>
+    /// Pass <see langword="true"/> when the owning <see cref="ConfigSection{TConfig}"/>
     /// is responsible for the tree node so that the wrapping is not duplicated.
     /// </param>
     public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)

@@ -1,7 +1,7 @@
 using Umbra.Config.Attributes;
-using Umbra.UI.Config;
+using Umbra.UI.Panel;
 
-namespace Umbra.UI.Panel;
+namespace Umbra.UI.Config;
 
 /// <summary>
 /// A <see cref="IPanelSection"/> that renders a typed configuration object as a settings
@@ -77,13 +77,13 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         bool suppressTreeNode = false)
     {
         _sectionId = idScope ?? typeof(TConfig).FullName ?? typeof(TConfig).Name;
-        _order     = typeof(TConfig).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
+        _order = typeof(TConfig).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
 
         if (!suppressTreeNode)
         {
             if (treeNodeLabel is not null)
             {
-                _treeNodeLabel       = treeNodeLabel;
+                _treeNodeLabel = treeNodeLabel;
                 _treeNodeDefaultOpen = treeNodeDefaultOpen;
             }
             else
@@ -91,7 +91,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
                 var attr = typeof(TConfig).GetDrawerAttribute<ConfigRootNodeAttribute>();
                 if (attr is not null)
                 {
-                    _treeNodeLabel       = attr.Label ?? typeof(TConfig).Name.ToDisplayName();
+                    _treeNodeLabel = attr.Label ?? typeof(TConfig).Name.ToDisplayName();
                     _treeNodeDefaultOpen = attr.DefaultOpen;
                 }
             }

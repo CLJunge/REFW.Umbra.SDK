@@ -7,7 +7,7 @@ namespace Umbra.Config.Attributes;
 /// <remarks>
 /// <para>
 /// The trailing spacing travels with the parameter when <see cref="ParameterOrderAttribute"/> (<c>[ParameterOrder]</c>) reordering is active,
-/// because it is owned by the same <see cref="Umbra.UI.Config.Nodes.ParameterNode"/>
+/// because it is owned by the same <see cref="UI.Config.Nodes.ParameterNode"/>
 /// rather than being a separate sibling node.
 /// </para>
 /// <para>To add spacing <em>above</em> a control instead, use <see cref="SpacingBeforeAttribute"/>.</para>

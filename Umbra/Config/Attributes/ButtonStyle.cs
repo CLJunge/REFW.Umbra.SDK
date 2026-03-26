@@ -2,7 +2,7 @@ namespace Umbra.Config.Attributes;
 
 /// <summary>
 /// Defines the visual color-style variants available for a button rendered by
-/// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
+/// <see cref="UI.Config.Drawers.ButtonDrawer"/>.
 /// </summary>
 public enum ButtonStyle
 {
@@ -21,7 +21,7 @@ public enum ButtonStyle
     /// <c>[CustomButtonColors(...)]</c> should be used.
     /// <para>
     /// When this value is set but no <c>[CustomButtonColors]</c> attribute is present on the
-    /// same property, <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/> logs a
+    /// same property, <see cref="UI.Config.Drawers.ButtonDrawer"/> logs a
     /// one-time warning and falls back to <see cref="Default"/> rather than throwing, so the
     /// game process is never disrupted by a configuration error in a per-frame draw path.
     /// </para>

@@ -1,4 +1,6 @@
-namespace Umbra.UI.Panel;
+using Umbra.UI.Panel;
+
+namespace Umbra.UI;
 
 /// <summary>
 /// Specifies the render order of a section type within a <see cref="PluginPanel"/>.

@@ -1,3 +1,4 @@
+using Hexa.NET.ImGui;
 using Umbra.Config;
 
 namespace Umbra.UI.Config.Drawers;
@@ -16,7 +17,7 @@ public interface IParameterDrawer : IDisposable
     /// </summary>
     /// <remarks>
     /// All widget IDs are scoped by the owning <see cref="ConfigDrawer{TConfig}"/> via
-    /// <c>ImGui.PushID</c> / <c>ImGui.PopID</c>. Use <c>$"##{parameter.Key}"</c>
+    /// <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>. Use <c>$"##{parameter.Key}"</c>
     /// (or any suffix of your choice) as the ImGui widget ID; cross-plugin uniqueness
     /// is guaranteed without any extra effort here.
     /// </remarks>

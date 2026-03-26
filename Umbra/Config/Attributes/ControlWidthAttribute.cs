@@ -23,7 +23,7 @@ namespace Umbra.Config.Attributes;
 /// via <c>ImGui.Button</c>'s size vector instead of <c>SetNextItemWidth</c>, giving <c>0f</c>
 /// a different auto-size meaning. For all other standard controls the width is applied via
 /// <c>ImGui.SetNextItemWidth()</c> before the widget (or via the size vector for multi-line strings).
-/// Custom drawers must explicitly read <see cref="Umbra.Config.ParameterMetadata.ControlWidth"/>
+/// Custom drawers must explicitly read <see cref="ParameterMetadata.ControlWidth"/>
 /// to honour this setting.
 /// </para>
 /// </remarks>
