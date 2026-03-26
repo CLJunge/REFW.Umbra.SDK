@@ -87,7 +87,8 @@ internal sealed class ConfigDrawerBuilder
     /// <remarks>
     /// The expensive interface scan and expression compilation happen once per unique pair and are
     /// reused by all subsequent <see cref="ConfigDrawer{TConfig}"/> builds for the same shape.
-    /// Per-node work is then reduced to creating the drawer instance and binding the cached invoker`r`n    /// to that instance and nested group object.
+    /// Per-node work is then reduced to creating the drawer instance and binding the cached invoker
+    /// to that instance and nested group object.
     /// </remarks>
     private sealed class NestedGroupDrawerFactory(
         bool isSupported,
@@ -350,7 +351,8 @@ internal sealed class ConfigDrawerBuilder
 
     /// <summary>
     /// Materializes a collected child scope into a visible parent-owned <see cref="CategoryNode"/>
-    /// so a nested-group property's own category becomes an actual container in the rendered tree.
+    /// so a nested-group property's own category becomes the single rendered container for that
+    /// group's uncategorized direct controls and any additional child categories.
     /// </summary>
     /// <param name="category">The category label declared by the nested-group property or type.</param>
     /// <param name="childScope">The already-collected child scope that should render inside the container.</param>
@@ -460,11 +462,12 @@ internal sealed class ConfigDrawerBuilder
     /// <param name="propMeta">The cached property metadata for the nested-group property.</param>
     /// <param name="propType">The runtime type of the nested group.</param>
     /// <param name="nestedDrawerAttr">The resolved nested-group drawer attribute.</param>
-    /// <param name="nested">The live nested group instance retrieved from <paramref name="propType"/>.</param>
-    /// <param name="owner">The parent config instance that owns <paramref name="propType"/>.</param>
+    /// <param name="nested">The live nested group instance that will be passed to the drawer.</param>
+    /// <param name="owner">The parent config instance that owns the nested-group property.</param>
     /// <param name="localCategory">
     /// The explicit category declared on the nested-group property or its type, if any. When
-    /// <see langword="null"/>, the drawer inherits the parent scope category instead of creating
+    /// non-<see langword="null"/>, that category becomes the visible container for the drawer output.
+    /// When <see langword="null"/>, the drawer inherits the parent scope category instead of creating
     /// a new local category bucket.
     /// </param>
     /// <param name="collapseAttr">
@@ -542,7 +545,8 @@ internal sealed class ConfigDrawerBuilder
     /// <param name="nested">The live nested group instance that will be passed into the drawer.</param>
     /// <param name="disposable">Receives the drawer instance when it implements <see cref="IDisposable"/>.</param>
     /// <returns>
-    /// A draw delegate bound to a cached per-type invoker, or <see langword="null"/> when the`r`n    /// drawer type does not support <paramref name="propType"/>.
+    /// A draw delegate bound to a cached per-type invoker, or <see langword="null"/> when the
+    /// drawer type does not support <paramref name="propType"/>.
     /// </returns>
     private static Action? BuildNestedGroupDrawAction(
         INestedGroupDrawerAttribute nestedDrawerAttr,

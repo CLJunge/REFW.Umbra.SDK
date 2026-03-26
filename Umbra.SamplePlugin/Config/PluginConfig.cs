@@ -51,7 +51,9 @@ public record PluginConfig
 
     /// <summary>
     /// Gets or sets the deep nested-group demo used to validate that nested groups can contain
-    /// further nested groups and that category names are local to their parent context.
+    /// further nested groups, that category names are local to their parent context, and that a
+    /// categorized nested group renders as a single visible container rather than repeating the
+    /// same category label inside itself.
     /// </summary>
     [SettingsParameter]
     [Category("Nested Groups")]
@@ -212,7 +214,9 @@ public record PluginConfig
 
     /// <summary>
     /// Deep nested settings demo that provides two sibling branches with identical inner category
-    /// names so the sample can verify that categories are scoped to their owning parent group.
+    /// names so the sample can verify that categories are scoped to their owning parent group and
+    /// that each categorized nested group renders a single container for its direct controls and
+    /// child categories.
     /// The branches and nested custom drawers intentionally use different default values so the
     /// rendered hierarchy and repeated custom-drawer instances are easy to distinguish visually
     /// during manual validation.
