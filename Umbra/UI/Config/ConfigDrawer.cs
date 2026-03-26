@@ -25,7 +25,12 @@ namespace Umbra.UI.Config;
 /// <see cref="CategoryAttribute"/>, <see cref="CollapseAsTreeAttribute"/>,
 /// <see cref="LabelMarginAttribute"/>, and <see cref="NestedGroupDrawerAttribute{TDrawer}"/>
 /// to the parent property that exposes the group; equivalent type-level declarations remain
-/// supported as backward-compatible fallbacks.
+/// supported as backward-compatible fallbacks. Category names are scoped to the group that
+/// declares them, so sibling nested groups may reuse the same category label without colliding.
+/// When a nested-group property declares its own category, that category renders as a real parent
+/// container for the nested group's locally scoped categories and controls. Every nested-group
+/// subtree also receives its own stable ImGui ID scope derived from its structural settings path,
+/// so custom nested-group drawers can safely reuse local widget labels in different branches.
 /// Apply <see cref="ConfigRootNodeAttribute"/> to the root config class to wrap the entire panel
 /// inside a single top-level <c>ImGui.TreeNode</c>.
 /// </para>
