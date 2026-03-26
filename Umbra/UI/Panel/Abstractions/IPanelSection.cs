@@ -54,6 +54,15 @@ public interface IPanelSection : IDisposable
     string? TreeNodeLabel => null;
 
     /// <summary>
+    /// Gets whether the tree node wrapping this section starts in its open (expanded) state.
+    /// </summary>
+    /// <remarks>
+    /// Ignored when <see cref="TreeNodeLabel"/> is <see langword="null"/>.
+    /// When <see langword="false"/> (the default), the node starts collapsed.
+    /// </remarks>
+    bool TreeNodeDefaultOpen => false;
+
+    /// <summary>
     /// Gets the stable string identifier used by the owning <see cref="PluginPanel"/> to
     /// disambiguate this section's tree node via ImGui's <c>##</c> suffix convention.
     /// </summary>
