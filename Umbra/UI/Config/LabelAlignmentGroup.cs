@@ -36,15 +36,16 @@ internal sealed class LabelAlignmentGroup
     /// The maximum label-column width committed on the first draw frame by
     /// <see cref="EnsureSeeded"/>. Zero until that call; stable and non-decreasing thereafter.
     /// </summary>
-    public float LabelWidth => _committedMax;
+    internal float LabelWidth => _committedMax;
 
     /// <summary>
     /// Extra pixels inserted between the end of the label column and the start of the
     /// editing control, on top of the standard <c>ImGui.GetStyle().ItemSpacing.X</c> gap.
-    /// Defaults to <c>0f</c> (no additional margin). Set this on a per-group basis to
-    /// widen the gap for a specific category or the root parameter list.
+    /// Defaults to <c>0f</c> (no additional margin). Configured at draw-tree build time by
+    /// <see cref="ConfigDrawerBuilder"/> from a <c>[LabelMargin]</c> attribute; never written
+    /// at draw time.
     /// </summary>
-    public float Margin { get; set; } = 0f;
+    internal float Margin { get; set; } = 0f;
 
     /// <summary>
     /// Registers a label entry to be measured on the first draw frame.
