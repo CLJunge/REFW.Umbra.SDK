@@ -71,10 +71,10 @@ internal sealed class ConfigDrawerBuilder
     /// When a plain nested settings-group property carries wrapper-style property metadata such as
     /// <see cref="HideIfAttribute{T}"/>, <see cref="SpacingBeforeAttribute"/>,
     /// <see cref="SpacingAfterAttribute"/>, or <see cref="ParameterOrderAttribute"/>, the nested
-    /// group is emitted via <see cref="EmitNestedGroupNode"/>. When the property also carries a
-    /// category, that method gates the entire <see cref="CategoryNode"/> — header and children —
-    /// under the visibility predicate, so a <see cref="CollapseAsTreeAttribute"/>-driven tree node
-    /// does not remain visible with empty contents when the section is hidden.
+    /// group is emitted via <see cref="EmitNestedGroupNode"/>. When a visibility predicate is
+    /// present, only the wrapped children are gated; the category header itself continues to be
+    /// rendered by its owning <see cref="CategoryNode"/> so the shared category map and
+    /// label-alignment state are always kept consistent across the entire build pass.
     /// </remarks>
     internal void Collect(
         object obj,
@@ -197,45 +197,26 @@ internal sealed class ConfigDrawerBuilder
     /// so property-level visibility, spacing, and ordering apply to the entire section.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// When <paramref name="propHideIf"/> is non-<see langword="null"/> and
-    /// <paramref name="categoryOverride"/> is also non-<see langword="null"/>, the
-    /// <see cref="CategoryNode"/> is constructed directly — bypassing
-    /// <see cref="EmitCategoryHeader"/> — and its <see cref="CategoryNode.Draw"/> call is wrapped
-    /// inside a top-level <see cref="ParameterNode"/> that gates on the predicate. This ensures
-    /// the entire category block (tree-node header <em>and</em> all children) is hidden when the
-    /// condition holds; without this path, <see cref="EmitCategoryHeader"/> would add the
-    /// <see cref="CategoryNode"/> to <see cref="Nodes"/> unconditionally and only the children
-    /// would be gated, leaving a visible but empty tree node when the section is hidden.
-    /// The freshly constructed node is still registered in <see cref="_namedCategories"/> and
-    /// <see cref="_allCategoryNodes"/> so later <see cref="EmitCategoryHeader"/> calls for the
-    /// same category name reuse it rather than creating a duplicate, and <see cref="SortAll"/>
-    /// still sorts its children correctly.
-    /// </para>
-    /// <para>
-    /// When no visibility predicate is present (or there is no category to gate), the category
-    /// header is emitted via <see cref="EmitCategoryHeader"/> so the <see cref="CategoryNode"/>
-    /// and label-alignment group are shared with the rest of the build pass. The wrapper
-    /// <see cref="ParameterNode"/> is then routed into the same target list as other nodes in the
-    /// resolved category scope — <see cref="CategoryNode.Children"/> when a category is resolved,
-    /// or the top-level <see cref="Nodes"/> list when the group is uncategorized — ensuring that
-    /// <see cref="ParameterOrderAttribute"/> sorting is scoped to the category rather than mixing
-    /// the wrapper into the top-level ordering pass.
-    /// </para>
+    /// The category header is always emitted via <see cref="EmitCategoryHeader"/> so the
+    /// <see cref="CategoryNode"/> and label-alignment group are shared with the rest of the build
+    /// pass. The wrapper <see cref="ParameterNode"/> is routed into the same target list as other
+    /// nodes in the resolved category scope — <see cref="CategoryNode.Children"/> when a category
+    /// is resolved, or the top-level <see cref="Nodes"/> list when the group is uncategorized —
+    /// ensuring that <see cref="ParameterOrderAttribute"/> sorting is scoped to the category rather
+    /// than mixing the wrapper into the top-level ordering pass. When <paramref name="propHideIf"/>
+    /// is non-<see langword="null"/>, only the wrapped children are gated; the category header
+    /// itself is always rendered by its owning <see cref="CategoryNode"/>.
     /// </remarks>
     /// <param name="propType">The compile-time type of the nested settings group.</param>
     /// <param name="nested">The live nested settings group instance.</param>
     /// <param name="owner">The parent configuration object that owns the nested-group property.</param>
     /// <param name="propertyIndent">
     /// The property-level <see cref="IndentAttribute"/> declared on the parent property, forwarded
-    /// to either <see cref="EmitCategoryHeader"/> or the directly-constructed
-    /// <see cref="CategoryNode"/> so the category block is indented correctly.
+    /// to <see cref="EmitCategoryHeader"/> so the category block is indented correctly.
     /// </param>
     /// <param name="categoryOverride">
     /// The effective category for the nested group, resolved from the parent property first and
-    /// the nested type second. When non-<see langword="null"/> and <paramref name="propHideIf"/>
-    /// is also non-<see langword="null"/>, the node is built directly and wrapped rather than
-    /// emitted unconditionally via <see cref="EmitCategoryHeader"/>.
+    /// the nested type second.
     /// </param>
     /// <param name="collapseOverride">
     /// The effective collapse behaviour for the category header emitted by this group.
@@ -244,8 +225,8 @@ internal sealed class ConfigDrawerBuilder
     /// The effective label-column margin applied to controls collected from the nested group.
     /// </param>
     /// <param name="propHideIf">
-    /// Optional property-level <see cref="HideIfAttribute{T}"/> that determines whether the entire
-    /// nested section — including any category header or tree node — should be rendered.
+    /// Optional property-level <see cref="HideIfAttribute{T}"/> that gates whether the wrapped
+    /// children of this nested section are rendered.
     /// </param>
     /// <param name="order">The property-level sort key for the wrapped section.</param>
     /// <param name="spacingBefore">The property-level vertical spacing emitted above the wrapped section.</param>
@@ -263,33 +244,6 @@ internal sealed class ConfigDrawerBuilder
         int spacingBefore,
         int spacingAfter)
     {
-        // When a visibility predicate AND a named category are both present, the category node
-        // (header or tree node) must be gated by the predicate along with its children.
-        // EmitCategoryHeader always adds to Nodes unconditionally, so bypassing it here and
-        // constructing the CategoryNode directly prevents the tree-node label from remaining
-        // visible while its contents are hidden.
-        if (propHideIf is not null && categoryOverride is not null)
-        {
-            var categoryNode = new CategoryNode(categoryOverride, collapseOverride, propertyIndent);
-            CollectFlatParameterNodes(categoryNode.Children, categoryNode.AlignmentGroup, nested, propType, labelMarginOverride);
-
-            // Register in the shared deduplication state so later EmitCategoryHeader calls for
-            // the same category name route into this node rather than creating a duplicate header.
-            // SortAll() also iterates _allCategoryNodes, so the children will be sorted correctly.
-            _namedCategories[categoryOverride] = categoryNode;
-            _allCategoryNodes.Add(categoryNode);
-            _currentCategoryNode = categoryNode;
-            _lastCategory = categoryOverride;
-
-            var isVisible = VisibilityPredicateResolver.Build(propHideIf, owner);
-            Nodes.Add(new ParameterNode(isVisible, categoryNode.Draw, order, spacingBefore, spacingAfter));
-            return;
-        }
-
-        // Standard path: emit the category header unconditionally so the CategoryNode and its
-        // LabelAlignmentGroup are shared with the rest of the build pass. The wrapper
-        // ParameterNode is routed into the correct category scope so ParameterOrder sorting
-        // is scoped to the category rather than the top-level list.
         EmitCategoryHeader(categoryOverride, collapseOverride, propertyIndent);
 
         var targetList = categoryOverride is not null ? _currentCategoryNode!.Children : Nodes;
