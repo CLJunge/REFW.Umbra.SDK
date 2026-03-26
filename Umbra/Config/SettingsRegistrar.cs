@@ -18,7 +18,7 @@ internal static class SettingsRegistrar
     /// <returns>
     /// A dictionary mapping each discovered setting key to its corresponding <see cref="IParameter"/>.
     /// Returns an empty dictionary when <typeparamref name="TConfig"/> is not decorated with
-    /// <see cref="Umbra.Config.Attributes.AutoRegisterSettingsAttribute"/>.
+    /// <see cref="AutoRegisterSettingsAttribute"/>.
     /// </returns>
     internal static Dictionary<string, IParameter> Register<TConfig>(TConfig config)
         where TConfig : class

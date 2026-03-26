@@ -9,7 +9,7 @@ namespace Umbra.Config.Attributes;
 /// without runtime generic type inspection.
 /// </summary>
 /// <remarks>
-/// Used exclusively by internal framework machinery (<see cref="Umbra.Config.ParameterMetadataReader"/>).
+/// Used exclusively by internal framework machinery (<see cref="ParameterMetadataReader"/>).
 /// Plugin authors never implement or reference this interface directly.
 /// </remarks>
 internal interface ITwoColumnCustomDrawerAttribute

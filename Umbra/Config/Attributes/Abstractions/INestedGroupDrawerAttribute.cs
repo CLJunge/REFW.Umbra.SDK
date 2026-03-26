@@ -8,8 +8,8 @@ namespace Umbra.Config.Attributes;
 /// nested group type itself without runtime generic type inspection.
 /// </summary>
 /// <remarks>
-/// Used exclusively by internal framework machinery (<see cref="Umbra.UI.Config.ConfigDrawerBuilder"/>
-/// and <see cref="Umbra.UI.Config.TypeDrawMetadata"/>). Plugin authors never implement or
+/// Used exclusively by internal framework machinery (<see cref="UI.Config.ConfigDrawerBuilder"/>
+/// and <see cref="UI.Config.TypeDrawMetadata"/>). Plugin authors never implement or
 /// reference this interface directly.
 /// </remarks>
 internal interface INestedGroupDrawerAttribute
