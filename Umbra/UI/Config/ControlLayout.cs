@@ -5,14 +5,23 @@ namespace Umbra.UI.Config;
 
 /// <summary>
 /// Holds the pre-computed layout state for a single parameter row in the two-column
-/// settings UI. Replaces the heap-allocated <c>Action pre</c> delegate and closure
-/// previously returned by <c>ControlFactory.BuildDrawAction</c>.
+/// settings UI.
 /// </summary>
 /// <remarks>
-/// <see cref="Pre"/> inlines the layout logic that was previously in the <c>void pre()</c>
-/// local function inside <c>BuildDrawAction</c>. Storing this state as a value struct
+/// <para>
+/// Constructed at draw-tree build time by <see cref="ControlFactory"/>. The constructor
+/// immediately calls <see cref="LabelAlignmentGroup.Register"/> so the label is enrolled in
+/// the group's build-time batch before any ImGui frame is active; no font measurement happens
+/// at this point.
+/// </para>
+/// <para>
+/// On the first draw frame, <see cref="Pre"/> calls <see cref="LabelAlignmentGroup.EnsureSeeded"/>,
+/// which measures every registered label in one <see cref="ImGui.CalcTextSize(string)"/> pass,
+/// commits the group maximum, and marks the group as permanently seeded. Subsequent
+/// <see cref="Pre"/> calls skip seeding entirely. Storing this state as a value struct
 /// eliminates one closure-object allocation and one delegate allocation per parameter
 /// per <see cref="ConfigDrawer{TConfig}"/> construction.
+/// </para>
 /// </remarks>
 internal readonly struct ControlLayout
 {
@@ -39,17 +48,24 @@ internal readonly struct ControlLayout
         _alignGroup = alignGroup;
         _controlWidth = controlWidth;
         HiddenLabel = hiddenLabel;
+        alignGroup.Register(label, desc is not null);
     }
 
     /// <summary>
-    /// Performs the standard two-column pre-draw step: observes the label width for the
-    /// shared alignment group, renders the label text (and optional help marker), advances
-    /// the cursor to the shared column x position, and sets the next item width.
+    /// Performs the standard two-column pre-draw step: seeds the shared alignment group on
+    /// the first call, renders the label text (and optional help marker), advances the cursor
+    /// to the shared column x position, and sets the next item width.
     /// Must be called immediately before the ImGui widget call in each per-frame draw action.
     /// </summary>
+    /// <remarks>
+    /// The first call triggers <see cref="LabelAlignmentGroup.EnsureSeeded"/>, which measures
+    /// all registered labels in a single batch and permanently commits the group maximum.
+    /// Every subsequent call is a no-op for seeding and simply uses the already-committed
+    /// <see cref="LabelAlignmentGroup.LabelWidth"/> to position the cursor.
+    /// </remarks>
     internal void Pre()
     {
-        _alignGroup.Observe(_label, _desc is not null);
+        _alignGroup.EnsureSeeded();
         var startX = ImGui.GetCursorPosX();
         ImGui.Text(_label);
         if (_desc is not null)
