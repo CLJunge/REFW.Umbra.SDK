@@ -7,8 +7,10 @@ namespace Umbra.Config;
 public interface IParameter
 {
     /// <summary>
-    /// Raised when the parameter's value changes via <see cref="SetValue"/>.
-    /// Not raised when the value is updated silently via <see cref="SetValueWithoutNotify"/>.
+    /// Raised when the parameter's value changes through <see cref="SetValue(object?)"/>
+    /// or <see cref="Reset(bool)"/> with <c>raiseEvent = true</c>.
+    /// Not raised when the value is updated silently via <see cref="SetValueWithoutNotify(object?)"/>
+    /// or when <see cref="Reset(bool)"/> is called with <c>raiseEvent = false</c>.
     /// </summary>
     event Action? ValueChanged;
 
@@ -45,6 +47,10 @@ public interface IParameter
     /// Sets the value of this parameter and raises <see cref="ValueChanged"/> if the
     /// value differs from the current one.
     /// </summary>
+    /// <remarks>
+    /// Implementations may reject values that violate metadata-defined constraints,
+    /// such as numeric min/max bounds.
+    /// </remarks>
     /// <param name="value">
     /// The new value to assign. Must be assignable to <see cref="ValueType"/>.
     /// <see langword="null"/> is only valid when <see cref="ValueType"/> is a nullable type.
@@ -57,7 +63,7 @@ public interface IParameter
     void SetValue(object? value);
 
     /// <summary>
-    /// Resets the object to its initial state, optionally raising a change event.
+    /// Resets the parameter to its initial state, optionally raising a change event.
     /// Validation is bypassed so that <see cref="IsModified"/> is always
     /// <see langword="false"/> after this call.
     /// </summary>
@@ -68,6 +74,10 @@ public interface IParameter
     /// Sets the value of this parameter without raising <see cref="ValueChanged"/>.
     /// Useful for initializing or restoring persisted values without triggering side effects.
     /// </summary>
+    /// <remarks>
+    /// This silent path performs type coercion checks but intentionally bypasses any
+    /// metadata-based validation such as numeric min/max bounds.
+    /// </remarks>
     /// <param name="value">
     /// The new value to assign. Must be assignable to <see cref="ValueType"/>.
     /// <see langword="null"/> is only valid when <see cref="ValueType"/> is a nullable type.

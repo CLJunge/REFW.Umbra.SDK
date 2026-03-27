@@ -17,8 +17,10 @@ namespace Umbra.UI.Config;
 /// </para>
 /// <para>
 /// Pass a config instance returned by <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so that
-/// <see cref="Umbra.Config.ParameterMetadata"/> is already populated; the drawer falls back to reading
-/// attributes directly when metadata fields are absent.
+/// <see cref="Umbra.Config.ParameterMetadata"/> is already populated on every leaf parameter.
+/// Parameter-level presentation such as labels, descriptions, ranges, formats, and custom drawer
+/// bindings is taken from that cached metadata; nested-group wrapper attributes are still read from
+/// the reflected property/type structure during the one-time build pass.
 /// </para>
 /// <para>
 /// For nested settings groups, prefer applying presentation attributes such as

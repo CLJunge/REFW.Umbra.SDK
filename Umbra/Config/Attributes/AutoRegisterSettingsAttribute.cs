@@ -15,6 +15,8 @@ namespace Umbra.Config.Attributes;
 /// carry this attribute to be traversed, even when other nested-group behaviour such as
 /// <c>[SettingsPrefix]</c>, <c>[Category]</c>, <c>[CollapseAsTree]</c>, or
 /// <c>[NestedGroupDrawer]</c> is declared on the parent property instead of on the nested type.
+/// The built-in registrar walks only public instance properties; fields are not part of the
+/// automatic discovery path.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class AutoRegisterSettingsAttribute : Attribute { }

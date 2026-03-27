@@ -63,6 +63,11 @@ public class SettingsStore<TConfig> : IDisposable
     /// properties must also carry the attribute.
     /// </para>
     /// <para>
+    /// The built-in registration pipeline reflects only public instance properties marked with
+    /// <see cref="Attributes.SettingsParameterAttribute"/>. Fields are ignored by
+    /// <see cref="SettingsRegistrar"/> even though some metadata attributes permit field targets.
+    /// </para>
+    /// <para>
     /// This method must only be called once per <see cref="SettingsStore{TConfig}"/> instance.
     /// Calling it a second time would register duplicate <see cref="IParameter"/> instances and
     /// disconnect all previously registered event listeners from the returned config object.
@@ -105,6 +110,7 @@ public class SettingsStore<TConfig> : IDisposable
     /// <param name="target">The destination <see cref="SettingsStore{TConfig}"/> to copy values into.</param>
     /// <param name="setWithoutNotifying">
     /// When <see langword="true"/>, values are applied without raising <see cref="IParameter.ValueChanged"/> events.
+    /// This uses <see cref="IParameter.SetValueWithoutNotify(object?)"/>, so metadata-based validation is also bypassed.
     /// When <see langword="false"/>, normal change notification is triggered.
     /// </param>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>

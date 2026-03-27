@@ -26,6 +26,8 @@ public class Parameter<T> : IParameter
     /// <remarks>
     /// This event is not raised when the value is updated silently via
     /// <see cref="SetWithoutNotify"/> or <see cref="IParameter.SetValueWithoutNotify"/>.
+    /// It can also be raised by <see cref="Reset(bool)"/> when <c>raiseEvent</c> is
+    /// <see langword="true"/> and the reset actually changes the current value.
     /// </remarks>
     public event Action<T?, T?>? ValueChanged;
 
@@ -122,6 +124,10 @@ public class Parameter<T> : IParameter
     /// Sets the parameter's value without raising <see cref="ValueChanged"/>.
     /// Useful for initializing or restoring persisted values without triggering side effects.
     /// </summary>
+    /// <remarks>
+    /// This silent path intentionally bypasses the min/max validation performed by
+    /// <see cref="Value"/> and <see cref="Set(T)"/>.
+    /// </remarks>
     /// <param name="value">The value to assign silently.</param>
     public void SetWithoutNotify(T? value) => _value = value;
 

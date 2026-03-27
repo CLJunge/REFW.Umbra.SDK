@@ -1,9 +1,13 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Provides a description for a settings parameter property or field.
+/// Provides descriptive text for a settings parameter member.
 /// The description is typically shown as a tooltip or help text in the UI.
 /// </summary>
+/// <remarks>
+/// In the built-in settings pipeline, descriptions are read from public instance properties
+/// discovered by <see cref="SettingsRegistrar"/>.
+/// </remarks>
 /// <param name="text">The descriptive text to display.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class DescriptionAttribute(string text) : Attribute

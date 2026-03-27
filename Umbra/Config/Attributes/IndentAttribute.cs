@@ -3,12 +3,12 @@ using Hexa.NET.ImGui;
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Indents the decorated parameter's control, or all parameter controls within a settings
+/// Indents the decorated parameter control, or all parameter controls within a settings
 /// group class, in the settings UI.
 /// </summary>
 /// <remarks>
 /// <para>
-/// When applied to a <see cref="Parameter{T}"/> property or field, only that individual
+/// When applied to a discovered <see cref="Parameter{T}"/> property, only that individual
 /// control is indented.
 /// </para>
 /// <para>
@@ -20,6 +20,10 @@ namespace Umbra.Config.Attributes;
 /// Wraps the control with <see cref="ImGui.Indent(float)"/> / <see cref="ImGui.Unindent(float)"/>.
 /// When <paramref name="amount"/> is <c>0</c>, ImGui's default indent spacing
 /// (<c>ImGui.GetStyle().IndentSpacing</c>) is used.
+/// </para>
+/// <para>
+/// Although this attribute permits field targets, the built-in settings registrar and drawer
+/// inspect public instance properties and types only.
 /// </para>
 /// </remarks>
 /// <param name="amount">

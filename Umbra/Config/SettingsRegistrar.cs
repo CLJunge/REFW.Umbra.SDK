@@ -5,7 +5,7 @@ namespace Umbra.Config;
 
 /// <summary>
 /// Discovers and registers all <see cref="IParameter"/> instances declared on a configuration
-/// object by walking its property tree and respecting the SDK settings attributes.
+/// object by walking its public instance property tree and respecting the SDK settings attributes.
 /// </summary>
 internal static class SettingsRegistrar
 {
@@ -20,6 +20,10 @@ internal static class SettingsRegistrar
     /// Returns an empty dictionary when <typeparamref name="TConfig"/> is not decorated with
     /// <see cref="AutoRegisterSettingsAttribute"/>.
     /// </returns>
+    /// <remarks>
+    /// Only public instance properties participate in the built-in discovery walk.
+    /// Fields are ignored even if they carry <see cref="SettingsParameterAttribute"/> or related metadata attributes.
+    /// </remarks>
     internal static Dictionary<string, IParameter> Register<TConfig>(TConfig config)
         where TConfig : class
     {
@@ -37,7 +41,7 @@ internal static class SettingsRegistrar
     }
 
     /// <summary>
-    /// Recursively walks the property tree of <paramref name="obj"/>, registering any
+    /// Recursively walks the public instance property tree of <paramref name="obj"/>, registering any
     /// <see cref="IParameter"/> properties annotated with <see cref="SettingsParameterAttribute"/>.
     /// Nested objects that are themselves decorated with <see cref="AutoRegisterSettingsAttribute"/>
     /// are traversed automatically.

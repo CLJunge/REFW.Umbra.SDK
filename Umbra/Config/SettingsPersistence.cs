@@ -57,7 +57,8 @@ internal static class SettingsPersistence
     /// </param>
     /// <remarks>
     /// Values are applied via <see cref="IParameter.SetValueWithoutNotify"/>; no
-    /// <see cref="IParameter.ValueChanged"/> events are raised during load.
+    /// <see cref="IParameter.ValueChanged"/> events are raised during load, and metadata-based
+    /// validation is intentionally bypassed while restoring persisted values.
     /// </remarks>
     internal static void Load(string filePath, IReadOnlyDictionary<string, IParameter> parameters)
     {
