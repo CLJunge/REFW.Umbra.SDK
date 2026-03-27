@@ -15,7 +15,7 @@ namespace Umbra.Config.Attributes;
 /// Plugin authors should not implement it themselves; it is implemented only
 /// by framework-provided attributes such as <see cref="TwoColumnCustomDrawerAttribute{TDrawer}"/>.
 /// </remarks>
-public interface ITwoColumnCustomDrawerAttribute
+internal interface ITwoColumnCustomDrawerAttribute
 {
     /// <summary>Gets the concrete <see cref="ITwoColumnParameterDrawer"/> type used to render the parameter's editing widget.</summary>
     Type DrawerType { get; }

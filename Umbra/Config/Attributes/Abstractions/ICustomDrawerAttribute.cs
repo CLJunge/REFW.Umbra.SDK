@@ -15,7 +15,7 @@ namespace Umbra.Config.Attributes;
 /// Plugin authors should not implement this interface themselves; it is implemented only
 /// by framework-provided attributes such as <see cref="CustomDrawerAttribute{TDrawer}"/>.
 /// </remarks>
-public interface ICustomDrawerAttribute
+internal interface ICustomDrawerAttribute
 {
     /// <summary>Gets the concrete <see cref="IParameterDrawer"/> type used to render the parameter.</summary>
     Type DrawerType { get; }
