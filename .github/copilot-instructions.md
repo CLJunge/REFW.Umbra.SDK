@@ -18,6 +18,7 @@
   - SDK internals should use the static `Logger` facade for raw, unconditional logging with no per-plugin prefix or minimum level.
   - `Logger.Enabled = false`, `Logger.DisableAll()`, or `using var _ = Logger.Suppress();` silences all Umbra logging, including `PluginLogger`, which is useful for benchmarks and tests.
 - Assume game-facing code may run in a constrained plugin environment where resilience is preferred over hard failures.
+- When introducing replacement APIs in this codebase, prefer fully implemented replacements over inheriting from obsolete types so old types can be removed cleanly later.
 
 ## Thread safety — hooks and callbacks
 

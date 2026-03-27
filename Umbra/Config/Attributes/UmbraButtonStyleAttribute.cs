@@ -3,16 +3,14 @@ namespace Umbra.Config.Attributes;
 /// <summary>
 /// Sets the visual color style of a button parameter rendered by
 /// <see cref="UI.Config.Drawers.ButtonDrawer"/>.
-/// When absent, the button uses the active ImGui theme's default colors.
 /// </summary>
 /// <remarks>
-/// When both <c>[ButtonStyle]</c> and <c>[CustomButtonColors]</c> are present on the same
-/// property, <see cref="CustomButtonColorsAttribute"/> takes priority.
+/// When both <c>[UmbraButtonStyle]</c> and <c>[UmbraCustomButtonColors]</c> are present on the same
+/// property, <see cref="UmbraCustomButtonColorsAttribute"/> takes priority.
 /// </remarks>
 /// <param name="style">The color style to apply to the rendered button.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-[Obsolete("Use UmbraButtonStyleAttribute instead for the collision-safe Umbra-prefixed name.")]
-public class ButtonStyleAttribute(ButtonStyle style) : Attribute
+public sealed class UmbraButtonStyleAttribute(ButtonStyle style) : Attribute
 {
     /// <summary>Gets the visual color style applied to the button.</summary>
     public ButtonStyle Style { get; } = style;

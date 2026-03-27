@@ -23,7 +23,7 @@ namespace Umbra.UI.Config;
 /// or cousin branches of the configuration tree.
 /// </para>
 /// <para>
-/// When a nested group does not declare its own <see cref="CategoryAttribute"/>, its uncategorized
+/// When a nested group does not declare its own <see cref="UmbraCategoryAttribute"/>, its uncategorized
 /// direct children are injected into the parent scope's current category context. When the nested
 /// group does declare its own category, that category is rendered as a real container node whose
 /// children are the nested group's uncategorized direct controls plus any additional locally scoped
@@ -59,16 +59,16 @@ internal sealed class ConfigDrawerBuilder
     private sealed class ScopeState(
         string groupPath,
         string? defaultCategory,
-        CollapseAsTreeAttribute? collapseAttr,
-        IndentAttribute? categoryIndentAttr,
-        LabelMarginAttribute? labelMarginAttr,
+        UmbraCollapseAsTreeAttribute? collapseAttr,
+        UmbraIndentAttribute? categoryIndentAttr,
+        UmbraLabelMarginAttribute? labelMarginAttr,
         LabelAlignmentGroup? alignmentGroup = null)
     {
         internal string GroupPath { get; } = groupPath;
         internal string? DefaultCategory { get; } = defaultCategory;
-        internal CollapseAsTreeAttribute? CollapseAttr { get; } = collapseAttr;
-        internal IndentAttribute? CategoryIndentAttr { get; } = categoryIndentAttr;
-        internal LabelMarginAttribute? LabelMarginAttr { get; } = labelMarginAttr;
+        internal UmbraCollapseAsTreeAttribute? CollapseAttr { get; } = collapseAttr;
+        internal UmbraIndentAttribute? CategoryIndentAttr { get; } = categoryIndentAttr;
+        internal UmbraLabelMarginAttribute? LabelMarginAttr { get; } = labelMarginAttr;
         internal List<IDrawNode> Nodes { get; } = [];
         internal Dictionary<string, CategoryNode> NamedCategories { get; } = [];
         internal LabelAlignmentGroup AlignmentGroup { get; } = alignmentGroup ?? new();
@@ -117,7 +117,7 @@ internal sealed class ConfigDrawerBuilder
     /// which matters for nested groups accessed through a base-typed property.
     /// </param>
     /// <param name="propertyIndentOverride">
-    /// An <see cref="IndentAttribute"/> read from the parent's property declaration for this
+    /// An <see cref="UmbraIndentAttribute"/> read from the parent's property declaration for this
     /// nested group. When non-<see langword="null"/>, it is applied to category nodes created in
     /// this scope so the entire section header and its child controls indent together.
     /// </param>
@@ -126,11 +126,11 @@ internal sealed class ConfigDrawerBuilder
     /// when the group should use its own type-level category or remain uncategorized locally.
     /// </param>
     /// <param name="collapseOverride">
-    /// The property-level <see cref="CollapseAsTreeAttribute"/> selected for this nested group,
+    /// The property-level <see cref="UmbraCollapseAsTreeAttribute"/> selected for this nested group,
     /// or <see langword="null"/> when the type-level attribute should be used as fallback.
     /// </param>
     /// <param name="labelMarginOverride">
-    /// The property-level <see cref="LabelMarginAttribute"/> selected for this nested group,
+    /// The property-level <see cref="UmbraLabelMarginAttribute"/> selected for this nested group,
     /// or <see langword="null"/> when the type-level attribute should be used as fallback.
     /// </param>
     /// <remarks>
@@ -143,10 +143,10 @@ internal sealed class ConfigDrawerBuilder
     internal void Collect(
         object obj,
         Type type,
-        IndentAttribute? propertyIndentOverride = null,
+        UmbraIndentAttribute? propertyIndentOverride = null,
         string? categoryOverride = null,
-        CollapseAsTreeAttribute? collapseOverride = null,
-        LabelMarginAttribute? labelMarginOverride = null)
+        UmbraCollapseAsTreeAttribute? collapseOverride = null,
+        UmbraLabelMarginAttribute? labelMarginOverride = null)
     {
         Nodes.Clear();
         Disposables.Clear();
@@ -491,8 +491,8 @@ internal sealed class ConfigDrawerBuilder
         object nested,
         object owner,
         string? localCategory,
-        CollapseAsTreeAttribute? collapseAttr,
-        IndentAttribute? indentAttr)
+        UmbraCollapseAsTreeAttribute? collapseAttr,
+        UmbraIndentAttribute? indentAttr)
     {
         try
         {
@@ -626,7 +626,7 @@ internal sealed class ConfigDrawerBuilder
 
     /// <summary>
     /// Resolves the stable structural ImGui ID path for a nested-group property.
-    /// Property-level <see cref="SettingsPrefixAttribute"/> wins, followed by the nested type's
+    /// Property-level <see cref="UmbraSettingsPrefixAttribute"/> wins, followed by the nested type's
     /// type-level prefix, then <see cref="SettingsParameterAttribute.KeyOverride"/>, and finally
     /// the camel-cased property name.
     /// </summary>
