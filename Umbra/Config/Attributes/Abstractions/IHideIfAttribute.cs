@@ -1,7 +1,7 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Non-generic marker interface implemented by <see cref="HideIfAttribute{T}"/>.
+/// Non-generic marker interface implemented by <see cref="UmbraHideIfAttribute{T}"/>.
 /// Allows hide-condition detection and data access without runtime generic type inspection
 /// or reflective property reads on the attribute instance.
 /// </summary>

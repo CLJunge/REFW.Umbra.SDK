@@ -8,6 +8,10 @@ namespace Umbra.SamplePlugin.Config;
 /// The drawer intentionally uses fixed local widget labels such as <c>"Value 1"</c> so multiple
 /// nested-group instances can validate that group-level ImGui ID scoping prevents collisions.
 /// </summary>
+/// <remarks>
+/// This drawer is deliberately simple and self-contained: each helper edits exactly one persisted
+/// parameter so the sample remains a clear reference for implementing <see cref="INestedGroupDrawer{TGroup}"/>.
+/// </remarks>
 internal sealed class NestedDrawerTestDrawer : INestedGroupDrawer<PluginConfig.NestedDrawerTest>
 {
     /// <summary>

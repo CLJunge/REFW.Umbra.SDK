@@ -21,14 +21,14 @@ public sealed class ParameterMetadata
 {
     /// <summary>
     /// Gets the category name used to group related parameters together in the UI.
-    /// Sourced from <see cref="CategoryAttribute"/> on the parameter's declaring member or its
+    /// Sourced from <see cref="UmbraCategoryAttribute"/> on the parameter's declaring member or its
     /// enclosing settings group. <see langword="null"/> if no category has been assigned.
     /// </summary>
     public string? Category { get; init; }
 
     /// <summary>
     /// Gets the human-readable display name for the parameter, shown in the UI.
-    /// Sourced from <see cref="DisplayNameAttribute"/>. <see langword="null"/> if not specified.
+    /// Sourced from <see cref="UmbraDisplayNameAttribute"/>. <see langword="null"/> if not specified.
     /// </summary>
     public string? DisplayName { get; init; }
 
@@ -43,14 +43,14 @@ public sealed class ParameterMetadata
 
     /// <summary>
     /// Gets the descriptive text for the parameter, typically rendered as a tooltip
-    /// or help label in the UI. Sourced from <see cref="DescriptionAttribute"/>.
+    /// or help label in the UI. Sourced from <see cref="UmbraDescriptionAttribute"/>.
     /// <see langword="null"/> if not specified.
     /// </summary>
     public string? Description { get; init; }
 
     /// <summary>
     /// Gets the maximum character length for string input fields.
-    /// Sourced from <see cref="MaxLengthAttribute"/>. <see langword="null"/> if not specified;
+    /// Sourced from <see cref="UmbraMaxLengthAttribute"/>. <see langword="null"/> if not specified;
     /// the UI defaults to <c>256</c>.
     /// </summary>
     public uint? MaxLength { get; init; }
@@ -58,14 +58,14 @@ public sealed class ParameterMetadata
     /// <summary>
     /// Gets the minimum allowable value for the parameter.
     /// Used by <see cref="Parameter{T}"/> to reject values below this bound.
-    /// Sourced from <see cref="RangeAttribute"/>. <see langword="null"/> if no minimum is defined.
+    /// Sourced from <see cref="UmbraRangeAttribute"/>. <see langword="null"/> if no minimum is defined.
     /// </summary>
     public double? Min { get; init; }
 
     /// <summary>
     /// Gets the maximum allowable value for the parameter.
     /// Used by <see cref="Parameter{T}"/> to reject values above this bound.
-    /// Sourced from <see cref="RangeAttribute"/>. <see langword="null"/> if no maximum is defined.
+    /// Sourced from <see cref="UmbraRangeAttribute"/>. <see langword="null"/> if no maximum is defined.
     /// </summary>
     public double? Max { get; init; }
 
@@ -74,17 +74,17 @@ public sealed class ParameterMetadata
     /// (<c>DragFloat</c> / <c>DragInt</c>); the drag-speed value is not applied to slider
     /// controls (<c>SliderFloat</c> / <c>SliderInt</c>). For <c>float</c> and <c>double</c>
     /// parameters, also used to infer the display format's decimal precision when no
-    /// <see cref="FormatAttribute"/> is present; this format inference applies to both
+    /// <see cref="UmbraFormatAttribute"/> is present; this format inference applies to both
     /// <c>DragFloat</c>/<c>DragDouble</c> and <c>SliderFloat</c>/<c>SliderDouble</c>.
     /// For <c>int</c> parameters, only the drag speed applies to <c>DragInt</c>; format
     /// inference is not performed and the display format always falls back to <c>"%d"</c>.
-    /// Sourced from <see cref="StepAttribute"/>. <see langword="null"/> if no step is defined.
+    /// Sourced from <see cref="UmbraStepAttribute"/>. <see langword="null"/> if no step is defined.
     /// </summary>
     public double? Step { get; init; }
 
     /// <summary>
     /// Gets the printf-style format string used when displaying the parameter's value
-    /// inside ImGui controls. Sourced from <see cref="FormatAttribute"/>.
+    /// inside ImGui controls. Sourced from <see cref="UmbraFormatAttribute"/>.
     /// <see langword="null"/> if not specified; the UI falls back to a format inferred
     /// from <see cref="Step"/> for floating-point types and <c>"%d"</c> for integers.
     /// </summary>
@@ -93,7 +93,7 @@ public sealed class ParameterMetadata
     /// <summary>
     /// Gets the visual color style applied to a button rendered by
     /// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
-    /// Sourced from <see cref="ButtonStyleAttribute"/>. <see langword="null"/> when not specified;
+    /// Sourced from <see cref="UmbraButtonStyleAttribute"/>. <see langword="null"/> when not specified;
     /// the drawer defaults to <see cref="ButtonStyle.Default"/>.
     /// </summary>
     /// <remarks>
@@ -104,15 +104,14 @@ public sealed class ParameterMetadata
     /// <summary>
     /// Gets the custom RGBA colors applied to a button rendered by
     /// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
-    /// Sourced from <see cref="CustomButtonColorsAttribute"/>. <see langword="null"/> when not specified.
+    /// Sourced from <see cref="UmbraCustomButtonColorsAttribute"/>. <see langword="null"/> when not specified.
     /// When present, takes priority over <see cref="ButtonStyle"/>.
     /// </summary>
     public (Vector4 Normal, Vector4 Hovered, Vector4 Active)? CustomButtonColors { get; init; }
 
     /// <summary>
     /// Gets the explicit pixel width for a settings control's editing widget.
-    /// Sourced from <see cref="ControlWidthAttribute"/> or the obsolete
-    /// <see cref="ButtonWidthAttribute"/> compatibility alias.
+    /// Sourced from <see cref="UmbraControlWidthAttribute"/>.
     /// </summary>
     /// <remarks>
     /// All standard controls always use a two-column text-label layout; this property governs
@@ -129,7 +128,7 @@ public sealed class ParameterMetadata
     /// <summary>
     /// Gets the number of visible text lines used to compute the height of a multi-line
     /// <c>ImGui.InputTextMultiline</c> control for <see cref="string"/> parameters.
-    /// Sourced from <see cref="MultilineAttribute"/>. <see langword="null"/> when not specified;
+    /// Sourced from <see cref="UmbraMultilineAttribute"/>. <see langword="null"/> when not specified;
     /// the control falls back to a single-line <c>ImGui.InputText</c>.
     /// </summary>
     public int? MultilineLines { get; init; }
@@ -139,20 +138,20 @@ public sealed class ParameterMetadata
     /// Lower values appear first; parameters without an order value sort after all explicitly
     /// ordered entries (using <see cref="int.MaxValue"/> as an implicit sentinel), with
     /// original declaration order preserved among equals via stable sort.
-    /// Sourced from <see cref="ParameterOrderAttribute"/>. <see langword="null"/> when not specified.
+    /// Sourced from <see cref="UmbraParameterOrderAttribute"/>. <see langword="null"/> when not specified.
     /// </summary>
     public int? Order { get; init; }
 
     /// <summary>
     /// Gets the number of <c>ImGui.Spacing()</c> calls inserted <em>above</em> this parameter's control.
-    /// Sourced from <see cref="SpacingBeforeAttribute"/>. Defaults to <c>0</c> (no extra spacing) when the
+    /// Sourced from <see cref="UmbraSpacingBeforeAttribute"/>. Defaults to <c>0</c> (no extra spacing) when the
     /// attribute is absent.
     /// </summary>
     public int SpacingBefore { get; init; }
 
     /// <summary>
     /// Gets the number of <c>ImGui.Spacing()</c> calls inserted <em>below</em> this parameter's control.
-    /// Sourced from <see cref="SpacingAfterAttribute"/>. Defaults to <c>0</c> (no extra spacing) when the
+    /// Sourced from <see cref="UmbraSpacingAfterAttribute"/>. Defaults to <c>0</c> (no extra spacing) when the
     /// attribute is absent.
     /// </summary>
     public int SpacingAfter { get; init; }
@@ -160,10 +159,10 @@ public sealed class ParameterMetadata
     /// <summary>
     /// Gets the indentation width in pixels to apply around this parameter's control, or
     /// <see langword="null"/> when no indentation is requested.
-    /// Sourced from the property-level <see cref="IndentAttribute"/>.
+    /// Sourced from the property-level <see cref="UmbraIndentAttribute"/>.
     /// <c>0f</c> means use ImGui's default indent spacing (<c>ImGui.GetStyle().IndentSpacing</c>);
     /// a positive value specifies an explicit pixel width.
-    /// <see langword="null"/> when the attribute is absent — the class-level <see cref="IndentAttribute"/>
+    /// <see langword="null"/> when the attribute is absent — the class-level <see cref="UmbraIndentAttribute"/>
     /// (if any) is used as fallback by <see cref="Umbra.UI.Config.ConfigDrawerBuilder"/>.
     /// </summary>
     public float? Indent { get; init; }
@@ -173,7 +172,7 @@ public sealed class ParameterMetadata
     /// to render this parameter, or <see langword="null"/> when no <c>[CustomDrawer&lt;TDrawer&gt;]</c>
     /// attribute is present. When non-<see langword="null"/>, <see cref="Umbra.UI.Config.ControlFactory"/> instantiates this
     /// type and delegates all rendering to it; the default two-column layout is bypassed entirely.
-    /// Sourced from <see cref="CustomDrawerAttribute{TDrawer}"/> via a single attribute scan in
+    /// Sourced from <see cref="UmbraCustomDrawerAttribute{TDrawer}"/> via a single attribute scan in
     /// <see cref="ParameterMetadataReader"/>.
     /// </summary>
     public Type? CustomDrawerType { get; init; }
@@ -184,13 +183,13 @@ public sealed class ParameterMetadata
     /// <c>[TwoColumnCustomDrawer&lt;TDrawer&gt;]</c> attribute is present. When non-<see langword="null"/>,
     /// <see cref="Umbra.UI.Config.ControlFactory"/> instantiates this type and delegates widget rendering to it while retaining
     /// the standard two-column label layout.
-    /// Sourced from <see cref="TwoColumnCustomDrawerAttribute{TDrawer}"/> via a single attribute scan in
+    /// Sourced from <see cref="UmbraTwoColumnCustomDrawerAttribute{TDrawer}"/> via a single attribute scan in
     /// <see cref="ParameterMetadataReader"/>.
     /// </summary>
     public Type? TwoColumnCustomDrawerType { get; init; }
 
     /// <summary>
-    /// Gets the cached hide-condition data sourced from <see cref="HideIfAttribute{T}"/> on this
+    /// Gets the cached hide-condition data sourced from <see cref="UmbraHideIfAttribute{T}"/> on this
     /// parameter's declaring member, or <see langword="null"/> when no such attribute is present.
     /// Consumed by <see cref="Umbra.UI.Config.VisibilityPredicateResolver"/> to compile the per-frame visibility predicate
     /// without requiring a second attribute scan at draw-tree construction time.

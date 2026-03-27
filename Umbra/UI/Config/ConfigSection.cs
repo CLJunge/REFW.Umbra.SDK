@@ -3,15 +3,13 @@ using Umbra.UI.Panel;
 
 namespace Umbra.UI.Config;
 
-#pragma warning disable CS0618 // Section construction still honors legacy unprefixed attributes for backwards compatibility.
-
 /// <summary>
 /// A <see cref="IPanelSection"/> that renders a typed configuration object as a settings
 /// panel using <see cref="ConfigDrawer{TConfig}"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// When the config type carries a root-node attribute, the section
+/// When the config type carries <see cref="UmbraConfigRootNodeAttribute"/>, the section
 /// automatically exposes <see cref="IPanelSection.TreeNodeLabel"/> and
 /// <see cref="IPanelSection.TreeNodeDefaultOpen"/> so that the owning
 /// <see cref="PluginPanel"/> renders the tree node. An explicit <c>treeNodeLabel</c>
@@ -100,18 +98,9 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private static (string? Label, bool DefaultOpen)? GetRootNodeMetadata(Type type)
     {
         foreach (var attr in type.GetCustomAttributes(inherit: true))
-        {
-            switch (attr)
-            {
-                case ConfigRootNodeAttribute legacy:
-                    return (legacy.Label, legacy.DefaultOpen);
-                case UmbraConfigRootNodeAttribute prefixed:
-                    return (prefixed.Label, prefixed.DefaultOpen);
-            }
-        }
+            if (attr is UmbraConfigRootNodeAttribute prefixed)
+                return (prefixed.Label, prefixed.DefaultOpen);
 
         return null;
     }
 }
-
-#pragma warning restore CS0618

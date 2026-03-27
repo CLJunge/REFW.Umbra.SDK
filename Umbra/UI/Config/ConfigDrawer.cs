@@ -1,12 +1,9 @@
-using System.Reflection;
 using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
 using Umbra.Logging;
 using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config;
-
-#pragma warning disable CS0618 // Drawer construction still honors legacy unprefixed attributes for backwards compatibility.
 
 /// <summary>
 /// Pre-builds and renders an ImGui settings UI for a typed configuration class.
@@ -26,8 +23,8 @@ namespace Umbra.UI.Config;
 /// </para>
 /// <para>
 /// For nested settings groups, prefer applying presentation attributes such as
-/// <see cref="CategoryAttribute"/>, <see cref="CollapseAsTreeAttribute"/>,
-/// <see cref="LabelMarginAttribute"/>, and <see cref="NestedGroupDrawerAttribute{TDrawer}"/>
+/// <see cref="UmbraCategoryAttribute"/>, <see cref="UmbraCollapseAsTreeAttribute"/>,
+/// <see cref="UmbraLabelMarginAttribute"/>, and <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>
 /// to the parent property that exposes the group; equivalent type-level declarations remain
 /// supported as backward-compatible fallbacks. Category names are scoped to the group that
 /// declares them, so sibling nested groups may reuse the same category label without colliding.
@@ -35,7 +32,7 @@ namespace Umbra.UI.Config;
 /// container for the group's uncategorized direct controls and any additional child categories
 /// declared inside the group. Every nested-group subtree also receives its own stable ImGui ID
 /// scope derived from its structural settings path, so custom nested-group drawers can safely
-/// reuse local widget labels in different branches. Apply a root-node attribute
+/// reuse local widget labels in different branches. Apply <see cref="UmbraConfigRootNodeAttribute"/>
 /// to the root config class to wrap the entire panel inside a single top-level
 /// <c>ImGui.TreeNode</c>.
 /// </para>
@@ -148,18 +145,9 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     private static (string? Label, bool DefaultOpen)? GetRootNodeMetadata(Type type)
     {
         foreach (var attr in type.GetCustomAttributes(inherit: true))
-        {
-            switch (attr)
-            {
-                case ConfigRootNodeAttribute legacy:
-                    return (legacy.Label, legacy.DefaultOpen);
-                case UmbraConfigRootNodeAttribute prefixed:
-                    return (prefixed.Label, prefixed.DefaultOpen);
-            }
-        }
+            if (attr is UmbraConfigRootNodeAttribute prefixed)
+                return (prefixed.Label, prefixed.DefaultOpen);
 
         return null;
     }
 }
-
-#pragma warning restore CS0618

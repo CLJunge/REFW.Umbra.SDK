@@ -13,6 +13,12 @@ namespace Umbra.SamplePlugin;
 /// Sample REFramework.NET plugin that demonstrates Umbra settings registration,
 /// automatic deferred persistence, and panel-based ImGui rendering.
 /// </summary>
+/// <remarks>
+/// The sample keeps its logger, settings store, deferred-save controller, and panel in static
+/// fields because REFramework plugin entry points and callbacks are static. The implementation is
+/// intentionally small so each concern in the Umbra plugin lifecycle is easy to map back to the
+/// corresponding SDK feature.
+/// </remarks>
 public static class SamplePlugin
 {
     private static readonly PluginLogger _log = new("SamplePlugin");
@@ -26,6 +32,11 @@ public static class SamplePlugin
     /// (or writes defaults if no file exists), wires the sample button action, starts deferred
     /// save handling, and constructs the plugin panel.
     /// </summary>
+    /// <remarks>
+    /// The sample binds the <see cref="PluginConfig.LogTestMessage"/> button action after
+    /// <see cref="SettingsStore{TConfig}.Load()"/> so the persisted configuration instance owns the
+    /// callback invoked by the settings UI.
+    /// </remarks>
     [PluginEntryPoint]
     public static void Load()
     {
@@ -54,6 +65,10 @@ public static class SamplePlugin
     /// performs a final explicit save, then disposes and nulls all static resources to prevent
     /// stale state if the plugin is reloaded in the same process session.
     /// </summary>
+    /// <remarks>
+    /// The explicit flush before disposal ensures that a pending debounce interval does not drop
+    /// the user's last in-memory edits when the plugin unloads.
+    /// </remarks>
     [PluginExitPoint]
     public static void Unload()
     {
@@ -112,6 +127,10 @@ public static class SamplePlugin
     /// ImGui pre-draw callback. Delegates drawing and deferred-save ticking to focused helpers so
     /// UI rendering and persistence timing remain separate concerns.
     /// </summary>
+    /// <remarks>
+    /// This callback runs on every REFramework UI draw pass. The helper split keeps the callback
+    /// itself declarative while preserving the sample's one-responsibility-per-method layout.
+    /// </remarks>
     [Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
     public static void PreDrawUI()
     {

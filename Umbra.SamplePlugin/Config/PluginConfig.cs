@@ -10,6 +10,11 @@ namespace Umbra.SamplePlugin.Config;
 /// film grain adjustments, a deep nested-group demo that reuses category names in separate parent
 /// scopes, a custom nested-group drawer demo, and action-backed button parameters.
 /// </summary>
+/// <remarks>
+/// This sample config intentionally exercises most of Umbra's settings metadata surface so the
+/// generated panel can serve as a manual validation bed for nested groups, category scoping,
+/// custom drawers, button actions, ordering, spacing, and visibility predicates.
+/// </remarks>
 [UmbraAutoRegisterSettings]
 [UmbraConfigRootNode("Sample Plugin v1.0")]
 [UmbraSettingsPrefix("samplePlugin")]
@@ -62,6 +67,10 @@ public record PluginConfig
     public NestedGroupsDemo NestedGroups { get; set; } = new();
 
     /// <summary>Gets or sets the sample nested settings group rendered by a custom group drawer.</summary>
+    /// <remarks>
+    /// The nested type itself carries <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>, so
+    /// this property demonstrates the type-level fallback path for custom nested-group drawers.
+    /// </remarks>
     [UmbraSettingsParameter]
     public NestedDrawerTest DrawerTest { get; set; } = new();
 
@@ -88,7 +97,11 @@ public record PluginConfig
     [UmbraControlWidth(-1f)]
     public Parameter<Action> ResetGeneral { get; init; }
 
-    /// <summary>Initializes a new <see cref="PluginConfig"/> and wires up the reset action.</summary>
+    /// <summary>Initializes a new <see cref="PluginConfig"/> and wires up the sample button actions.</summary>
+    /// <remarks>
+    /// Delegate-backed button parameters are configured in the constructor so each loaded config
+    /// instance owns the actions that operate on its own <see cref="Parameter{T}"/> objects.
+    /// </remarks>
     public PluginConfig()
     {
         ResetGeneral = new(() =>
@@ -155,6 +168,10 @@ public record PluginConfig
         public Parameter<Action> ResetFov { get; init; }
 
         /// <summary>Initializes a new <see cref="FovSettings"/> and wires up the reset action.</summary>
+        /// <remarks>
+        /// The reset action restores every view-mode-specific FOV parameter so the nested group can
+        /// be returned to a known baseline with a single button press.
+        /// </remarks>
         public FovSettings()
         {
             ResetFov = new(() =>
@@ -202,6 +219,10 @@ public record PluginConfig
         public Parameter<Action> ResetFilmGrain { get; init; }
 
         /// <summary>Initializes a new <see cref="FilmGrainSettings"/> and wires up the reset action.</summary>
+        /// <remarks>
+        /// The action resets both the visibility-driving toggle and the dependent opacity value so
+        /// the hide predicate can be revalidated from a clean default state.
+        /// </remarks>
         public FilmGrainSettings()
         {
             ResetFilmGrain = new(() =>
@@ -513,6 +534,11 @@ public record PluginConfig
     /// this type are intentionally rendered in the sample config with identical internal widget
     /// labels so nested-group ImGui ID scoping can be verified manually.
     /// </summary>
+    /// <remarks>
+    /// The group is annotated with <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>, causing
+    /// <see cref="NestedDrawerTestDrawer"/> to take over layout for every instance unless a parent
+    /// property supplies its own overriding nested-group drawer attribute.
+    /// </remarks>
     [UmbraAutoRegisterSettings]
     [UmbraCategory("Drawer Test")]
     [UmbraCollapseAsTree]

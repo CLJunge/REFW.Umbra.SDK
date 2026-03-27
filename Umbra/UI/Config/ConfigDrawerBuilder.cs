@@ -627,7 +627,7 @@ internal sealed class ConfigDrawerBuilder
     /// <summary>
     /// Resolves the stable structural ImGui ID path for a nested-group property.
     /// Property-level <see cref="UmbraSettingsPrefixAttribute"/> wins, followed by the nested type's
-    /// type-level prefix, then <see cref="SettingsParameterAttribute.KeyOverride"/>, and finally
+    /// type-level prefix, then <see cref="UmbraSettingsParameterAttribute.KeyOverride"/>, and finally
     /// the camel-cased property name.
     /// </summary>
     /// <param name="parentPath">The dot-separated structural path of the parent group.</param>
