@@ -337,7 +337,7 @@ public record PluginConfig
 
         /// <summary>
         /// Gets or sets the nested custom-drawer branch inside the deep tree.
-        /// This validates that a nested group using <see cref="NestedGroupDrawerAttribute{TDrawer}"/>
+        /// This validates that a nested group using <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>
         /// can participate in the same scoped layout as regular nested groups.
         /// </summary>
         [UmbraSettingsParameter]
@@ -388,7 +388,7 @@ public record PluginConfig
 
         /// <summary>
         /// Gets or sets whether the nested Advanced branch is shown.
-        /// This validates <see cref="HideIfAttribute{T}"/> on a nested-group property.
+        /// This validates <see cref="UmbraHideIfAttribute{T}"/> on a nested-group property.
         /// </summary>
         [UmbraSettingsParameter]
         [UmbraDisplayName("Show Advanced")]
