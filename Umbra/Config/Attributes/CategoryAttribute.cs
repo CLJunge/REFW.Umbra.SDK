@@ -1,10 +1,12 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Assigns a category name to a settings parameter, property, field, or settings group class.
+/// Assigns a category name to a settings parameter, property, field, or settings-group type.
 /// Parameters sharing the same category name are grouped together when rendered in the UI.
-/// When applied to a class decorated with <see cref="AutoRegisterSettingsAttribute"/>, the category
-/// is inherited by all parameters in that group unless overridden at the member level.
+/// When applied to an <see cref="AutoRegisterSettingsAttribute"/> type, the category becomes the
+/// fallback category for that group's direct parameters unless a member overrides it. When applied
+/// to a nested settings-group property, the category creates the visible container section for that
+/// group, and direct child controls without their own category render inside that container.
 /// </summary>
 /// <param name="name">The category name used to group related parameters in the UI.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Class | AttributeTargets.Struct)]

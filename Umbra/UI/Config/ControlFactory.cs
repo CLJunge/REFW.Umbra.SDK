@@ -14,9 +14,9 @@ namespace Umbra.UI.Config;
 /// <remarks>
 /// All controls use a two-column text-label layout unconditionally: the parameter label (and
 /// optional <c>(?)</c> help marker) is rendered on the left; the editing widget is placed on
-/// the right at the column x position determined by <see cref="LabelAlignmentGroup"/>. Within
-/// each category or root scope every label is measured each frame so that all controls share
-/// the same column x regardless of individual label length.
+/// the right at the column x position determined by <see cref="LabelAlignmentGroup"/>. Labels
+/// are registered with the group at build time and measured once on the first draw frame via
+/// <see cref="LabelAlignmentGroup.EnsureSeeded"/>; no per-frame measurement occurs after that.
 /// The widget width defaults to fill-to-right-edge (<c>SetNextItemWidth(-1f)</c>) and can be
 /// fixed with <c>[ControlWidth(px)]</c>.
 /// </remarks>
@@ -315,13 +315,18 @@ internal static class ControlFactory
     ///   <item>
     ///     <term>Column alignment</term>
     ///     <description>
-    ///       <see cref="LabelAlignmentGroup.Observe"/> is called every frame to accumulate the
-    ///       widest measured label in the group. <c>ImGui.SetCursorPosX</c> then advances the
-    ///       cursor to <c>startX + <see cref="LabelAlignmentGroup.LabelWidth"/> +
+    ///       Each <see cref="ControlLayout"/> registers its label with the shared
+    ///       <see cref="LabelAlignmentGroup"/> at construction time via
+    ///       <see cref="LabelAlignmentGroup.Register"/>. On the first draw frame,
+    ///       <see cref="ControlLayout.Pre"/> triggers <see cref="LabelAlignmentGroup.EnsureSeeded"/>,
+    ///       which measures all registered labels in one <see cref="ImGui.CalcTextSize(string)"/>
+    ///       batch and commits the maximum. <c>ImGui.SetCursorPosX</c> then advances the cursor to
+    ///       <c>startX + <see cref="LabelAlignmentGroup.LabelWidth"/> +
     ///       <see cref="LabelAlignmentGroup.Margin"/> + spacing</c> before the widget call.
     ///       The cursor is never moved backward: if a label is wider than the committed group
     ///       maximum (possible on frame 1), the control is placed immediately after the label
-    ///       with no overlap.
+    ///       with no overlap. After seeding the committed maximum is frozen and never decreases,
+    ///       so hiding parameters via <c>[HideIf]</c> cannot narrow the column.
     ///     </description>
     ///   </item>
     ///   <item>

@@ -225,7 +225,7 @@ public sealed class ParameterMetadata
     /// Gets the pre-computed hidden ImGui control label (<c>"##" + Key</c>) for this parameter,
     /// or <see langword="null"/> when the parameter key was not available at metadata-read time.
     /// Cached by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to avoid
-    /// a <c>string.Concat</c> allocation per parameter per <see cref="UI.Config.ConfigDrawer{TConfig}"/> construction.
+    /// a <c>string.Concat</c> allocation per parameter per <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/> construction.
     /// </summary>
     public string? HiddenLabel { get; init; }
 

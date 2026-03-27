@@ -13,9 +13,12 @@ namespace Umbra.Config.Attributes;
 /// section is rendered in the UI. For backward compatibility it may also be applied to an
 /// <see cref="AutoRegisterSettingsAttribute"/>-decorated class or struct, in which case it acts as a
 /// fallback when the parent property declares no <c>[CollapseAsTree]</c> of its own.
-/// All categories defined by that group will use <see cref="ImGui.TreeNode(string)"/> for their header, with
-/// all child controls rendered inside the expanded node and <see cref="ImGui.TreePop()"/> called
-/// automatically when the scope closes.
+/// </para>
+/// <para>
+/// When the decorated group renders a visible category container, that container uses
+/// <see cref="ImGui.TreeNode(string)"/> for its header and draws its uncategorized direct controls
+/// plus any nested child categories inside the expanded scope. Categories declared within the
+/// group also use the same tree-node presentation for their own headers.
 /// </para>
 /// <para>
 /// To indent the category block (header and child controls), combine this attribute with

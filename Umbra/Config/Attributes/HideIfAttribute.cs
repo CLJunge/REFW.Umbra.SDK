@@ -13,9 +13,10 @@ namespace Umbra.Config.Attributes;
 /// <para>
 /// When constructed with both a <c>memberName</c> and a <c>value</c>,
 /// the parameter is hidden while the member's current value equals <c>value</c>.
-/// Comparison is performed using <c>EqualityComparer&lt;T&gt;.Default</c> where possible,
-/// so <see cref="IEquatable{T}"/> implementations are respected; if a typed
-/// comparer cannot be used, the resolver falls back to <see cref="object.Equals(object, object)"/>.
+/// Comparison is performed against the boxed runtime value using
+/// <see cref="object.Equals(object?, object?)"/>, which keeps the resolver simple while still
+/// covering the primitive, string, enum, and nullable values typically used by config-backed
+/// hide conditions.
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]

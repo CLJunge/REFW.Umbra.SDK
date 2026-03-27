@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 using Umbra.Config;
@@ -12,32 +13,46 @@ namespace Umbra.UI.Config;
 /// </summary>
 internal static class VisibilityPredicateResolver
 {
+    private static readonly ConcurrentDictionary<HideIfAccessorCacheKey, HideIfAccessorBinding> s_accessorCache = new();
+
+    /// <summary>
+    /// Cache key for one owner-type/member-name HideIf accessor shape.
+    /// </summary>
+    /// <param name="OwnerType">The runtime owner type that declares the referenced member.</param>
+    /// <param name="MemberName">The referenced property or field name.</param>
+    private readonly record struct HideIfAccessorCacheKey(Type OwnerType, string MemberName);
+
+    /// <summary>
+    /// Cached accessor metadata for a resolved HideIf member.
+    /// </summary>
+    /// <param name="isValid">Whether the referenced member was found successfully.</param>
+    /// <param name="getValue">The cached accessor that reads the current member value from an owner instance.</param>
+    private sealed class HideIfAccessorBinding(bool isValid, Func<object, object?> getValue)
+    {
+        internal bool IsValid { get; } = isValid;
+        internal Func<object, object?> GetValue { get; } = getValue;
+    }
+
     /// <summary>
     /// Resolves a cached <see cref="IHideIfAttribute"/> into a <see cref="Func{Boolean}"/> that
     /// returns <see langword="true"/> when the parameter should be visible (i.e. the hide
     /// condition is NOT met).
     /// </summary>
     /// <remarks>
-    /// The raw property or field accessor is compiled once into a delegate at build time so
-    /// that per-frame evaluation does not pay the cost of <see cref="PropertyInfo.GetValue(object)"/>
-    /// reflection. The compiled delegate reads directly from the closed-over
-    /// <paramref name="owner"/> instance.
+    /// The raw property or field accessor is compiled once per owner-type/member-name pair and
+    /// cached in <see cref="s_accessorCache"/> so repeated config UI builds do not pay expression
+    /// compilation or <see cref="PropertyInfo.GetValue(object)"/> reflection costs. The cached
+    /// accessor is then bound to the closed-over <paramref name="owner"/> instance.
     /// <para>
     /// Callers that have already determined <paramref name="hideIf"/> is
     /// <see langword="null"/> should short-circuit with <c>static () =&gt; true</c> and skip
     /// this call entirely to avoid the function-call overhead for the common no-condition case.
     /// </para>
     /// <para>
-    /// When an explicit comparison value is present, a typed
-    /// <see cref="EqualityComparer{T}.Default"/> delegate is compiled once at build time via
-    /// <see cref="BuildTypedEquals"/> so that per-frame equality checks use
-    /// <see cref="IEquatable{T}"/> rather than virtual <see cref="object.Equals(object)"/> dispatch.
-    /// If <see cref="IParameter.GetValue"/> returns <see langword="null"/> at runtime (e.g. when
-    /// a <c>Parameter&lt;T&gt;</c> value has been cleared via <c>SetWithoutNotify</c>), the
-    /// compiled comparer is <em>not</em> invoked; the predicate instead treats
-    /// <see langword="null"/> as equal to <paramref name="hideIf"/>'s comparison value only when
-    /// that comparison value is itself <see langword="null"/>, preventing an
-    /// <see cref="InvalidCastException"/> from unboxing <see langword="null"/> to a value type.
+    /// When an explicit comparison value is present, equality is evaluated with
+    /// <see cref="object.Equals(object?, object?)"/> against the boxed runtime value returned by
+    /// the accessor. This keeps the comparison path simple and works for the primitive, string,
+    /// enum, and nullable values typically used by config-backed <c>[HideIf]</c> conditions.
     /// </para>
     /// </remarks>
     /// <param name="hideIf">
@@ -56,101 +71,79 @@ internal static class VisibilityPredicateResolver
         var memberName = hideIf.MemberName;
         var hasValue = hideIf.HasValue;
         var compareValue = hideIf.BoxedValue;
-
         var ownerType = owner.GetType();
-        var targetProp = ownerType.GetProperty(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        var targetField = ownerType.GetField(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-        if (targetProp is null && targetField is null)
+        var accessor = s_accessorCache.GetOrAdd(
+            new HideIfAccessorCacheKey(ownerType, memberName),
+            static key => CreateAccessorBinding(key.OwnerType, key.MemberName));
+
+        if (!accessor.IsValid)
         {
             Logger.Warning($"ConfigDrawer: HideIf member '{memberName}' not found on {ownerType.Name}; condition ignored.");
             return static () => true;
         }
 
-        // Compile a direct accessor once — avoids PropertyInfo.GetValue overhead each frame.
-        var ownerExpr = Expression.Constant(owner);
-        Expression rawAccess = targetProp is not null
-            ? Expression.Property(ownerExpr, targetProp)
-            : Expression.Field(ownerExpr, targetField!);
-
-        var getRaw = Expression.Lambda<Func<object?>>(
-            Expression.Convert(rawAccess, typeof(object))).Compile();
-
-        // If the target is a Parameter<T>, unwrap its live Value via the IParameter interface.
-        var rawType = (targetProp?.PropertyType ?? targetField!.FieldType)!;
-        var isParameter = rawType.IsGenericType && rawType.GetGenericTypeDefinition() == typeof(Parameter<>);
-        var getValue = isParameter
-            ? () => (getRaw() as IParameter)?.GetValue()
-            : getRaw;
+        var getValue = accessor.GetValue;
 
         // No explicit value: treat member as bool — visible while NOT true.
-        if (!hasValue) return () => getValue() is not true;
+        if (!hasValue) return () => getValue(owner) is not true;
 
-        // Explicit value: compile a typed EqualityComparer<T>.Default.Equals delegate once
-        // so per-frame evaluation uses IEquatable<T> rather than object.Equals dispatch.
-        var valueType = isParameter ? rawType.GetGenericArguments()[0] : rawType;
-        var typedEquals = BuildTypedEquals(valueType, compareValue);
-
-        // Guard against null: getValue() may return null when Parameter<T>.Value has been
-        // cleared (e.g. via SetWithoutNotify). Unboxing null to a value type inside the
-        // compiled comparer would throw InvalidCastException, breaking the per-frame UI loop.
-        // Treat null as equal to compareValue only when compareValue is also null.
-        return () =>
-        {
-            var val = getValue();
-            if (val is null) return compareValue is not null;
-            return !typedEquals(val);
-        };
+        return () => !Equals(getValue(owner), compareValue);
     }
 
     /// <summary>
-    /// Builds a compiled <see cref="Func{Object, Boolean}"/> that compares a boxed runtime
-    /// value against <paramref name="compareValue"/> using
-    /// <see cref="EqualityComparer{T}.Default"/> for the concrete <paramref name="valueType"/>.
+    /// Creates and caches the compiled accessor binding for one owner-type/member-name pair.
+    /// </summary>
+    /// <param name="ownerType">The runtime owner type declaring the referenced member.</param>
+    /// <param name="memberName">The property or field name referenced by the HideIf attribute.</param>
+    /// <returns>A cached accessor binding describing how to read the current member value.</returns>
+    private static HideIfAccessorBinding CreateAccessorBinding(Type ownerType, string memberName)
+    {
+        var targetProp = ownerType.GetProperty(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        var targetField = ownerType.GetField(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        if (targetProp is null && targetField is null)
+            return new HideIfAccessorBinding(false, static _ => null);
+
+        var rawType = (targetProp?.PropertyType ?? targetField!.FieldType)!;
+        var getRaw = BuildRawAccessor(ownerType, targetProp, targetField);
+        if (rawType.IsGenericType && rawType.GetGenericTypeDefinition() == typeof(Parameter<>))
+            return new HideIfAccessorBinding(true, owner => (getRaw(owner) as IParameter)?.GetValue());
+
+        return new HideIfAccessorBinding(true, getRaw);
+    }
+
+    /// <summary>
+    /// Builds the cached raw member accessor for a HideIf property or field.
     /// </summary>
     /// <remarks>
-    /// The compiled delegate unboxes the incoming <c>object?</c> to <c>T</c> and calls
-    /// <see cref="EqualityComparer{T}.Equals(T, T)"/>, which respects
-    /// <see cref="IEquatable{T}"/> implementations and avoids virtual
-    /// <see cref="object.Equals(object)"/> dispatch on each frame. <paramref name="compareValue"/>
-    /// is captured as a typed constant so it is never re-boxed on subsequent calls.
-    /// <para>
-    /// Falls back to <c>x =&gt; Equals(x, compareValue)</c> if expression compilation fails —
-    /// for example when there is a type mismatch between the attribute value and the member's
-    /// declared type.
-    /// </para>
+    /// Expression compilation is performed once per member and cached by
+    /// <see cref="CreateAccessorBinding(Type, string)"/>. If expression compilation fails, the
+    /// resolver falls back to reflection-based value access so visibility checks still work.
     /// </remarks>
-    /// <param name="valueType">
-    /// The concrete <c>T</c> used to parameterise the comparer; derived from the member's
-    /// declared type or from the inner generic argument of <c>Parameter&lt;T&gt;</c>.
-    /// </param>
-    /// <param name="compareValue">
-    /// The boxed value to compare against. Must be assignable to <paramref name="valueType"/>;
-    /// a type mismatch triggers the fallback path rather than an exception.
-    /// </param>
-    /// <returns>
-    /// A compiled predicate that returns <see langword="true"/> when the runtime value equals
-    /// <paramref name="compareValue"/> according to <see cref="EqualityComparer{T}.Default"/>.
-    /// </returns>
-    private static Func<object?, bool> BuildTypedEquals(Type valueType, object? compareValue)
+    /// <param name="ownerType">The runtime owner type declaring the referenced member.</param>
+    /// <param name="targetProp">The target property when the member is a property; otherwise <see langword="null"/>.</param>
+    /// <param name="targetField">The target field when the member is a field; otherwise <see langword="null"/>.</param>
+    /// <returns>A delegate that reads the boxed current member value from an owner instance.</returns>
+    private static Func<object, object?> BuildRawAccessor(Type ownerType, PropertyInfo? targetProp, FieldInfo? targetField)
     {
         try
         {
-            var comparerType = typeof(EqualityComparer<>).MakeGenericType(valueType);
-            var defaultComparer = comparerType.GetProperty("Default")!.GetValue(null)!;
-            var equalsMethod = comparerType.GetMethod("Equals", [valueType, valueType])!;
+            var ownerParam = Expression.Parameter(typeof(object), "owner");
+            var typedOwner = Expression.Convert(ownerParam, ownerType);
+            Expression rawAccess = targetProp is not null
+                ? Expression.Property(typedOwner, targetProp)
+                : Expression.Field(typedOwner, targetField!);
 
-            var xParam = Expression.Parameter(typeof(object), "x");
-            var comparerExpr = Expression.Constant(defaultComparer, comparerType);
-            var xConverted = Expression.Convert(xParam, valueType);
-            var yConst = Expression.Constant(compareValue, valueType);
-            var equalsCall = Expression.Call(comparerExpr, equalsMethod, xConverted, yConst);
-
-            return Expression.Lambda<Func<object?, bool>>(equalsCall, xParam).Compile();
+            return Expression.Lambda<Func<object, object?>>(
+                Expression.Convert(rawAccess, typeof(object)),
+                ownerParam).Compile();
         }
         catch
         {
-            return x => Equals(x, compareValue);
+            return targetProp is not null
+                ? owner => targetProp.GetValue(owner)
+                : owner => targetField!.GetValue(owner);
         }
     }
+
 }

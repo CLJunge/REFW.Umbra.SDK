@@ -21,10 +21,66 @@ internal sealed class TypeDrawMetadata
     private static readonly ConcurrentDictionary<Type, TypeDrawMetadata> s_cache = new();
 
     /// <summary>
+    /// Cached UI metadata for one public instance property of a config type.
+    /// </summary>
+    /// <remarks>
+    /// This collapses the repeated per-property <c>GetCustomAttribute</c> and
+    /// <c>GetCustomAttributes</c> calls previously performed inside
+    /// <see cref="ConfigDrawerBuilder.CollectInto"/> into a single attribute scan per property per
+    /// <see cref="AppDomain"/> lifetime.
+    /// </remarks>
+    internal sealed class PropertyDrawMetadata(
+        PropertyInfo property,
+        Type propertyType,
+        bool isParameter,
+        string? category,
+        IndentAttribute? indentAttr,
+        CollapseAsTreeAttribute? collapseAttr,
+        LabelMarginAttribute? labelMarginAttr,
+        INestedGroupDrawerAttribute? nestedGroupDrawerAttr,
+        IHideIfAttribute? hideIf,
+        int order,
+        int spacingBefore,
+        int spacingAfter,
+        string? settingsPrefix,
+        string? settingsParameterKeyOverride)
+    {
+        internal PropertyInfo Property { get; } = property;
+        internal Type PropertyType { get; } = propertyType;
+        internal bool IsParameter { get; } = isParameter;
+        internal string? Category { get; } = category;
+        internal IndentAttribute? IndentAttr { get; } = indentAttr;
+        internal CollapseAsTreeAttribute? CollapseAttr { get; } = collapseAttr;
+        internal LabelMarginAttribute? LabelMarginAttr { get; } = labelMarginAttr;
+        internal INestedGroupDrawerAttribute? NestedGroupDrawerAttr { get; } = nestedGroupDrawerAttr;
+        internal IHideIfAttribute? HideIf { get; } = hideIf;
+        internal int Order { get; } = order;
+        internal int SpacingBefore { get; } = spacingBefore;
+        internal int SpacingAfter { get; } = spacingAfter;
+        internal string? SettingsPrefix { get; } = settingsPrefix;
+        internal string? SettingsParameterKeyOverride { get; } = settingsParameterKeyOverride;
+
+        /// <summary>
+        /// Gets whether this property carries any wrapper-style metadata that should apply to the
+        /// whole nested-group subtree rather than to an individual leaf parameter.
+        /// </summary>
+        internal bool HasWrapperMetadata => HideIf is not null
+            || Order != int.MaxValue
+            || SpacingBefore != 0
+            || SpacingAfter != 0;
+    }
+
+    /// <summary>
     /// Category name from <see cref="CategoryAttribute"/>, or <see langword="null"/> when absent.
     /// Used as the fallback category for all leaf parameters that declare no category of their own.
     /// </summary>
     internal string? Category { get; }
+
+    /// <summary>
+    /// Settings prefix from <see cref="SettingsPrefixAttribute"/>, or <see langword="null"/> when absent.
+    /// Used to seed the root config ImGui scope path and as a fallback for nested-group scope paths.
+    /// </summary>
+    internal string? SettingsPrefix { get; }
 
     /// <summary>
     /// Class-level <see cref="IndentAttribute"/>, or <see langword="null"/> when absent.
@@ -62,24 +118,25 @@ internal sealed class TypeDrawMetadata
     internal bool IsAutoRegisterSettings { get; }
 
     /// <summary>
-    /// The public instance properties of this type, cached from a single
-    /// <c>Type.GetProperties(BindingFlags.Public | BindingFlags.Instance)</c> call performed
-    /// once in <see cref="Build"/>. Eliminates the repeated <c>PropertyInfo[]</c> array
-    /// allocation made at the top of each <see cref="ConfigDrawerBuilder.Collect"/> invocation
-    /// for the same type.
+    /// The public instance properties of this type together with all property-level UI metadata
+    /// consulted by <see cref="ConfigDrawerBuilder.CollectInto"/>.
+    /// Cached from a single <c>Type.GetProperties(BindingFlags.Public | BindingFlags.Instance)</c>
+    /// call and one attribute scan per property performed once in <see cref="Build"/>.
     /// </summary>
-    internal PropertyInfo[] Properties { get; }
+    internal PropertyDrawMetadata[] Properties { get; }
 
     private TypeDrawMetadata(
         string? category,
+        string? settingsPrefix,
         IndentAttribute? indentAttr,
         CollapseAsTreeAttribute? collapseAttr,
         LabelMarginAttribute? labelMarginAttr,
         INestedGroupDrawerAttribute? nestedGroupDrawerAttr,
         bool isAutoRegisterSettings,
-        PropertyInfo[] properties)
+        PropertyDrawMetadata[] properties)
     {
         Category = category;
+        SettingsPrefix = settingsPrefix;
         IndentAttr = indentAttr;
         CollapseAttr = collapseAttr;
         LabelMarginAttr = labelMarginAttr;
@@ -98,6 +155,7 @@ internal sealed class TypeDrawMetadata
     private static TypeDrawMetadata Build(Type type)
     {
         string? category = null;
+        string? settingsPrefix = null;
         IndentAttribute? indentAttr = null;
         CollapseAsTreeAttribute? collapseAttr = null;
         LabelMarginAttribute? labelMarginAttr = null;
@@ -107,6 +165,7 @@ internal sealed class TypeDrawMetadata
         foreach (var a in type.GetCustomAttributes(inherit: true))
         {
             if (a is CategoryAttribute cat) { category = cat.Name; continue; }
+            if (a is SettingsPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
             if (a is IndentAttribute ind) { indentAttr = ind; continue; }
             if (a is CollapseAsTreeAttribute col) { collapseAttr = col; continue; }
             if (a is LabelMarginAttribute lm) { labelMarginAttr = lm; continue; }
@@ -114,7 +173,66 @@ internal sealed class TypeDrawMetadata
             if (a is AutoRegisterSettingsAttribute) isAutoRegister = true;
         }
 
-        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        return new TypeDrawMetadata(category, indentAttr, collapseAttr, labelMarginAttr, nestedDrawerAttr, isAutoRegister, properties);
+        var rawProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var properties = new PropertyDrawMetadata[rawProperties.Length];
+        for (var i = 0; i < rawProperties.Length; i++)
+            properties[i] = BuildPropertyMetadata(rawProperties[i]);
+
+        return new TypeDrawMetadata(category, settingsPrefix, indentAttr, collapseAttr, labelMarginAttr, nestedDrawerAttr, isAutoRegister, properties);
+    }
+
+    /// <summary>
+    /// Reads and caches all property-level UI metadata consulted during config drawer assembly.
+    /// </summary>
+    /// <param name="property">The reflected property whose metadata should be cached.</param>
+    /// <returns>The cached property metadata consumed by <see cref="ConfigDrawerBuilder"/>.</returns>
+    private static PropertyDrawMetadata BuildPropertyMetadata(PropertyInfo property)
+    {
+        var propertyType = property.PropertyType;
+        var isParameter = propertyType.IsGenericType
+            && propertyType.GetGenericTypeDefinition() == typeof(Umbra.Config.Parameter<>);
+
+        string? category = null;
+        string? settingsPrefix = null;
+        string? settingsParameterKeyOverride = null;
+        IndentAttribute? indentAttr = null;
+        CollapseAsTreeAttribute? collapseAttr = null;
+        LabelMarginAttribute? labelMarginAttr = null;
+        INestedGroupDrawerAttribute? nestedGroupDrawerAttr = null;
+        IHideIfAttribute? hideIf = null;
+        var order = int.MaxValue;
+        var spacingBefore = 0;
+        var spacingAfter = 0;
+
+        foreach (var attribute in property.GetCustomAttributes(inherit: false))
+        {
+            if (attribute is CategoryAttribute cat) { category = cat.Name; continue; }
+            if (attribute is SettingsPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
+            if (attribute is SettingsParameterAttribute settingsParameter) { settingsParameterKeyOverride = settingsParameter.KeyOverride; continue; }
+            if (attribute is IndentAttribute indent) { indentAttr = indent; continue; }
+            if (attribute is CollapseAsTreeAttribute collapse) { collapseAttr = collapse; continue; }
+            if (attribute is LabelMarginAttribute labelMargin) { labelMarginAttr = labelMargin; continue; }
+            if (attribute is INestedGroupDrawerAttribute nestedDrawer) { nestedGroupDrawerAttr = nestedDrawer; continue; }
+            if (attribute is IHideIfAttribute propertyHideIf) { hideIf = propertyHideIf; continue; }
+            if (attribute is ParameterOrderAttribute parameterOrder) { order = parameterOrder.Order; continue; }
+            if (attribute is SpacingBeforeAttribute before) { spacingBefore = before.Count; continue; }
+            if (attribute is SpacingAfterAttribute after) { spacingAfter = after.Count; }
+        }
+
+        return new PropertyDrawMetadata(
+            property,
+            propertyType,
+            isParameter,
+            category,
+            indentAttr,
+            collapseAttr,
+            labelMarginAttr,
+            nestedGroupDrawerAttr,
+            hideIf,
+            order,
+            spacingBefore,
+            spacingAfter,
+            settingsPrefix,
+            settingsParameterKeyOverride);
     }
 }
