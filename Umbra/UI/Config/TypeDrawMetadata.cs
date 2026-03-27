@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Reflection;
-using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
 
 namespace Umbra.UI.Config;

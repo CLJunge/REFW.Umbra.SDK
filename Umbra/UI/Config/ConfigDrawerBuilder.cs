@@ -1,4 +1,3 @@
-using Hexa.NET.ImGui;
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
@@ -253,10 +252,7 @@ internal sealed class ConfigDrawerBuilder
     /// included in the final per-category stable sort pass.
     /// </summary>
     /// <param name="node">The category node to track.</param>
-    private void RegisterCategoryNode(CategoryNode node)
-    {
-        _allCategoryNodes.Add(node);
-    }
+    private void RegisterCategoryNode(CategoryNode node) => _allCategoryNodes.Add(node);
 
     /// <summary>
     /// Applies a stable sort to parameter nodes within every category context, ordering them

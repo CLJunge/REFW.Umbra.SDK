@@ -1,7 +1,6 @@
 using Hexa.NET.ImGui;
 using Umbra.Config;
 using Umbra.Input;
-using Umbra.UI;
 
 namespace Umbra.UI.Config.Drawers;
 
