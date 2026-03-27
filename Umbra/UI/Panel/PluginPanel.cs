@@ -172,7 +172,7 @@ public sealed class PluginPanel : IDisposable
         }
 
         _sections.Add(section);
-        _sections.StableSortBy(s => s.Order);
+        _sections.SortBy(s => s.Order);
         return this;
     }
 

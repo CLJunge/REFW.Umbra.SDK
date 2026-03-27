@@ -682,8 +682,8 @@ internal sealed class ConfigDrawerBuilder
         static int NodeOrder(IDrawNode n) => n is ParameterNode p ? p.Order : int.MaxValue;
 
         foreach (var cat in _allCategoryNodes)
-            cat.Children.StableSortBy(NodeOrder);
+            cat.Children.SortBy(NodeOrder);
 
-        Nodes.StableSortBy(NodeOrder);
+        Nodes.SortBy(NodeOrder);
     }
 }
