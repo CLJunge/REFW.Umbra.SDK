@@ -9,10 +9,13 @@ namespace Umbra.Config.Attributes;
 /// without runtime generic type inspection.
 /// </summary>
 /// <remarks>
-/// Used exclusively by internal framework machinery (<see cref="ParameterMetadataReader"/>).
-/// Plugin authors never implement or reference this interface directly.
+/// This interface is primarily used by internal framework machinery (such as <see cref="ParameterMetadataReader"/>)
+/// to detect two-column custom drawers via
+/// <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Reflection.PropertyInfo)"/>.
+/// Plugin authors should not implement it themselves; it is implemented only
+/// by framework-provided attributes such as <see cref="TwoColumnCustomDrawerAttribute{TDrawer}"/>.
 /// </remarks>
-internal interface ITwoColumnCustomDrawerAttribute
+public interface ITwoColumnCustomDrawerAttribute
 {
     /// <summary>Gets the concrete <see cref="ITwoColumnParameterDrawer"/> type used to render the parameter's editing widget.</summary>
     Type DrawerType { get; }

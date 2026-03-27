@@ -8,11 +8,13 @@ namespace Umbra.Config.Attributes;
 /// nested group type itself without runtime generic type inspection.
 /// </summary>
 /// <remarks>
-/// Used exclusively by internal framework machinery (<see cref="UI.Config.ConfigDrawerBuilder"/>
-/// and <see cref="UI.Config.TypeDrawMetadata"/>). Plugin authors never implement or
-/// reference this interface directly.
+/// Intended for use by framework-internal machinery such as <see cref="Umbra.UI.Config.ConfigDrawerBuilder"/>
+/// and <see cref="Umbra.UI.Config.TypeDrawMetadata"/>. Plugin authors should not implement or
+/// reference this interface directly; it is considered internal-use-only even though it is publicly
+/// visible so that <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Reflection.PropertyInfo)"/>
+/// and <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Type)"/> can use it as a generic type argument.
 /// </remarks>
-internal interface INestedGroupDrawerAttribute
+public interface INestedGroupDrawerAttribute
 {
     /// <summary>Gets the concrete <see cref="INestedGroupDrawer{T}"/> type used to render the nested group instance.</summary>
     Type DrawerType { get; }

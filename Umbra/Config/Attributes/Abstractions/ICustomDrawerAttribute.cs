@@ -9,10 +9,13 @@ namespace Umbra.Config.Attributes;
 /// without runtime generic type inspection.
 /// </summary>
 /// <remarks>
-/// Used exclusively by internal framework machinery (<see cref="ParameterMetadataReader"/>).
-/// Plugin authors never implement or reference this interface directly.
+/// This interface is part of the public surface so that helpers such as
+/// <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Reflection.PropertyInfo)"/>
+/// and reflection-based tooling can use it as a generic type argument to detect custom drawers on properties.
+/// Plugin authors should not implement this interface themselves; it is implemented only
+/// by framework-provided attributes such as <see cref="CustomDrawerAttribute{TDrawer}"/>.
 /// </remarks>
-internal interface ICustomDrawerAttribute
+public interface ICustomDrawerAttribute
 {
     /// <summary>Gets the concrete <see cref="IParameterDrawer"/> type used to render the parameter.</summary>
     Type DrawerType { get; }

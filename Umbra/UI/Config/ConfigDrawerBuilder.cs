@@ -147,6 +147,8 @@ internal sealed class ConfigDrawerBuilder
         LabelMarginAttribute? labelMarginOverride = null)
     {
         Nodes.Clear();
+        Disposables.Clear();
+        _allCategoryNodes.Clear();
 
         var typeMeta = TypeDrawMetadata.For(type);
         var rootGroupPath = typeMeta.SettingsPrefix ?? string.Empty;
@@ -260,14 +262,13 @@ internal sealed class ConfigDrawerBuilder
             }
 
             var ambientCategory = nestedLocalCategory is null ? scope.DefaultCategory : null;
-            var childDefaultCategory = nestedLocalCategory is null ? ambientCategory : null;
             LabelAlignmentGroup? childAlignmentGroup = null;
             if (nestedLocalCategory is null)
                 childAlignmentGroup = GetAlignmentGroup(scope, ambientCategory);
 
             var childScope = new ScopeState(
                 nestedGroupPath,
-                childDefaultCategory,
+                null,
                 nestedCollapseAttr,
                 propertyIndent,
                 nestedLabelMargin,

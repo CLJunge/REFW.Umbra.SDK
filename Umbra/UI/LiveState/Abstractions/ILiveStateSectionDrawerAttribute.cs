@@ -11,7 +11,7 @@ namespace Umbra.UI.LiveState;
 /// <c>type.GetDrawerAttribute&lt;ILiveStateSectionDrawerAttribute&gt;()</c>.
 /// Plugin authors do not implement or reference this interface directly.
 /// </remarks>
-internal interface ILiveStateSectionDrawerAttribute
+public interface ILiveStateSectionDrawerAttribute
 {
     /// <summary>
     /// Gets the concrete <see cref="ILiveStateSectionDrawer{T}"/> type declared on the live state class.
