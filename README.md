@@ -1,92 +1,137 @@
 # REFW.Umbra
 
-A support library for [REFramework](https://github.com/praydog/REFramework) mod and plugin development on RE Engine titles. It runs inside the game process through the REFramework.NET managed plugin host and provides configuration, settings UI, live-state rendering, logging, and input utilities so plugin authors can focus on game logic rather than infrastructure.
+A support library for building REFramework.NET mods and plugins for RE Engine games. `Umbra` provides a small set of reusable building blocks for typed settings, ImGui-based settings panels, live-state panels, logging, and input handling inside the game process.
 
----
+## Overview
+
+`Umbra` is intended for managed plugins that run under `REFramework.NET`, not standalone desktop applications. It helps plugin authors avoid repeating the same infrastructure for:
+
+- strongly typed JSON-backed configuration
+- ImGui settings rendering
+- panel composition
+- live state display
+- safe plugin logging
+- keyboard capture helpers
+
+The repository also includes `Umbra.SamplePlugin`, which demonstrates the current configuration and panel workflow.
 
 ## Features
 
-- **Attribute-driven configuration** — declare a `record` with `[AutoRegisterSettings]` and `Parameter<T>` properties; the store handles JSON load/save automatically.
-- **Auto-save controller** — `DeferredSaveController<T>` coalesces rapid slider changes and writes to disk only after the user stops interacting, with immediate saves for boolean/string/enum changes.
-- **Zero-per-frame-reflection settings UI** — `ConfigDrawer<T>` reflects over the config once at construction and walks a pre-built node list every frame. Supports categories, collapsible tree nodes, sliders, hotkey capture, custom drawers, nested groups, and conditional visibility.
-- **Plugin panel system** — `PluginPanel` composes an ordered list of `IPanelSection` instances (`ConfigSection<T>`, `LiveSection<T>`) under a shared ImGui ID scope and owns their lifetimes. An optional root tree node wraps all sections; each section can additionally declare its own collapsible tree node. A trailing separator is drawn after all sections (toggle via the `drawSeparator` constructor flag). A cross-plugin scope registry detects duplicate `idScope` values at construction and logs a structured developer warning including stack trace.
-- **Live game-state rendering** — `LiveSection<T>` pairs a hook-written state object with an `ILiveSectionDrawer<T>` declared via `[LiveSectionDrawerAttribute]`. Uses the swap-instance pattern for thread-safe multi-field updates.
-- **Isolated per-plugin logging** — `PluginLogger` wraps `REFrameworkNET.API.Log*` with a per-instance prefix, log-level filter, and exception-safe formatted overloads.
-- **Keyboard input helpers** — `KeyboardInput` captures ImGui keyboard keys, names them, and exposes modifier-state properties (`IsCtrlHeld`, `IsShiftHeld`, `IsAltHeld`).
-- **ImGui widget helpers** — `ImGuiWidgets.DrawHelpMarker` and other stateless utilities for plugin UI.
-
----
+- Attribute-driven settings registration with `SettingsStore<TConfig>` and `Parameter<T>`
+- JSON persistence for `bool`, `int`, `float`, `double`, `string`, and `enum` parameters
+- Deferred auto-save with `DeferredSaveController<TConfig>`
+- Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
+- Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
+- Custom parameter drawers, two-column drawers, and nested-group drawers
+- Per-plugin logging with `PluginLogger`
+- Global SDK logging control with `Logger`
+- Keyboard capture utilities in `KeyboardInput`
+- Small runtime helper `ManagedObjectResolver` for resolving REFramework managed objects
 
 ## Architecture Summary
 
+```text
+REFW.Umbra
+├─ Umbra
+│  ├─ Config
+│  │  ├─ Parameter<T>, IParameter, ParameterMetadata
+│  │  ├─ SettingsStore<TConfig>, SettingsPersistence, SettingsRegistrar
+│  │  ├─ DeferredSaveController<TConfig>
+│  │  └─ Attributes for settings discovery and UI metadata
+│  ├─ UI
+│  │  ├─ Config
+│  │  │  ├─ ConfigDrawer<TConfig>, ConfigSection<TConfig>
+│  │  │  ├─ ControlFactory, draw-tree builder, nodes
+│  │  │  └─ custom drawers and nested-group drawers
+│  │  ├─ LiveState
+│  │  │  ├─ LiveStateSection<T>
+│  │  │  ├─ ILiveStateSectionDrawer<T>
+│  │  │  └─ LiveStateSectionDrawerAttribute<TDrawer>
+│  │  ├─ Panel
+│  │  │  ├─ PluginPanel
+│  │  │  └─ IPanelSection
+│  │  └─ ImGuiWidgets
+│  ├─ Logging
+│  │  ├─ PluginLogger
+│  │  ├─ Logger
+│  │  └─ LogLevel
+│  ├─ Input
+│  │  └─ KeyboardInput
+│  └─ Runtime
+│     └─ ManagedObjectResolver
+└─ Umbra.SamplePlugin
+   └─ reference plugin showing settings, deferred save, nested groups, and custom drawers
 ```
-REFW.Umbra (solution)
-├── Umbra                     # SDK library (ship this as a dependency)
-│   ├── Config/                   # Umbra.Config — Parameter<T>, SettingsStore<T>, DeferredSaveController<T>
-│   │   ├── Attributes/           # Umbra.Config.Attributes — [AutoRegisterSettings], [SettingsParameter], [Range], [HideIf], …
-│   │   └── UI/                   # Umbra.UI.Config — ConfigDrawer<T>, ControlFactory, parameter drawers, draw nodes
-│   ├── UI/                       # Umbra.UI — ImGuiWidgets (stateless ImGui helpers)
-│   │   └── Panel/                # Umbra.UI.Panel — PluginPanel, ConfigSection<T>, LiveSection<T>, IPanelSection
-│   ├── Logging/                  # Umbra.Logging — PluginLogger, Logger (SDK-internal), LogLevel
-│   └── Input/                    # Umbra.Input — KeyboardInput
-└── Umbra.SamplePlugin            # Reference plugin implementation
-    └── Config/                   # PluginConfig, nested settings groups, custom drawers
-```
 
-> **Namespace note:** `Config/UI/` is physically nested under `Config/` but its files declare namespace `Umbra.UI.Config` (and sub-namespaces `Umbra.UI.Config.Nodes`, `Umbra.UI.Config.Drawers`). All rendering code lives under the `Umbra.UI.*` hierarchy; `Umbra.Config.*` is the pure data/persistence layer.
+### Main flow
 
-### Key flows
-
-**Configuration lifecycle**
-1. Construct `SettingsStore<TConfig>` with a file path.
-2. Call `.Load()` — registers all `Parameter<T>` instances, loads values from JSON (or saves defaults).
-3. Construct `DeferredSaveController<TConfig>` after `Load()` to enable auto-save.
-4. Pass the config instance to `ConfigDrawer<T>` or `ConfigSection<T>` for UI.
-5. On unload: `Flush()` → `Dispose()` the controller, then `Save()` → `Dispose()` the store.
-
-**Panel + live state**
-- The plugin owns a state object (e.g. `CameraState`).
-- A static hook class holds a `volatile` reference to the state and writes it via `[MethodHook]` callbacks using the swap-instance pattern.
-- `LiveSection<T>` resolves the `[LiveSectionDrawerAttribute]` on the state type and calls the drawer each frame — no per-frame reflection.
-- `PluginPanel` renders all sections under a single `ImGui.PushID(_idScope)` scope. A static cross-plugin registry detects duplicate `idScope` values across all loaded plugins at construction time and logs a structured warning (impact, fix, and stack trace) so collisions are caught during development.
-- An optional root tree node (`rootNodeLabel`) wraps all sections; each section can additionally declare its own tree node via `IPanelSection.TreeNodeLabel`. Section tree nodes use ImGui's `##SectionId` suffix for disambiguation — no extra `PushID` is pushed around per-section nodes.
-- Sections render in ascending `[SectionOrder]` order (applied to the state or config type); equal-order sections preserve insertion order.
-
----
+1. Define a config type with `[AutoRegisterSettings]` and `Parameter<T>` properties marked with `[SettingsParameter]`.
+2. Load it through `SettingsStore<TConfig>.Load()`.
+3. Optionally attach `DeferredSaveController<TConfig>` after load.
+4. Render it with `ConfigDrawer<TConfig>` directly or through `ConfigSection<TConfig>` inside `PluginPanel`.
+5. For live read-only or hook-driven state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
+6. On unload, flush/dispose the save controller, save/dispose the store, then dispose the panel.
 
 ## Setup Instructions
 
 ### Prerequisites
 
-- .NET 10 SDK (x64)
-- [REFramework](https://github.com/praydog/REFramework) installed in an RE Engine game
-- PowerShell 5.1+
+- `.NET 10` SDK
+- Windows x64
+- an RE Engine game with `REFramework` installed
+- local REFramework API/game-binding dependencies under `dependencies/reframework`
 
-### 1. Download REFramework API dependencies
+### Install dependencies
 
-Run the setup script from the solution root:
+From the repository root:
 
 ```powershell
 .\scripts\setup_reframework_deps.ps1
 ```
 
-This downloads the latest `csharp-api.zip` from REFramework-nightly, extracts the API DLLs to `dependencies\reframework\api\`, and copies generated game-binding assemblies to `dependencies\reframework\generated\`. You will be prompted to provide your game directory path; this is saved to `game_dir.local.txt` (gitignored).
+This prepares the REFramework API references used by both projects.
 
-### 2. Build
-
-Open `REFW.Umbra.slnx` in Visual Studio 2026 and build, or use the CLI:
+### Build
 
 ```bash
-dotnet build
+dotnet build REFW.Umbra.slnx
 ```
 
-In **Debug** configuration, a post-build event automatically deploys:
-- `Umbra` → `<GameDir>\reframework\plugins\managed\dependencies\`
-- Plugin assemblies → `<GameDir>\reframework\plugins\managed\`
+You can also build individual projects:
 
----
+```bash
+dotnet build Umbra/Umbra.csproj
+dotnet build Umbra.SamplePlugin/Umbra.SamplePlugin.csproj
+```
+
+In Debug builds, the repository uses the local deployment scripts configured in each project:
+
+- `Umbra` uses `scripts\deploy_reframework_deps.bat`
+- `Umbra.SamplePlugin` uses `scripts\deploy_reframework_plugin.bat`
 
 ## Usage Example
+
+### Minimal config
+
+```csharp
+using Umbra.Config;
+using Umbra.Config.Attributes;
+
+[AutoRegisterSettings]
+[SettingsPrefix("myPlugin")]
+[Category("My Plugin")]
+public record MyConfig
+{
+    [SettingsParameter]
+    [DisplayName("Enabled")]
+    [Description("Turns the plugin on or off.")]
+    public Parameter<bool> IsEnabled { get; set; } = new(true);
+
+    [SettingsParameter]
+    [DisplayName("Hotkey")]
+    public Parameter<int> Hotkey { get; set; } = new(574);
+}
+```
 
 ### Minimal plugin
 
@@ -102,8 +147,8 @@ public static class MyPlugin
 {
     private static readonly PluginLogger _log = new("MyPlugin");
 
-    private static PluginPanel?               _panel;
-    private static SettingsStore<MyConfig>?   _store;
+    private static PluginPanel? _panel;
+    private static SettingsStore<MyConfig>? _store;
     private static DeferredSaveController<MyConfig>? _saveController;
 
     [PluginEntryPoint]
@@ -113,8 +158,8 @@ public static class MyPlugin
             API.GetPluginDirectory(typeof(MyPlugin).Assembly),
             "data", "MyPlugin", "config.json");
 
-        _store          = new SettingsStore<MyConfig>(configPath);
-        var config      = _store.Load();
+        _store = new SettingsStore<MyConfig>(configPath);
+        var config = _store.Load();
         _saveController = new DeferredSaveController<MyConfig>(_store);
 
         _panel = new PluginPanel("MyPlugin")
@@ -139,35 +184,14 @@ public static class MyPlugin
     }
 
     [Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
-    public static void PreDraw()
+    public static void PreDrawUI()
     {
-        if (API.IsDrawingUI()) _panel?.Draw();
+        if (API.IsDrawingUI())
+            _panel?.Draw();
+
         _saveController?.Tick();
     }
 }
 ```
 
-### Minimal config class
-
-```csharp
-using Umbra.Config;
-using Umbra.Config.Attributes;
-
-[AutoRegisterSettings, SettingsPrefix("myPlugin"), Category("My Plugin")]
-public record MyConfig
-{
-    [SettingsParameter, DisplayName("Enabled"), Description("Toggle the plugin on or off.")]
-    public Parameter<bool> IsEnabled { get; set; } = new(true);
-
-    [SettingsParameter, DisplayName("Speed"), Range(0, 100), Step(1)]
-    public Parameter<int> Speed { get; set; } = new(50);
-}
-```
-
-See `Umbra.SamplePlugin` for a full example including nested config groups, hotkey capture, live-state sections, and custom parameter drawers.
-
----
-
-## License
-
-Copyright © 2026 Chris-Lennart Junge — MIT License
+For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested groups, hotkey drawers, button drawers, custom nested-group drawers, and deferred saving.
