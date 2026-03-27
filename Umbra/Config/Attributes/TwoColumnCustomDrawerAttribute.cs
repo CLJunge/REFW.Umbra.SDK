@@ -24,7 +24,8 @@ namespace Umbra.Config.Attributes;
 /// parameterless constructor; both constraints are enforced at compile time.
 /// </typeparam>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class TwoColumnCustomDrawerAttribute<TDrawer> : Attribute, ITwoColumnCustomDrawerAttribute
+ [Obsolete("Use UmbraTwoColumnCustomDrawerAttribute<TDrawer> instead for the collision-safe Umbra-prefixed name.")]
+public class TwoColumnCustomDrawerAttribute<TDrawer> : Attribute, ITwoColumnCustomDrawerAttribute
     where TDrawer : ITwoColumnParameterDrawer, new()
 {
     /// <summary>Gets the type of the custom drawer used to render this parameter's editing widget.</summary>

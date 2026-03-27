@@ -4,6 +4,8 @@ using Umbra.Config.Attributes;
 
 namespace Umbra.UI.Config.Nodes;
 
+#pragma warning disable CS0618 // Category nodes retain legacy attribute-typed state for backwards compatibility.
+
 /// <summary>
 /// Draw node that renders a category header and all child controls either as a flat
 /// <see cref="ImGui.SeparatorText(string)"/> block or as a collapsible <see cref="ImGui.TreeNode(string)"/> scope,

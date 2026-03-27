@@ -30,7 +30,8 @@ namespace Umbra.Config.Attributes;
 /// The indentation width in pixels, or <c>0</c> to use ImGui's default indent spacing.
 /// </param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class IndentAttribute(float amount = 0f) : Attribute
+[Obsolete("Use UmbraIndentAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class IndentAttribute(float amount = 0f) : Attribute
 {
     /// <summary>Gets the indentation width in pixels. <c>0</c> means use ImGui's default.</summary>
     public float Amount { get; } = amount;

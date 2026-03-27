@@ -12,7 +12,8 @@ namespace Umbra.Config.Attributes;
 /// results in keys such as <c>"Camera.fieldOfView"</c>.
 /// </param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class SettingsPrefixAttribute(string prefix) : Attribute
+[Obsolete("Use UmbraSettingsPrefixAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class SettingsPrefixAttribute(string prefix) : Attribute
 {
     /// <summary>Gets the prefix string applied to all parameter keys in the decorated type.</summary>
     public string Prefix { get; } = prefix;

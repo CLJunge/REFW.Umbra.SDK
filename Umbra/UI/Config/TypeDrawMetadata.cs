@@ -5,11 +5,12 @@ using Umbra.Config.Attributes;
 
 namespace Umbra.UI.Config;
 
+#pragma warning disable CS0618 // Metadata cache must continue supporting legacy unprefixed attributes for backwards compatibility.
+
 /// <summary>
-/// Caches all class-level metadata attributes consulted by <see cref="ConfigDrawerBuilder.Collect"/>
-/// in a single <see cref="MemberInfo.GetCustomAttributes(bool)"/> pass per type, eliminating the six
-/// repeated per-attribute <c>GetCustomAttribute</c> calls that would otherwise be made on the same
-/// <see cref="Type"/> object at the top of every <c>Collect</c> invocation.
+/// Caches all class-level metadata consulted by <see cref="ConfigDrawerBuilder.Collect"/>
+/// in a single <see cref="MemberInfo.GetCustomAttributes(bool)"/> pass per type, supporting
+/// both legacy and Umbra-prefixed attribute names.
 /// </summary>
 /// <remarks>
 /// Instances are keyed by <see cref="Type"/> identity in a thread-safe static cache. Types are only
@@ -23,12 +24,6 @@ internal sealed class TypeDrawMetadata
     /// <summary>
     /// Cached UI metadata for one public instance property of a config type.
     /// </summary>
-    /// <remarks>
-    /// This collapses the repeated per-property <c>GetCustomAttribute</c> and
-    /// <c>GetCustomAttributes</c> calls previously performed inside
-    /// <see cref="ConfigDrawerBuilder.CollectInto"/> into a single attribute scan per property per
-    /// <see cref="AppDomain"/> lifetime.
-    /// </remarks>
     internal sealed class PropertyDrawMetadata(
         PropertyInfo property,
         Type propertyType,
@@ -60,69 +55,19 @@ internal sealed class TypeDrawMetadata
         internal string? SettingsPrefix { get; } = settingsPrefix;
         internal string? SettingsParameterKeyOverride { get; } = settingsParameterKeyOverride;
 
-        /// <summary>
-        /// Gets whether this property carries any wrapper-style metadata that should apply to the
-        /// whole nested-group subtree rather than to an individual leaf parameter.
-        /// </summary>
         internal bool HasWrapperMetadata => HideIf is not null
             || Order != int.MaxValue
             || SpacingBefore != 0
             || SpacingAfter != 0;
     }
 
-    /// <summary>
-    /// Category name from <see cref="CategoryAttribute"/>, or <see langword="null"/> when absent.
-    /// Used as the fallback category for all leaf parameters that declare no category of their own.
-    /// </summary>
     internal string? Category { get; }
-
-    /// <summary>
-    /// Settings prefix from <see cref="SettingsPrefixAttribute"/>, or <see langword="null"/> when absent.
-    /// Used to seed the root config ImGui scope path and as a fallback for nested-group scope paths.
-    /// </summary>
     internal string? SettingsPrefix { get; }
-
-    /// <summary>
-    /// Class-level <see cref="IndentAttribute"/>, or <see langword="null"/> when absent.
-    /// Applied as a fallback indent to every parameter control whose own <see cref="Umbra.Config.ParameterMetadata"/>
-    /// carries no property-level <see cref="IndentAttribute"/>.
-    /// </summary>
     internal IndentAttribute? IndentAttr { get; }
-
-    /// <summary>
-    /// <see cref="CollapseAsTreeAttribute"/>, or <see langword="null"/> when absent.
-    /// Passed directly to <c>EmitCategoryHeader</c> to control whether the category block renders
-    /// as a collapsible <see cref="ImGui.TreeNode(string)"/> or a flat <see cref="ImGui.SeparatorText(string)"/>.
-    /// </summary>
     internal CollapseAsTreeAttribute? CollapseAttr { get; }
-
-    /// <summary>
-    /// <see cref="LabelMarginAttribute"/>, or <see langword="null"/> when absent.
-    /// When present, its <see cref="LabelMarginAttribute.Pixels"/> value overrides the
-    /// default label-column width for all parameters in this type.
-    /// </summary>
     internal LabelMarginAttribute? LabelMarginAttr { get; }
-
-    /// <summary>
-    /// Class-level <see cref="INestedGroupDrawerAttribute"/>, or <see langword="null"/> when absent.
-    /// When non-<see langword="null"/>, <c>Collect</c> skips parameter expansion for this type and
-    /// delegates rendering entirely to the associated custom drawer.
-    /// </summary>
     internal INestedGroupDrawerAttribute? NestedGroupDrawerAttr { get; }
-
-    /// <summary>
-    /// Whether the type carries <see cref="AutoRegisterSettingsAttribute"/>.
-    /// Used to detect direct (non-<see cref="Umbra.Config.Parameter{T}"/>) nested settings-group properties
-    /// during the <c>Collect</c> property loop.
-    /// </summary>
     internal bool IsAutoRegisterSettings { get; }
-
-    /// <summary>
-    /// The public instance properties of this type together with all property-level UI metadata
-    /// consulted by <see cref="ConfigDrawerBuilder.CollectInto"/>.
-    /// Cached from a single <c>Type.GetProperties(BindingFlags.Public | BindingFlags.Instance)</c>
-    /// call and one attribute scan per property performed once in <see cref="Build"/>.
-    /// </summary>
     internal PropertyDrawMetadata[] Properties { get; }
 
     private TypeDrawMetadata(
@@ -145,11 +90,6 @@ internal sealed class TypeDrawMetadata
         Properties = properties;
     }
 
-    /// <summary>
-    /// Returns the cached <see cref="TypeDrawMetadata"/> for <paramref name="type"/>,
-    /// building and caching it on first access via a single attribute scan.
-    /// </summary>
-    /// <param name="type">The type to read metadata for.</param>
     internal static TypeDrawMetadata For(Type type) => s_cache.GetOrAdd(type, Build);
 
     private static TypeDrawMetadata Build(Type type)
@@ -164,13 +104,46 @@ internal sealed class TypeDrawMetadata
 
         foreach (var a in type.GetCustomAttributes(inherit: true))
         {
-            if (a is CategoryAttribute cat) { category = cat.Name; continue; }
-            if (a is SettingsPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
-            if (a is IndentAttribute ind) { indentAttr = ind; continue; }
-            if (a is CollapseAsTreeAttribute col) { collapseAttr = col; continue; }
-            if (a is LabelMarginAttribute lm) { labelMarginAttr = lm; continue; }
-            if (a is INestedGroupDrawerAttribute ngd) { nestedDrawerAttr = ngd; continue; }
-            if (a is AutoRegisterSettingsAttribute) isAutoRegister = true;
+            switch (a)
+            {
+                case CategoryAttribute legacyCategory:
+                    category = legacyCategory.Name;
+                    continue;
+                case UmbraCategoryAttribute prefixedCategory:
+                    category = prefixedCategory.Name;
+                    continue;
+                case SettingsPrefixAttribute legacyPrefix:
+                    settingsPrefix = legacyPrefix.Prefix;
+                    continue;
+                case UmbraSettingsPrefixAttribute prefixedPrefix:
+                    settingsPrefix = prefixedPrefix.Prefix;
+                    continue;
+                case IndentAttribute legacyIndent:
+                    indentAttr = legacyIndent;
+                    continue;
+                case UmbraIndentAttribute prefixedIndent:
+                    indentAttr = new IndentAttribute(prefixedIndent.Amount);
+                    continue;
+                case CollapseAsTreeAttribute legacyCollapse:
+                    collapseAttr = legacyCollapse;
+                    continue;
+                case UmbraCollapseAsTreeAttribute prefixedCollapse:
+                    collapseAttr = new CollapseAsTreeAttribute(prefixedCollapse.DefaultOpen);
+                    continue;
+                case LabelMarginAttribute legacyLabelMargin:
+                    labelMarginAttr = legacyLabelMargin;
+                    continue;
+                case UmbraLabelMarginAttribute prefixedLabelMargin:
+                    labelMarginAttr = new LabelMarginAttribute(prefixedLabelMargin.Pixels);
+                    continue;
+                case INestedGroupDrawerAttribute ngd:
+                    nestedDrawerAttr = ngd;
+                    continue;
+                case AutoRegisterSettingsAttribute:
+                case UmbraAutoRegisterSettingsAttribute:
+                    isAutoRegister = true;
+                    continue;
+            }
         }
 
         var rawProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -184,8 +157,6 @@ internal sealed class TypeDrawMetadata
     /// <summary>
     /// Reads and caches all property-level UI metadata consulted during config drawer assembly.
     /// </summary>
-    /// <param name="property">The reflected property whose metadata should be cached.</param>
-    /// <returns>The cached property metadata consumed by <see cref="ConfigDrawerBuilder"/>.</returns>
     private static PropertyDrawMetadata BuildPropertyMetadata(PropertyInfo property)
     {
         var propertyType = property.PropertyType;
@@ -206,17 +177,69 @@ internal sealed class TypeDrawMetadata
 
         foreach (var attribute in property.GetCustomAttributes(inherit: false))
         {
-            if (attribute is CategoryAttribute cat) { category = cat.Name; continue; }
-            if (attribute is SettingsPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
-            if (attribute is SettingsParameterAttribute settingsParameter) { settingsParameterKeyOverride = settingsParameter.KeyOverride; continue; }
-            if (attribute is IndentAttribute indent) { indentAttr = indent; continue; }
-            if (attribute is CollapseAsTreeAttribute collapse) { collapseAttr = collapse; continue; }
-            if (attribute is LabelMarginAttribute labelMargin) { labelMarginAttr = labelMargin; continue; }
-            if (attribute is INestedGroupDrawerAttribute nestedDrawer) { nestedGroupDrawerAttr = nestedDrawer; continue; }
-            if (attribute is IHideIfAttribute propertyHideIf) { hideIf = propertyHideIf; continue; }
-            if (attribute is ParameterOrderAttribute parameterOrder) { order = parameterOrder.Order; continue; }
-            if (attribute is SpacingBeforeAttribute before) { spacingBefore = before.Count; continue; }
-            if (attribute is SpacingAfterAttribute after) { spacingAfter = after.Count; }
+            switch (attribute)
+            {
+                case CategoryAttribute legacyCategory:
+                    category = legacyCategory.Name;
+                    continue;
+                case UmbraCategoryAttribute prefixedCategory:
+                    category = prefixedCategory.Name;
+                    continue;
+                case SettingsPrefixAttribute legacyPrefix:
+                    settingsPrefix = legacyPrefix.Prefix;
+                    continue;
+                case UmbraSettingsPrefixAttribute prefixedPrefix:
+                    settingsPrefix = prefixedPrefix.Prefix;
+                    continue;
+                case SettingsParameterAttribute legacySettingsParameter:
+                    settingsParameterKeyOverride = legacySettingsParameter.KeyOverride;
+                    continue;
+                case UmbraSettingsParameterAttribute prefixedSettingsParameter:
+                    settingsParameterKeyOverride = prefixedSettingsParameter.KeyOverride;
+                    continue;
+                case IndentAttribute legacyIndent:
+                    indentAttr = legacyIndent;
+                    continue;
+                case UmbraIndentAttribute prefixedIndent:
+                    indentAttr = new IndentAttribute(prefixedIndent.Amount);
+                    continue;
+                case CollapseAsTreeAttribute legacyCollapse:
+                    collapseAttr = legacyCollapse;
+                    continue;
+                case UmbraCollapseAsTreeAttribute prefixedCollapse:
+                    collapseAttr = new CollapseAsTreeAttribute(prefixedCollapse.DefaultOpen);
+                    continue;
+                case LabelMarginAttribute legacyLabelMargin:
+                    labelMarginAttr = legacyLabelMargin;
+                    continue;
+                case UmbraLabelMarginAttribute prefixedLabelMargin:
+                    labelMarginAttr = new LabelMarginAttribute(prefixedLabelMargin.Pixels);
+                    continue;
+                case INestedGroupDrawerAttribute nestedDrawer:
+                    nestedGroupDrawerAttr = nestedDrawer;
+                    continue;
+                case IHideIfAttribute propertyHideIf:
+                    hideIf = propertyHideIf;
+                    continue;
+                case ParameterOrderAttribute legacyOrder:
+                    order = legacyOrder.Order;
+                    continue;
+                case UmbraParameterOrderAttribute prefixedOrder:
+                    order = prefixedOrder.Order;
+                    continue;
+                case SpacingBeforeAttribute legacyBefore:
+                    spacingBefore = legacyBefore.Count;
+                    continue;
+                case UmbraSpacingBeforeAttribute prefixedBefore:
+                    spacingBefore = prefixedBefore.Count;
+                    continue;
+                case SpacingAfterAttribute legacyAfter:
+                    spacingAfter = legacyAfter.Count;
+                    continue;
+                case UmbraSpacingAfterAttribute prefixedAfter:
+                    spacingAfter = prefixedAfter.Count;
+                    continue;
+            }
         }
 
         return new PropertyDrawMetadata(
@@ -236,3 +259,5 @@ internal sealed class TypeDrawMetadata
             settingsParameterKeyOverride);
     }
 }
+
+#pragma warning restore CS0618

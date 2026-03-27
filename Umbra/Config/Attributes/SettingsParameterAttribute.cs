@@ -18,7 +18,8 @@ namespace Umbra.Config.Attributes;
 /// combined with the prefix defined by <see cref="SettingsPrefixAttribute"/>, if present.
 /// </param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class SettingsParameterAttribute(string? keyOverride = null) : Attribute
+[Obsolete("Use UmbraSettingsParameterAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class SettingsParameterAttribute(string? keyOverride = null) : Attribute
 {
     /// <summary>
     /// Gets the explicit key override for this parameter, or <see langword="null"/>

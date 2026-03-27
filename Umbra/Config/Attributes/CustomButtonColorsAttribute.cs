@@ -32,7 +32,8 @@ namespace Umbra.Config.Attributes;
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class CustomButtonColorsAttribute : Attribute
+[Obsolete("Use UmbraCustomButtonColorsAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class CustomButtonColorsAttribute : Attribute
 {
     /// <summary>Gets the red channel of the normal button color, in <c>[0, 1]</c>.</summary>
     public float NormalR { get; }

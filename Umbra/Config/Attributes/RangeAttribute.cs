@@ -8,7 +8,8 @@ namespace Umbra.Config.Attributes;
 /// <param name="min">The minimum allowable value.</param>
 /// <param name="max">The maximum allowable value.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class RangeAttribute(double min, double max) : Attribute
+[Obsolete("Use UmbraRangeAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class RangeAttribute(double min, double max) : Attribute
 {
     /// <summary>Gets the minimum allowable value for the parameter.</summary>
     public double Min { get; } = min;

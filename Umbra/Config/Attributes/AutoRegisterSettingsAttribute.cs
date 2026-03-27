@@ -19,4 +19,5 @@ namespace Umbra.Config.Attributes;
 /// automatic discovery path.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class AutoRegisterSettingsAttribute : Attribute { }
+[Obsolete("Use UmbraAutoRegisterSettingsAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class AutoRegisterSettingsAttribute : Attribute { }

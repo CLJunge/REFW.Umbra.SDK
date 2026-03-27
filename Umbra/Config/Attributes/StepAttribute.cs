@@ -27,7 +27,8 @@ namespace Umbra.Config.Attributes;
 /// precision of the fallback display format string for <c>float</c> and <c>double</c> types.
 /// </param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class StepAttribute(double step) : Attribute
+[Obsolete("Use UmbraStepAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class StepAttribute(double step) : Attribute
 {
     /// <summary>
     /// Gets the drag speed for the parameter. Also used to infer the decimal precision

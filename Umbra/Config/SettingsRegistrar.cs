@@ -3,6 +3,8 @@ using Umbra.Config.Attributes;
 
 namespace Umbra.Config;
 
+#pragma warning disable CS0618 // Registrar must continue supporting legacy unprefixed attributes for backwards compatibility.
+
 /// <summary>
 /// Discovers and registers all <see cref="IParameter"/> instances declared on a configuration
 /// object by walking its public instance property tree and respecting the SDK settings attributes.
@@ -18,11 +20,11 @@ internal static class SettingsRegistrar
     /// <returns>
     /// A dictionary mapping each discovered setting key to its corresponding <see cref="IParameter"/>.
     /// Returns an empty dictionary when <typeparamref name="TConfig"/> is not decorated with
-    /// <see cref="AutoRegisterSettingsAttribute"/>.
+    /// an auto-register settings attribute.
     /// </returns>
     /// <remarks>
     /// Only public instance properties participate in the built-in discovery walk.
-    /// Fields are ignored even if they carry <see cref="SettingsParameterAttribute"/> or related metadata attributes.
+    /// Fields are ignored even if they carry settings metadata attributes.
     /// </remarks>
     internal static Dictionary<string, IParameter> Register<TConfig>(TConfig config)
         where TConfig : class
@@ -42,50 +44,30 @@ internal static class SettingsRegistrar
 
     /// <summary>
     /// Recursively walks the public instance property tree of <paramref name="obj"/>, registering any
-    /// <see cref="IParameter"/> properties annotated with <see cref="SettingsParameterAttribute"/>.
-    /// Nested objects that are themselves decorated with <see cref="AutoRegisterSettingsAttribute"/>
+    /// <see cref="IParameter"/> properties annotated with a settings-parameter attribute.
+    /// Nested objects that are themselves decorated with an auto-register settings attribute
     /// are traversed automatically.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// If <paramref name="obj"/>'s runtime type does not carry
-    /// <see cref="AutoRegisterSettingsAttribute"/>, the method returns immediately without
-    /// registering any parameters, and without logging a warning.
+    /// If <paramref name="obj"/>'s runtime type does not carry an auto-register settings attribute,
+    /// the method returns immediately without registering any parameters, and without logging a warning.
     /// </para>
     /// <para>
     /// <paramref name="visited"/> guards against object-graph cycles: if the same instance is
     /// encountered a second time the branch is skipped, preventing a <see cref="StackOverflowException"/>.
     /// </para>
     /// <para>
-    /// Prefix resolution for nested groups uses a property-first strategy: if
-    /// <see cref="SettingsPrefixAttribute"/> is present on the parent property, that value is
-    /// used. If not, the attribute is looked up on the nested type itself (backwards-compatible
-    /// fallback). Placing the prefix on the property is the preferred approach.
+    /// Prefix resolution for nested groups uses a property-first strategy: if a settings-prefix
+    /// attribute is present on the parent property, that value is used. If not, the attribute is
+    /// looked up on the nested type itself (backwards-compatible fallback). Placing the prefix on
+    /// the property is the preferred approach.
     /// </para>
     /// <para>
-    /// Category resolution follows the same priority order: property-level
-    /// <see cref="CategoryAttribute"/> wins over type-level.
+    /// Category resolution follows the same priority order: property-level category metadata wins
+    /// over type-level.
     /// </para>
     /// </remarks>
-    /// <param name="obj">The current object being inspected.</param>
-    /// <param name="currentPrefix">
-    /// The fully resolved dot-separated key prefix for <paramref name="obj"/>, already including
-    /// the prefix segment selected for this branch of the object tree. For nested groups the
-    /// segment is sourced from the parent property's <see cref="SettingsPrefixAttribute"/> when
-    /// present, or from the nested type's attribute as a fallback.
-    /// </param>
-    /// <param name="currentCategory">
-    /// The effective category inherited by child parameters of <paramref name="obj"/>, resolved
-    /// from the parent property's <see cref="CategoryAttribute"/> when present, or from the
-    /// nested type's attribute as a fallback.
-    /// </param>
-    /// <param name="parameters">
-    /// The dictionary that discovered <see cref="IParameter"/> instances are added to.
-    /// </param>
-    /// <param name="visited">
-    /// The set of object instances already visited in the current walk, keyed by reference identity.
-    /// Used to detect and short-circuit cycles in the configuration object graph.
-    /// </param>
     private static void RegisterRecursive(
         object obj,
         string currentPrefix,
@@ -93,23 +75,24 @@ internal static class SettingsRegistrar
         Dictionary<string, IParameter> parameters,
         HashSet<object> visited)
     {
-        if (!visited.Add(obj)) return; // cycle guard — same instance seen twice, skip
+        if (!visited.Add(obj)) return;
 
         var type = obj.GetType();
-        if (!Attribute.IsDefined(type, typeof(AutoRegisterSettingsAttribute)))
+        if (!HasAutoRegisterSettings(type))
             return;
 
         foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            var paramAttr = prop.GetCustomAttribute<SettingsParameterAttribute>();
-            if (paramAttr == null) continue;
+            var keyOverride = GetSettingsParameterKeyOverride(prop);
+            if (keyOverride == MissingSettingsParameterSentinel)
+                continue;
 
             var value = prop.GetValue(obj);
             if (value == null) continue;
 
             if (value is IParameter parameter)
             {
-                var key = Combine(currentPrefix, paramAttr.KeyOverride ?? prop.Name.ToCamelCase()!);
+                var key = Combine(currentPrefix, keyOverride ?? prop.Name.ToCamelCase()!);
                 parameter.Key = key;
                 parameter.Metadata = ParameterMetadataReader.ReadFrom(prop, currentCategory, key);
                 parameters[key] = parameter;
@@ -123,33 +106,85 @@ internal static class SettingsRegistrar
         }
     }
 
-    /// <summary>
-    /// Returns the <see cref="SettingsPrefixAttribute.Prefix"/> declared on <paramref name="member"/>,
-    /// or <see langword="null"/> when the member declares no <see cref="SettingsPrefixAttribute"/>.
-    /// </summary>
-    /// <param name="member">The reflected property or type to inspect.</param>
-    private static string? GetSettingsPrefix(MemberInfo member)
-        => member.GetCustomAttribute<SettingsPrefixAttribute>()?.Prefix;
+    private const string MissingSettingsParameterSentinel = "\u0000";
 
     /// <summary>
-    /// Returns the <see cref="CategoryAttribute.Name"/> declared on <paramref name="member"/>, or
-    /// <see langword="null"/> when the member declares no <see cref="CategoryAttribute"/>.
+    /// Gets whether <paramref name="member"/> is decorated with either the legacy or the
+    /// preferred Umbra-prefixed auto-register settings attribute.
     /// </summary>
-    /// <param name="member">The reflected property or type to inspect.</param>
+    private static bool HasAutoRegisterSettings(MemberInfo member)
+    {
+        foreach (var attr in member.GetCustomAttributes(inherit: false))
+        {
+            if (attr is AutoRegisterSettingsAttribute or UmbraAutoRegisterSettingsAttribute)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Returns the settings-parameter key override for <paramref name="member"/>, or a sentinel
+    /// when the member is not marked as a settings parameter.
+    /// </summary>
+    private static string? GetSettingsParameterKeyOverride(MemberInfo member)
+    {
+        foreach (var attr in member.GetCustomAttributes(inherit: false))
+        {
+            switch (attr)
+            {
+                case SettingsParameterAttribute legacy:
+                    return legacy.KeyOverride;
+                case UmbraSettingsParameterAttribute prefixed:
+                    return prefixed.KeyOverride;
+            }
+        }
+
+        return MissingSettingsParameterSentinel;
+    }
+
+    /// <summary>
+    /// Returns the prefix declared on <paramref name="member"/>, or <see langword="null"/> when none is present.
+    /// </summary>
+    private static string? GetSettingsPrefix(MemberInfo member)
+    {
+        foreach (var attr in member.GetCustomAttributes(inherit: false))
+        {
+            switch (attr)
+            {
+                case SettingsPrefixAttribute legacy:
+                    return legacy.Prefix;
+                case UmbraSettingsPrefixAttribute prefixed:
+                    return prefixed.Prefix;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Returns the category declared on <paramref name="member"/>, or <see langword="null"/> when none is present.
+    /// </summary>
     private static string? GetCategory(MemberInfo member)
-        => member.GetCustomAttribute<CategoryAttribute>()?.Name;
+    {
+        foreach (var attr in member.GetCustomAttributes(inherit: false))
+        {
+            switch (attr)
+            {
+                case CategoryAttribute legacy:
+                    return legacy.Name;
+                case UmbraCategoryAttribute prefixed:
+                    return prefixed.Name;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Combines two dot-separated key segments into a single key, omitting the separator
     /// when either segment is <see langword="null"/> or empty.
     /// </summary>
-    /// <param name="a">The left-hand segment (prefix).</param>
-    /// <param name="b">The right-hand segment (suffix).</param>
-    /// <returns>
-    /// <paramref name="b"/> if <paramref name="a"/> is empty;
-    /// <paramref name="a"/> if <paramref name="b"/> is empty;
-    /// otherwise <c>"a.b"</c>.
-    /// </returns>
     private static string Combine(string a, string b)
     {
         if (string.IsNullOrEmpty(a)) return b;
@@ -157,3 +192,5 @@ internal static class SettingsRegistrar
         return $"{a}.{b}";
     }
 }
+
+#pragma warning restore CS0618

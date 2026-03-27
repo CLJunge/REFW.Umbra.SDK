@@ -6,6 +6,8 @@ using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config;
 
+#pragma warning disable CS0618 // Drawer construction still honors legacy unprefixed attributes for backwards compatibility.
+
 /// <summary>
 /// Pre-builds and renders an ImGui settings UI for a typed configuration class.
 /// </summary>
@@ -33,7 +35,7 @@ namespace Umbra.UI.Config;
 /// container for the group's uncategorized direct controls and any additional child categories
 /// declared inside the group. Every nested-group subtree also receives its own stable ImGui ID
 /// scope derived from its structural settings path, so custom nested-group drawers can safely
-/// reuse local widget labels in different branches. Apply <see cref="ConfigRootNodeAttribute"/>
+/// reuse local widget labels in different branches. Apply a root-node attribute
 /// to the root config class to wrap the entire panel inside a single top-level
 /// <c>ImGui.TreeNode</c>.
 /// </para>
@@ -66,8 +68,8 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// in the same ImGui window. Must be non-null and non-whitespace.
     /// </param>
     /// <param name="suppressRootNode">
-    /// When <see langword="true"/>, the <see cref="ConfigRootNodeAttribute"/>-driven
-    /// root <see cref="ImGui.TreeNode(string)"/> is not rendered even when the attribute is present on
+    /// When <see langword="true"/>, the root-node-attribute-driven
+    /// root <see cref="ImGui.TreeNode(string)"/> is not rendered even when such an attribute is present on
     /// <typeparamref name="TConfig"/>. Defaults to <see langword="false"/>.
     /// Pass <see langword="true"/> when the owning <see cref="ConfigSection{TConfig}"/>
     /// is responsible for the tree node so that the wrapping is not duplicated.
@@ -83,11 +85,11 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
         builder.SortAll();
         _disposables = builder.Disposables;
 
-        var rootAttr = typeof(TConfig).GetCustomAttribute<ConfigRootNodeAttribute>();
-        if (rootAttr is not null && !suppressRootNode)
+        var rootAttr = GetRootNodeMetadata(typeof(TConfig));
+        if (rootAttr.HasValue && !suppressRootNode)
         {
-            var label = rootAttr.Label ?? typeof(TConfig).Name.ToDisplayName();
-            _nodes = [new RootTreeNode(label, rootAttr.DefaultOpen, builder.Nodes)];
+            var label = rootAttr.Value.Label ?? typeof(TConfig).Name.ToDisplayName();
+            _nodes = [new RootTreeNode(label, rootAttr.Value.DefaultOpen, builder.Nodes)];
         }
         else
         {
@@ -142,4 +144,22 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
         foreach (var d in _disposables) d.Dispose();
         GC.SuppressFinalize(this);
     }
+
+    private static (string? Label, bool DefaultOpen)? GetRootNodeMetadata(Type type)
+    {
+        foreach (var attr in type.GetCustomAttributes(inherit: true))
+        {
+            switch (attr)
+            {
+                case ConfigRootNodeAttribute legacy:
+                    return (legacy.Label, legacy.DefaultOpen);
+                case UmbraConfigRootNodeAttribute prefixed:
+                    return (prefixed.Label, prefixed.DefaultOpen);
+            }
+        }
+
+        return null;
+    }
 }
+
+#pragma warning restore CS0618

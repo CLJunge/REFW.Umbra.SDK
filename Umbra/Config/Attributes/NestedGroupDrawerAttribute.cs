@@ -30,7 +30,8 @@ namespace Umbra.Config.Attributes;
 /// parameterless constructor; this constraint is enforced at compile time.
 /// </typeparam>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class NestedGroupDrawerAttribute<TDrawer> : Attribute, INestedGroupDrawerAttribute
+[Obsolete("Use UmbraNestedGroupDrawerAttribute<TDrawer> instead for the collision-safe Umbra-prefixed name.")]
+public class NestedGroupDrawerAttribute<TDrawer> : Attribute, INestedGroupDrawerAttribute
     where TDrawer : class, new()
 {
     /// <summary>Gets the type of the custom drawer used to render the nested group instance.</summary>

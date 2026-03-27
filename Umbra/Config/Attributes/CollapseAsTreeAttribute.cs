@@ -26,7 +26,8 @@ namespace Umbra.Config.Attributes;
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class CollapseAsTreeAttribute(bool defaultOpen = false) : Attribute
+[Obsolete("Use UmbraCollapseAsTreeAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class CollapseAsTreeAttribute(bool defaultOpen = false) : Attribute
 {
     /// <summary>
     /// Gets whether the tree node is rendered in its open (expanded) state by default.

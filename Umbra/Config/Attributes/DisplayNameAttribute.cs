@@ -10,7 +10,8 @@ namespace Umbra.Config.Attributes;
 /// </remarks>
 /// <param name="name">The display name to show in the UI.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class DisplayNameAttribute(string name) : Attribute
+[Obsolete("Use UmbraDisplayNameAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class DisplayNameAttribute(string name) : Attribute
 {
     /// <summary>Gets the display name of the parameter.</summary>
     public string Name { get; } = name;

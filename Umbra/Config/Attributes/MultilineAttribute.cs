@@ -12,7 +12,8 @@ namespace Umbra.Config.Attributes;
 /// </remarks>
 /// <param name="lines">The visible line count used to derive the control height. Defaults to <c>3</c>.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class MultilineAttribute(int lines = 3) : Attribute
+[Obsolete("Use UmbraMultilineAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class MultilineAttribute(int lines = 3) : Attribute
 {
     /// <summary>Gets the number of visible text lines used to calculate the control height.</summary>
     public int Lines { get; } = lines;

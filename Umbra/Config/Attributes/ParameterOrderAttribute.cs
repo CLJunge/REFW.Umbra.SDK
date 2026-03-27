@@ -13,7 +13,8 @@ namespace Umbra.Config.Attributes;
 /// </remarks>
 /// <param name="order">The sort key. Lower values appear first within the same category context.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class ParameterOrderAttribute(int order) : Attribute
+[Obsolete("Use UmbraParameterOrderAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class ParameterOrderAttribute(int order) : Attribute
 {
     /// <summary>Gets the sort key for this parameter within its category context. Lower values appear first.</summary>
     public int Order { get; } = order;

@@ -9,6 +9,8 @@ using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config;
 
+#pragma warning disable CS0618 // Builder must continue supporting legacy unprefixed attributes for backwards compatibility.
+
 /// <summary>
 /// Walks a configuration object tree once at construction time and produces the ordered list of
 /// top-level <see cref="IDrawNode"/> instances consumed by <see cref="ConfigDrawer{TConfig}.Draw"/>.

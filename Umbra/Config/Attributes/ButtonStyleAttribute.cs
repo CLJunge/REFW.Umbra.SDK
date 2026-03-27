@@ -11,7 +11,8 @@ namespace Umbra.Config.Attributes;
 /// </remarks>
 /// <param name="style">The color style to apply to the rendered button.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class ButtonStyleAttribute(ButtonStyle style) : Attribute
+[Obsolete("Use UmbraButtonStyleAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class ButtonStyleAttribute(ButtonStyle style) : Attribute
 {
     /// <summary>Gets the visual color style applied to the button.</summary>
     public ButtonStyle Style { get; } = style;

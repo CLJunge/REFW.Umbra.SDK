@@ -30,6 +30,7 @@ namespace Umbra.Config.Attributes;
 /// The pixel width: <c>0f</c> = type-default, negative = fill available, positive = fixed px.
 /// </param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+[Obsolete("Use UmbraControlWidthAttribute instead for the collision-safe Umbra-prefixed name.")]
 public class ControlWidthAttribute(float width) : Attribute
 {
     /// <summary>

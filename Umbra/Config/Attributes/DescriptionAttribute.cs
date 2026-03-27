@@ -10,7 +10,8 @@ namespace Umbra.Config.Attributes;
 /// </remarks>
 /// <param name="text">The descriptive text to display.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class DescriptionAttribute(string text) : Attribute
+[Obsolete("Use UmbraDescriptionAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class DescriptionAttribute(string text) : Attribute
 {
     /// <summary>Gets the description text for the parameter.</summary>
     public string Text { get; } = text;

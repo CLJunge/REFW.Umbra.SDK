@@ -12,7 +12,8 @@ namespace Umbra.Config.Attributes;
 /// parameterless constructor; both constraints are enforced at compile time.
 /// </typeparam>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class CustomDrawerAttribute<TDrawer> : Attribute, ICustomDrawerAttribute where TDrawer : IParameterDrawer, new()
+[Obsolete("Use UmbraCustomDrawerAttribute<TDrawer> instead for the collision-safe Umbra-prefixed name.")]
+public class CustomDrawerAttribute<TDrawer> : Attribute, ICustomDrawerAttribute where TDrawer : IParameterDrawer, new()
 {
     /// <summary>Gets the type of the custom drawer used to render this parameter.</summary>
     public Type DrawerType => typeof(TDrawer);

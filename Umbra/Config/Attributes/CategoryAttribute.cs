@@ -16,7 +16,8 @@ namespace Umbra.Config.Attributes;
 /// </remarks>
 /// <param name="name">The category name used to group related parameters in the UI.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class CategoryAttribute(string name) : Attribute
+[Obsolete("Use UmbraCategoryAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class CategoryAttribute(string name) : Attribute
 {
     /// <summary>Gets the category name used to group related parameters in the UI.</summary>
     public string Name { get; } = name;

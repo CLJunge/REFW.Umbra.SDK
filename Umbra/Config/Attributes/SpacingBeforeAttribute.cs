@@ -14,7 +14,8 @@ namespace Umbra.Config.Attributes;
 /// </remarks>
 /// <param name="count">The number of spacing lines to insert. Defaults to <c>1</c>.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class SpacingBeforeAttribute(int count = 1) : Attribute
+[Obsolete("Use UmbraSpacingBeforeAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class SpacingBeforeAttribute(int count = 1) : Attribute
 {
     /// <summary>Gets the number of spacing lines to insert before the parameter control.</summary>
     public int Count { get; } = count;

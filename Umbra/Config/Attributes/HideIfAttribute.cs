@@ -20,7 +20,8 @@ namespace Umbra.Config.Attributes;
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class HideIfAttribute<T> : Attribute, IHideIfAttribute
+[Obsolete("Use UmbraHideIfAttribute<T> instead for the collision-safe Umbra-prefixed name.")]
+public class HideIfAttribute<T> : Attribute, IHideIfAttribute
 {
     /// <summary>Gets the name of the property or field on the configuration class to evaluate.</summary>
     public string MemberName { get; }

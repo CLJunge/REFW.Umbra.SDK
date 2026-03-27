@@ -26,7 +26,8 @@ namespace Umbra.Config.Attributes;
 /// Defaults to <see langword="false"/> (collapsed).
 /// </param>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class ConfigRootNodeAttribute(string? label = null, bool defaultOpen = false) : Attribute
+[Obsolete("Use UmbraConfigRootNodeAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class ConfigRootNodeAttribute(string? label = null, bool defaultOpen = false) : Attribute
 {
     /// <summary>
     /// Gets the label shown on the root tree node header, or <see langword="null"/> when the

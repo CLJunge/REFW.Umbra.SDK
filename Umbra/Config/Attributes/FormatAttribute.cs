@@ -19,7 +19,8 @@ namespace Umbra.Config.Attributes;
 /// </remarks>
 /// <param name="format">A printf-style format string compatible with ImGui.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class FormatAttribute(string format) : Attribute
+[Obsolete("Use UmbraFormatAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class FormatAttribute(string format) : Attribute
 {
     /// <summary>Gets the printf-style format string used to display the parameter's value.</summary>
     public string Format { get; } = format;

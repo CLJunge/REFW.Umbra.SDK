@@ -22,7 +22,8 @@ namespace Umbra.Config.Attributes;
 /// </remarks>
 /// <param name="pixels">Extra pixels to insert between the label column and the editing widget. Must be ≥ 0.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class LabelMarginAttribute(float pixels) : Attribute
+[Obsolete("Use UmbraLabelMarginAttribute instead for the collision-safe Umbra-prefixed name.")]
+public class LabelMarginAttribute(float pixels) : Attribute
 {
     /// <summary>Gets the extra pixel gap inserted between the label column and the editing widget.</summary>
     public float Pixels { get; } = pixels;
