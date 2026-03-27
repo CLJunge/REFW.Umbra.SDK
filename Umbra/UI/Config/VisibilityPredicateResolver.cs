@@ -8,7 +8,7 @@ using Umbra.Logging;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Resolves <see cref="HideIfAttribute{T}"/> declarations into per-frame visibility
+/// Resolves <see cref="UmbraHideIfAttribute{T}"/> declarations into per-frame visibility
 /// predicates. Keeps HideIf logic isolated from both tree traversal and control rendering.
 /// </summary>
 internal static class VisibilityPredicateResolver

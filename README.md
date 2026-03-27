@@ -117,18 +117,18 @@ In Debug builds, the repository uses the local deployment scripts configured in 
 using Umbra.Config;
 using Umbra.Config.Attributes;
 
-[AutoRegisterSettings]
-[SettingsPrefix("myPlugin")]
-[Category("My Plugin")]
+[UmbraAutoRegisterSettings]
+[UmbraSettingsPrefix("myPlugin")]
+[UmbraCategory("My Plugin")]
 public record MyConfig
 {
-    [SettingsParameter]
-    [DisplayName("Enabled")]
-    [Description("Turns the plugin on or off.")]
+    [UmbraSettingsParameter]
+    [UmbraDisplayName("Enabled")]
+    [UmbraDescription("Turns the plugin on or off.")]
     public Parameter<bool> IsEnabled { get; set; } = new(true);
 
-    [SettingsParameter]
-    [DisplayName("Hotkey")]
+    [UmbraSettingsParameter]
+    [UmbraDisplayName("Hotkey")]
     public Parameter<int> Hotkey { get; set; } = new(574);
 }
 ```

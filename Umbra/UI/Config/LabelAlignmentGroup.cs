@@ -17,7 +17,7 @@ namespace Umbra.UI.Config;
 /// maximum to <see cref="LabelWidth"/>, and marks the group as permanently seeded. All
 /// subsequent calls to <see cref="EnsureSeeded"/> are no-ops: the committed width is never
 /// recomputed and never decreases, so hiding parameters via
-/// <see cref="Umbra.Config.Attributes.HideIfAttribute{T}"/> cannot narrow the column.
+/// <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> cannot narrow the column.
 /// </para>
 /// <para>
 /// In normal usage, <see cref="ControlLayout.Pre"/> calls <see cref="EnsureSeeded"/> before
