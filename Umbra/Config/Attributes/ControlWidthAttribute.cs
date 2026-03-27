@@ -1,8 +1,7 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Sets the pixel width of the editing widget for a settings control rendered by the default
-/// control factory or, through the derived <see cref="ButtonWidthAttribute"/>, the button drawer.
+/// Sets the pixel width of a settings control's editing widget.
 /// </summary>
 /// <remarks>
 /// <para>Semantics for the three possible values:</para>
@@ -19,12 +18,12 @@ namespace Umbra.Config.Attributes;
 /// space — equivalent to explicitly specifying <c>[ControlWidth(-1f)]</c>.
 /// </para>
 /// <para>
-/// For button parameters use the derived <see cref="ButtonWidthAttribute"/>, which passes the width
-/// via <c>ImGui.Button</c>'s size vector instead of <c>SetNextItemWidth</c>, giving <c>0f</c>
-/// a different auto-size meaning. For all other standard controls the width is applied via
-/// <c>ImGui.SetNextItemWidth()</c> before the widget (or via the size vector for multi-line strings).
-/// Custom drawers must explicitly read <see cref="ParameterMetadata.ControlWidth"/>
-/// to honour this setting.
+/// For button parameters, the same attribute value is applied via <c>ImGui.Button</c>'s size
+/// vector rather than <c>SetNextItemWidth</c>, so <c>0f</c> means auto-size-to-label for buttons
+/// but means ImGui's default item width for other controls. For all non-button standard controls
+/// the width is applied via <c>ImGui.SetNextItemWidth()</c> before the widget (or via the size
+/// vector for multi-line strings). Custom drawers must explicitly read
+/// <see cref="ParameterMetadata.ControlWidth"/> to honour this setting.
 /// </para>
 /// </remarks>
 /// <param name="width">

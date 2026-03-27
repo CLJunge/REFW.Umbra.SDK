@@ -44,11 +44,10 @@ internal static class ParameterMetadataReader
         var format = member.GetCustomAttribute<FormatAttribute>();
         var buttonStyle = member.GetCustomAttribute<ButtonStyleAttribute>();
         var customButtonColors = member.GetCustomAttribute<CustomButtonColorsAttribute>();
-        var buttonWidth = member.GetCustomAttribute<ButtonWidthAttribute>();
-        // ButtonWidthAttribute derives from ControlWidthAttribute, so GetCustomAttribute<ControlWidthAttribute>()
-        // would also match [ButtonWidth] decorated members. Resolve ControlWidth only when ButtonWidthAttribute
-        // is absent so the two metadata slots remain independent.
-        var controlWidth = buttonWidth is null ? member.GetCustomAttribute<ControlWidthAttribute>() : null;
+        // ButtonWidthAttribute now acts only as an obsolete compatibility alias for
+        // ControlWidthAttribute, so both standard controls and buttons read from the same
+        // metadata slot.
+        var controlWidth = member.GetCustomAttribute<ControlWidthAttribute>();
         var multiline = member.GetCustomAttribute<MultilineAttribute>();
         var order = member.GetCustomAttribute<ParameterOrderAttribute>();
         var spacingBefore = member.GetCustomAttribute<SpacingBeforeAttribute>();
@@ -89,7 +88,6 @@ internal static class ParameterMetadataReader
                 new Vector4(customButtonColors.HoveredR, customButtonColors.HoveredG, customButtonColors.HoveredB, customButtonColors.HoveredA),
                 new Vector4(customButtonColors.ActiveR, customButtonColors.ActiveG, customButtonColors.ActiveB, customButtonColors.ActiveA)
             ),
-            ButtonWidth = buttonWidth?.Width,
             ControlWidth = controlWidth?.Width,
             MultilineLines = multiline?.Lines,
             Order = order?.Order,

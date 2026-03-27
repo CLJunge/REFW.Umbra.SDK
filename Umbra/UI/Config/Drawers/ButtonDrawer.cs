@@ -36,7 +36,7 @@ namespace Umbra.UI.Config.Drawers;
 ///     </description>
 ///   </item>
 ///   <item>
-///     <term><c>[ButtonWidth(-1f)]</c></term>
+///     <term><c>[ControlWidth(-1f)]</c></term>
 ///     <description>
 ///       <c>0f</c> (default) = auto-size to label, <c>-1f</c> = fill available width,
 ///       positive = fixed pixel width.
@@ -70,7 +70,7 @@ public sealed class ButtonDrawer : IParameterDrawer
 
         var meta = parameter.Metadata;
         var style = meta.ButtonStyle ?? ButtonStyle.Default;
-        var size = new Vector2(meta.ButtonWidth ?? 0f, 0f);
+        var size = new Vector2(meta.ControlWidth ?? 0f, 0f);
         bool colorsPushed;
 
         // Guard: ButtonStyle.Custom without [CustomButtonColors] is a misconfiguration.

@@ -75,7 +75,7 @@ public record PluginConfig
     [Description("Logs a test message to the REFramework console to verify the plugin is active.")]
     [CustomDrawer<ButtonDrawer>]
     [ButtonStyle(ButtonStyle.Primary)]
-    [ButtonWidth(-1f)]
+    [ControlWidth(-1f)]
     [ParameterOrder(0)]
     public Parameter<Action> LogTestMessage { get; init; } = new(static () => { });
 
@@ -85,7 +85,7 @@ public record PluginConfig
     [Description("Resets the enabled toggle and hotkey bindings to their default values.")]
     [CustomDrawer<ButtonDrawer>]
     [ButtonStyle(ButtonStyle.Danger)]
-    [ButtonWidth(-1f)]
+    [ControlWidth(-1f)]
     public Parameter<Action> ResetGeneral { get; init; }
 
     /// <summary>Initializes a new <see cref="PluginConfig"/> and wires up the reset action.</summary>
@@ -151,7 +151,7 @@ public record PluginConfig
         [Description("Resets all field-of-view values to their defaults.")]
         [CustomDrawer<ButtonDrawer>]
         [ButtonStyle(ButtonStyle.Danger)]
-        [ButtonWidth(-1f)]
+        [ControlWidth(-1f)]
         public Parameter<Action> ResetFov { get; init; }
 
         /// <summary>Initializes a new <see cref="FovSettings"/> and wires up the reset action.</summary>
@@ -198,7 +198,7 @@ public record PluginConfig
         [Description("Resets the film grain toggle and opacity to their defaults.")]
         [CustomDrawer<ButtonDrawer>]
         [ButtonStyle(ButtonStyle.Danger)]
-        [ButtonWidth(-1f)]
+        [ControlWidth(-1f)]
         public Parameter<Action> ResetFilmGrain { get; init; }
 
         /// <summary>Initializes a new <see cref="FilmGrainSettings"/> and wires up the reset action.</summary>

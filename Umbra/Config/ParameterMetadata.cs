@@ -110,33 +110,19 @@ public sealed class ParameterMetadata
     public (Vector4 Normal, Vector4 Hovered, Vector4 Active)? CustomButtonColors { get; init; }
 
     /// <summary>
-    /// Gets the explicit pixel width for a button rendered by
-    /// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
-    /// <c>0f</c> = auto-size to label, <c>-1f</c> = fill available width, positive = fixed pixels.
-    /// Sourced from <see cref="ButtonWidthAttribute"/> (which extends <see cref="ControlWidthAttribute"/>).
-    /// <see langword="null"/> when not specified; the drawer defaults to <c>0f</c> (auto-size).
-    /// </summary>
-    /// <remarks>
-    /// Stored separately from <see cref="ControlWidth"/> even though both originate from the same
-    /// attribute hierarchy, because <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>
-    /// applies the width via <c>ImGui.Button</c>'s size vector rather than <c>SetNextItemWidth</c>.
-    /// When <see cref="ButtonWidthAttribute"/> is present, <see cref="ControlWidth"/> is left
-    /// <see langword="null"/> to keep the two mechanisms independent.
-    /// </remarks>
-    public float? ButtonWidth { get; init; }
-
-    /// <summary>
-    /// Gets the explicit pixel width for the editing widget of a standard settings control rendered
-    /// by the default control factory. <c>0f</c> = use ImGui's default item width,
-    /// negative = fill remaining horizontal space, positive = fixed pixels.
-    /// Sourced from <see cref="ControlWidthAttribute"/> (the base class of <see cref="ButtonWidthAttribute"/>).
-    /// <see langword="null"/> when not specified or when <see cref="ButtonWidthAttribute"/> is present
-    /// (button width is stored in <see cref="ButtonWidth"/> instead).
+    /// Gets the explicit pixel width for a settings control's editing widget.
+    /// Sourced from <see cref="ControlWidthAttribute"/> or the obsolete
+    /// <see cref="ButtonWidthAttribute"/> compatibility alias.
     /// </summary>
     /// <remarks>
     /// All standard controls always use a two-column text-label layout; this property governs
-    /// only the <em>width</em> of the editing widget. When <see langword="null"/>, the widget
-    /// fills all remaining horizontal space after the label column, equivalent to <c>-1f</c>.
+    /// only the <em>width</em> of the editing widget. For non-button controls,
+    /// <c>0f</c> means ImGui's default item width, negative means fill remaining horizontal
+    /// space, and positive means fixed pixels. For button controls rendered by
+    /// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>, the same value is interpreted with
+    /// button semantics: <c>0f</c> = auto-size to label, negative = fill available width,
+    /// positive = fixed pixels. When <see langword="null"/>, non-button controls default to
+    /// <c>-1f</c> (fill available space) while buttons default to <c>0f</c> (auto-size).
     /// </remarks>
     public float? ControlWidth { get; init; }
 
@@ -251,7 +237,6 @@ public sealed class ParameterMetadata
         if (!string.IsNullOrEmpty(Format)) parts.Add($"Format: {Format}");
         if (ButtonStyle.HasValue) parts.Add($"ButtonStyle: {ButtonStyle.Value}");
         if (CustomButtonColors.HasValue) parts.Add($"CustomButtonColors: N={CustomButtonColors.Value.Normal} H={CustomButtonColors.Value.Hovered} A={CustomButtonColors.Value.Active}");
-        if (ButtonWidth.HasValue) parts.Add($"ButtonWidth: {ButtonWidth.Value}");
         if (ControlWidth.HasValue) parts.Add($"ControlWidth: {ControlWidth.Value}");
         if (MultilineLines.HasValue) parts.Add($"MultilineLines: {MultilineLines.Value}");
         if (Order.HasValue) parts.Add($"Order: {Order.Value}");
