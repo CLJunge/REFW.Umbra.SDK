@@ -16,7 +16,7 @@ public sealed class SettingsStoreNullArgumentTests
         using var store = new SettingsStore<BasicConfig>(filePath);
         store.Load();
 
-        var exception = Assert.Throws<ArgumentNullException>(() => store.AddListenerToAll((Action)null!));
+        var exception = Assert.Throws<ArgumentNullException>(() => store.AddListenerToAll(null!));
 
         Assert.Equal("listener", exception.ParamName);
     }

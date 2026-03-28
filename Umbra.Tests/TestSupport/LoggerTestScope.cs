@@ -12,8 +12,5 @@ internal sealed class LoggerTestScope : IDisposable
         Logger.Enabled = enabled;
     }
 
-    public void Dispose()
-    {
-        Logger.Enabled = _wasEnabled;
-    }
+    public void Dispose() => Logger.Enabled = _wasEnabled;
 }

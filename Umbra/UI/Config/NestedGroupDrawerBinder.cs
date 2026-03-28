@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
-using System.Threading;
 using Umbra.Config.Attributes;
 using Umbra.Logging;
 using Umbra.UI.Config.Drawers;

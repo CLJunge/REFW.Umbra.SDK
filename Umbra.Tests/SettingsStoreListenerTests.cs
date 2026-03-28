@@ -18,8 +18,8 @@ public sealed class SettingsStoreListenerTests
 
         var callbackCount = 0;
         var matchIntegers = true;
-        Func<IParameter, bool> predicate = parameter => matchIntegers && parameter.ValueType == typeof(int);
-        Action listener = () => callbackCount++;
+        bool predicate(IParameter parameter) => matchIntegers && parameter.ValueType == typeof(int);
+        void listener() => callbackCount++;
 
         store.AddListenerToAll(predicate, listener);
         matchIntegers = false;
@@ -40,7 +40,7 @@ public sealed class SettingsStoreListenerTests
         var config = store.Load();
 
         var callbackCount = 0;
-        Action<int, int> listener = (_, _) => callbackCount++;
+        void listener(int _old, int _new) => callbackCount++;
 
         store.AddListenerToAll<int>(listener);
         store.AddListenerToAll<int>(listener);

@@ -100,7 +100,7 @@ public sealed class PluginPanel : IDisposable
     /// <see cref="IPanelSection"/> implementation that overrides <see cref="IPanelSection.Order"/>.
     /// </para>
     /// <para>
-/// Tree-node label validation is delegated to <see cref="PluginPanelTreeNodeLabels"/>.
+    /// Tree-node label validation is delegated to <see cref="PluginPanelTreeNodeLabels"/>.
     /// At render time any caller-supplied <c>"##..."</c> suffix is stripped before the
     /// panel appends its own <c>##{SectionId}</c> disambiguation suffix. Invalid labels warn once
     /// per section-id/label pair to avoid repeated stack-trace spam during panel rebuilds.
@@ -227,7 +227,7 @@ public sealed class PluginPanel : IDisposable
     /// </list>
     /// </para>
     /// <para>
-/// Caller-supplied labels are sanitized through <see cref="PluginPanelTreeNodeLabels"/>
+    /// Caller-supplied labels are sanitized through <see cref="PluginPanelTreeNodeLabels"/>
     /// before the panel appends its own <c>##{SectionId}</c> suffix, ensuring that the suffix is
     /// not ignored by ImGui.
     /// </para>
