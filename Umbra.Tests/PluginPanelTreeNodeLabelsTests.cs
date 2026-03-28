@@ -5,18 +5,18 @@ using Xunit;
 
 namespace Umbra.Tests;
 
-public sealed class PluginPanelTreeNodeLabelHelperTests
+public sealed class PluginPanelTreeNodeLabelsTests
 {
     [Fact]
     public void WarnIfInvalid_TracksEachInvalidSectionLabelOnlyOnce()
     {
         using var _ = new LoggerTestScope();
-        var helperType = typeof(PluginPanel).Assembly.GetType("Umbra.UI.Panel.PluginPanelTreeNodeLabelHelper")!;
-        var warnedField = helperType.GetField("s_warnedInvalidLabels", BindingFlags.Static | BindingFlags.NonPublic)!;
-        var warnedLabels = (HashSet<string>)warnedField.GetValue(null)!;
+        var labelType = typeof(PluginPanel).Assembly.GetType("Umbra.UI.Panel.PluginPanelTreeNodeLabels")!;
+        var warnedField = labelType.GetField("s_warnedInvalidLabels", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var warnedLabels = (HashSet<(string, string)>)warnedField.GetValue(null)!;
         warnedLabels.Clear();
 
-        var warnMethod = helperType.GetMethod("WarnIfInvalid", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var warnMethod = labelType.GetMethod("WarnIfInvalid", BindingFlags.Static | BindingFlags.NonPublic)!;
         var section = new TestPanelSection("SectionA", "Label##bad");
 
         warnMethod.Invoke(null, [section]);
@@ -40,4 +40,4 @@ public sealed class PluginPanelTreeNodeLabelHelperTests
         {
         }
     }
- }
+}

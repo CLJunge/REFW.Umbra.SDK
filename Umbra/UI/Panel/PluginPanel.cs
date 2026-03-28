@@ -32,7 +32,7 @@ namespace Umbra.UI.Panel;
 /// Sections are rendered in ascending <see cref="IPanelSection.Order"/>. The internal
 /// list is re-sorted on each call to <see cref="Add"/>, and equal-order sections preserve
 /// their insertion order because a stable sort is used. Tree-node label validation and sanitization
-/// are delegated to <see cref="PluginPanelTreeNodeLabelHelper"/>.
+/// are delegated to <see cref="PluginPanelTreeNodeLabels"/>.
 /// </para>
 /// <para>
 /// Always dispose the panel in the plugin's <c>[PluginExitPoint]</c> to release all
@@ -100,7 +100,7 @@ public sealed class PluginPanel : IDisposable
     /// <see cref="IPanelSection"/> implementation that overrides <see cref="IPanelSection.Order"/>.
     /// </para>
     /// <para>
-    /// Tree-node label validation is delegated to <see cref="PluginPanelTreeNodeLabelHelper"/>.
+/// Tree-node label validation is delegated to <see cref="PluginPanelTreeNodeLabels"/>.
     /// At render time any caller-supplied <c>"##..."</c> suffix is stripped before the
     /// panel appends its own <c>##{SectionId}</c> disambiguation suffix. Invalid labels warn once
     /// per section-id/label pair to avoid repeated stack-trace spam during panel rebuilds.
@@ -121,7 +121,7 @@ public sealed class PluginPanel : IDisposable
         if (_disposed)
             throw new ObjectDisposedException(nameof(PluginPanel), "Cannot add sections to a disposed panel.");
 
-        PluginPanelTreeNodeLabelHelper.WarnIfInvalid(section);
+        PluginPanelTreeNodeLabels.WarnIfInvalid(section);
 
         _sections.Add(section);
         _sections.SortBy(s => s.Order);
@@ -227,7 +227,7 @@ public sealed class PluginPanel : IDisposable
     /// </list>
     /// </para>
     /// <para>
-    /// Caller-supplied labels are sanitized through <see cref="PluginPanelTreeNodeLabelHelper"/>
+/// Caller-supplied labels are sanitized through <see cref="PluginPanelTreeNodeLabels"/>
     /// before the panel appends its own <c>##{SectionId}</c> suffix, ensuring that the suffix is
     /// not ignored by ImGui.
     /// </para>
@@ -243,7 +243,7 @@ public sealed class PluginPanel : IDisposable
             var label = section.TreeNodeLabel;
             if (label is not null)
             {
-                label = PluginPanelTreeNodeLabelHelper.Sanitize(label);
+                label = PluginPanelTreeNodeLabels.Sanitize(label);
 
                 var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
                 if (ImGui.TreeNodeEx($"{label}##{section.SectionId}", flags))

@@ -3,14 +3,14 @@ using Umbra.Logging;
 namespace Umbra.UI.Panel;
 
 /// <summary>
-/// Provides helper methods for validating and sanitizing panel section tree-node labels.
+/// Validates and sanitizes panel section tree-node labels.
 /// </summary>
 /// <remarks>
 /// This type isolates ImGui label/ID separator handling from <see cref="PluginPanel"/>.
 /// Invalid labels are warned once per section-id/label pair so repeated panel construction does
 /// not flood the REFramework console with identical stack-trace diagnostics.
 /// </remarks>
-internal static class PluginPanelTreeNodeLabelHelper
+internal static class PluginPanelTreeNodeLabels
 {
     private static readonly HashSet<(string SectionId, string TreeLabel)> s_warnedInvalidLabels = [];
     private static readonly object s_warningLock = new();
