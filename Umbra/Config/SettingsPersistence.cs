@@ -87,11 +87,15 @@ internal static class SettingsPersistence
     /// Values are applied via <see cref="IParameter.SetValueWithoutNotify"/>; no
     /// <see cref="IParameter.ValueChanged"/> events are raised during load, and metadata-based
     /// validation is intentionally bypassed while restoring persisted values.
-    /// If deserialization fails, Umbra attempts to move the unreadable file aside to a timestamped
+    /// If the file does not exist (including a TOCTOU race where it is deleted between the caller's
+    /// existence check and this read), <see cref="LoadResult.Success"/> is returned so callers write
+    /// fresh defaults without suppressing future saves.
+    /// If the file exists but cannot be deserialized, Umbra attempts to move it aside to a timestamped
     /// <c>.invalid-*.json</c> backup in the same directory so callers can safely rewrite defaults.
     /// </remarks>
     /// <returns>
-    /// <see cref="LoadResult.Success"/> when the file was loaded successfully;
+    /// <see cref="LoadResult.Success"/> when the file was read successfully, or when the file was not
+    /// found (treated as "no saved settings");
     /// <see cref="LoadResult.RecoveredToDefaults"/> when the unreadable file was backed up and the
     /// caller can rewrite defaults safely; otherwise <see cref="LoadResult.Failed"/>.
     /// </returns>
@@ -112,6 +116,15 @@ internal static class SettingsPersistence
             }
 
             Logger.Info($"SettingsPersistence: loaded {applied} of {dict.Count} key(s) from '{filePath}'.");
+            return LoadResult.Success;
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            // Treat a missing file as "no saved settings" — return Success so the caller writes
+            // fresh defaults rather than suppressing saves for the rest of the session.  This
+            // handles TOCTOU races where the file is deleted between the File.Exists guard in
+            // SettingsStore.Load() and the ReadAllText call above.
+            Logger.Info($"SettingsPersistence: settings file '{filePath}' not found (race condition or external deletion); using defaults.");
             return LoadResult.Success;
         }
         catch (Exception ex)
