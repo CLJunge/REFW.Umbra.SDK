@@ -215,4 +215,4 @@ public static class MyPlugin
 }
 ```
 
-For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested groups, hotkey drawers, button drawers, custom nested-group drawers, and deferred saving.
+For a fuller reference, see `Umbra.SamplePlugin`, which now organizes the sample config into nested groups for booleans, numeric sliders and drags, strings, enums, custom drawers, nested-group drawers, and nested-type presentation tests alongside deferred saving.
