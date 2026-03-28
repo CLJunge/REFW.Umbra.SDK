@@ -19,14 +19,14 @@ namespace Umbra.UI.Config.Drawers;
 /// </para>
 /// <para>
 /// The button label is sourced from the parameter's <c>DisplayName</c> metadata (set via
-/// <c>[DisplayName("...")]</c>). An optional same-line <c>(?)</c> help marker is shown when
-/// <c>[Description("...")]</c> is also present, consistent with other drawers in this namespace.
+/// <c>[UmbraDisplayName("...")]</c>). An optional same-line <c>(?)</c> help marker is shown when
+/// <c>[UmbraDescription("...")]</c> is also present, consistent with other drawers in this namespace.
 /// </para>
 /// <para>
 /// Appearance is controlled by optional attributes on the parameter property:
 /// <list type="bullet">
 ///   <item>
-///     <term><c>[ButtonStyle(ButtonStyle.Danger)]</c></term>
+///     <term><c>[UmbraButtonStyle(ButtonStyle.Danger)]</c></term>
 ///     <description>
 ///       Applies a preset color scheme. See <see cref="ButtonStyle"/> for all variants.
 ///       Omit for the default ImGui theme colors. Ignored when <c>[UmbraCustomButtonColors]</c>
@@ -37,11 +37,11 @@ namespace Umbra.UI.Config.Drawers;
 ///     <term><c>[UmbraCustomButtonColors(r, g, b)]</c> or <c>[UmbraCustomButtonColors(…×12)]</c></term>
 ///     <description>
 ///       Applies fully custom RGBA colors for the normal, hovered, and active button states.
-///       Takes priority over <c>[ButtonStyle]</c> when both are specified.
+///       Takes priority over <c>[UmbraButtonStyle]</c> when both are specified.
 ///     </description>
 ///   </item>
 ///   <item>
-///     <term><c>[ControlWidth(-1f)]</c></term>
+///     <term><c>[UmbraControlWidth(-1f)]</c></term>
 ///     <description>
 ///       <c>0f</c> (default) = auto-size to label, <c>-1f</c> = fill available width,
 ///       positive = fixed pixel width.
