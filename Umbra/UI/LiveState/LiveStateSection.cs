@@ -73,6 +73,9 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
     /// <paramref name="treeNodeLabel"/> is <see langword="null"/>.
     /// Defaults to <see langword="false"/> (collapsed).
     /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="context"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.
     /// </exception>
@@ -83,6 +86,7 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
     public LiveStateSection(T context, string? idScope = null,
         string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
     {
+        ArgumentNullException.ThrowIfNull(context);
         if (idScope is not null && string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be empty or whitespace when supplied.", nameof(idScope));
         _idScope = idScope;
