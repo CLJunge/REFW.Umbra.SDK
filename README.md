@@ -90,6 +90,10 @@ REFW.Umbra
 5. For live read-only or hook-driven state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
 6. On unload, flush/dispose the save controller, save/dispose the store, then dispose the panel.
 
+- `DeferredSaveController<TConfig>` requires a store that has already completed `Load()` and now throws immediately if constructed too early.
+- `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed` so callers can validate lifecycle state explicitly.
+- The preferred unload order remains save-controller first, store second. If the store has already been disposed, controller cleanup is still safe, but any pending debounced save can no longer be persisted.
+
 ### Notes on persisted key names
 
 - Fully-qualified setting keys are derived from `[UmbraSettingsPrefix("...")]` plus each parameter name (or its `keyOverride`).

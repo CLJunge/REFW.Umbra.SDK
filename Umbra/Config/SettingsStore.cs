@@ -37,6 +37,24 @@ public class SettingsStore<TConfig> : IDisposable
     }
 
     /// <summary>
+    /// Gets whether <see cref="Load"/> has completed successfully for this store instance.
+    /// </summary>
+    /// <remarks>
+    /// A store can only transition from <see langword="false"/> to <see langword="true"/> once.
+    /// After that, the loaded parameter set remains fixed for the lifetime of the instance.
+    /// </remarks>
+    public bool IsLoaded => _loaded;
+
+    /// <summary>
+    /// Gets whether this store has been disposed.
+    /// </summary>
+    /// <remarks>
+    /// After disposal, methods that mutate or inspect the registered parameter set throw
+    /// <see cref="ObjectDisposedException"/>.
+    /// </remarks>
+    public bool IsDisposed => _disposed;
+
+    /// <summary>
     /// Persists the current parameter values to the configured file path.
     /// </summary>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
