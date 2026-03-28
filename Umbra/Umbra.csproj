@@ -32,7 +32,6 @@
 
         <!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
         <UmbraDeployScript>$(MSBuildProjectDirectory)\..\scripts\deploy_reframework_deps.bat</UmbraDeployScript>
-        <UmbraUploadToFeedScript>$(MSBuildProjectDirectory)\..\scripts\publish_baget.bat</UmbraUploadToFeedScript>
         <Title>REFW.Umbra</Title>
     </PropertyGroup>
 
