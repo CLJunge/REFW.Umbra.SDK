@@ -256,10 +256,12 @@ public class SettingsStore<TConfig> : IDisposable
     /// have completed so there is a stable registered parameter set to subscribe to.
     /// </remarks>
     /// <param name="listener">The callback to invoke whenever any parameter value changes.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="listener"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void AddListenerToAll(Action listener)
     {
+        ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
         foreach (var p in _parameters.Values) p.ValueChanged += listener;
@@ -292,10 +294,12 @@ public class SettingsStore<TConfig> : IDisposable
     /// parameter set to subscribe to.
     /// </para>
     /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="listener"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void AddListenerToAll<T>(Action<T?, T?> listener)
     {
+        ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
         foreach (var p in _parameters.Values)
@@ -330,10 +334,15 @@ public class SettingsStore<TConfig> : IDisposable
     /// This method requires <see cref="Load"/> to have completed so there is a stable registered
     /// parameter set to subscribe to.
     /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="predicate"/> or <paramref name="listener"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void AddListenerToAll(Func<IParameter, bool> predicate, Action listener)
     {
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
 
@@ -362,10 +371,12 @@ public class SettingsStore<TConfig> : IDisposable
     /// have completed so there is a stable registered parameter set to unsubscribe from.
     /// </remarks>
     /// <param name="listener">The callback to remove.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="listener"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void RemoveListenerFromAll(Action listener)
     {
+        ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
         if (TryRemoveTrackedCleanup(listener, null, null))
@@ -389,10 +400,12 @@ public class SettingsStore<TConfig> : IDisposable
     /// This method requires <see cref="Load"/> to have completed so there is a stable registered
     /// parameter set to unsubscribe from.
     /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="listener"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void RemoveListenerFromAll<T>(Action<T?, T?> listener)
     {
+        ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
         if (TryRemoveTrackedCleanup(listener, typeof(T), null))
@@ -418,10 +431,15 @@ public class SettingsStore<TConfig> : IDisposable
     /// parameter set to unsubscribe from.
     /// </param>
     /// <param name="listener">The callback to remove.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="predicate"/> or <paramref name="listener"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void RemoveListenerFromAll(Func<IParameter, bool> predicate, Action listener)
     {
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
         if (TryRemoveTrackedCleanup(listener, null, predicate))
