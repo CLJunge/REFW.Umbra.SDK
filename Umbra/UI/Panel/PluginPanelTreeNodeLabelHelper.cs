@@ -12,7 +12,7 @@ namespace Umbra.UI.Panel;
 /// </remarks>
 internal static class PluginPanelTreeNodeLabelHelper
 {
-    private static readonly HashSet<string> s_warnedInvalidLabels = [];
+    private static readonly HashSet<(string SectionId, string TreeLabel)> s_warnedInvalidLabels = [];
     private static readonly object s_warningLock = new();
 
     /// <summary>
@@ -32,7 +32,7 @@ internal static class PluginPanelTreeNodeLabelHelper
         var shouldWarn = false;
         lock (s_warningLock)
         {
-            shouldWarn = s_warnedInvalidLabels.Add($"{section.SectionId}\n{treeLabel}");
+            shouldWarn = s_warnedInvalidLabels.Add((section.SectionId, treeLabel));
         }
 
         if (!shouldWarn)
