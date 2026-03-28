@@ -90,6 +90,12 @@ REFW.Umbra
 5. For live read-only or hook-driven state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
 6. On unload, flush/dispose the save controller, save/dispose the store, then dispose the panel.
 
+### Notes on persisted key names
+
+- Fully-qualified setting keys are derived from `[UmbraSettingsPrefix("...")]` plus each parameter name (or its `keyOverride`).
+- Changing a prefix is therefore a valid way to rename or regroup persisted keys.
+- Prefix changes do **not** migrate existing JSON automatically: values saved under the old key names will no longer be loaded until the file is updated to the new keys.
+
 ## Setup Instructions
 
 ### Prerequisites

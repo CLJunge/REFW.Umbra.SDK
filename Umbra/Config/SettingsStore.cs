@@ -68,6 +68,12 @@ public class SettingsStore<TConfig> : IDisposable
     /// <see cref="SettingsRegistrar"/> even though some metadata attributes permit field targets.
     /// </para>
     /// <para>
+    /// Persisted values are matched by exact fully-qualified key during load. Changing a
+    /// <see cref="Attributes.UmbraSettingsPrefixAttribute"/> value, or otherwise changing how a
+    /// parameter key resolves, effectively renames those persisted keys. Old JSON entries are not
+    /// migrated automatically and will no longer load unless the file is updated to the new names.
+    /// </para>
+    /// <para>
     /// On the first run, when no settings file exists yet, the default save path's parent
     /// directory is created automatically before defaults are written.
     /// </para>
@@ -78,7 +84,10 @@ public class SettingsStore<TConfig> : IDisposable
     /// </para>
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has already been called on this instance.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <see cref="Load"/> has already been called on this instance, or when two
+    /// discovered settings parameters resolve to the same fully-qualified key.
+    /// </exception>
     public TConfig Load()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
