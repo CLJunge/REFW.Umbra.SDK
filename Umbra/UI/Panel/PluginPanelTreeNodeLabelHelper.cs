@@ -40,7 +40,10 @@ internal static class PluginPanelTreeNodeLabelHelper
     /// <c>##{SectionId}</c> disambiguation suffix.
     /// </summary>
     /// <param name="label">The caller-supplied tree-node label.</param>
-    /// <returns>The sanitized label text with any trailing <c>##...</c> suffix removed.</returns>
+    /// <returns>
+    /// The sanitized label text with everything from the first <c>##</c> separator token onwards
+    /// removed, matching ImGui's label/ID separator semantics.
+    /// </returns>
     internal static string Sanitize(string label)
     {
         var hashIndex = label.IndexOf("##", StringComparison.Ordinal);
