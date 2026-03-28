@@ -20,8 +20,8 @@ namespace Umbra.Config;
 /// <para>
 /// <strong>Ordering requirement</strong><br/>
 /// Construct <see cref="DeferredSaveController{TConfig}"/> <em>after</em> calling
-    /// <see cref="SettingsStore{TConfig}.Load"/>. The constructor validates this requirement and
-    /// throws <see cref="InvalidOperationException"/> when the supplied store is not yet loaded.
+/// <see cref="SettingsStore{TConfig}.Load"/>. The constructor validates this requirement and
+/// throws <see cref="InvalidOperationException"/> when the supplied store is not yet loaded.
 /// </para>
 /// <para>
 /// <strong>Per-frame driving</strong><br/>
@@ -34,11 +34,11 @@ namespace Umbra.Config;
 /// <see cref="Dispose"/> automatically calls <see cref="Flush"/> before unregistering
 /// listeners, so pending changes are not lost if the plugin unloads while a debounce is active.
 /// Call <see cref="Flush"/> explicitly only when you need the save to happen earlier in the
-    /// unload sequence or before some other operation. The preferred order is still to dispose this
-    /// instance <em>before</em> or <em>alongside</em> the owning <see cref="SettingsStore{TConfig}"/>
-    /// so any pending debounced write can still be persisted. If the store has already been
-    /// disposed, controller disposal becomes a safe no-op cleanup path and skips listener removal
-    /// because the store has already torn those subscriptions down.
+/// unload sequence or before some other operation. The preferred order is still to dispose this
+/// instance <em>before</em> or <em>alongside</em> the owning <see cref="SettingsStore{TConfig}"/>
+/// so any pending debounced write can still be persisted. If the store has already been
+/// disposed, controller disposal becomes a safe no-op cleanup path and skips listener removal
+/// because the store has already torn those subscriptions down.
 /// </para>
 /// <para>
 /// <strong>Typical lifecycle</strong>

@@ -56,8 +56,8 @@ public sealed class PluginPanel : IDisposable
     /// A globally unique identifier string for this plugin (e.g. <c>nameof(MyPlugin)</c> or
     /// <c>typeof(MyPlugin).FullName</c>). All managed plugins share one AppDomain and one ImGui
     /// context; this is the only separator between this panel's widget IDs and every other panel
-/// in the process. Duplicate-scope detection is handled by <see cref="PluginPanelScopeRegistry"/>,
-/// which warns once per active conflicting scope.
+    /// in the process. Duplicate-scope detection is handled by <see cref="PluginPanelScopeRegistry"/>,
+    /// which warns once per active conflicting scope.
     /// Must be non-null and non-whitespace.
     /// </param>
     /// <param name="rootNodeLabel">
