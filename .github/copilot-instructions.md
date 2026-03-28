@@ -184,22 +184,22 @@ internal class MyGroupDrawer : INestedGroupDrawer<MyGroup>
 `PluginPanel` (in `Umbra.UI.Panel`) is the recommended top-level UI type for plugins. It composes an ordered list of `IPanelSection` instances under a shared ImGui ID scope and owns their lifetimes. Use `ConfigDrawer<TConfig>` directly only when the plugin needs a settings panel with no live state.
 
 **Section types:**
-- `ConfigSection<TConfig>` — wraps `ConfigDrawer<TConfig>` as a panel section. Accepts an optional `idScope` that defaults to the config type name.
-- `LiveSection<T>` — renders live game state via an `ILiveSectionDrawer<T>` declared on the state type. Accepts an optional instance (for hook-written state the plugin owns) or constructs one internally.
+- `ConfigSection<TConfig>` — wraps `ConfigDrawer<TConfig>` as a panel section. Accepts an optional `idScope` that defaults to `typeof(TConfig).FullName` and falls back to the type name.
+- `LiveStateSection<T>` — renders live game state via an `ILiveStateSectionDrawer<T>` declared on the state type. Accepts an optional instance (for hook-written state the plugin owns) or constructs one internally.
 
 **Declaring a live state drawer:**
 
-Apply `[LiveSectionDrawer<TDrawer>]` to the state class, not the drawer. The state class is a plain mutable POCO whose fields are written by `[MethodHook]` callbacks and read by the drawer each frame. Use the swap-instance pattern for multi-field updates.
+Apply `[LiveStateSectionDrawer<TDrawer>]` to the state class, not the drawer. The state class is a plain mutable POCO whose fields are written by `[MethodHook]` callbacks and read by the drawer each frame. Use the swap-instance pattern for multi-field updates.
 
 ```csharp
-[LiveSectionDrawer<CameraStatusDrawer>]
+[LiveStateSectionDrawer<CameraStatusDrawer>]
 public sealed class CameraState
 {
     public float      Fov  { get; set; }
     public CameraMode Mode { get; set; }
 }
 
-internal sealed class CameraStatusDrawer : ILiveSectionDrawer<CameraState>
+internal sealed class CameraStatusDrawer : ILiveStateSectionDrawer<CameraState>
 {
     public void Draw(CameraState state)
     {
@@ -254,7 +254,7 @@ internal static class FovHooks
         FovHooks.Attach(_cameraState);
 
         _panel = new PluginPanel("MyPlugin")
-            .Add(new LiveSection<CameraState>(_cameraState))
+            .Add(new LiveStateSection<CameraState>(_cameraState))
             .Add(new ConfigSection<PluginConfig>(config));
     }
 
