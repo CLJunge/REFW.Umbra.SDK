@@ -65,7 +65,7 @@ REFW.Umbra
 
 ### Main flow
 
-1. Define a config type with `[AutoRegisterSettings]` and `Parameter<T>` properties marked with `[SettingsParameter]`.
+1. Define a config type with `[UmbraAutoRegisterSettings]` and `Parameter<T>` properties marked with `[UmbraSettingsParameter]`.
 2. Load it through `SettingsStore<TConfig>.Load()`.
 3. Optionally attach `DeferredSaveController<TConfig>` after load.
 4. Render it with `ConfigDrawer<TConfig>` directly or through `ConfigSection<TConfig>` inside `PluginPanel`.

@@ -136,7 +136,8 @@ public static class SamplePlugin
     public static void PreDrawUI()
     {
 #if DEBUG
-        if (KeyboardInput.IsCtrlHeld && KeyboardInput.IsShiftHeld
+        if (!System.Diagnostics.Debugger.IsAttached
+            && KeyboardInput.IsCtrlHeld && KeyboardInput.IsShiftHeld
             && KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
             && capturedKey == (int)Hexa.NET.ImGui.ImGuiKey.F12)
         {
