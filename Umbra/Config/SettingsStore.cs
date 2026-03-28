@@ -92,6 +92,12 @@ public class SettingsStore<TConfig> : IDisposable
     /// migrated automatically and will no longer load unless the file is updated to the new names.
     /// </para>
     /// <para>
+    /// If the existing JSON file is unreadable, Umbra attempts to move it aside to a timestamped
+    /// <c>.invalid-*.json</c> backup and immediately rewrites a fresh defaults file at the original
+    /// path. If the unreadable file cannot be backed up, the original file is left untouched and
+    /// the returned config instance retains its in-memory defaults for the current session only.
+    /// </para>
+    /// <para>
     /// On the first run, when no settings file exists yet, the default save path's parent
     /// directory is created automatically before defaults are written.
     /// </para>
@@ -130,7 +136,14 @@ public class SettingsStore<TConfig> : IDisposable
             return instance;
         }
 
-        SettingsPersistence.Load(_filePath, _parameters);
+        var loadResult = SettingsPersistence.Load(_filePath, _parameters);
+        if (loadResult == SettingsPersistence.LoadResult.RecoveredToDefaults)
+        {
+            Logger.Warning(
+                $"SettingsStore<{typeof(TConfig).Name}>: existing config was unreadable; rewriting defaults to '{_filePath}'.");
+            Save();
+        }
+
         return instance;
     }
 
