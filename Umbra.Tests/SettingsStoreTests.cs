@@ -33,6 +33,7 @@ public sealed class SettingsStoreTests
         var exception = Assert.Throws<InvalidOperationException>(() => store.Load());
 
         Assert.Contains("dup.same", exception.Message);
+        Assert.False(store.IsLoaded);
     }
 
     [Fact]

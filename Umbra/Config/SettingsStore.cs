@@ -54,6 +54,8 @@ public class SettingsStore<TConfig> : IDisposable
     /// <remarks>
     /// A store can only transition from <see langword="false"/> to <see langword="true"/> once.
     /// After that, the loaded parameter set remains fixed for the lifetime of the instance.
+    /// If <see cref="Load"/> throws before registration finishes, this property remains
+    /// <see langword="false"/>.
     /// </remarks>
     public bool IsLoaded => _loaded;
 
@@ -124,6 +126,11 @@ public class SettingsStore<TConfig> : IDisposable
     /// Calling it a second time would register duplicate <see cref="IParameter"/> instances and
     /// disconnect all previously registered event listeners from the returned config object.
     /// </para>
+    /// <para>
+    /// The store transitions to the loaded state only after parameter discovery succeeds. If
+    /// discovery fails — for example due to duplicate fully-qualified keys — the instance remains
+    /// unloaded so the failure does not leave behind a partially initialized store state.
+    /// </para>
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">
@@ -137,13 +144,14 @@ public class SettingsStore<TConfig> : IDisposable
             throw new InvalidOperationException(
                 $"SettingsStore<{typeof(TConfig).Name}>.Load() must only be called once per instance. " +
                 "Create a new SettingsStore to load a fresh configuration.");
-        _loaded = true;
 
         var instance = new TConfig();
         var discovered = SettingsRegistrar.Register(instance);
 
         foreach (var (key, param) in discovered)
             _parameters[key] = param;
+
+        _loaded = true;
 
         Logger.Info($"SettingsStore<{typeof(TConfig).Name}>: discovered {_parameters.Count} parameter(s).");
 
