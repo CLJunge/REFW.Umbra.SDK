@@ -18,10 +18,11 @@ namespace Umbra.UI.Config;
 /// attribute is present.
 /// </para>
 /// <para>
-/// The <c>idScope</c> defaults to the config type name when not supplied.
-/// <see cref="PluginPanel"/> pushes a top-level ImGui ID scope before calling
-/// <see cref="Draw"/>; this sub-scope nests inside it, preventing widget ID collisions
-/// when two config sections of the same type appear in the same panel.
+/// The <c>idScope</c> defaults to <c>typeof(<typeparamref name="TConfig"/>).FullName</c>,
+/// falling back to <c>typeof(<typeparamref name="TConfig"/>).Name</c> when the full name is
+/// unavailable. <see cref="PluginPanel"/> pushes a top-level ImGui ID scope before calling
+/// <see cref="Draw"/>; this sub-scope nests inside it, preventing widget ID collisions when two
+/// config sections of the same type appear in the same panel.
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">

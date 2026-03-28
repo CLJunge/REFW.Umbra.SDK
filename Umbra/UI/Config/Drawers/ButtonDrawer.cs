@@ -87,8 +87,8 @@ public sealed class ButtonDrawer : IParameterDrawer
             {
                 _warnedAboutMissingColors = true;
                 Logger.Warning(
-                    $"ButtonDrawer: '{label}' uses ButtonStyle.Custom without a [CustomButtonColors] attribute; " +
-                    "falling back to ButtonStyle.Default. Add [CustomButtonColors(...)] to suppress this warning.");
+                    $"ButtonDrawer: '{label}' uses ButtonStyle.Custom without a [UmbraCustomButtonColors] attribute; " +
+                    "falling back to ButtonStyle.Default. Add [UmbraCustomButtonColors(...)] to suppress this warning.");
             }
 
             style = ButtonStyle.Default;
