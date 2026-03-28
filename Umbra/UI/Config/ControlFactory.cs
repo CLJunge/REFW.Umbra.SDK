@@ -9,8 +9,10 @@ namespace Umbra.UI.Config;
 /// <remarks>
 /// Custom-drawer activation is delegated to <see cref="ParameterDrawerResolver"/>. Built-in
 /// numeric controls are delegated to <see cref="NumericControlBuilder"/>, text controls are
-/// delegated to <see cref="TextControlBuilder"/>, and enum controls are delegated to
-/// <see cref="EnumControlBuilder"/>. This type now focuses on dispatch and shared layout creation.
+/// delegated to <see cref="TextControlBuilder"/>, <see cref="Parameter{T}"/> values of type
+/// <see cref="Action"/> default to the shared <see cref="Drawers.CachedButtonDrawer"/>, and
+/// enum controls are delegated to <see cref="EnumControlBuilder"/>. This type now focuses on
+/// dispatch and shared layout creation.
 /// All controls use a two-column text-label layout unconditionally: the parameter label (and
 /// optional <c>(?)</c> help marker) is rendered on the left; the editing widget is placed on
 /// the right at the column x position determined by <see cref="LabelAlignmentGroup"/>. Labels
@@ -21,10 +23,11 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal static class ControlFactory
 {
-    // One entry per supported primitive type. Enum and fallback are handled separately.
+    // One entry per supported built-in value type. Enum and fallback are handled separately.
     // Add or replace entries here to change the default control for any value type.
     private static readonly Dictionary<Type, Func<string, IParameter, LabelAlignmentGroup, Action>> _defaultBuilders = new()
     {
+        [typeof(Action)] = BuildActionDraw,
         [typeof(bool)] = BuildBoolDraw,
         [typeof(int)] = NumericControlBuilder.BuildInt,
         [typeof(float)] = NumericControlBuilder.BuildFloat,
@@ -35,7 +38,7 @@ internal static class ControlFactory
     /// <summary>
     /// Builds a per-frame draw <see cref="Action"/> for <paramref name="parameter"/>,
     /// dispatching first to <see cref="ParameterDrawerResolver"/> for any custom drawer recorded in
-    /// <see cref="ParameterMetadata"/>, then to the built-in primitive table, then to
+    /// <see cref="ParameterMetadata"/>, then to the built-in default-builder table, then to
     /// <see cref="EnumControlBuilder"/>, and finally to a read-only label.
     /// </summary>
     /// <remarks>
@@ -57,6 +60,23 @@ internal static class ControlFactory
             return (EnumControlBuilder.Build(label, parameter, alignGroup), null);
 
         return (() => ImGui.TextDisabled($"{label}: {parameter.GetValue()}"), null);
+    }
+
+    /// <summary>
+    /// Builds a per-frame draw action that renders a cached push-button for an
+    /// <see cref="Action"/>-typed parameter.
+    /// </summary>
+    /// <param name="label">The visible button label.</param>
+    /// <param name="parameter">The <see cref="Parameter{T}"/> of type <see cref="Action"/> to render.</param>
+    /// <param name="alignGroup">
+    /// The shared alignment group for the owning category or root scope.
+    /// Unused because <see cref="Drawers.CachedButtonDrawer"/> owns the full row layout.
+    /// </param>
+    /// <returns>An <see cref="Action"/> that renders and invokes the cached action button each frame.</returns>
+    private static Action BuildActionDraw(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
+    {
+        _ = alignGroup;
+        return () => Drawers.CachedButtonDrawer.Instance.Draw(label, parameter);
     }
 
     /// <summary>Builds a per-frame draw action that renders a checkbox for a <see cref="bool"/> parameter.</summary>
