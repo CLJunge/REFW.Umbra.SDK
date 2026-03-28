@@ -58,8 +58,8 @@ internal sealed class CachedButtonDrawer : IParameterDrawer
             if (ShouldWarnAboutMissingColors(parameter))
             {
                 Logger.Warning(
-                    $"CachedButtonDrawer: '{label}' uses ButtonStyle.Custom without a [CustomButtonColors] attribute; " +
-                    "falling back to ButtonStyle.Default. Add [CustomButtonColors(...)] to suppress this warning.");
+                    $"CachedButtonDrawer: '{label}' uses ButtonStyle.Custom without a [UmbraCustomButtonColors] attribute; " +
+                    "falling back to ButtonStyle.Default. Add [UmbraCustomButtonColors(...)] to suppress this warning.");
             }
 
             style = ButtonStyle.Default;
