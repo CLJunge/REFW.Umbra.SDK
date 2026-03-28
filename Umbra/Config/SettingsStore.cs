@@ -13,9 +13,21 @@ namespace Umbra.Config;
 public class SettingsStore<TConfig> : IDisposable
     where TConfig : class, new()
 {
+    private sealed class ListenerCleanupRegistration(
+        Action cleanup,
+        Delegate listener,
+        Type? valueType,
+        Func<IParameter, bool>? predicate)
+    {
+        internal Action Cleanup { get; } = cleanup;
+        internal Delegate Listener { get; } = listener;
+        internal Type? ValueType { get; } = valueType;
+        internal Func<IParameter, bool>? Predicate { get; } = predicate;
+    }
+
     private readonly string _filePath;
     private readonly Dictionary<string, IParameter> _parameters = [];
-    private readonly List<Action> _cleanupActions = [];
+    private readonly List<ListenerCleanupRegistration> _cleanupRegistrations = [];
     private bool _loaded;
     private bool _disposed;
 
@@ -176,13 +188,21 @@ public class SettingsStore<TConfig> : IDisposable
     /// Subscribes a callback to the <see cref="IParameter.ValueChanged"/> event of every registered parameter,
     /// and registers cleanup so it is removed on <see cref="Dispose"/>.
     /// </summary>
+    /// <remarks>
+    /// If the same listener is added multiple times through this method, each subscription is tracked
+    /// independently and must be removed separately.
+    /// </remarks>
     /// <param name="listener">The callback to invoke whenever any parameter value changes.</param>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     public void AddListenerToAll(Action listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         foreach (var p in _parameters.Values) p.ValueChanged += listener;
-        _cleanupActions.Add(() => { foreach (var p in _parameters.Values) p.ValueChanged -= listener; });
+        RegisterCleanup(() =>
+        {
+            foreach (var p in _parameters.Values)
+                p.ValueChanged -= listener;
+        }, listener, null, null);
     }
 
     /// <summary>
@@ -210,11 +230,11 @@ public class SettingsStore<TConfig> : IDisposable
         foreach (var p in _parameters.Values)
             if (p is Parameter<T> typed) typed.ValueChanged += listener;
 
-        _cleanupActions.Add(() =>
+        RegisterCleanup(() =>
         {
             foreach (var p in _parameters.Values)
                 if (p is Parameter<T> typed) typed.ValueChanged -= listener;
-        });
+        }, listener, typeof(T), null);
     }
 
     /// <summary>
@@ -234,6 +254,8 @@ public class SettingsStore<TConfig> : IDisposable
     /// selection criterion is based on <see cref="IParameter.ValueType"/> (e.g. to detect changes
     /// to numeric parameters), because it avoids the generic type-inference pitfall described
     /// on that overload.
+    /// Each call captures the exact matched parameter set and tracks it independently for later
+    /// removal, even when the same predicate/listener pair is added more than once.
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     public void AddListenerToAll(Func<IParameter, bool> predicate, Action listener)
@@ -248,22 +270,31 @@ public class SettingsStore<TConfig> : IDisposable
             matched.Add(p);
         }
 
-        _cleanupActions.Add(() =>
+        RegisterCleanup(() =>
         {
             foreach (var p in matched)
                 p.ValueChanged -= listener;
-        });
+        }, listener, null, predicate);
     }
 
     /// <summary>
     /// Removes a previously added callback from the <see cref="IParameter.ValueChanged"/> event of every registered parameter.
     /// </summary>
+    /// <remarks>
+    /// When the listener was originally added through <see cref="AddListenerToAll(Action)"/>, this
+    /// method also removes one matching dispose-time cleanup registration so <see cref="Dispose"/>
+    /// does not repeat unnecessary unsubscription work.
+    /// </remarks>
     /// <param name="listener">The callback to remove.</param>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     public void RemoveListenerFromAll(Action listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        foreach (var p in _parameters.Values) p.ValueChanged -= listener;
+        if (TryRemoveTrackedCleanup(listener, null, null))
+            return;
+
+        foreach (var p in _parameters.Values)
+            p.ValueChanged -= listener;
     }
 
     /// <summary>
@@ -275,11 +306,16 @@ public class SettingsStore<TConfig> : IDisposable
     /// <remarks>
     /// See <see cref="AddListenerToAll{T}(Action{T,T})"/> for the type-inference caveat that
     /// applies equally here. Supply the type argument explicitly when needed.
+    /// When the listener was originally added through <see cref="AddListenerToAll{T}(Action{T,T})"/>,
+    /// this method also removes one matching dispose-time cleanup registration.
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     public void RemoveListenerFromAll<T>(Action<T?, T?> listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        if (TryRemoveTrackedCleanup(listener, typeof(T), null))
+            return;
+
         foreach (var p in _parameters.Values)
             if (p is Parameter<T> typed) typed.ValueChanged -= listener;
     }
@@ -302,6 +338,9 @@ public class SettingsStore<TConfig> : IDisposable
     public void RemoveListenerFromAll(Func<IParameter, bool> predicate, Action listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        if (TryRemoveTrackedCleanup(listener, null, predicate))
+            return;
+
         foreach (var p in _parameters.Values)
             if (predicate(p)) p.ValueChanged -= listener;
     }
@@ -331,16 +370,55 @@ public class SettingsStore<TConfig> : IDisposable
 
     /// <summary>
     /// Releases all resources used by this <see cref="SettingsStore{TConfig}"/>,
-    /// including removing all registered event listeners.
+    /// including removing all remaining tracked event listeners.
     /// </summary>
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
 
-        foreach (var cleanup in _cleanupActions) cleanup();
-        _cleanupActions.Clear();
+        foreach (var registration in _cleanupRegistrations)
+            registration.Cleanup();
+        _cleanupRegistrations.Clear();
 
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Records one listener cleanup action so it can be undone on <see cref="Dispose"/> or by a
+    /// matching manual remove call.
+    /// </summary>
+    /// <param name="cleanup">The unsubscription action to execute later.</param>
+    /// <param name="listener">The listener delegate associated with the cleanup action.</param>
+    /// <param name="valueType">The typed parameter value type when the listener is type-filtered; otherwise <see langword="null"/>.</param>
+    /// <param name="predicate">The predicate associated with the listener when predicate-filtered; otherwise <see langword="null"/>.</param>
+    private void RegisterCleanup(Action cleanup, Delegate listener, Type? valueType, Func<IParameter, bool>? predicate)
+        => _cleanupRegistrations.Add(new ListenerCleanupRegistration(cleanup, listener, valueType, predicate));
+
+    /// <summary>
+    /// Removes one tracked cleanup registration that matches the supplied listener shape and executes it immediately.
+    /// </summary>
+    /// <param name="listener">The listener delegate being removed.</param>
+    /// <param name="valueType">The type filter associated with the listener, if any.</param>
+    /// <param name="predicate">The predicate filter associated with the listener, if any.</param>
+    /// <returns><see langword="true"/> when a matching tracked cleanup registration was found; otherwise <see langword="false"/>.</returns>
+    private bool TryRemoveTrackedCleanup(Delegate listener, Type? valueType, Func<IParameter, bool>? predicate)
+    {
+        for (var i = _cleanupRegistrations.Count - 1; i >= 0; i--)
+        {
+            var registration = _cleanupRegistrations[i];
+            if (!Equals(registration.Listener, listener))
+                continue;
+            if (registration.ValueType != valueType)
+                continue;
+            if (!Equals(registration.Predicate, predicate))
+                continue;
+
+            _cleanupRegistrations.RemoveAt(i);
+            registration.Cleanup();
+            return true;
+        }
+
+        return false;
     }
 }
