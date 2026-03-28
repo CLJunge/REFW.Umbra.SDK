@@ -80,25 +80,27 @@ internal static class ParameterJsonReader
 
     /// <summary>
     /// Converts a string <see cref="JsonElement"/> to the specified CLR type.
-    /// Supports <see cref="Enum"/> types via <see cref="Enum.TryParse(Type, string, bool, out object)"/>
-    /// and falls back to the raw <see cref="string"/> value for all other types.
+    /// Supports both <see cref="Enum"/> and nullable-enum target types via
+    /// <see cref="Enum.TryParse(Type, string, bool, out object)"/> and falls back to the raw
+    /// <see cref="string"/> value for all other types.
     /// </summary>
     /// <param name="element">The string JSON element to convert.</param>
     /// <param name="t">The target CLR type.</param>
     /// <returns>
-    /// An <see cref="Enum"/> value if <paramref name="t"/> is an enum type and the string matches
-    /// a defined member name (case-insensitive); <see langword="null"/> when the string does not
-    /// match any member; otherwise the raw <see cref="string"/> value.
+    /// An <see cref="Enum"/> value if <paramref name="t"/> is an enum type (or nullable enum type)
+    /// and the string matches a defined member name (case-insensitive); <see langword="null"/>
+    /// when the string does not match any member; otherwise the raw <see cref="string"/> value.
     /// </returns>
     private static object? ConvertString(JsonElement element, Type t)
     {
         var raw = element.GetString();
-        if (t.IsEnum)
+        var enumType = Nullable.GetUnderlyingType(t) ?? t;
+        if (enumType.IsEnum)
         {
-            if (Enum.TryParse(t, raw, ignoreCase: true, out var parsed))
+            if (Enum.TryParse(enumType, raw, ignoreCase: true, out var parsed))
                 return parsed;
 
-            Logger.Warning($"ParameterJsonReader: unrecognised enum value '{raw}' for '{t.Name}', keeping default.");
+            Logger.Warning($"ParameterJsonReader: unrecognised enum value '{raw}' for '{enumType.Name}', keeping default.");
             return null;
         }
         return raw;

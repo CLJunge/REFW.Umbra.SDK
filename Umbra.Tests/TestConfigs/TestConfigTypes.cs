@@ -24,3 +24,18 @@ internal record DuplicateKeyConfig
     [UmbraSettingsParameter("same")]
     public Parameter<int> Second { get; set; } = new(2);
 }
+
+internal enum NullableEnumValue
+{
+    First,
+    Second,
+    Third
+}
+
+[UmbraAutoRegisterSettings]
+[UmbraSettingsPrefix("nullableEnum")]
+internal record NullableEnumConfig
+{
+    [UmbraSettingsParameter]
+    public Parameter<NullableEnumValue?> Value { get; set; } = new(NullableEnumValue.First);
+}

@@ -18,7 +18,7 @@ The repository also includes `Umbra.SamplePlugin`, which demonstrates the curren
 ## Features
 
 - Attribute-driven settings registration with `SettingsStore<TConfig>` and `Parameter<T>`
-- JSON persistence for `bool`, `int`, `float`, `double`, `string`, and `enum` parameters
+- JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable-enum parameters
 - Deferred auto-save with `DeferredSaveController<TConfig>`
 - Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
