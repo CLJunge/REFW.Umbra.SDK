@@ -26,7 +26,7 @@ The repository also includes `Umbra.SamplePlugin`, which demonstrates the curren
 - Per-plugin logging with `PluginLogger`
 - Global SDK logging control with `Logger`
 - Keyboard capture utilities in `KeyboardInput`
-- Small runtime helper `ManagedObjectResolver` for resolving REFramework managed objects
+- Small runtime helper `ManagedObjectResolver` with `Resolve<T>` / `TryResolve<T>` for resolving REFramework managed objects
 
 ### Default config drawers
 
