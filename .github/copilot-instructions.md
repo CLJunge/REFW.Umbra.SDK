@@ -91,6 +91,7 @@ internal static class FovHooks
   - `CopyValuesTo(target, setWithoutNotifying)` — mirrors all parameter values into another store instance. The target store must already be loaded and not disposed.
   - `AddListenerToAll(Action)` / `AddListenerToAll<T>(Action<T?,T?>)` — subscribes to `ValueChanged` on all (or type-matched) parameters; listeners are auto-removed on `Dispose`.
   - `RemoveListenerFromAll(Action)` / `RemoveListenerFromAll<T>(Action<T?,T?>)` — manually unsubscribes listeners.
+  - `Save()`, listener registration/removal, `ResetAll()`, and `CopyValuesTo(...)` all require `Load()` to have completed first.
   - `IDisposable` — always dispose `SettingsStore` to clean up event subscriptions.
 - Persistence uses `System.Text.Json` with camelCase property naming and enums serialized as strings.
 - Do not introduce unrelated configuration frameworks.

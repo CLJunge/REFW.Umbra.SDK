@@ -69,10 +69,16 @@ public class SettingsStore<TConfig> : IDisposable
     /// <summary>
     /// Persists the current parameter values to the configured file path.
     /// </summary>
+    /// <remarks>
+    /// This method requires <see cref="Load"/> to have completed successfully so the store has a
+    /// stable registered parameter set to persist.
+    /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void Save()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
         SettingsPersistence.Save(_filePath, _parameters);
     }
 
@@ -184,11 +190,12 @@ public class SettingsStore<TConfig> : IDisposable
     /// Thrown when this instance or <paramref name="target"/> has been disposed.
     /// </exception>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="target"/> has not completed <see cref="Load"/> yet.
+    /// Thrown when this instance or <paramref name="target"/> has not completed <see cref="Load"/> yet.
     /// </exception>
     public void CopyValuesTo(SettingsStore<TConfig> target, bool setWithoutNotifying = false)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
         ArgumentNullException.ThrowIfNull(target);
         ObjectDisposedException.ThrowIf(target._disposed, target);
         if (!target._loaded)
@@ -214,13 +221,16 @@ public class SettingsStore<TConfig> : IDisposable
     /// </summary>
     /// <remarks>
     /// If the same listener is added multiple times through this method, each subscription is tracked
-    /// independently and must be removed separately.
+    /// independently and must be removed separately. This method requires <see cref="Load"/> to
+    /// have completed so there is a stable registered parameter set to subscribe to.
     /// </remarks>
     /// <param name="listener">The callback to invoke whenever any parameter value changes.</param>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void AddListenerToAll(Action listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
         foreach (var p in _parameters.Values) p.ValueChanged += listener;
         RegisterCleanup(() =>
         {
@@ -246,11 +256,17 @@ public class SettingsStore<TConfig> : IDisposable
     /// the type argument explicitly when calling this overload with nullable-value-type delegates,
     /// or prefer <see cref="AddListenerToAll(Func{IParameter,bool},Action)"/> instead.
     /// </para>
+    /// <para>
+    /// This method requires <see cref="Load"/> to have completed so there is a stable registered
+    /// parameter set to subscribe to.
+    /// </para>
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void AddListenerToAll<T>(Action<T?, T?> listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
         foreach (var p in _parameters.Values)
             if (p is Parameter<T> typed) typed.ValueChanged += listener;
 
@@ -280,11 +296,15 @@ public class SettingsStore<TConfig> : IDisposable
     /// on that overload.
     /// Each call captures the exact matched parameter set and tracks it independently for later
     /// removal, even when the same predicate/listener pair is added more than once.
+    /// This method requires <see cref="Load"/> to have completed so there is a stable registered
+    /// parameter set to subscribe to.
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void AddListenerToAll(Func<IParameter, bool> predicate, Action listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
 
         var matched = new List<IParameter>();
         foreach (var p in _parameters.Values)
@@ -307,13 +327,16 @@ public class SettingsStore<TConfig> : IDisposable
     /// <remarks>
     /// When the listener was originally added through <see cref="AddListenerToAll(Action)"/>, this
     /// method also removes one matching dispose-time cleanup registration so <see cref="Dispose"/>
-    /// does not repeat unnecessary unsubscription work.
+    /// does not repeat unnecessary unsubscription work. This method requires <see cref="Load"/> to
+    /// have completed so there is a stable registered parameter set to unsubscribe from.
     /// </remarks>
     /// <param name="listener">The callback to remove.</param>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void RemoveListenerFromAll(Action listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
         if (TryRemoveTrackedCleanup(listener, null, null))
             return;
 
@@ -332,11 +355,15 @@ public class SettingsStore<TConfig> : IDisposable
     /// applies equally here. Supply the type argument explicitly when needed.
     /// When the listener was originally added through <see cref="AddListenerToAll{T}(Action{T,T})"/>,
     /// this method also removes one matching dispose-time cleanup registration.
+    /// This method requires <see cref="Load"/> to have completed so there is a stable registered
+    /// parameter set to unsubscribe from.
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void RemoveListenerFromAll<T>(Action<T?, T?> listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
         if (TryRemoveTrackedCleanup(listener, typeof(T), null))
             return;
 
@@ -356,12 +383,16 @@ public class SettingsStore<TConfig> : IDisposable
     /// unsubscribed. When lifecycle cleanup is the primary concern, rely on <see cref="Dispose"/>
     /// instead — <see cref="AddListenerToAll(Func{IParameter,bool},Action)"/> captures the matched
     /// set at subscription time and removes exactly those listeners on disposal.
+    /// This method requires <see cref="Load"/> to have completed so there is a stable registered
+    /// parameter set to unsubscribe from.
     /// </param>
     /// <param name="listener">The callback to remove.</param>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void RemoveListenerFromAll(Func<IParameter, bool> predicate, Action listener)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
         if (TryRemoveTrackedCleanup(listener, null, predicate))
             return;
 
@@ -376,12 +407,15 @@ public class SettingsStore<TConfig> : IDisposable
     /// <remarks>
     /// Delegate-typed parameters (e.g. <see cref="Parameter{T}"/> of type <see cref="Action"/>
     /// used by button drawers) are skipped because their default values carry no meaningful
-    /// persistent state.
+    /// persistent state. This method requires <see cref="Load"/> to have completed so there is a
+    /// stable registered parameter set to reset.
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void ResetAll()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
         var count = 0;
         foreach (var p in _parameters.Values)
         {
@@ -444,5 +478,18 @@ public class SettingsStore<TConfig> : IDisposable
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Throws when this store has not completed <see cref="Load"/> yet.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
+    private void ThrowIfNotLoaded()
+    {
+        if (_loaded)
+            return;
+
+        throw new InvalidOperationException(
+            $"SettingsStore<{typeof(TConfig).Name}> requires Load() to complete before this operation can be used.");
     }
 }
