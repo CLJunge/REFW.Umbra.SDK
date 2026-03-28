@@ -97,7 +97,7 @@ REFW.Umbra
 - Operational `SettingsStore<TConfig>` APIs such as `Save()`, listener registration/removal, `ResetAll()`, and `CopyValuesTo(...)` now require `Load()` to have completed first.
 - `SettingsStore<TConfig>.CopyValuesTo(...)` now also validates that the target store is non-null, not disposed, and already loaded before copying values.
 - The preferred unload order remains save-controller first, store second. If the store has already been disposed, controller cleanup is still safe, but any pending debounced save can no longer be persisted.
-- If the existing config JSON is unreadable, `SettingsStore<TConfig>.Load()` now tries to move it aside to a timestamped `.invalid-*.json` backup and rewrites defaults at the original path. If the unreadable file cannot be backed up, the original file is left untouched and the current session continues with in-memory defaults only.
+- If the existing config JSON is unreadable, `SettingsStore<TConfig>.Load()` now tries to move it aside to a timestamped `.invalid-*.json` backup and rewrites defaults at the original path. If the unreadable file cannot be backed up, the original file is left untouched, the current session continues with in-memory defaults only, and later `Save()` calls on that store instance are suppressed so the unreadable file is not overwritten accidentally.
 
 ### Notes on persisted key names
 

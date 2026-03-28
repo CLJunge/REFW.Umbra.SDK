@@ -30,6 +30,8 @@ public class SettingsStore<TConfig> : IDisposable
     private readonly List<ListenerCleanupRegistration> _cleanupRegistrations = [];
     private bool _loaded;
     private bool _disposed;
+    private bool _saveBlocked;
+    private bool _saveBlockedWarningLogged;
 
     /// <summary>
     /// Initializes a new instance of <see cref="SettingsStore{TConfig}"/> with the specified file path.
@@ -74,6 +76,9 @@ public class SettingsStore<TConfig> : IDisposable
     /// <remarks>
     /// This method requires <see cref="Load"/> to have completed successfully so the store has a
     /// stable registered parameter set to persist.
+    /// If a previous <see cref="Load"/> attempt encountered an unreadable config file that could
+    /// not be backed up safely, saves are suppressed for the lifetime of this store instance so the
+    /// original file is not overwritten later in the same session.
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
@@ -81,6 +86,13 @@ public class SettingsStore<TConfig> : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
+
+        if (_saveBlocked)
+        {
+            WarnSaveBlockedOnce();
+            return;
+        }
+
         SettingsPersistence.Save(_filePath, _parameters);
     }
 
@@ -116,6 +128,8 @@ public class SettingsStore<TConfig> : IDisposable
     /// <c>.invalid-*.json</c> backup and immediately rewrites a fresh defaults file at the original
     /// path. If the unreadable file cannot be backed up, the original file is left untouched and
     /// the returned config instance retains its in-memory defaults for the current session only.
+    /// In that failure case, subsequent <see cref="Save"/> calls on the same store instance are
+    /// suppressed so the original unreadable file is not overwritten later in the session.
     /// </para>
     /// <para>
     /// On the first run, when no settings file exists yet, the default save path's parent
@@ -178,6 +192,13 @@ public class SettingsStore<TConfig> : IDisposable
                 _parameters[key] = param;
 
             Save();
+        }
+        else if (loadResult == SettingsPersistence.LoadResult.Failed)
+        {
+            _saveBlocked = true;
+            Logger.Warning(
+                $"SettingsStore<{typeof(TConfig).Name}>: preserving unreadable config at '{_filePath}'. " +
+                "Saves are suppressed for this store instance because the file could not be backed up safely.");
         }
 
         return instance;
@@ -499,5 +520,19 @@ public class SettingsStore<TConfig> : IDisposable
 
         throw new InvalidOperationException(
             $"SettingsStore<{typeof(TConfig).Name}> requires Load() to complete before this operation can be used.");
+    }
+
+    /// <summary>
+    /// Logs a warning once when saves are being suppressed after an unrecoverable load failure.
+    /// </summary>
+    private void WarnSaveBlockedOnce()
+    {
+        if (_saveBlockedWarningLogged)
+            return;
+
+        _saveBlockedWarningLogged = true;
+        Logger.Warning(
+            $"SettingsStore<{typeof(TConfig).Name}>: Save() ignored because the original config file at '{_filePath}' " +
+            "was unreadable and could not be backed up during Load().");
     }
 }

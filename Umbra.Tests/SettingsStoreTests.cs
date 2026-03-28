@@ -94,4 +94,26 @@ public sealed class SettingsStoreTests
         Assert.True(root.TryGetProperty("tests.count", out var count));
         Assert.Equal(5, count.GetInt32());
     }
+
+    [Fact]
+    public void Save_IsSuppressed_ForSession_WhenUnreadableFileCouldNotBeBackedUp()
+    {
+        using var temp = new TemporaryDirectory();
+        using var _ = new LoggerTestScope();
+        var filePath = Path.Combine(temp.Path, "config.json");
+        File.WriteAllText(filePath, "{ this is not valid json }");
+
+        using var lockStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        using var store = new SettingsStore<BasicConfig>(filePath);
+        var config = store.Load();
+
+        Assert.NotNull(config);
+        lockStream.Dispose();
+
+        config.Enabled.Value = false;
+        store.Save();
+
+        Assert.Equal("{ this is not valid json }", File.ReadAllText(filePath));
+        Assert.Empty(Directory.GetFiles(temp.Path, "config.invalid-*.json"));
+    }
 }
