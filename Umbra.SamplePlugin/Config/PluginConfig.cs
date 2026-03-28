@@ -76,13 +76,13 @@ public record PluginConfig
 
     /// <summary>
     /// Logs a diagnostic test message to the REFramework console.
-    /// Demonstrates <see cref="ButtonDrawer"/> with a primary style and full-width layout,
-    /// and <see cref="UmbraParameterOrderAttribute"/> to pin this button above all other root-level settings.
+    /// Demonstrates the default <see cref="ButtonDrawer"/> rendering for <see cref="Parameter{T}"/>
+    /// values of type <see cref="Action"/>, with a primary style and full-width layout, and
+    /// <see cref="UmbraParameterOrderAttribute"/> to pin this button above all other root-level settings.
     /// </summary>
     [UmbraSettingsParameter]
     [UmbraDisplayName("Log Test Message")]
     [UmbraDescription("Logs a test message to the REFramework console to verify the plugin is active.")]
-    [UmbraCustomDrawer<ButtonDrawer>]
     [UmbraButtonStyle(ButtonStyle.Primary)]
     [UmbraControlWidth(-1f)]
     [UmbraParameterOrder(0)]
@@ -92,7 +92,6 @@ public record PluginConfig
     [UmbraSettingsParameter]
     [UmbraDisplayName("Reset General")]
     [UmbraDescription("Resets the enabled toggle and hotkey bindings to their default values.")]
-    [UmbraCustomDrawer<ButtonDrawer>]
     [UmbraButtonStyle(ButtonStyle.Danger)]
     [UmbraControlWidth(-1f)]
     public Parameter<Action> ResetGeneral { get; init; }
@@ -162,7 +161,6 @@ public record PluginConfig
         [UmbraSettingsParameter]
         [UmbraDisplayName("Reset FOV")]
         [UmbraDescription("Resets all field-of-view values to their defaults.")]
-        [UmbraCustomDrawer<ButtonDrawer>]
         [UmbraButtonStyle(ButtonStyle.Danger)]
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetFov { get; init; }
@@ -213,7 +211,6 @@ public record PluginConfig
         [UmbraSettingsParameter]
         [UmbraDisplayName("Reset Film Grain")]
         [UmbraDescription("Resets the film grain toggle and opacity to their defaults.")]
-        [UmbraCustomDrawer<ButtonDrawer>]
         [UmbraButtonStyle(ButtonStyle.Danger)]
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetFilmGrain { get; init; }
