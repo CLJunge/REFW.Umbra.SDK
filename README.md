@@ -93,18 +93,18 @@ REFW.Umbra
 5. For live read-only or hook-driven state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
 6. On unload, flush/dispose the save controller, save/dispose the store, then dispose the panel.
 
-- `DeferredSaveController<TConfig>` requires a store that has already completed `Load()` and now throws immediately if constructed too early.
-- `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed` so callers can validate lifecycle state explicitly.
-- Operational `SettingsStore<TConfig>` APIs such as `Save()`, listener registration/removal, `ResetAll()`, and `CopyValuesTo(...)` now require `Load()` to have completed first.
+- `DeferredSaveController<TConfig>` requires a store that has already completed `Load()` and throws immediately if constructed too early.
+- `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed` for explicit lifecycle checks.
+- Core APIs (`Save()`, listeners, `ResetAll()`, `CopyValuesTo(...)`) require the store to be loaded.
 - Listener registration/removal APIs on `SettingsStore<TConfig>` now validate `listener`/`predicate` arguments explicitly and throw `ArgumentNullException` for invalid inputs.
-- `SettingsStore<TConfig>.CopyValuesTo(...)` now also validates that the target store is non-null, not disposed, and already loaded before copying values.
-- The preferred unload order remains save-controller first, store second. If the store has already been disposed, controller cleanup is still safe, but any pending debounced save can no longer be persisted.
-- If the existing config JSON is unreadable, `SettingsStore<TConfig>.Load()` now tries to move it aside to a timestamped `.invalid-*.json` backup and rewrites defaults at the original path. If the unreadable file cannot be backed up, the original file is left untouched, the current session is reset back to true declared defaults, and later `Save()` calls on that store instance are suppressed so the unreadable file is not overwritten accidentally.
+- Listener APIs validate `listener`/`predicate` and throw `ArgumentNullException` on invalid input
+- Preferred unload order: controller first, then store; controller cleanup remains safe after store disposal, but pending saves are lost.
+- On unreadable JSON, `Load()` attempts a timestamped `.invalid-*.json` backup and restores defaults; if backup fails, the file is left untouched, defaults are used for the session, and future `Save()` calls are suppressed.
 
 ### Notes on persisted key names
 
-- Fully-qualified setting keys are derived from `[UmbraSettingsPrefix("...")]` plus each parameter name (or its `keyOverride`).
-- Changing a prefix is therefore a valid way to rename or regroup persisted keys.
+- Setting keys are built from `[UmbraSettingsPrefix("...")]` + parameter name (or `keyOverride`).
+- Changing the prefix effectively renames/regroups persisted keys.
 - Prefix changes do **not** migrate existing JSON automatically: values saved under the old key names will no longer be loaded until the file is updated to the new keys.
 
 ## Setup Instructions
@@ -137,14 +137,6 @@ dotnet build REFW.Umbra.slnx
 ```bash
 dotnet test Umbra.Tests/Umbra.Tests.csproj
 ```
-
-The test project focuses on Umbra's host-independent behavior, including:
-
-- settings file creation and duplicate-key detection
-- unreadable JSON backup and default rewrite recovery
-- deferred-save lifecycle guards
-- `ConfigSection<TConfig>` constructor guards
-- listener cleanup bookkeeping in `SettingsStore<TConfig>`
 
 In Debug builds, the repository uses the local deployment scripts configured in each project:
 
