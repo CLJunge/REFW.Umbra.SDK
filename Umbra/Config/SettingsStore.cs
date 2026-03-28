@@ -68,6 +68,10 @@ public class SettingsStore<TConfig> : IDisposable
     /// <see cref="SettingsRegistrar"/> even though some metadata attributes permit field targets.
     /// </para>
     /// <para>
+    /// On the first run, when no settings file exists yet, the default save path's parent
+    /// directory is created automatically before defaults are written.
+    /// </para>
+    /// <para>
     /// This method must only be called once per <see cref="SettingsStore{TConfig}"/> instance.
     /// Calling it a second time would register duplicate <see cref="IParameter"/> instances and
     /// disconnect all previously registered event listeners from the returned config object.

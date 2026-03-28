@@ -25,10 +25,17 @@ internal static class SettingsPersistence
     /// <param name="parameters">
     /// A read-only dictionary of all registered parameters, keyed by their unique setting key.
     /// </param>
+    /// <remarks>
+    /// If the parent directory of <paramref name="filePath"/> does not yet exist, it is created
+    /// automatically before the file is written. This allows first-run saves to succeed when the
+    /// caller supplies a new plugin-specific data directory path.
+    /// </remarks>
     internal static void Save(string filePath, IReadOnlyDictionary<string, IParameter> parameters)
     {
         try
         {
+            EnsureParentDirectoryExists(filePath);
+
             var dict = new Dictionary<string, object?>();
             foreach (var param in parameters.Values)
             {
@@ -82,5 +89,18 @@ internal static class SettingsPersistence
         {
             Logger.Exception(ex, $"SettingsPersistence: failed to load settings from '{filePath}'.");
         }
+    }
+
+    /// <summary>
+    /// Ensures that the parent directory of <paramref name="filePath"/> exists before a save.
+    /// </summary>
+    /// <param name="filePath">The destination file path whose containing directory should exist.</param>
+    private static void EnsureParentDirectoryExists(string filePath)
+    {
+        var directoryPath = Path.GetDirectoryName(Path.GetFullPath(filePath));
+        if (string.IsNullOrEmpty(directoryPath))
+            return;
+
+        Directory.CreateDirectory(directoryPath);
     }
 }
