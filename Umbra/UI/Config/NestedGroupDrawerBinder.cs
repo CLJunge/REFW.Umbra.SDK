@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Threading;
 using Umbra.Config.Attributes;
 using Umbra.Logging;
 using Umbra.UI.Config.Drawers;
@@ -37,7 +38,9 @@ internal static class NestedGroupDrawerBinder
     private sealed class NestedGroupDrawerFactory(bool isSupported, Action<object, object>? invoker)
     {
         internal bool IsSupported { get; } = isSupported;
-        internal bool UnsupportedLogged { get; set; }
+        private int _unsupportedLogged;
+
+        internal bool TryMarkUnsupportedLogged() => Interlocked.Exchange(ref _unsupportedLogged, 1) == 0;
 
         internal Action Bind(object drawerInstance, object nested)
         {
@@ -74,9 +77,8 @@ internal static class NestedGroupDrawerBinder
 
         if (!factory.IsSupported)
         {
-            if (!factory.UnsupportedLogged)
+            if (factory.TryMarkUnsupportedLogged())
             {
-                factory.UnsupportedLogged = true;
                 Logger.Error(
                     $"ConfigDrawer: nested group drawer '{drawerType.Name}' does not support group type '{groupType.FullName}'.");
             }

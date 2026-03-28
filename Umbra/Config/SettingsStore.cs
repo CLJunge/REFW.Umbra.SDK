@@ -153,6 +153,16 @@ public class SettingsStore<TConfig> : IDisposable
         {
             Logger.Warning(
                 $"SettingsStore<{typeof(TConfig).Name}>: existing config was unreadable; rewriting defaults to '{_filePath}'.");
+
+            // The previous load attempt may have partially mutated parameter values before failing.
+            // Rebuild the config instance and parameter map from scratch to guarantee we persist true defaults.
+            instance = new TConfig();
+            _parameters.Clear();
+
+            var rediscovered = SettingsRegistrar.Register(instance);
+            foreach (var (key, param) in rediscovered)
+                _parameters[key] = param;
+
             Save();
         }
 

@@ -11,7 +11,7 @@ namespace Umbra.SamplePlugin.Config;
 /// This drawer intentionally bypasses Umbra's standard two-column layout so the sample plugin can
 /// demonstrate the <see cref="IParameterDrawer"/> extension point with a compact self-managed UI.
 /// </remarks>
-internal sealed class NormalizedFloatPreviewDrawer : IParameterDrawer
+public sealed class NormalizedFloatPreviewDrawer : IParameterDrawer
 {
     /// <summary>
     /// Draws the custom control and writes changes back to the underlying parameter.
