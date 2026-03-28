@@ -28,6 +28,24 @@ The repository also includes `Umbra.SamplePlugin`, which demonstrates the curren
 - Keyboard capture utilities in `KeyboardInput`
 - Small runtime helper `ManagedObjectResolver` for resolving REFramework managed objects
 
+### Default config drawers
+
+- `Parameter<Action>` → button via `CachedButtonDrawer`
+- `Parameter<bool>` → checkbox
+- `Parameter<int>` → slider when `[UmbraRange]` is present, otherwise drag input
+- `Parameter<float>` → slider when `[UmbraRange]` is present, otherwise drag input
+- `Parameter<double>` → slider when `[UmbraRange]` is present, otherwise drag input
+- `Parameter<string>` → single-line text input by default, multiline text input when `[UmbraMultiline]` is present
+- `Parameter<TEnum>` → enum combo box
+- Explicit `[UmbraCustomDrawer<TDrawer>]` and `[UmbraTwoColumnCustomDrawer<TDrawer>]` override the defaults
+
+### Custom drawers
+
+- `[UmbraCustomDrawer<TDrawer>]` uses an `IParameterDrawer` and gives the drawer full control over the entire parameter row
+- `[UmbraTwoColumnCustomDrawer<TDrawer>]` uses an `ITwoColumnParameterDrawer` and keeps the standard two-column label layout while the drawer renders only the editing widget
+- `[UmbraNestedGroupDrawer<TDrawer>]` uses an `INestedGroupDrawer<T>` and replaces the normal recursive rendering for an entire nested settings group
+- Use a custom parameter drawer when you need a completely custom control layout, a two-column drawer when you want a custom widget that still aligns with normal settings rows, and a nested-group drawer when one drawer should own a whole section
+
 ## Architecture Summary
 
 ```text
@@ -89,19 +107,12 @@ From the repository root:
 .\scripts\setup_reframework_deps.ps1
 ```
 
-This prepares the REFramework API references used by both projects.
+This prepares the REFramework API references used by both projects and also sets up the deployment scripts that copy the output DLLs to the correct location under the game `reframework` directory.
 
 ### Build
 
 ```bash
 dotnet build REFW.Umbra.slnx
-```
-
-You can also build individual projects:
-
-```bash
-dotnet build Umbra/Umbra.csproj
-dotnet build Umbra.SamplePlugin/Umbra.SamplePlugin.csproj
 ```
 
 In Debug builds, the repository uses the local deployment scripts configured in each project:
