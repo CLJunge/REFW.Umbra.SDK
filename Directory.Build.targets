@@ -34,7 +34,7 @@
     <!--
     Upload the generated NuGet package to a private feed after packing a Debug build. This is used
     to facilitate local testing of the SDK and plugin packages in other projects without needing to manually copy .nupkg files around
-    or requires the package to be published to 'nuget.org' first.
+    or require the package to be published to 'nuget.org' first.
     -->
     <Target Name="PostPack_UploadToPrivateNugetFeed"
             AfterTargets="Pack"
