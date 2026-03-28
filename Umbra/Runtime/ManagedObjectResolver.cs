@@ -13,7 +13,7 @@ public static class ManagedObjectResolver
     /// strongly-typed managed reference, or <see langword="null"/> on failure.
     /// </summary>
     /// <remarks>
-    /// This is a convenience wrapper over <see cref="TryResolve{T}(ulong, out T?)"/> for call
+    /// This is a convenience wrapper over <see cref="TryResolve{T}(ulong, out T)"/> for call
     /// sites that prefer a nullable return value over an explicit success flag.
     /// </remarks>
     /// <typeparam name="T">
