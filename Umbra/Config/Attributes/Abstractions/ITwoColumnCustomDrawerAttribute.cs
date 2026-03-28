@@ -3,7 +3,7 @@ using Umbra.UI.Config.Drawers;
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Non-generic marker interface implemented by <see cref="TwoColumnCustomDrawerAttribute{TDrawer}"/>.
+/// Non-generic marker interface implemented by <see cref="UmbraTwoColumnCustomDrawerAttribute{TDrawer}"/>.
 /// Allows two-column custom-drawer detection via
 /// <c>property.GetDrawerAttribute&lt;ITwoColumnCustomDrawerAttribute&gt;()</c>
 /// without runtime generic type inspection.
@@ -13,7 +13,7 @@ namespace Umbra.Config.Attributes;
 /// to detect two-column custom drawers via
 /// <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Reflection.PropertyInfo)"/>.
 /// Plugin authors should not implement it themselves; it is implemented only
-/// by framework-provided attributes such as <see cref="TwoColumnCustomDrawerAttribute{TDrawer}"/>.
+/// by framework-provided attributes such as <see cref="UmbraTwoColumnCustomDrawerAttribute{TDrawer}"/>.
 /// </remarks>
 internal interface ITwoColumnCustomDrawerAttribute
 {

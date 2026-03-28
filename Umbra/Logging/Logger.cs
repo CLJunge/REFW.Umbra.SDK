@@ -1,4 +1,3 @@
-using System.Threading;
 using System.Runtime.CompilerServices;
 using REFrameworkNET;
 
@@ -54,18 +53,12 @@ public static class Logger
     /// <summary>
     /// Enables all Umbra logging.
     /// </summary>
-    public static void EnableAll()
-    {
-        Enabled = true;
-    }
+    public static void EnableAll() => Enabled = true;
 
     /// <summary>
     /// Disables all Umbra logging.
     /// </summary>
-    public static void DisableAll()
-    {
-        Enabled = false;
-    }
+    public static void DisableAll() => Enabled = false;
 
     /// <summary>
     /// Temporarily suppresses all Umbra logging until the returned scope is disposed.

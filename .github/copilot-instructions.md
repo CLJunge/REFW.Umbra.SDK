@@ -18,6 +18,7 @@
   - SDK internals should use the static `Logger` facade for raw, unconditional logging with no per-plugin prefix or minimum level.
   - `Logger.Enabled = false`, `Logger.DisableAll()`, or `using var _ = Logger.Suppress();` silences all Umbra logging, including `PluginLogger`, which is useful for benchmarks and tests.
 - Assume game-facing code may run in a constrained plugin environment where resilience is preferred over hard failures.
+- When introducing replacement APIs in this codebase, prefer fully implemented replacements over inheriting from obsolete types so old types can be removed cleanly later.
 
 ## Thread safety — hooks and callbacks
 
@@ -62,9 +63,9 @@ internal static class FovHooks
 ## Settings/configuration
 - Prefer the existing configuration model in `Umbra.Config`.
 - Settings flow:
-  1. Create a config class with `[AutoRegisterSettings]` (and optionally `[SettingsPrefix("...")]` and/or `[Category("...")]` at the class level).
-  2. Declare leaf settings as `Parameter<T>` properties decorated with `[SettingsParameter]` (optionally with a `keyOverride` string).
-  3. Declare nested settings groups as regular properties decorated with `[SettingsParameter]`, where the nested type is also decorated with `[AutoRegisterSettings]`.
+  1. Create a config class with `[UmbraAutoRegisterSettings]` (and optionally `[UmbraSettingsPrefix("...")]` and/or `[UmbraCategory("...")]` at the class level).
+  2. Declare leaf settings as `Parameter<T>` properties decorated with `[UmbraSettingsParameter]` (optionally with a `keyOverride` string).
+  3. Declare nested settings groups as regular properties decorated with `[UmbraSettingsParameter]`, where the nested type is also decorated with `[UmbraAutoRegisterSettings]`.
   4. Instantiate `SettingsStore<TConfig>` with the absolute path to the JSON file.
   5. Call `settingsStore.Load()` to obtain a populated config instance; call `settingsStore.Save()` to persist current values.
 - `SettingsStore<TConfig>` requires `TConfig : class, new()`. `record` types satisfy this constraint and are the preferred style for config classes.
@@ -93,7 +94,7 @@ internal static class FovHooks
   - `IDisposable` — always dispose `SettingsStore` to clean up event subscriptions.
 - Persistence uses `System.Text.Json` with camelCase property naming and enums serialized as strings.
 - Do not introduce unrelated configuration frameworks.
-- Nested settings groups are supported: declare a nested `record` decorated with `[AutoRegisterSettings]` (and optionally `[Category]`), then expose it as a `[SettingsParameter]` property on the parent config. Place `[SettingsPrefix("...")]` on the **property**, not the nested type. `ConfigDrawer` recurses into nested groups automatically.
+- Nested settings groups are supported: declare a nested `record` decorated with `[UmbraAutoRegisterSettings]` (and optionally `[UmbraCategory]`), then expose it as a `[UmbraSettingsParameter]` property on the parent config. Place `[UmbraSettingsPrefix("...")]` on the **property**, not the nested type. `ConfigDrawer` recurses into nested groups automatically.
 
 Example config class demonstrating the current nested-settings pattern:
 
@@ -101,33 +102,33 @@ Example config class demonstrating the current nested-settings pattern:
 using Umbra.Config;
 using Umbra.Config.Attributes;
 
-[AutoRegisterSettings, SettingsPrefix("example"), Category("Example Plugin")]
+[UmbraAutoRegisterSettings, UmbraSettingsPrefix("example"), UmbraCategory("Example Plugin")]
 public partial record PluginConfig
 {
-    [SettingsParameter, DisplayName("Enabled"), Description("Is the plugin enabled?")]
+    [UmbraSettingsParameter, UmbraDisplayName("Enabled"), UmbraDescription("Is the plugin enabled?")]
     public Parameter<bool> IsEnabled { get; set; } = new(true);
 
-    [SettingsParameter, DisplayName("Hotkey"), Description("The hotkey to activate the plugin.")]
+    [UmbraSettingsParameter, UmbraDisplayName("Hotkey"), UmbraDescription("The hotkey to activate the plugin.")]
     public Parameter<int> Hotkey { get; set; } = new(70); // F2 by default
 
-    [SettingsParameter("volume"), DisplayName("Volume"), Description("The volume level."), Range(0, 100), Step(1)]
+    [UmbraSettingsParameter("volume"), UmbraDisplayName("Volume"), UmbraDescription("The volume level."), UmbraRange(0, 100), UmbraStep(1)]
     public Parameter<int> VolumeLevel { get; set; } = new(50);
 
-    [SettingsParameter, DisplayName("Username"), Description("The user's name."), MaxLength(80)]
+    [UmbraSettingsParameter, UmbraDisplayName("Username"), UmbraDescription("The user's name."), UmbraMaxLength(80)]
     public Parameter<string> UserName { get; set; } = new("Player");
 
-    // Preferred: [SettingsPrefix] on the property, not on NestedConfigGroup itself.
-    [SettingsParameter, SettingsPrefix("nested"), Category("Advanced Settings")]
+    // Preferred: [UmbraSettingsPrefix] on the property, not on NestedConfigGroup itself.
+    [UmbraSettingsParameter, UmbraSettingsPrefix("nested"), UmbraCategory("Advanced Settings")]
     public NestedConfigGroup NestingExample { get; set; } = new();
 }
 
-[AutoRegisterSettings]
+[UmbraAutoRegisterSettings]
 public partial record NestedConfigGroup
 {
-    [SettingsParameter("advancedFeature"), DisplayName("UseAdvancedFeature"), Description("Enable advanced feature?")]
+    [UmbraSettingsParameter("advancedFeature"), UmbraDisplayName("UseAdvancedFeature"), UmbraDescription("Enable advanced feature?")]
     public Parameter<bool> UseAdvancedFeature { get; set; } = new(false);
 
-    [SettingsParameter, DisplayName("MaxItems"), Description("Maximum number of items."), Range(1, 100), Step(1)]
+    [UmbraSettingsParameter, UmbraDisplayName("MaxItems"), UmbraDescription("Maximum number of items."), UmbraRange(1, 100), UmbraStep(1)]
     public Parameter<int> MaxItems { get; set; } = new(10);
 }
 

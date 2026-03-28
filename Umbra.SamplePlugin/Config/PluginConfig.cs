@@ -10,43 +10,48 @@ namespace Umbra.SamplePlugin.Config;
 /// film grain adjustments, a deep nested-group demo that reuses category names in separate parent
 /// scopes, a custom nested-group drawer demo, and action-backed button parameters.
 /// </summary>
-[AutoRegisterSettings]
-[ConfigRootNode("Sample Plugin v1.0")]
-[SettingsPrefix("samplePlugin")]
+/// <remarks>
+/// This sample config intentionally exercises most of Umbra's settings metadata surface so the
+/// generated panel can serve as a manual validation bed for nested groups, category scoping,
+/// custom drawers, button actions, ordering, spacing, and visibility predicates.
+/// </remarks>
+[UmbraAutoRegisterSettings]
+[UmbraConfigRootNode("Sample Plugin v1.0")]
+[UmbraSettingsPrefix("samplePlugin")]
 public record PluginConfig
 {
     /// <summary>Gets or sets whether the Sample Plugin is active.</summary>
-    [SettingsParameter]
-    [DisplayName("Enabled")]
-    [Description("Whether the plugin is enabled or not.")]
+    [UmbraSettingsParameter]
+    [UmbraDisplayName("Enabled")]
+    [UmbraDescription("Whether the plugin is enabled or not.")]
     public Parameter<bool> IsEnabled { get; set; } = new(true);
 
     /// <summary>Gets or sets the hotkey used to toggle the plugin on and off.</summary>
-    [SettingsParameter]
-    [DisplayName("Toggle Hotkey")]
-    [Description("The hotkey to toggle the plugin on and off.")]
-    [TwoColumnCustomDrawer<TwoColumnHotkeyDrawer>]
+    [UmbraSettingsParameter]
+    [UmbraDisplayName("Toggle Hotkey")]
+    [UmbraDescription("The hotkey to toggle the plugin on and off.")]
+    [UmbraTwoColumnCustomDrawer<TwoColumnHotkeyDrawer>]
     public Parameter<int> ToggleHotkey { get; set; } = new(574); // F3 (ImGuiKey.F3)
 
     /// <summary>Gets or sets the hotkey used to switch between first-person and third-person view.</summary>
-    [SettingsParameter]
-    [DisplayName("Switch View Hotkey")]
-    [Description("The hotkey to switch between first and third person view.")]
-    [TwoColumnCustomDrawer<TwoColumnHotkeyDrawer>]
+    [UmbraSettingsParameter]
+    [UmbraDisplayName("Switch View Hotkey")]
+    [UmbraDescription("The hotkey to switch between first and third person view.")]
+    [UmbraTwoColumnCustomDrawer<TwoColumnHotkeyDrawer>]
     public Parameter<int> SwitchViewHotkey { get; set; } = new(575); // F4 (ImGuiKey.F4)
 
     /// <summary>Gets or sets the field-of-view settings group.</summary>
-    [SettingsParameter]
-    [Category("FOV")]
-    [SettingsPrefix("fov")]
-    [CollapseAsTree]
+    [UmbraSettingsParameter]
+    [UmbraCategory("FOV")]
+    [UmbraSettingsPrefix("fov")]
+    [UmbraCollapseAsTree]
     public FovSettings Fov { get; set; } = new();
 
     /// <summary>Gets or sets the film grain settings group.</summary>
-    [SettingsParameter]
-    [Category("Film Grain")]
-    [SettingsPrefix("filmGrain")]
-    [CollapseAsTree]
+    [UmbraSettingsParameter]
+    [UmbraCategory("Film Grain")]
+    [UmbraSettingsPrefix("filmGrain")]
+    [UmbraCollapseAsTree]
     public FilmGrainSettings FilmGrain { get; set; } = new();
 
     /// <summary>
@@ -55,40 +60,48 @@ public record PluginConfig
     /// categorized nested group renders as a single visible container rather than repeating the
     /// same category label inside itself.
     /// </summary>
-    [SettingsParameter]
-    [Category("Nested Groups")]
-    [SettingsPrefix("nestedGroups")]
-    [CollapseAsTree]
+    [UmbraSettingsParameter]
+    [UmbraCategory("Nested Groups")]
+    [UmbraSettingsPrefix("nestedGroups")]
+    [UmbraCollapseAsTree]
     public NestedGroupsDemo NestedGroups { get; set; } = new();
 
     /// <summary>Gets or sets the sample nested settings group rendered by a custom group drawer.</summary>
-    [SettingsParameter]
+    /// <remarks>
+    /// The nested type itself carries <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>, so
+    /// this property demonstrates the type-level fallback path for custom nested-group drawers.
+    /// </remarks>
+    [UmbraSettingsParameter]
     public NestedDrawerTest DrawerTest { get; set; } = new();
 
     /// <summary>
     /// Logs a diagnostic test message to the REFramework console.
     /// Demonstrates <see cref="ButtonDrawer"/> with a primary style and full-width layout,
-    /// and <see cref="ParameterOrderAttribute"/> to pin this button above all other root-level settings.
+    /// and <see cref="UmbraParameterOrderAttribute"/> to pin this button above all other root-level settings.
     /// </summary>
-    [SettingsParameter]
-    [DisplayName("Log Test Message")]
-    [Description("Logs a test message to the REFramework console to verify the plugin is active.")]
-    [CustomDrawer<ButtonDrawer>]
-    [ButtonStyle(ButtonStyle.Primary)]
-    [ButtonWidth(-1f)]
-    [ParameterOrder(0)]
+    [UmbraSettingsParameter]
+    [UmbraDisplayName("Log Test Message")]
+    [UmbraDescription("Logs a test message to the REFramework console to verify the plugin is active.")]
+    [UmbraCustomDrawer<ButtonDrawer>]
+    [UmbraButtonStyle(ButtonStyle.Primary)]
+    [UmbraControlWidth(-1f)]
+    [UmbraParameterOrder(0)]
     public Parameter<Action> LogTestMessage { get; init; } = new(static () => { });
 
     /// <summary>Resets all General settings to their default values.</summary>
-    [SettingsParameter]
-    [DisplayName("Reset General")]
-    [Description("Resets the enabled toggle and hotkey bindings to their default values.")]
-    [CustomDrawer<ButtonDrawer>]
-    [ButtonStyle(ButtonStyle.Danger)]
-    [ButtonWidth(-1f)]
+    [UmbraSettingsParameter]
+    [UmbraDisplayName("Reset General")]
+    [UmbraDescription("Resets the enabled toggle and hotkey bindings to their default values.")]
+    [UmbraCustomDrawer<ButtonDrawer>]
+    [UmbraButtonStyle(ButtonStyle.Danger)]
+    [UmbraControlWidth(-1f)]
     public Parameter<Action> ResetGeneral { get; init; }
 
-    /// <summary>Initializes a new <see cref="PluginConfig"/> and wires up the reset action.</summary>
+    /// <summary>Initializes a new <see cref="PluginConfig"/> and wires up the sample button actions.</summary>
+    /// <remarks>
+    /// Delegate-backed button parameters are configured in the constructor so each loaded config
+    /// instance owns the actions that operate on its own <see cref="Parameter{T}"/> objects.
+    /// </remarks>
     public PluginConfig()
     {
         ResetGeneral = new(() =>
@@ -103,58 +116,62 @@ public record PluginConfig
     /// Nested settings group that controls the camera field-of-view (FOV) for each
     /// view mode and aiming state combination.
     /// </summary>
-    [AutoRegisterSettings]
+    [UmbraAutoRegisterSettings]
     public record FovSettings
     {
         private const float _minFov = 10f;
         private const float _maxFov = 180f;
 
         /// <summary>Gets or sets the FOV angle used in third-person view.</summary>
-        [SettingsParameter]
-        [DisplayName("3rd Person")]
-        [Description("The FOV to use in third person.")]
-        [Range(_minFov, _maxFov)]
-        [Format("%.1f")]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("3rd Person")]
+        [UmbraDescription("The FOV to use in third person.")]
+        [UmbraRange(_minFov, _maxFov)]
+        [UmbraFormat("%.1f")]
         public Parameter<float> Tps { get; set; } = new(55f);
 
         /// <summary>Gets or sets the FOV angle used when aiming down sights in third-person view.</summary>
-        /// <remarks>Declared before <see cref="Fps"/> but rendered after it via <c>[ParameterOrder(2)]</c>.</remarks>
-        [SettingsParameter]
-        [DisplayName("3rd Person ADS")]
-        [Description("The FOV to use when aiming down sights in third person.")]
-        [Range(_minFov, _maxFov)]
-        [Format("%.1f")]
-        [ParameterOrder(2)]
+        /// <remarks>Declared before <see cref="Fps"/> but rendered after it via <c>[UmbraParameterOrder(2)]</c>.</remarks>
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("3rd Person ADS")]
+        [UmbraDescription("The FOV to use when aiming down sights in third person.")]
+        [UmbraRange(_minFov, _maxFov)]
+        [UmbraFormat("%.1f")]
+        [UmbraParameterOrder(2)]
         public Parameter<float> TpsAds { get; set; } = new(45f);
 
         /// <summary>Gets or sets the FOV angle used in first-person view.</summary>
-        /// <remarks>Declared after <see cref="TpsAds"/> but rendered before it via <c>[ParameterOrder(1)]</c>.</remarks>
-        [SettingsParameter]
-        [DisplayName("1st Person")]
-        [Description("The FOV to use in first person.")]
-        [Range(_minFov, _maxFov)]
-        [Format("%.1f")]
-        [ParameterOrder(1)]
+        /// <remarks>Declared after <see cref="TpsAds"/> but rendered before it via <c>[UmbraParameterOrder(1)]</c>.</remarks>
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("1st Person")]
+        [UmbraDescription("The FOV to use in first person.")]
+        [UmbraRange(_minFov, _maxFov)]
+        [UmbraFormat("%.1f")]
+        [UmbraParameterOrder(1)]
         public Parameter<float> Fps { get; set; } = new(70f);
 
         /// <summary>Gets or sets the FOV angle used when aiming down sights in first-person view.</summary>
-        [SettingsParameter]
-        [DisplayName("1st Person ADS")]
-        [Description("The FOV to use when aiming down sights in first person.")]
-        [Range(_minFov, _maxFov)]
-        [Format("%.1f")]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("1st Person ADS")]
+        [UmbraDescription("The FOV to use when aiming down sights in first person.")]
+        [UmbraRange(_minFov, _maxFov)]
+        [UmbraFormat("%.1f")]
         public Parameter<float> FpsAds { get; set; } = new(35f);
 
         /// <summary>Resets all FOV settings to their default values.</summary>
-        [SettingsParameter]
-        [DisplayName("Reset FOV")]
-        [Description("Resets all field-of-view values to their defaults.")]
-        [CustomDrawer<ButtonDrawer>]
-        [ButtonStyle(ButtonStyle.Danger)]
-        [ButtonWidth(-1f)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Reset FOV")]
+        [UmbraDescription("Resets all field-of-view values to their defaults.")]
+        [UmbraCustomDrawer<ButtonDrawer>]
+        [UmbraButtonStyle(ButtonStyle.Danger)]
+        [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetFov { get; init; }
 
         /// <summary>Initializes a new <see cref="FovSettings"/> and wires up the reset action.</summary>
+        /// <remarks>
+        /// The reset action restores every view-mode-specific FOV parameter so the nested group can
+        /// be returned to a known baseline with a single button press.
+        /// </remarks>
         public FovSettings()
         {
             ResetFov = new(() =>
@@ -171,37 +188,41 @@ public record PluginConfig
     /// Nested settings group that controls the camera film grain post-processing effect,
     /// including a master disable toggle and an opacity slider.
     /// </summary>
-    [AutoRegisterSettings]
+    [UmbraAutoRegisterSettings]
     public record FilmGrainSettings
     {
         /// <summary>Gets or sets whether the film grain post-processing effect is disabled entirely.</summary>
-        [SettingsParameter]
-        [DisplayName("Disable Film Grain")]
-        [Description("Whether the film grain effect is disabled or not.")]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Disable Film Grain")]
+        [UmbraDescription("Whether the film grain effect is disabled or not.")]
         public Parameter<bool> Disabled { get; set; } = new(true);
 
         /// <summary>
         /// Gets or sets the opacity of the film grain effect.
         /// Hidden in the UI while <see cref="Disabled"/> is <see langword="true"/>.
         /// </summary>
-        [SettingsParameter]
-        [DisplayName("Opacity")]
-        [Description("The opacity of the film grain effect. 0 = no effect, 1 = full effect.")]
-        [Range(0f, 1f)]
-        [Format("%.2f")]
-        [HideIf<bool>(nameof(Disabled), true)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Opacity")]
+        [UmbraDescription("The opacity of the film grain effect. 0 = no effect, 1 = full effect.")]
+        [UmbraRange(0f, 1f)]
+        [UmbraFormat("%.2f")]
+        [UmbraHideIf<bool>(nameof(Disabled), true)]
         public Parameter<float> Opacity { get; set; } = new(.15f);
 
         /// <summary>Resets all film grain settings to their default values.</summary>
-        [SettingsParameter]
-        [DisplayName("Reset Film Grain")]
-        [Description("Resets the film grain toggle and opacity to their defaults.")]
-        [CustomDrawer<ButtonDrawer>]
-        [ButtonStyle(ButtonStyle.Danger)]
-        [ButtonWidth(-1f)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Reset Film Grain")]
+        [UmbraDescription("Resets the film grain toggle and opacity to their defaults.")]
+        [UmbraCustomDrawer<ButtonDrawer>]
+        [UmbraButtonStyle(ButtonStyle.Danger)]
+        [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetFilmGrain { get; init; }
 
         /// <summary>Initializes a new <see cref="FilmGrainSettings"/> and wires up the reset action.</summary>
+        /// <remarks>
+        /// The action resets both the visibility-driving toggle and the dependent opacity value so
+        /// the hide predicate can be revalidated from a clean default state.
+        /// </remarks>
         public FilmGrainSettings()
         {
             ResetFilmGrain = new(() =>
@@ -221,15 +242,15 @@ public record PluginConfig
     /// rendered hierarchy and repeated custom-drawer instances are easy to distinguish visually
     /// during manual validation.
     /// </summary>
-    [AutoRegisterSettings]
+    [UmbraAutoRegisterSettings]
     public record NestedGroupsDemo
     {
         /// <summary>Gets or sets the graphics branch for the nested-group demo.</summary>
-        [SettingsParameter]
-        [Category("Graphics")]
-        [SettingsPrefix("graphics")]
-        [CollapseAsTree]
-        [ParameterOrder(0)]
+        [UmbraSettingsParameter]
+        [UmbraCategory("Graphics")]
+        [UmbraSettingsPrefix("graphics")]
+        [UmbraCollapseAsTree]
+        [UmbraParameterOrder(0)]
         public BranchSettings Graphics { get; set; } = new()
         {
             Intensity = new(.25f),
@@ -256,11 +277,11 @@ public record PluginConfig
         };
 
         /// <summary>Gets or sets the audio branch for the nested-group demo.</summary>
-        [SettingsParameter]
-        [Category("Audio")]
-        [SettingsPrefix("audio")]
-        [CollapseAsTree]
-        [ParameterOrder(1)]
+        [UmbraSettingsParameter]
+        [UmbraCategory("Audio")]
+        [UmbraSettingsPrefix("audio")]
+        [UmbraCollapseAsTree]
+        [UmbraParameterOrder(1)]
         public BranchSettings Audio { get; set; } = new()
         {
             Enabled = new(false),
@@ -293,9 +314,9 @@ public record PluginConfig
         /// This validates that a nested group's type-level presentation metadata is used when the
         /// parent property does not override it.
         /// </summary>
-        [SettingsParameter]
-        [SettingsPrefix("typeFallback")]
-        [ParameterOrder(2)]
+        [UmbraSettingsParameter]
+        [UmbraSettingsPrefix("typeFallback")]
+        [UmbraParameterOrder(2)]
         public TypeLevelCategorySettings TypeLevelFallback { get; set; } = new();
 
         /// <summary>
@@ -303,11 +324,11 @@ public record PluginConfig
         /// This validates that property-level presentation metadata wins over the nested type's
         /// fallback metadata.
         /// </summary>
-        [SettingsParameter]
-        [Category("Property Override")]
-        [SettingsPrefix("propertyOverride")]
-        [CollapseAsTree]
-        [ParameterOrder(3)]
+        [UmbraSettingsParameter]
+        [UmbraCategory("Property Override")]
+        [UmbraSettingsPrefix("propertyOverride")]
+        [UmbraCollapseAsTree]
+        [UmbraParameterOrder(3)]
         public TypeLevelCategorySettings PropertyOverride { get; set; } = new()
         {
             Value = new(77),
@@ -316,14 +337,14 @@ public record PluginConfig
 
         /// <summary>
         /// Gets or sets the nested custom-drawer branch inside the deep tree.
-        /// This validates that a nested group using <see cref="NestedGroupDrawerAttribute{TDrawer}"/>
+        /// This validates that a nested group using <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>
         /// can participate in the same scoped layout as regular nested groups.
         /// </summary>
-        [SettingsParameter]
-        [Category("Drawer Inside Tree")]
-        [SettingsPrefix("drawerInsideTree")]
-        [CollapseAsTree]
-        [ParameterOrder(4)]
+        [UmbraSettingsParameter]
+        [UmbraCategory("Drawer Inside Tree")]
+        [UmbraSettingsPrefix("drawerInsideTree")]
+        [UmbraCollapseAsTree]
+        [UmbraParameterOrder(4)]
         public NestedDrawerTest DrawerInsideTree { get; set; } = new()
         {
             Value1 = new(301),
@@ -337,11 +358,11 @@ public record PluginConfig
         /// This validates that sibling custom drawers reusing the same internal widget labels do
         /// not collide when each nested group has its own ImGui ID scope.
         /// </summary>
-        [SettingsParameter]
-        [Category("Drawer Inside Tree")]
-        [SettingsPrefix("drawerInsideTreeDuplicate")]
-        [CollapseAsTree]
-        [ParameterOrder(5)]
+        [UmbraSettingsParameter]
+        [UmbraCategory("Drawer Inside Tree")]
+        [UmbraSettingsPrefix("drawerInsideTreeDuplicate")]
+        [UmbraCollapseAsTree]
+        [UmbraParameterOrder(5)]
         public NestedDrawerTest DrawerInsideTreeDuplicate { get; set; } = new()
         {
             Value1 = new(302),
@@ -355,49 +376,49 @@ public record PluginConfig
     /// Shared nested branch used by multiple parent groups in the demo to prove that categories
     /// with the same label remain independent when they live under different parent scopes.
     /// </summary>
-    [AutoRegisterSettings]
+    [UmbraAutoRegisterSettings]
     public record BranchSettings
     {
         /// <summary>Gets or sets whether this branch is enabled.</summary>
-        [SettingsParameter]
-        [DisplayName("Enabled")]
-        [Description("Whether this demo branch is active.")]
-        [Category("General")]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Enabled")]
+        [UmbraDescription("Whether this demo branch is active.")]
+        [UmbraCategory("General")]
         public Parameter<bool> Enabled { get; set; } = new(true);
 
         /// <summary>
         /// Gets or sets whether the nested Advanced branch is shown.
-        /// This validates <see cref="HideIfAttribute{T}"/> on a nested-group property.
+        /// This validates <see cref="UmbraHideIfAttribute{T}"/> on a nested-group property.
         /// </summary>
-        [SettingsParameter]
-        [DisplayName("Show Advanced")]
-        [Description("Controls whether the nested Advanced group is visible.")]
-        [Category("General")]
-        [ParameterOrder(0)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Show Advanced")]
+        [UmbraDescription("Controls whether the nested Advanced group is visible.")]
+        [UmbraCategory("General")]
+        [UmbraParameterOrder(0)]
         public Parameter<bool> ShowAdvanced { get; set; } = new(true);
 
         /// <summary>Gets or sets the intensity value shown in the branch's General category.</summary>
-        [SettingsParameter]
-        [DisplayName("Intensity")]
-        [Description("A simple value used to verify ordering and rendering inside the branch.")]
-        [Category("General")]
-        [Range(0f, 1f)]
-        [Format("%.2f")]
-        [ParameterOrder(1)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Intensity")]
+        [UmbraDescription("A simple value used to verify ordering and rendering inside the branch.")]
+        [UmbraCategory("General")]
+        [UmbraRange(0f, 1f)]
+        [UmbraFormat("%.2f")]
+        [UmbraParameterOrder(1)]
         public Parameter<float> Intensity { get; set; } = new(.50f);
 
         /// <summary>
         /// Gets or sets the nested advanced branch, reusing the same category name across sibling
         /// parent groups to validate local category scoping.
         /// </summary>
-        [SettingsParameter]
-        [Category("Advanced")]
-        [SettingsPrefix("advanced")]
-        [CollapseAsTree]
-        [HideIf<bool>(nameof(ShowAdvanced), false)]
-        [SpacingBefore]
-        [SpacingAfter]
-        [ParameterOrder(2)]
+        [UmbraSettingsParameter]
+        [UmbraCategory("Advanced")]
+        [UmbraSettingsPrefix("advanced")]
+        [UmbraCollapseAsTree]
+        [UmbraHideIf<bool>(nameof(ShowAdvanced), false)]
+        [UmbraSpacingBefore]
+        [UmbraSpacingAfter]
+        [UmbraParameterOrder(2)]
         public AdvancedBranchSettings Advanced { get; set; } = new();
 
         /// <summary>
@@ -405,9 +426,9 @@ public record PluginConfig
         /// This validates that child groups using type-level metadata can coexist with explicit
         /// property-level category branches in the same parent scope.
         /// </summary>
-        [SettingsParameter]
-        [SettingsPrefix("typeFallback")]
-        [ParameterOrder(3)]
+        [UmbraSettingsParameter]
+        [UmbraSettingsPrefix("typeFallback")]
+        [UmbraParameterOrder(3)]
         public TypeLevelCategorySettings TypeLevelFallback { get; set; } = new()
         {
             Value = new(12),
@@ -419,11 +440,11 @@ public record PluginConfig
         /// This validates that custom nested-group drawers compose with category scoping and
         /// property-level ordering metadata.
         /// </summary>
-        [SettingsParameter]
-        [Category("Drawer Test")]
-        [SettingsPrefix("drawer")]
-        [CollapseAsTree]
-        [ParameterOrder(4)]
+        [UmbraSettingsParameter]
+        [UmbraCategory("Drawer Test")]
+        [UmbraSettingsPrefix("drawer")]
+        [UmbraCollapseAsTree]
+        [UmbraParameterOrder(4)]
         public NestedDrawerTest Drawer { get; set; } = new();
 
         /// <summary>
@@ -431,11 +452,11 @@ public record PluginConfig
         /// This validates that sibling custom drawers in the same parent scope can safely reuse the
         /// same internal widget labels because each nested group subtree has its own ImGui ID scope.
         /// </summary>
-        [SettingsParameter]
-        [Category("Drawer Test")]
-        [SettingsPrefix("drawerDuplicate")]
-        [CollapseAsTree]
-        [ParameterOrder(5)]
+        [UmbraSettingsParameter]
+        [UmbraCategory("Drawer Test")]
+        [UmbraSettingsPrefix("drawerDuplicate")]
+        [UmbraCollapseAsTree]
+        [UmbraParameterOrder(5)]
         public NestedDrawerTest DrawerDuplicate { get; set; } = new();
     }
 
@@ -443,40 +464,40 @@ public record PluginConfig
     /// Innermost nested settings group in the demo, providing a second nesting level beneath the
     /// branch-specific Advanced category.
     /// </summary>
-    [AutoRegisterSettings]
+    [UmbraAutoRegisterSettings]
     public record AdvancedBranchSettings
     {
         /// <summary>
         /// Gets or sets the threshold value rendered inside the nested tuning category.
         /// Defaults differ between the demo's Graphics and Audio branches so they are easy to tell apart.
         /// </summary>
-        [SettingsParameter]
-        [DisplayName("Threshold")]
-        [Description("A nested numeric setting used to verify deep category scoping.")]
-        [Category("Tuning")]
-        [Range(0, 100)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Threshold")]
+        [UmbraDescription("A nested numeric setting used to verify deep category scoping.")]
+        [UmbraCategory("Tuning")]
+        [UmbraRange(0, 100)]
         public Parameter<int> Threshold { get; set; } = new(50);
 
         /// <summary>
         /// Gets or sets the bias value rendered alongside <see cref="Threshold"/>.
         /// Defaults differ between the demo's Graphics and Audio branches so they are easy to tell apart.
         /// </summary>
-        [SettingsParameter]
-        [DisplayName("Bias")]
-        [Description("A second nested numeric setting used to verify deep category scoping.")]
-        [Category("Tuning")]
-        [Range(-10, 10)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Bias")]
+        [UmbraDescription("A second nested numeric setting used to verify deep category scoping.")]
+        [UmbraCategory("Tuning")]
+        [UmbraRange(-10, 10)]
         public Parameter<int> Bias { get; set; } = new(0);
 
         /// <summary>
         /// Gets or sets a note shown in the nested details category.
         /// Defaults differ between the demo's Graphics and Audio branches so they are easy to tell apart.
         /// </summary>
-        [SettingsParameter]
-        [DisplayName("Notes")]
-        [Description("Free-form text for verifying a second inner category under the same nested group.")]
-        [Category("Details")]
-        [MaxLength(80)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Notes")]
+        [UmbraDescription("Free-form text for verifying a second inner category under the same nested group.")]
+        [UmbraCategory("Details")]
+        [UmbraMaxLength(80)]
         public Parameter<string> Notes { get; set; } = new("Shared category names should stay local.");
     }
 
@@ -484,25 +505,25 @@ public record PluginConfig
     /// Nested settings group that declares its own presentation metadata at the type level.
     /// Used to validate fallback behavior when the parent property supplies no category override.
     /// </summary>
-    [AutoRegisterSettings]
-    [Category("Type-Level Fallback")]
-    [CollapseAsTree]
+    [UmbraAutoRegisterSettings]
+    [UmbraCategory("Type-Level Fallback")]
+    [UmbraCollapseAsTree]
     public record TypeLevelCategorySettings
     {
         /// <summary>Gets or sets the sample numeric value rendered in the fallback group.</summary>
-        [SettingsParameter]
-        [DisplayName("Value")]
-        [Description("A sample value used to verify type-level fallback presentation metadata.")]
-        [Category("Fallback Values")]
-        [Range(0, 100)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Value")]
+        [UmbraDescription("A sample value used to verify type-level fallback presentation metadata.")]
+        [UmbraCategory("Fallback Values")]
+        [UmbraRange(0, 100)]
         public Parameter<int> Value { get; set; } = new(42);
 
         /// <summary>Gets or sets the sample note rendered in the fallback group.</summary>
-        [SettingsParameter]
-        [DisplayName("Notes")]
-        [Description("A note used to verify the fallback group renders as a scoped nested container.")]
-        [Category("Fallback Details")]
-        [MaxLength(80)]
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Notes")]
+        [UmbraDescription("A note used to verify the fallback group renders as a scoped nested container.")]
+        [UmbraCategory("Fallback Details")]
+        [UmbraMaxLength(80)]
         public Parameter<string> Notes { get; set; } = new("Type-level category fallback.");
     }
 
@@ -513,26 +534,31 @@ public record PluginConfig
     /// this type are intentionally rendered in the sample config with identical internal widget
     /// labels so nested-group ImGui ID scoping can be verified manually.
     /// </summary>
-    [AutoRegisterSettings]
-    [Category("Drawer Test")]
-    [CollapseAsTree]
-    [NestedGroupDrawer<NestedDrawerTestDrawer>]
+    /// <remarks>
+    /// The group is annotated with <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>, causing
+    /// <see cref="NestedDrawerTestDrawer"/> to take over layout for every instance unless a parent
+    /// property supplies its own overriding nested-group drawer attribute.
+    /// </remarks>
+    [UmbraAutoRegisterSettings]
+    [UmbraCategory("Drawer Test")]
+    [UmbraCollapseAsTree]
+    [UmbraNestedGroupDrawer<NestedDrawerTestDrawer>]
     public record NestedDrawerTest
     {
         /// <summary>Gets or sets the first sample integer value for the nested drawer test.</summary>
-        [SettingsParameter]
+        [UmbraSettingsParameter]
         public Parameter<int> Value1 { get; set; } = new(123);
 
         /// <summary>Gets or sets the second sample boolean value for the nested drawer test.</summary>
-        [SettingsParameter]
+        [UmbraSettingsParameter]
         public Parameter<bool> Value2 { get; set; } = new(true);
 
         /// <summary>Gets or sets the third sample string value for the nested drawer test.</summary>
-        [SettingsParameter]
+        [UmbraSettingsParameter]
         public Parameter<string> Value3 { get; set; } = new("Hello, world!");
 
         /// <summary>Gets or sets the fourth sample float value for the nested drawer test.</summary>
-        [SettingsParameter]
+        [UmbraSettingsParameter]
         public Parameter<float> Value4 { get; set; } = new(3.14f);
     }
 }
