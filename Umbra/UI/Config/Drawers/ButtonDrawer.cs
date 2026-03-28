@@ -29,12 +29,12 @@ namespace Umbra.UI.Config.Drawers;
 ///     <term><c>[ButtonStyle(ButtonStyle.Danger)]</c></term>
 ///     <description>
 ///       Applies a preset color scheme. See <see cref="ButtonStyle"/> for all variants.
-///       Omit for the default ImGui theme colors. Ignored when <c>[CustomButtonColors]</c>
+///       Omit for the default ImGui theme colors. Ignored when <c>[UmbraCustomButtonColors]</c>
 ///       is also present.
 ///     </description>
 ///   </item>
 ///   <item>
-///     <term><c>[CustomButtonColors(r, g, b)]</c> or <c>[CustomButtonColors(…×12)]</c></term>
+///     <term><c>[UmbraCustomButtonColors(r, g, b)]</c> or <c>[UmbraCustomButtonColors(…×12)]</c></term>
 ///     <description>
 ///       Applies fully custom RGBA colors for the normal, hovered, and active button states.
 ///       Takes priority over <c>[ButtonStyle]</c> when both are specified.
@@ -50,7 +50,7 @@ namespace Umbra.UI.Config.Drawers;
 /// </list>
 /// </para>
 /// <para>
-/// Using <see cref="ButtonStyle.Custom"/> without a <c>[CustomButtonColors]</c> attribute on
+/// Using <see cref="ButtonStyle.Custom"/> without a <c>[UmbraCustomButtonColors]</c> attribute on
 /// the same property is a misconfiguration. The drawer logs a one-time warning and falls back
 /// to <see cref="ButtonStyle.Default"/> rather than throwing, so the game process is never
 /// disrupted by a configuration error in a per-frame draw path.
@@ -78,7 +78,7 @@ public sealed class ButtonDrawer : IParameterDrawer
         var size = new Vector2(meta.ControlWidth ?? 0f, 0f);
         bool colorsPushed;
 
-        // Guard: ButtonStyle.Custom without [CustomButtonColors] is a misconfiguration.
+        // Guard: ButtonStyle.Custom without [UmbraCustomButtonColors] is a misconfiguration.
         // Log once and fall back to Default rather than throwing from a per-frame draw path,
         // which would crash the game process on every frame.
         if (style == ButtonStyle.Custom && meta.CustomButtonColors is null)
