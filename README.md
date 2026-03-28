@@ -13,7 +13,7 @@ A support library for building REFramework.NET mods and plugins for RE Engine ga
 - safe plugin logging
 - keyboard capture helpers
 
-The repository also includes `Umbra.SamplePlugin`, which demonstrates the current configuration and panel workflow.
+The repository also includes `Umbra.SamplePlugin`, which demonstrates the current configuration and panel workflow, and `Umbra.Tests`, which provides focused automated coverage for settings, lifecycle, and persistence behaviors.
 
 ## Features
 
@@ -77,8 +77,10 @@ REFW.Umbra
 │  │  └─ KeyboardInput
 │  └─ Runtime
 │     └─ ManagedObjectResolver
-└─ Umbra.SamplePlugin
-   └─ reference plugin showing settings, deferred save, nested groups, and custom drawers
+├─ Umbra.SamplePlugin
+│  └─ reference plugin showing settings, deferred save, nested groups, custom drawers, and broad control coverage
+└─ Umbra.Tests
+   └─ automated tests covering settings registration, persistence recovery, lifecycle guards, and listener bookkeeping
 ```
 
 ### Main flow
@@ -125,6 +127,20 @@ This prepares the REFramework API references used by both projects and also sets
 ```bash
 dotnet build REFW.Umbra.slnx
 ```
+
+### Test
+
+```bash
+dotnet test Umbra.Tests/Umbra.Tests.csproj
+```
+
+The test project focuses on Umbra's host-independent behavior, including:
+
+- settings file creation and duplicate-key detection
+- unreadable JSON backup and default rewrite recovery
+- deferred-save lifecycle guards
+- `ConfigSection<TConfig>` constructor guards
+- listener cleanup bookkeeping in `SettingsStore<TConfig>`
 
 In Debug builds, the repository uses the local deployment scripts configured in each project:
 
