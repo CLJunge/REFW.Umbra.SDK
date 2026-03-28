@@ -3,7 +3,6 @@ using Hexa.NET.ImGui;
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.Logging;
-using Umbra.UI;
 
 namespace Umbra.UI.Config.Drawers;
 
