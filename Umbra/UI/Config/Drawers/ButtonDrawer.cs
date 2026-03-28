@@ -12,6 +12,12 @@ namespace Umbra.UI.Config.Drawers;
 /// </summary>
 /// <remarks>
 /// <para>
+/// <see cref="Umbra.UI.Config.ControlFactory"/> uses this drawer by default for
+/// <see cref="Parameter{T}"/> values of type <see cref="Action"/>. One <see cref="ButtonDrawer"/>
+/// instance is created per action parameter during draw-tree construction, so warning state remains
+/// local to the parameter and no shared global drawer state is required.
+/// </para>
+/// <para>
 /// The button label is sourced from the parameter's <c>DisplayName</c> metadata (set via
 /// <c>[DisplayName("...")]</c>). An optional same-line <c>(?)</c> help marker is shown when
 /// <c>[Description("...")]</c> is also present, consistent with other drawers in this namespace.
@@ -104,5 +110,4 @@ public sealed class ButtonDrawer : IParameterDrawer
             ImGuiWidgets.DrawHelpMarker(meta.Description);
         }
     }
-
 }

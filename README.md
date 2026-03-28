@@ -30,7 +30,7 @@ The repository also includes `Umbra.SamplePlugin`, which demonstrates the curren
 
 ### Default config drawers
 
-- `Parameter<Action>` → button via `CachedButtonDrawer`
+- `Parameter<Action>` → button via `ButtonDrawer`
 - `Parameter<bool>` → checkbox
 - `Parameter<int>` → slider when `[UmbraRange]` is present, otherwise drag input
 - `Parameter<float>` → slider when `[UmbraRange]` is present, otherwise drag input

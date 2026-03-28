@@ -10,9 +10,9 @@ namespace Umbra.UI.Config;
 /// Custom-drawer activation is delegated to <see cref="ParameterDrawerResolver"/>. Built-in
 /// numeric controls are delegated to <see cref="NumericControlBuilder"/>, text controls are
 /// delegated to <see cref="TextControlBuilder"/>, <see cref="Parameter{T}"/> values of type
-/// <see cref="Action"/> default to the shared <see cref="Drawers.CachedButtonDrawer"/>, and
-/// enum controls are delegated to <see cref="EnumControlBuilder"/>. This type now focuses on
-/// dispatch and shared layout creation.
+/// <see cref="Action"/> default to <see cref="Drawers.ButtonDrawer"/>, and enum controls are
+/// delegated to <see cref="EnumControlBuilder"/>. This type now focuses on dispatch and shared
+/// layout creation.
 /// All controls use a two-column text-label layout unconditionally: the parameter label (and
 /// optional <c>(?)</c> help marker) is rendered on the left; the editing widget is placed on
 /// the right at the column x position determined by <see cref="LabelAlignmentGroup"/>. Labels
@@ -63,20 +63,24 @@ internal static class ControlFactory
     }
 
     /// <summary>
-    /// Builds a per-frame draw action that renders a cached push-button for an
+    /// Builds a per-frame draw action that renders a push-button for an
     /// <see cref="Action"/>-typed parameter.
     /// </summary>
     /// <param name="label">The visible button label.</param>
     /// <param name="parameter">The <see cref="Parameter{T}"/> of type <see cref="Action"/> to render.</param>
     /// <param name="alignGroup">
     /// The shared alignment group for the owning category or root scope.
-    /// Unused because <see cref="Drawers.CachedButtonDrawer"/> owns the full row layout.
+    /// Unused because <see cref="Drawers.ButtonDrawer"/> owns the full row layout.
     /// </param>
-    /// <returns>An <see cref="Action"/> that renders and invokes the cached action button each frame.</returns>
+    /// <returns>
+    /// An <see cref="Action"/> that renders and invokes the button each frame using a drawer
+    /// instance created once for this parameter during draw-tree construction.
+    /// </returns>
     private static Action BuildActionDraw(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
         _ = alignGroup;
-        return () => Drawers.CachedButtonDrawer.Instance.Draw(label, parameter);
+        var drawer = new Drawers.ButtonDrawer();
+        return () => drawer.Draw(label, parameter);
     }
 
     /// <summary>Builds a per-frame draw action that renders a checkbox for a <see cref="bool"/> parameter.</summary>
