@@ -61,4 +61,36 @@ public sealed class SettingsStoreTests
         Assert.True(root.TryGetProperty("tests.count", out var count));
         Assert.Equal(5, count.GetInt32());
     }
+
+    [Fact]
+    public void Load_RewritesTrueDefaults_AfterFailureThatPartiallyAppliedValues()
+    {
+        using var temp = new TemporaryDirectory();
+        using var _ = new LoggerTestScope();
+        var filePath = Path.Combine(temp.Path, "config.json");
+        File.WriteAllText(filePath, """
+        {
+          "tests.count": 42,
+          "tests.enabled": "not-a-bool"
+        }
+        """);
+
+        using var store = new SettingsStore<BasicConfig>(filePath);
+        var config = store.Load();
+
+        Assert.NotNull(config);
+        Assert.True(config.Enabled.Value);
+        Assert.Equal(5, config.Count.Value);
+
+        var files = Directory.GetFiles(temp.Path, "config.invalid-*.json");
+        Assert.Single(files);
+
+        var rewrittenJson = File.ReadAllText(filePath);
+        using var document = JsonDocument.Parse(rewrittenJson);
+        var root = document.RootElement;
+        Assert.True(root.TryGetProperty("tests.enabled", out var enabled));
+        Assert.True(enabled.GetBoolean());
+        Assert.True(root.TryGetProperty("tests.count", out var count));
+        Assert.Equal(5, count.GetInt32());
+    }
 }
