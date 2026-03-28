@@ -97,7 +97,6 @@ REFW.Umbra
 - `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed` for explicit lifecycle checks.
 - Core APIs (`Save()`, listeners, `ResetAll()`, `CopyValuesTo(...)`) require the store to be loaded.
 - Listener registration/removal APIs on `SettingsStore<TConfig>` now validate `listener`/`predicate` arguments explicitly and throw `ArgumentNullException` for invalid inputs.
-- Listener APIs validate `listener`/`predicate` and throw `ArgumentNullException` on invalid input
 - Preferred unload order: controller first, then store; controller cleanup remains safe after store disposal, but pending saves are lost.
 - On unreadable JSON, `Load()` attempts a timestamped `.invalid-*.json` backup and restores defaults; if backup fails, the file is left untouched, defaults are used for the session, and future `Save()` calls are suppressed.
 
