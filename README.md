@@ -26,7 +26,7 @@ The repository also includes `Umbra.SamplePlugin`, which demonstrates the curren
 - Per-plugin logging with `PluginLogger`
 - Global SDK logging control with `Logger`
 - Keyboard capture utilities in `KeyboardInput`
-- Small runtime helper `ManagedObjectResolver` for resolving REFramework managed objects
+- Small runtime helper `ManagedObjectResolver` with `Resolve<T>` / `TryResolve<T>` for resolving REFramework managed objects
 
 ### Default config drawers
 
@@ -89,6 +89,17 @@ REFW.Umbra
 4. Render it with `ConfigDrawer<TConfig>` directly or through `ConfigSection<TConfig>` inside `PluginPanel`.
 5. For live read-only or hook-driven state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
 6. On unload, flush/dispose the save controller, save/dispose the store, then dispose the panel.
+
+- `DeferredSaveController<TConfig>` requires a store that has already completed `Load()` and now throws immediately if constructed too early.
+- `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed` so callers can validate lifecycle state explicitly.
+- The preferred unload order remains save-controller first, store second. If the store has already been disposed, controller cleanup is still safe, but any pending debounced save can no longer be persisted.
+- If the existing config JSON is unreadable, `SettingsStore<TConfig>.Load()` now tries to move it aside to a timestamped `.invalid-*.json` backup and rewrites defaults at the original path. If the unreadable file cannot be backed up, the original file is left untouched and the current session continues with in-memory defaults only.
+
+### Notes on persisted key names
+
+- Fully-qualified setting keys are derived from `[UmbraSettingsPrefix("...")]` plus each parameter name (or its `keyOverride`).
+- Changing a prefix is therefore a valid way to rename or regroup persisted keys.
+- Prefix changes do **not** migrate existing JSON automatically: values saved under the old key names will no longer be loaded until the file is updated to the new keys.
 
 ## Setup Instructions
 
@@ -205,4 +216,4 @@ public static class MyPlugin
 }
 ```
 
-For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested groups, hotkey drawers, button drawers, custom nested-group drawers, and deferred saving.
+For a fuller reference, see `Umbra.SamplePlugin`, which now organizes the sample config into nested groups for booleans, numeric sliders and drags, strings, enums, custom drawers, nested-group drawers, and nested-type presentation tests alongside deferred saving.

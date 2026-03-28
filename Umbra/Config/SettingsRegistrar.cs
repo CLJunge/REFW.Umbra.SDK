@@ -13,10 +13,16 @@ internal static class SettingsRegistrar
     /// Reflects over <paramref name="config"/> and returns a flat dictionary of every
     /// <see cref="IParameter"/> found, keyed by its fully-qualified dot-separated setting key.
     /// </summary>
+    /// <remarks>
+    /// If two parameters resolve to the same fully-qualified key, registration fails with an
+    /// <see cref="InvalidOperationException"/> rather than silently letting the later parameter
+    /// overwrite the earlier one.
+    /// </remarks>
     internal static Dictionary<string, IParameter> Register<TConfig>(TConfig config)
         where TConfig : class
     {
         var parameters = new Dictionary<string, IParameter>();
+        var parameterOrigins = new Dictionary<string, string>();
 #pragma warning disable IDE0028
         var rootType = config.GetType();
         RegisterRecursive(
@@ -24,6 +30,7 @@ internal static class SettingsRegistrar
             GetSettingsPrefix(rootType) ?? "",
             GetCategory(rootType),
             parameters,
+            parameterOrigins,
             new HashSet<object>(ReferenceEqualityComparer.Instance));
 #pragma warning restore IDE0028
         return parameters;
@@ -40,6 +47,7 @@ internal static class SettingsRegistrar
         string currentPrefix,
         string? currentCategory,
         Dictionary<string, IParameter> parameters,
+        Dictionary<string, string> parameterOrigins,
         HashSet<object> visited)
     {
         if (!visited.Add(obj)) return;
@@ -59,17 +67,53 @@ internal static class SettingsRegistrar
             if (value is IParameter parameter)
             {
                 var key = Combine(currentPrefix, paramAttr.KeyOverride ?? prop.Name.ToCamelCase()!);
-                parameter.Key = key;
-                parameter.Metadata = ParameterMetadataReader.ReadFrom(prop, currentCategory, key);
-                parameters[key] = parameter;
+                RegisterParameter(parameters, parameterOrigins, parameter, key, prop, currentCategory);
             }
             else
             {
                 var nestedPrefix = Combine(currentPrefix, GetSettingsPrefix(prop) ?? GetSettingsPrefix(value.GetType()) ?? "");
                 var nestedCategory = GetCategory(prop) ?? GetCategory(value.GetType()) ?? currentCategory;
-                RegisterRecursive(value, nestedPrefix, nestedCategory, parameters, visited);
+                RegisterRecursive(value, nestedPrefix, nestedCategory, parameters, parameterOrigins, visited);
             }
         }
+    }
+
+    /// <summary>
+    /// Registers one discovered parameter under <paramref name="key"/>, throwing when that key
+    /// is already occupied by another parameter in the same configuration tree.
+    /// </summary>
+    /// <param name="parameters">The destination parameter map keyed by fully-qualified setting key.</param>
+    /// <param name="parameterOrigins">
+    /// Tracks the declaring property path for each registered key so duplicate-key failures can
+    /// identify both colliding members.
+    /// </param>
+    /// <param name="parameter">The discovered parameter instance to register.</param>
+    /// <param name="key">The fully-qualified settings key resolved for the parameter.</param>
+    /// <param name="declaringProperty">The property that exposed the parameter.</param>
+    /// <param name="currentCategory">The resolved category context applied to the parameter metadata.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="key"/> is already registered by a different parameter.
+    /// </exception>
+    private static void RegisterParameter(
+        Dictionary<string, IParameter> parameters,
+        Dictionary<string, string> parameterOrigins,
+        IParameter parameter,
+        string key,
+        PropertyInfo declaringProperty,
+        string? currentCategory)
+    {
+        var origin = $"{declaringProperty.DeclaringType?.FullName ?? declaringProperty.ReflectedType?.FullName ?? "<unknown>"}.{declaringProperty.Name}";
+        if (parameterOrigins.TryGetValue(key, out var existingOrigin))
+        {
+            throw new InvalidOperationException(
+                $"Duplicate settings key '{key}' detected while registering '{origin}'. " +
+                $"The key is already used by '{existingOrigin}'. Ensure every [UmbraSettingsParameter] resolves to a unique key.");
+        }
+
+        parameter.Key = key;
+        parameter.Metadata = ParameterMetadataReader.ReadFrom(declaringProperty, currentCategory, key);
+        parameters.Add(key, parameter);
+        parameterOrigins.Add(key, origin);
     }
 
     /// <summary>

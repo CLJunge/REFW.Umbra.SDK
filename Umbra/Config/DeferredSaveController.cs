@@ -20,10 +20,8 @@ namespace Umbra.Config;
 /// <para>
 /// <strong>Ordering requirement</strong><br/>
 /// Construct <see cref="DeferredSaveController{TConfig}"/> <em>after</em> calling
-/// <see cref="SettingsStore{TConfig}.Load"/>. The constructor immediately attaches listeners
-/// to every parameter registered in the store. If the store has not been loaded yet its
-/// parameter dictionary is empty and no listeners will be attached, causing the controller
-/// to never observe any changes.
+/// <see cref="SettingsStore{TConfig}.Load"/>. The constructor validates this requirement and
+/// throws <see cref="InvalidOperationException"/> when the supplied store is not yet loaded.
 /// </para>
 /// <para>
 /// <strong>Per-frame driving</strong><br/>
@@ -36,10 +34,11 @@ namespace Umbra.Config;
 /// <see cref="Dispose"/> automatically calls <see cref="Flush"/> before unregistering
 /// listeners, so pending changes are not lost if the plugin unloads while a debounce is active.
 /// Call <see cref="Flush"/> explicitly only when you need the save to happen earlier in the
-/// unload sequence or before some other operation. Dispose this instance <em>before</em> or
-/// <em>alongside</em> the owning
-/// <see cref="SettingsStore{TConfig}"/> — disposing the store first would throw
-/// <see cref="ObjectDisposedException"/> when the controller tries to remove its listeners.
+/// unload sequence or before some other operation. The preferred order is still to dispose this
+/// instance <em>before</em> or <em>alongside</em> the owning <see cref="SettingsStore{TConfig}"/>
+/// so any pending debounced write can still be persisted. If the store has already been
+/// disposed, controller disposal becomes a safe no-op cleanup path and skips listener removal
+/// because the store has already torn those subscriptions down.
 /// </para>
 /// <para>
 /// <strong>Typical lifecycle</strong>
@@ -92,8 +91,6 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// <param name="store">
     /// The settings store to drive saves for. <strong>Must have already been loaded via
     /// <see cref="SettingsStore{TConfig}.Load"/> before this constructor is called.</strong>
-    /// If the store has not been loaded, its parameter dictionary is empty and no listeners
-    /// will be attached, causing the controller to silently observe nothing.
     /// </param>
     /// <param name="debounceWindow">
     /// How long to wait after the last numeric parameter change before writing to disk.
@@ -101,8 +98,21 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// the user stops interacting with sliders for this duration.
     /// Defaults to 1 second when <see langword="null"/>.
     /// </param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when <paramref name="store"/> has already been disposed.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="store"/> has not yet been loaded via <see cref="SettingsStore{TConfig}.Load"/>.
+    /// </exception>
     public DeferredSaveController(SettingsStore<TConfig> store, TimeSpan? debounceWindow = null)
     {
+        ArgumentNullException.ThrowIfNull(store);
+        if (store.IsDisposed)
+            throw new ObjectDisposedException(nameof(store),
+                $"DeferredSaveController<{typeof(TConfig).Name}> cannot attach to a disposed SettingsStore.");
+        if (!store.IsLoaded)
+            throw new InvalidOperationException(
+                $"DeferredSaveController<{typeof(TConfig).Name}> requires a SettingsStore that has already completed Load().");
+
         _store = store;
         DebounceWindow = debounceWindow ?? TimeSpan.FromSeconds(1);
 
@@ -165,16 +175,28 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// debounce window or the eventual <see cref="Dispose"/> call.
     /// </para>
     /// <para>
+    /// If the wrapped <see cref="SettingsStore{TConfig}"/> has already been disposed, any pending
+    /// save is discarded because there is no live store left to persist through.
+    /// </para>
+    /// <para>
     /// After disposal this method is a permanent no-op.
     /// </para>
     /// </remarks>
     public void Flush()
     {
         if (_disposed) return;
+        if (_store.IsDisposed)
+        {
+            if (_anyPending)
+                Logger.Warning(
+                    $"DeferredSaveController<{typeof(TConfig).Name}>: dropping pending changes because the SettingsStore was already disposed.");
+            ClearPendingState();
+            return;
+        }
+
         Logger.Info($"DeferredSaveController<{typeof(TConfig).Name}>: flushing pending changes to disk.");
         _store.Save();
-        _anyPending = false;
-        _sliderPending = false;
+        ClearPendingState();
     }
 
     /// <summary>
@@ -188,11 +210,10 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// debounced write still pending at unload time is persisted automatically.
     /// </para>
     /// <para>
-    /// Dispose this instance <em>before</em> or <em>alongside</em> the owning
-    /// <see cref="SettingsStore{TConfig}"/>. Disposing the store first causes the store to
-    /// enter a disposed state, and this controller's subsequent call to
-    /// <see cref="SettingsStore{TConfig}.RemoveListenerFromAll(Action)"/> will throw
-    /// <see cref="ObjectDisposedException"/>.
+    /// The preferred unload order remains to dispose this instance before or alongside the owning
+    /// <see cref="SettingsStore{TConfig}"/> so pending debounced writes can still be flushed. If the
+    /// store has already been disposed, this method does not throw; it skips listener removal because
+    /// the store has already removed all registered subscriptions during its own disposal.
     /// </para>
     /// </remarks>
     public void Dispose()
@@ -201,10 +222,22 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         Flush();  // guarantee no pending write is dropped before listeners are removed
         _disposed = true;
 
-        _store.RemoveListenerFromAll(_onAnyChanged);
-        _store.RemoveListenerFromAll(IsNumericParameter, _onNumericChanged);
+        if (!_store.IsDisposed)
+        {
+            _store.RemoveListenerFromAll(_onAnyChanged);
+            _store.RemoveListenerFromAll(IsNumericParameter, _onNumericChanged);
+        }
 
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Clears all tracked pending-save state after a successful flush or a forced drop.
+    /// </summary>
+    private void ClearPendingState()
+    {
+        _anyPending = false;
+        _sliderPending = false;
     }
 
     /// <summary>

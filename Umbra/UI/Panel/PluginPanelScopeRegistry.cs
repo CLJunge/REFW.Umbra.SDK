@@ -12,23 +12,32 @@ namespace Umbra.UI.Panel;
 internal static class PluginPanelScopeRegistry
 {
     private static readonly HashSet<string> s_registeredScopes = [];
+    private static readonly HashSet<string> s_warnedDuplicateScopes = [];
     private static readonly object s_scopeLock = new();
 
     /// <summary>
-    /// Registers <paramref name="idScope"/> and logs a developer warning when the same scope is
-    /// already active in another panel.
+    /// Registers <paramref name="idScope"/> and logs a developer warning the first time the same
+    /// active scope is detected as a duplicate.
     /// </summary>
+    /// <remarks>
+    /// The detailed duplicate-scope warning includes a stack trace so plugin authors can identify
+    /// the conflicting panel construction site. To avoid spamming the REFramework console, that
+    /// warning is emitted only once per still-active duplicate scope and is re-armed when the
+    /// original scope is eventually released.
+    /// </remarks>
     /// <param name="idScope">The globally unique panel scope to register.</param>
     /// <returns><see langword="true"/> when the scope was newly registered; otherwise <see langword="false"/>.</returns>
     internal static bool TryRegister(string idScope)
     {
         bool registered;
+        bool shouldWarn;
         lock (s_scopeLock)
         {
             registered = s_registeredScopes.Add(idScope);
+            shouldWarn = !registered && s_warnedDuplicateScopes.Add(idScope);
         }
 
-        if (!registered)
+        if (shouldWarn)
         {
             Logger.Warning(
                 $"[PluginPanel] DEVELOPER WARNING — Duplicate idScope '{idScope}' detected.\n" +
@@ -48,7 +57,8 @@ internal static class PluginPanelScopeRegistry
     }
 
     /// <summary>
-    /// Releases a previously registered panel scope.
+    /// Releases a previously registered panel scope and re-arms duplicate diagnostics for any
+    /// future reuse of the same scope.
     /// </summary>
     /// <param name="idScope">The scope to release.</param>
     internal static void Release(string idScope)
@@ -56,6 +66,7 @@ internal static class PluginPanelScopeRegistry
         lock (s_scopeLock)
         {
             s_registeredScopes.Remove(idScope);
+            s_warnedDuplicateScopes.Remove(idScope);
         }
     }
 }
