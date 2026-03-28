@@ -77,7 +77,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     {
         ArgumentNullException.ThrowIfNull(config);
         if (string.IsNullOrWhiteSpace(idScope))
-            throw new ArgumentException("idScope cannot be null or whitespace when supplied.", nameof(idScope));
+            throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
         var builder = new ConfigDrawerBuilder();
