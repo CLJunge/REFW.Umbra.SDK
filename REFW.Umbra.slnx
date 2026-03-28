@@ -4,6 +4,8 @@
 	</Folder>
 	<Project Path="Umbra/Umbra.csproj" />
     <Project Path="Umbra.SamplePlugin/Umbra.SamplePlugin.csproj" Id="55bc0663-13f1-46d8-8c80-99de8b445bfa" />
-    <Project Path="Umbra.Tests/Umbra.Tests.csproj" />
+    <Project Path="Umbra.Tests/Umbra.Tests.csproj">
+        <Build Solution="Debug|*" Project="false" />
+    </Project>
 </Solution>
 
