@@ -530,16 +530,19 @@ public class SettingsStore<TConfig> : IDisposable
     }
 
     /// <summary>
-    /// Throws when this store has not completed <see cref="Load"/> yet.
+    /// Throws when this store has not successfully completed <see cref="Load"/> yet.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <see cref="Load"/> has not completed successfully (for example, it has not been called yet
+    /// or it failed before finishing).
+    /// </exception>
     private void ThrowIfNotLoaded()
     {
         if (_loaded)
             return;
 
         throw new InvalidOperationException(
-            $"SettingsStore<{typeof(TConfig).Name}> requires Load() to complete before this operation can be used.");
+            $"SettingsStore<{typeof(TConfig).Name}> requires Load() to complete successfully before this operation can be used.");
     }
 
     /// <summary>
