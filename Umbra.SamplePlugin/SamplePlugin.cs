@@ -2,6 +2,7 @@ using REFrameworkNET;
 using REFrameworkNET.Attributes;
 using REFrameworkNET.Callbacks;
 using Umbra.Config;
+using Umbra.Input;
 using Umbra.Logging;
 using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
@@ -41,7 +42,7 @@ public static class SamplePlugin
     public static void Load()
     {
 #if DEBUG
-        System.Diagnostics.Debugger.Launch();
+        //System.Diagnostics.Debugger.Launch();
 #endif
 
         _log.Info("Loading...");
@@ -134,6 +135,17 @@ public static class SamplePlugin
     [Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
     public static void PreDrawUI()
     {
+#if DEBUG
+        if (KeyboardInput.IsCtrlHeld && KeyboardInput.IsShiftHeld
+            && KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
+            && capturedKey == (int)Hexa.NET.ImGui.ImGuiKey.F12)
+        {
+            _log.Info("Ctrl + Shift + F12 detected, attaching debugger...");
+
+            System.Diagnostics.Debugger.Launch();
+        }
+
+#endif
         DrawPanelIfUiIsActive();
         TickDeferredSaveController();
     }
