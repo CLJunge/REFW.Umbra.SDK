@@ -116,4 +116,35 @@ public sealed class SettingsStoreTests
         Assert.Equal("{ this is not valid json }", File.ReadAllText(filePath));
         Assert.Empty(Directory.GetFiles(temp.Path, "config.invalid-*.json"));
     }
+
+    [Fact]
+    public void Load_ResetsToTrueDefaults_WhenBackupFails_AfterPartialApplication()
+    {
+        using var temp = new TemporaryDirectory();
+        using var _ = new LoggerTestScope();
+        var filePath = Path.Combine(temp.Path, "config.json");
+        File.WriteAllText(filePath, """
+        {
+          "tests.count": 42,
+          "tests.enabled": "not-a-bool"
+        }
+        """);
+
+        using var lockStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        using var store = new SettingsStore<BasicConfig>(filePath);
+        var config = store.Load();
+
+        Assert.NotNull(config);
+        Assert.True(config.Enabled.Value);
+        Assert.Equal(5, config.Count.Value);
+
+        lockStream.Dispose();
+        config.Count.Value = 99;
+        store.Save();
+
+        var json = File.ReadAllText(filePath);
+        Assert.Contains("\"tests.count\": 42", json);
+        Assert.DoesNotContain("\"tests.count\": 99", json);
+        Assert.Empty(Directory.GetFiles(temp.Path, "config.invalid-*.json"));
+    }
 }

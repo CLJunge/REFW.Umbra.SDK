@@ -92,7 +92,7 @@ internal static class FovHooks
   - `AddListenerToAll(Action)` / `AddListenerToAll<T>(Action<T?,T?>)` — subscribes to `ValueChanged` on all (or type-matched) parameters; listeners are auto-removed on `Dispose`.
   - `RemoveListenerFromAll(Action)` / `RemoveListenerFromAll<T>(Action<T?,T?>)` — manually unsubscribes listeners.
   - `Save()`, listener registration/removal, `ResetAll()`, and `CopyValuesTo(...)` all require `Load()` to have completed first.
-  - If `Load()` encounters an unreadable config file that cannot be backed up safely, the current session continues with in-memory defaults only and later `Save()` calls on that store instance are suppressed so the original file is preserved.
+  - If `Load()` encounters an unreadable config file that cannot be backed up safely, the current session is reset back to true declared defaults and later `Save()` calls on that store instance are suppressed so the original file is preserved.
   - `IDisposable` — always dispose `SettingsStore` to clean up event subscriptions.
 - Persistence uses `System.Text.Json` with camelCase property naming and enums serialized as strings.
 - Do not introduce unrelated configuration frameworks.

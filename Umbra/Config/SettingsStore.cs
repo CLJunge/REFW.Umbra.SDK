@@ -130,6 +130,9 @@ public class SettingsStore<TConfig> : IDisposable
     /// the returned config instance retains its in-memory defaults for the current session only.
     /// In that failure case, subsequent <see cref="Save"/> calls on the same store instance are
     /// suppressed so the original unreadable file is not overwritten later in the session.
+    /// Any parameter values that may have been applied before the load failed are discarded by
+    /// rebuilding the store from a fresh config instance, so the current session always continues
+    /// from true declared defaults after an unreadable-file failure.
     /// </para>
     /// <para>
     /// On the first run, when no settings file exists yet, the default save path's parent
@@ -184,17 +187,16 @@ public class SettingsStore<TConfig> : IDisposable
 
             // The previous load attempt may have partially mutated parameter values before failing.
             // Rebuild the config instance and parameter map from scratch to guarantee we persist true defaults.
-            instance = new TConfig();
-            _parameters.Clear();
-
-            var rediscovered = SettingsRegistrar.Register(instance);
-            foreach (var (key, param) in rediscovered)
-                _parameters[key] = param;
+            instance = RebuildDefaults();
 
             Save();
         }
         else if (loadResult == SettingsPersistence.LoadResult.Failed)
         {
+            // Even when the unreadable file must be preserved in place, the current session should
+            // still continue from true defaults rather than any values that may have been applied
+            // before the failure occurred.
+            instance = RebuildDefaults();
             _saveBlocked = true;
             Logger.Warning(
                 $"SettingsStore<{typeof(TConfig).Name}>: preserving unreadable config at '{_filePath}'. " +
@@ -534,5 +536,22 @@ public class SettingsStore<TConfig> : IDisposable
         Logger.Warning(
             $"SettingsStore<{typeof(TConfig).Name}>: Save() ignored because the original config file at '{_filePath}' " +
             "was unreadable and could not be backed up during Load().");
+    }
+
+    /// <summary>
+    /// Rebuilds the store from a fresh <typeparamref name="TConfig"/> instance so all parameter
+    /// values and metadata return to their declared defaults.
+    /// </summary>
+    /// <returns>A newly created config instance registered into this store.</returns>
+    private TConfig RebuildDefaults()
+    {
+        var instance = new TConfig();
+        _parameters.Clear();
+
+        var discovered = SettingsRegistrar.Register(instance);
+        foreach (var (key, param) in discovered)
+            _parameters[key] = param;
+
+        return instance;
     }
 }
