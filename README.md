@@ -37,6 +37,7 @@ The repository also includes `Umbra.SamplePlugin`, which demonstrates the curren
 - `Parameter<double>` → slider when `[UmbraRange]` is present, otherwise drag input
 - `Parameter<string>` → single-line text input by default, multiline text input when `[UmbraMultiline]` is present
 - `Parameter<TEnum>` → enum combo box
+- `Parameter<TEnum?>` → enum combo box with a `<None>` option for `null`
 - Explicit `[UmbraCustomDrawer<TDrawer>]` and `[UmbraTwoColumnCustomDrawer<TDrawer>]` override the defaults
 
 ### Custom drawers
