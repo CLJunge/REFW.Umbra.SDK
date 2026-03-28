@@ -173,6 +173,7 @@ public record PluginConfig
             Enums.Theme.Reset();
             Enums.Channel.Reset();
             Enums.ShowPreviewTheme.Reset();
+            Enums.OptionalTheme.Reset();
             Enums.PreviewTheme.Reset();
 
             CustomDrawers.VisualMeter.Reset();
@@ -466,6 +467,12 @@ public record PluginConfig
         [UmbraDescription("Reveals the dependent preview-theme enum below when enabled.")]
         [UmbraSpacingBefore]
         public Parameter<bool> ShowPreviewTheme { get; set; } = new(false);
+
+        /// <summary>Gets or sets an optional nullable enum value with an explicit <c>&lt;None&gt;</c> choice.</summary>
+        [UmbraSettingsParameter]
+        [UmbraDisplayName("Optional Theme")]
+        [UmbraDescription("Validates the built-in combo-box path for nullable enum parameters, including the <None> option.")]
+        public Parameter<SampleTheme?> OptionalTheme { get; set; } = new(null);
 
         /// <summary>
         /// Gets or sets the preview theme shown only while <see cref="ShowPreviewTheme"/> is enabled.

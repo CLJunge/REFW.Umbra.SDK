@@ -10,9 +10,9 @@ namespace Umbra.UI.Config;
 /// Custom-drawer activation is delegated to <see cref="ParameterDrawerResolver"/>. Built-in
 /// numeric controls are delegated to <see cref="NumericControlBuilder"/>, text controls are
 /// delegated to <see cref="TextControlBuilder"/>, <see cref="Parameter{T}"/> values of type
-/// <see cref="Action"/> default to <see cref="Drawers.ButtonDrawer"/>, and enum controls are
-/// delegated to <see cref="EnumControlBuilder"/>. This type now focuses on dispatch and shared
-/// layout creation.
+/// <see cref="Action"/> default to <see cref="Drawers.ButtonDrawer"/>, and enum or nullable-enum
+/// controls are delegated to <see cref="EnumControlBuilder"/>. This type now focuses on dispatch
+/// and shared layout creation.
 /// All controls use a two-column text-label layout unconditionally: the parameter label (and
 /// optional <c>(?)</c> help marker) is rendered on the left; the editing widget is placed on
 /// the right at the column x position determined by <see cref="LabelAlignmentGroup"/>. Labels
@@ -56,7 +56,8 @@ internal static class ControlFactory
         if (_defaultBuilders.TryGetValue(parameter.ValueType, out var builder))
             return (builder(label, parameter, alignGroup), null);
 
-        if (parameter.ValueType.IsEnum)
+        var enumType = Nullable.GetUnderlyingType(parameter.ValueType) ?? parameter.ValueType;
+        if (enumType.IsEnum)
             return (EnumControlBuilder.Build(label, parameter, alignGroup), null);
 
         return (() => ImGui.TextDisabled($"{label}: {parameter.GetValue()}"), null);

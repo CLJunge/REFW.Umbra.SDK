@@ -71,10 +71,13 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// Pass <see langword="true"/> when the owning <see cref="ConfigSection{TConfig}"/>
     /// is responsible for the tree node so that the wrapping is not duplicated.
     /// </param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
     public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)
     {
+        ArgumentNullException.ThrowIfNull(config);
         if (string.IsNullOrWhiteSpace(idScope))
-            throw new ArgumentException("idScope cannot be null or whitespace when supplied.", nameof(idScope));
+            throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
         var builder = new ConfigDrawerBuilder();

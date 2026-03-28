@@ -102,7 +102,8 @@ public sealed class PluginPanel : IDisposable
     /// <para>
     /// Tree-node label validation is delegated to <see cref="PluginPanelTreeNodeLabelHelper"/>.
     /// At render time any caller-supplied <c>"##..."</c> suffix is stripped before the
-    /// panel appends its own <c>##{SectionId}</c> disambiguation suffix.
+    /// panel appends its own <c>##{SectionId}</c> disambiguation suffix. Invalid labels warn once
+    /// per section-id/label pair to avoid repeated stack-trace spam during panel rebuilds.
     /// </para>
     /// </remarks>
     /// <param name="section">The section to add. Must not be <see langword="null"/>.</param>
