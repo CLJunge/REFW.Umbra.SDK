@@ -88,7 +88,7 @@ internal static class FovHooks
   - `[TwoColumnCustomDrawer<TDrawer>]` — renders the control using an `ITwoColumnParameterDrawer` implementation that participates in the standard two-column label layout.
 - Supported `Parameter<T>` value types for JSON persistence: `bool`, `int`, `float`, `double`, `string`, and any `enum`.
 - `SettingsStore<TConfig>` additional API:
-  - `CopyValuesTo(target, setWithoutNotifying)` — mirrors all parameter values into another store instance.
+  - `CopyValuesTo(target, setWithoutNotifying)` — mirrors all parameter values into another store instance. The target store must already be loaded and not disposed.
   - `AddListenerToAll(Action)` / `AddListenerToAll<T>(Action<T?,T?>)` — subscribes to `ValueChanged` on all (or type-matched) parameters; listeners are auto-removed on `Dispose`.
   - `RemoveListenerFromAll(Action)` / `RemoveListenerFromAll<T>(Action<T?,T?>)` — manually unsubscribes listeners.
   - `IDisposable` — always dispose `SettingsStore` to clean up event subscriptions.

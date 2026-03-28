@@ -179,10 +179,24 @@ public class SettingsStore<TConfig> : IDisposable
     /// This uses <see cref="IParameter.SetValueWithoutNotify(object?)"/>, so metadata-based validation is also bypassed.
     /// When <see langword="false"/>, normal change notification is triggered.
     /// </param>
-    /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ObjectDisposedException">
+    /// Thrown when this instance or <paramref name="target"/> has been disposed.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="target"/> has not completed <see cref="Load"/> yet.
+    /// </exception>
     public void CopyValuesTo(SettingsStore<TConfig> target, bool setWithoutNotifying = false)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(target);
+        ObjectDisposedException.ThrowIf(target._disposed, target);
+        if (!target._loaded)
+        {
+            throw new InvalidOperationException(
+                $"SettingsStore<{typeof(TConfig).Name}>.CopyValuesTo() requires a target store that has already completed Load().");
+        }
+
         foreach (var (key, param) in _parameters)
         {
             if (!target._parameters.TryGetValue(key, out var dest)) continue;

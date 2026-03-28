@@ -94,6 +94,7 @@ REFW.Umbra
 
 - `DeferredSaveController<TConfig>` requires a store that has already completed `Load()` and now throws immediately if constructed too early.
 - `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed` so callers can validate lifecycle state explicitly.
+- `SettingsStore<TConfig>.CopyValuesTo(...)` now also validates that the target store is non-null, not disposed, and already loaded before copying values.
 - The preferred unload order remains save-controller first, store second. If the store has already been disposed, controller cleanup is still safe, but any pending debounced save can no longer be persisted.
 - If the existing config JSON is unreadable, `SettingsStore<TConfig>.Load()` now tries to move it aside to a timestamped `.invalid-*.json` backup and rewrites defaults at the original path. If the unreadable file cannot be backed up, the original file is left untouched and the current session continues with in-memory defaults only.
 
