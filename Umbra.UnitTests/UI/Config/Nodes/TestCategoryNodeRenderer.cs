@@ -12,20 +12,11 @@ internal sealed class TestCategoryNodeRenderer : ICategoryNodeRenderer
     public int TreePopCount { get; private set; }
     public Queue<bool> TreeNodeResults { get; } = new();
 
-    public void Indent(float amount)
-    {
-        Indents.Add(amount);
-    }
+    public void Indent(float amount) => Indents.Add(amount);
 
-    public void Unindent(float amount)
-    {
-        Unindents.Add(amount);
-    }
+    public void Unindent(float amount) => Unindents.Add(amount);
 
-    public void SeparatorText(string label)
-    {
-        SeparatorLabels.Add(label);
-    }
+    public void SeparatorText(string label) => SeparatorLabels.Add(label);
 
     public bool TreeNode(string label, bool defaultOpen)
     {
@@ -36,8 +27,5 @@ internal sealed class TestCategoryNodeRenderer : ICategoryNodeRenderer
         return TreeNodeResults.Dequeue();
     }
 
-    public void TreePop()
-    {
-        TreePopCount++;
-    }
+    public void TreePop() => TreePopCount++;
 }

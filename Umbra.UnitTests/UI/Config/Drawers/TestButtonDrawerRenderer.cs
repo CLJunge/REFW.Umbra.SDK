@@ -17,10 +17,7 @@ internal sealed class TestButtonDrawerRenderer : IButtonDrawerRenderer
     public int SameLineCount { get; private set; }
     public bool NextButtonResult { get; set; }
 
-    public void TextDisabled(string text)
-    {
-        DisabledTexts.Add(text);
-    }
+    public void TextDisabled(string text) => DisabledTexts.Add(text);
 
     public bool PushButtonColors(ButtonStyle style)
     {
@@ -34,10 +31,7 @@ internal sealed class TestButtonDrawerRenderer : IButtonDrawerRenderer
         return true;
     }
 
-    public void PopButtonColors()
-    {
-        PopCount++;
-    }
+    public void PopButtonColors() => PopCount++;
 
     public bool Button(string label, Vector2 size)
     {
@@ -47,13 +41,7 @@ internal sealed class TestButtonDrawerRenderer : IButtonDrawerRenderer
         return result;
     }
 
-    public void SameLine()
-    {
-        SameLineCount++;
-    }
+    public void SameLine() => SameLineCount++;
 
-    public void DrawHelpMarker(string description)
-    {
-        HelpMarkers.Add(description);
-    }
+    public void DrawHelpMarker(string description) => HelpMarkers.Add(description);
 }

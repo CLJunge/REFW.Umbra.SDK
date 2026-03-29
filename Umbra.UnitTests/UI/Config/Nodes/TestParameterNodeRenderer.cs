@@ -7,8 +7,5 @@ internal sealed class TestParameterNodeRenderer : IParameterNodeRenderer
 {
     public int SpacingCount { get; private set; }
 
-    public void Spacing()
-    {
-        SpacingCount++;
-    }
+    public void Spacing() => SpacingCount++;
 }

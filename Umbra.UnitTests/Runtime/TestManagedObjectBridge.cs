@@ -53,4 +53,4 @@ internal sealed class TestManagedObjectBridge : IManagedObjectBridge
         value = null;
         return false;
     }
- }
+}

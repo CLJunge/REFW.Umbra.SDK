@@ -26,10 +26,7 @@ public sealed class TwoColumnHotkeyDrawerTests
     /// Resets the shared capture state after each test.
     /// </summary>
     [TestCleanup]
-    public void TestCleanup()
-    {
-        HotkeyCaptureState.WaitingCount = 0;
-    }
+    public void TestCleanup() => HotkeyCaptureState.WaitingCount = 0;
 
     /// <summary>
     /// Verifies that drawing a disposed drawer returns immediately without rendering.

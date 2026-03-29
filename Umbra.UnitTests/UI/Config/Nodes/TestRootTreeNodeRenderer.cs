@@ -18,8 +18,5 @@ internal sealed class TestRootTreeNodeRenderer : IRootTreeNodeRenderer
         return TreeNodeResults.Dequeue();
     }
 
-    public void TreePop()
-    {
-        TreePopCount++;
-    }
+    public void TreePop() => TreePopCount++;
 }

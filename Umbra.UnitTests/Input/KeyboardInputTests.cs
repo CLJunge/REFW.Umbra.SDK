@@ -1,5 +1,3 @@
-using Hexa.NET.ImGui;
-
 namespace Umbra.Input.UnitTests;
 
 

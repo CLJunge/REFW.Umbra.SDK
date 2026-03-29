@@ -22,10 +22,7 @@ public sealed class ManagedObjectResolverTests
     /// Restores the default REFramework-backed bridge after each test.
     /// </summary>
     [TestCleanup]
-    public void TestCleanup()
-    {
-        ManagedObjectResolver.ResetBridge();
-    }
+    public void TestCleanup() => ManagedObjectResolver.ResetBridge();
 
     /// <summary>
     /// Verifies that <see cref="ManagedObjectResolver.TryResolve{T}(ulong, out T)"/> returns

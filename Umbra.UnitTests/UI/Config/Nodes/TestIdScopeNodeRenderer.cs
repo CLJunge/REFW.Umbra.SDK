@@ -8,13 +8,7 @@ internal sealed class TestIdScopeNodeRenderer : IIdScopeNodeRenderer
     public List<string> PushedIds { get; } = [];
     public int PopCount { get; private set; }
 
-    public void PushId(string scopeId)
-    {
-        PushedIds.Add(scopeId);
-    }
+    public void PushId(string scopeId) => PushedIds.Add(scopeId);
 
-    public void PopId()
-    {
-        PopCount++;
-    }
+    public void PopId() => PopCount++;
 }

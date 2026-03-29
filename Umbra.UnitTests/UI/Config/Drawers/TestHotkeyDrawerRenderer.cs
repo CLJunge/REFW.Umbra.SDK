@@ -12,20 +12,11 @@ internal sealed class TestHotkeyDrawerRenderer : IHotkeyDrawerRenderer
     public int SameLineCount { get; private set; }
     public Queue<bool> ButtonResults { get; } = new();
 
-    public void TextDisabled(string text)
-    {
-        DisabledTexts.Add(text);
-    }
+    public void TextDisabled(string text) => DisabledTexts.Add(text);
 
-    public void Text(string text)
-    {
-        Texts.Add(text);
-    }
+    public void Text(string text) => Texts.Add(text);
 
-    public void SameLine()
-    {
-        SameLineCount++;
-    }
+    public void SameLine() => SameLineCount++;
 
     public bool Button(string label)
     {
@@ -36,8 +27,5 @@ internal sealed class TestHotkeyDrawerRenderer : IHotkeyDrawerRenderer
         return ButtonResults.Dequeue();
     }
 
-    public void DrawHelpMarker(string description)
-    {
-        HelpMarkers.Add(description);
-    }
+    public void DrawHelpMarker(string description) => HelpMarkers.Add(description);
 }

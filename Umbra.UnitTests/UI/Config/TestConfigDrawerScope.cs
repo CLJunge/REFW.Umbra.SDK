@@ -8,13 +8,7 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerScope
     public List<string> PushedIds { get; } = [];
     public int PopCount { get; private set; }
 
-    public void PushId(string idScope)
-    {
-        PushedIds.Add(idScope);
-    }
+    public void PushId(string idScope) => PushedIds.Add(idScope);
 
-    public void PopId()
-    {
-        PopCount++;
-    }
+    public void PopId() => PopCount++;
 }

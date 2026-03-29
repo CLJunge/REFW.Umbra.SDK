@@ -10,20 +10,11 @@ internal sealed class TestHotkeyInputSource : IHotkeyInputSource
 
     public int CaptureCallCount { get; private set; }
 
-    public void SetKeyName(int key, string name)
-    {
-        _keyNames[key] = name;
-    }
+    public void SetKeyName(int key, string name) => _keyNames[key] = name;
 
-    public void QueueCapturedKey(int key)
-    {
-        _capturedKeys.Enqueue((true, key));
-    }
+    public void QueueCapturedKey(int key) => _capturedKeys.Enqueue((true, key));
 
-    public void QueueNoCapturedKey()
-    {
-        _capturedKeys.Enqueue((false, -1));
-    }
+    public void QueueNoCapturedKey() => _capturedKeys.Enqueue((false, -1));
 
     public bool TryCaptureKeyboardKey(out int capturedKey)
     {

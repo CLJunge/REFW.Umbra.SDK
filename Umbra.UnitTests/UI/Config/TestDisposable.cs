@@ -7,8 +7,5 @@ internal sealed class TestDisposable : IDisposable
 {
     public int DisposeCount { get; private set; }
 
-    public void Dispose()
-    {
-        DisposeCount++;
-    }
+    public void Dispose() => DisposeCount++;
 }
