@@ -69,13 +69,35 @@ namespace Umbra.UI.Config.Drawers;
 public sealed class ButtonDrawer : IParameterDrawer
 {
     private bool _warnedAboutMissingColors;
+    private readonly IButtonDrawerRenderer _renderer;
+
+    /// <summary>
+    /// Initialises a new <see cref="ButtonDrawer"/> that renders through the active ImGui frame.
+    /// </summary>
+    public ButtonDrawer()
+        : this(new ImGuiButtonDrawerRenderer())
+    {
+    }
+
+    /// <summary>
+    /// Initialises a new <see cref="ButtonDrawer"/> with the specified low-level renderer.
+    /// </summary>
+    /// <param name="renderer">The renderer used for button-specific drawing operations.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="renderer"/> is <see langword="null"/>.
+    /// </exception>
+    internal ButtonDrawer(IButtonDrawerRenderer renderer)
+    {
+        ArgumentNullException.ThrowIfNull(renderer);
+        _renderer = renderer;
+    }
 
     /// <inheritdoc/>
     public void Draw(string label, IParameter parameter)
     {
         if (parameter is not Parameter<Action> p)
         {
-            ImGui.TextDisabled($"{label}: (ButtonDrawer requires Parameter<Action>)");
+            _renderer.TextDisabled($"{label}: (ButtonDrawer requires Parameter<Action>)");
             return;
         }
 
@@ -101,19 +123,19 @@ public sealed class ButtonDrawer : IParameterDrawer
         }
 
         if (meta.CustomButtonColors is { } custom)
-            colorsPushed = ButtonStyleColors.Push(custom.Normal, custom.Hovered, custom.Active);
+            colorsPushed = _renderer.PushButtonColors(custom.Normal, custom.Hovered, custom.Active);
         else
-            colorsPushed = ButtonStyleColors.Push(style);
+            colorsPushed = _renderer.PushButtonColors(style);
 
-        var clicked = ImGui.Button(label, size);
-        if (colorsPushed) ButtonStyleColors.Pop();
+        var clicked = _renderer.Button(label, size);
+        if (colorsPushed) _renderer.PopButtonColors();
 
         if (clicked) p.Value?.Invoke();
 
         if (meta.Description is not null)
         {
-            ImGui.SameLine();
-            ImGuiWidgets.DrawHelpMarker(meta.Description);
+            _renderer.SameLine();
+            _renderer.DrawHelpMarker(meta.Description);
         }
     }
 }
