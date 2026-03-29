@@ -93,6 +93,12 @@ jobs:
           -p:FileVersion=${VERSION%%-*}.0
           -p:InformationalVersion=${VERSION}
 
+      - name: Run tests
+        run: >
+          dotnet test Umbra.Tests/Umbra.Tests.csproj
+          --configuration Release
+          --verbosity minimal
+
       - name: Pack NuGet package
         env:
           VERSION: ${{ steps.version.outputs.value }}
