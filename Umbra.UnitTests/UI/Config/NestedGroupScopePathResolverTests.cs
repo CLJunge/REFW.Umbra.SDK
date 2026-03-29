@@ -122,10 +122,10 @@ public class NestedGroupScopePathResolverTests
     }
 
     /// <summary>
-    /// Verifies behavior when the property name is empty (edge case).
+    /// Verifies that an empty property name is rejected because it cannot contribute a unique scope segment.
     /// </summary>
     [TestMethod]
-    public void Resolve_WhenPropertyNameIsEmpty_ReturnsParentPath()
+    public void Resolve_WhenPropertyNameIsEmpty_ThrowsInvalidOperationException()
     {
         // Arrange
         var parentPath = "parent";
@@ -135,19 +135,16 @@ public class NestedGroupScopePathResolverTests
             propertyName: "");
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
-        // Act
-        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
-
         // Assert
-        Assert.AreEqual("parent", result);
+        AssertThrowsInvalidOperationException(
+            () => NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
     }
 
     /// <summary>
-    /// Verifies that when the settings prefix is an empty string, it short-circuits the fallback chain
-    /// and returns the empty string segment combined with parent path.
+    /// Verifies that an explicitly empty property-level settings prefix is rejected.
     /// </summary>
     [TestMethod]
-    public void Resolve_WhenPropMetaSettingsPrefixIsEmptyString_UsesEmptyString()
+    public void Resolve_WhenPropMetaSettingsPrefixIsEmptyString_ThrowsInvalidOperationException()
     {
         // Arrange
         var parentPath = "parent";
@@ -157,11 +154,59 @@ public class NestedGroupScopePathResolverTests
             propertyName: "Property");
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: "typePrefix");
 
-        // Act
-        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        // Assert
+        AssertThrowsInvalidOperationException(
+            () => NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
+    }
+
+    /// <summary>
+    /// Verifies that an explicitly empty type-level settings prefix is rejected.
+    /// </summary>
+    [TestMethod]
+    public void Resolve_WhenPropTypeMetaSettingsPrefixIsEmptyString_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var parentPath = "parent";
+        var propMeta = CreatePropertyMetadata(
+            settingsPrefix: null,
+            settingsParameterKeyOverride: "override",
+            propertyName: "Property");
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: "");
 
         // Assert
-        Assert.AreEqual("parent", result);
+        AssertThrowsInvalidOperationException(
+            () => NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
+    }
+
+    /// <summary>
+    /// Verifies that an explicitly empty key override is rejected.
+    /// </summary>
+    [TestMethod]
+    public void Resolve_WhenSettingsParameterKeyOverrideIsEmptyString_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var parentPath = "parent";
+        var propMeta = CreatePropertyMetadata(
+            settingsPrefix: null,
+            settingsParameterKeyOverride: "",
+            propertyName: "Property");
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+
+        // Assert
+        AssertThrowsInvalidOperationException(
+            () => NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
+    }
+
+    private static void AssertThrowsInvalidOperationException(Action action)
+    {
+        try
+        {
+            action();
+            Assert.Fail("Expected InvalidOperationException.");
+        }
+        catch (InvalidOperationException)
+        {
+        }
     }
 
     /// <summary>
@@ -173,7 +218,20 @@ public class NestedGroupScopePathResolverTests
         string? settingsParameterKeyOverride,
         string propertyName)
     {
-        var propertyInfo = typeof(TestPropertyHolder).GetProperty(nameof(TestPropertyHolder.DummyProperty))!;
+        PropertyInfo propertyInfo;
+        
+        // Try to use a real property from TestPropertyHolder, otherwise use a mock
+        var realProperty = typeof(TestPropertyHolder).GetProperty(propertyName);
+        if (realProperty != null)
+        {
+            propertyInfo = realProperty;
+        }
+        else
+        {
+            // For property names not in TestPropertyHolder, create a mock
+            propertyInfo = new MockPropertyInfo(propertyName);
+        }
+        
         return new TypeDrawMetadata.PropertyDrawMetadata(
             property: propertyInfo,
             propertyType: typeof(object),
@@ -221,5 +279,37 @@ public class NestedGroupScopePathResolverTests
     private class TestPropertyHolder
     {
         public object DummyProperty { get; set; } = new();
+        public object MyProperty { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Mock PropertyInfo for testing edge cases with specific property names.
+    /// </summary>
+    private class MockPropertyInfo : PropertyInfo
+    {
+        private readonly string _name;
+
+        public MockPropertyInfo(string name)
+        {
+            _name = name;
+        }
+
+        public override string Name => _name;
+        public override Type PropertyType => typeof(object);
+        public override PropertyAttributes Attributes => PropertyAttributes.None;
+        public override bool CanRead => true;
+        public override bool CanWrite => true;
+        public override Type? DeclaringType => typeof(TestPropertyHolder);
+        public override Type? ReflectedType => typeof(TestPropertyHolder);
+
+        public override MethodInfo[] GetAccessors(bool nonPublic) => Array.Empty<MethodInfo>();
+        public override MethodInfo? GetGetMethod(bool nonPublic) => null;
+        public override ParameterInfo[] GetIndexParameters() => Array.Empty<ParameterInfo>();
+        public override MethodInfo? GetSetMethod(bool nonPublic) => null;
+        public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, System.Globalization.CultureInfo? culture) => null;
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, System.Globalization.CultureInfo? culture) { }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => Array.Empty<object>();
+        public override object[] GetCustomAttributes(bool inherit) => Array.Empty<object>();
+        public override bool IsDefined(Type attributeType, bool inherit) => false;
     }
 }
