@@ -27,7 +27,7 @@ public sealed class NestedGroupDrawerBinderTests
         action?.Invoke();
 
         Assert.IsNotNull(action);
-        Assert.IsNull(disposable);
+        Assert.IsNotNull(disposable);
         Assert.AreEqual(1, TestGroupDrawer.DrawCallCount);
         Assert.AreSame(group, TestGroupDrawer.LastDrawnGroup);
     }
@@ -81,7 +81,7 @@ public sealed class NestedGroupDrawerBinderTests
         action?.Invoke();
 
         Assert.IsNotNull(action);
-        Assert.IsNull(disposable);
+        Assert.IsNotNull(disposable);
         Assert.AreSame(group, BaseGroupDrawer.LastDrawnGroup);
     }
 
