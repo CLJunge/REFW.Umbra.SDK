@@ -28,8 +28,8 @@ public sealed class ListExtensionsTests
         empty.SortBy(item => item.Key);
         single.SortBy(item => item.Key);
 
-        Assert.AreEqual(0, empty.Count);
-        Assert.AreEqual(1, single.Count);
+        Assert.IsEmpty(empty);
+        Assert.HasCount(1, single);
         Assert.AreEqual(5, single[0].Key);
         Assert.AreEqual(0, single[0].OriginalIndex);
     }
@@ -46,7 +46,7 @@ public sealed class ListExtensionsTests
 
         list.SortBy(item => item.Key);
 
-        Assert.AreEqual(10, list.Count);
+        Assert.HasCount(10, list);
         for (var i = 0; i < list.Count; i++)
             Assert.AreEqual(i + 1, list[i].Key);
     }
@@ -63,7 +63,7 @@ public sealed class ListExtensionsTests
 
         list.SortBy(item => item.Key);
 
-        Assert.AreEqual(33, list.Count);
+        Assert.HasCount(33, list);
         for (var i = 0; i < list.Count; i++)
             Assert.AreEqual(i + 1, list[i].Key);
     }
@@ -80,9 +80,9 @@ public sealed class ListExtensionsTests
 
         list.SortBy(item => item.Key);
 
-        Assert.AreEqual(50, list.Count);
+        Assert.HasCount(50, list);
         for (var i = 1; i < list.Count; i++)
-            Assert.IsTrue(list[i - 1].Key <= list[i].Key);
+            Assert.IsLessThanOrEqualTo(list[i].Key, list[i - 1].Key);
 
         for (var key = 0; key < 5; key++)
         {
@@ -93,7 +93,7 @@ public sealed class ListExtensionsTests
                     continue;
 
                 if (previousIndex >= 0)
-                    Assert.IsTrue(list[i].OriginalIndex > previousIndex);
+                    Assert.IsGreaterThan(previousIndex, list[i].OriginalIndex);
 
                 previousIndex = list[i].OriginalIndex;
             }
@@ -128,6 +128,8 @@ public sealed class ListExtensionsTests
         Assert.AreEqual(5, list[3].OriginalIndex);
     }
 
+    private static readonly string[] expectedOrder = ["a", "ab", "test", "hello", "world"];
+
     /// <summary>
     /// Verifies that sorting works for other element types using the provided key selector.
     /// </summary>
@@ -138,6 +140,6 @@ public sealed class ListExtensionsTests
 
         list.SortBy(static value => value.Length);
 
-        CollectionAssert.AreEqual(new[] { "a", "ab", "test", "hello", "world" }, list);
+        CollectionAssert.AreEqual(expectedOrder, list);
     }
 }
