@@ -6,83 +6,130 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 /// <summary>
 /// Unit tests for <see cref="RootTreeNode"/>.
 /// </summary>
-/// <remarks>
-/// Note: ImGui methods (TreeNodeEx, TreePop) are static and cannot be mocked.
-/// These tests verify parameter handling, child invocation, and exception safety
-/// but cannot control or verify ImGui method calls directly.
-/// </remarks>
 [TestClass]
 public sealed class RootTreeNodeTests
 {
     /// <summary>
-    /// Tests that Draw completes without throwing when called with valid parameters.
+    /// Tests that a closed root tree node does not draw children or pop the tree node.
     /// </summary>
     [TestMethod]
-    public void Draw_ValidParameters_CompletesWithoutException()
+    public void Draw_ClosedTree_DoesNotDrawChildren()
     {
         // Arrange
-        var label = "Test Node";
-        var defaultOpen = true;
-        var children = new List<IDrawNode>();
-        var node = new RootTreeNode(label, defaultOpen, children);
-
-        // Act & Assert
-        node.Draw();
-    }
-
-    /// <summary>
-    /// Tests that Draw invokes Draw on all child nodes when children list contains multiple children.
-    /// Note: This test assumes ImGui.TreeNodeEx returns true, which is its default behavior in test environments.
-    /// </summary>
-    [TestMethod]
-    public void Draw_WithMultipleChildren_InvokesDrawOnAllChildren()
-    {
-        // Arrange
-        var label = "Parent Node";
-        var defaultOpen = false;
-        var child1 = new Mock<IDrawNode>();
-        var child2 = new Mock<IDrawNode>();
-        var child3 = new Mock<IDrawNode>();
-        var children = new List<IDrawNode> { child1.Object, child2.Object, child3.Object };
-        var node = new RootTreeNode(label, defaultOpen, children);
+        var renderer = new TestRootTreeNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(false);
+        var child = new CallbackNode(() => Assert.Fail("Child should not be drawn when tree is closed."));
+        var node = new RootTreeNode("Test Node", defaultOpen: true, [child], renderer);
 
         // Act
         node.Draw();
 
         // Assert
-        child1.Verify(c => c.Draw(), Times.AtLeastOnce);
-        child2.Verify(c => c.Draw(), Times.AtLeastOnce);
-        child3.Verify(c => c.Draw(), Times.AtLeastOnce);
+        Assert.HasCount(1, renderer.TreeNodes);
+        Assert.AreEqual(("Test Node", true), renderer.TreeNodes[0]);
+        Assert.AreEqual(0, renderer.TreePopCount);
     }
 
     /// <summary>
-    /// Tests that TreePop is called via the finally block even when a child throws an exception.
-    /// Verifies that the first child's Draw is invoked before the exception.
+    /// Tests that an open root tree node invokes Draw on all child nodes in declaration order and
+    /// pops the tree node afterward.
     /// </summary>
     [TestMethod]
-    public void Draw_ChildThrowsException_FirstChildDrawIsCalled()
+    public void Draw_WithMultipleChildren_InvokesDrawOnAllChildrenInOrder()
     {
         // Arrange
-        var label = "Parent Node";
-        var defaultOpen = true;
-        var child1 = new Mock<IDrawNode>();
-        var child2 = new Mock<IDrawNode>();
-        child2.Setup(c => c.Draw()).Throws<InvalidOperationException>();
-        var children = new List<IDrawNode> { child1.Object, child2.Object };
-        var node = new RootTreeNode(label, defaultOpen, children);
+        var renderer = new TestRootTreeNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(true);
+        var calls = new List<int>();
+        var children = new List<IDrawNode>
+        {
+            new CallbackNode(() => calls.Add(1)),
+            new CallbackNode(() => calls.Add(2)),
+            new CallbackNode(() => calls.Add(3)),
+        };
+        var node = new RootTreeNode("Parent Node", defaultOpen: false, children, renderer);
 
         // Act
+        node.Draw();
+
+        // Assert
+        CollectionAssert.AreEqual(new[] { 1, 2, 3 }, calls);
+        Assert.HasCount(1, renderer.TreeNodes);
+        Assert.AreEqual(("Parent Node", false), renderer.TreeNodes[0]);
+        Assert.AreEqual(1, renderer.TreePopCount);
+    }
+
+    /// <summary>
+    /// Tests that the tree pop occurs even when a child throws an exception.
+    /// </summary>
+    [TestMethod]
+    public void Draw_ChildThrowsException_PopsTreeAndRethrows()
+    {
+        // Arrange
+        var renderer = new TestRootTreeNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(true);
+        var calls = new List<int>();
+        var node = new RootTreeNode(
+            "Parent Node",
+            defaultOpen: true,
+            [
+                new CallbackNode(() => calls.Add(1)),
+                new CallbackNode(() => throw new InvalidOperationException("boom")),
+            ],
+            renderer);
+
+        // Act
+        InvalidOperationException? exception = null;
         try
         {
             node.Draw();
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
-            // Expected
+            exception = ex;
         }
 
         // Assert
-        child1.Verify(c => c.Draw(), Times.AtLeastOnce);
+        Assert.IsNotNull(exception);
+        Assert.AreEqual("boom", exception.Message);
+        CollectionAssert.AreEqual(new[] { 1 }, calls);
+        Assert.AreEqual(1, renderer.TreePopCount);
     }
 
+    /// <summary>
+    /// Tests that repeated draw calls repeat the same rendering behavior each time.
+    /// </summary>
+    [TestMethod]
+    public void Draw_CalledMultipleTimes_RedrawsChildrenEachTime()
+    {
+        // Arrange
+        var renderer = new TestRootTreeNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(true);
+        renderer.TreeNodeResults.Enqueue(true);
+        renderer.TreeNodeResults.Enqueue(true);
+        var drawCount = 0;
+        var node = new RootTreeNode(
+            "scope",
+            defaultOpen: true,
+            [new CallbackNode(() => drawCount++)],
+            renderer);
+
+        // Act
+        node.Draw();
+        node.Draw();
+        node.Draw();
+
+        // Assert
+        Assert.AreEqual(3, drawCount);
+        Assert.HasCount(3, renderer.TreeNodes);
+        Assert.AreEqual(3, renderer.TreePopCount);
+    }
+
+    /// <summary>
+    /// Simple draw node used to observe draw behavior.
+    /// </summary>
+    private sealed class CallbackNode(Action callback) : IDrawNode
+    {
+        public void Draw() => callback();
+    }
 }
