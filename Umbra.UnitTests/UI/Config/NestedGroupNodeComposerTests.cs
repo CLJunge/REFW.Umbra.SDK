@@ -307,7 +307,8 @@ public class NestedGroupNodeComposerTests
         // Assert
         Assert.IsNotNull(result, "Expected non-null result when BuildDrawAction succeeds");
         Assert.IsInstanceOfType<IdScopeNode>(result, "Expected result to be IdScopeNode");
-        Assert.IsNull(disposable, "Disposable should be null for non-disposable drawer");
+        Assert.IsNotNull(disposable, "Disposable should be set since INestedGroupDrawer<T> extends IDisposable");
+        Assert.IsInstanceOfType<TestNestedGroupDrawer>(disposable, "Disposable should be the drawer instance");
         registerCategoryNodeMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Never, "Should not register category when localCategory is null");
     }
 
@@ -331,7 +332,8 @@ public class NestedGroupNodeComposerTests
         // Assert
         Assert.IsNotNull(result, "Expected non-null result when BuildDrawAction succeeds");
         Assert.IsInstanceOfType<IdScopeNode>(result, "Expected result to be IdScopeNode");
-        Assert.IsNull(disposable, "Disposable should be null for non-disposable drawer");
+        Assert.IsNotNull(disposable, "Disposable should be set since INestedGroupDrawer<T> extends IDisposable");
+        Assert.IsInstanceOfType<TestNestedGroupDrawer>(disposable, "Disposable should be the drawer instance");
         registerCategoryNodeMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Once, "Should register category when localCategory is provided");
     }
 
