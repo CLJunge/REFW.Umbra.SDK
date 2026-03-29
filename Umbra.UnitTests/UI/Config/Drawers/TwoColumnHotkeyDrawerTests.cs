@@ -1,10 +1,5 @@
-﻿using System;
-
-using Hexa.NET.ImGui;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Umbra.Config;
-using Umbra.UI.Config.Drawers;
 
 namespace Umbra.UI.Config.Drawers.UnitTests;
 
@@ -98,7 +93,7 @@ public sealed class TwoColumnHotkeyDrawerTests
         // Arrange
         var drawer = new TwoColumnHotkeyDrawer();
         var parameter = new Parameter<int>(70) { Key = "testHotkey" };
-        int initialCount = HotkeyCaptureState.WaitingCount;
+        var initialCount = HotkeyCaptureState.WaitingCount;
         drawer.Dispose();
 
         // Act
@@ -303,7 +298,7 @@ public sealed class TwoColumnHotkeyDrawerTests
     {
         // Arrange
         var drawer = new TwoColumnHotkeyDrawer();
-        int initialCount = HotkeyCaptureState.WaitingCount;
+        var initialCount = HotkeyCaptureState.WaitingCount;
 
         // Act
         drawer.Dispose();
@@ -316,10 +311,7 @@ public sealed class TwoColumnHotkeyDrawerTests
     /// Ensures the static WaitingCount field is reset before each test to avoid cross-test contamination.
     /// </summary>
     [TestInitialize]
-    public void Initialize()
-    {
-        HotkeyCaptureState.WaitingCount = 0;
-    }
+    public void Initialize() => HotkeyCaptureState.WaitingCount = 0;
 
     /// <summary>
     /// Verifies that calling Dispose on a newly created drawer (with _waiting = false by default)

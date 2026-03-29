@@ -1,7 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Umbra.Config;
-using Umbra.UI.Config.Drawers;
 
 namespace Umbra.UI.Config.Drawers.UnitTests;
 
@@ -433,7 +431,7 @@ public sealed class HotkeyDrawerTests
         drawer.Dispose();
 
         // Act & Assert - all calls should return early without throwing
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             drawer.Draw("Hotkey", parameter);
         }
@@ -473,7 +471,7 @@ public sealed class HotkeyDrawerTests
         };
 
         // Simulate another drawer waiting
-        int originalCount = HotkeyCaptureState.WaitingCount;
+        var originalCount = HotkeyCaptureState.WaitingCount;
         try
         {
             HotkeyCaptureState.WaitingCount = 1;
@@ -514,7 +512,7 @@ public sealed class HotkeyDrawerTests
     {
         // Arrange
         var drawer = new HotkeyDrawer();
-        int initialValue = 70;
+        var initialValue = 70;
         var parameter = new Parameter<int>(initialValue)
         {
             Key = "testKey",
@@ -533,11 +531,9 @@ public sealed class HotkeyDrawerTests
     /// This ensures a clean state for other test classes that might interact with HotkeyCaptureState.
     /// </summary>
     [TestCleanup]
-    public void Cleanup()
-    {
+    public void Cleanup() =>
         // Reset shared state to prevent test pollution
         HotkeyCaptureState.WaitingCount = 0;
-    }
 
     /// <summary>
     /// Verifies that calling <see cref="HotkeyDrawer.Dispose"/> on a newly created instance
@@ -570,9 +566,6 @@ public sealed class HotkeyDrawerTests
         // Act
         drawer.Dispose();
         drawer.Dispose(); // Second call should be safe
-
-        // Assert - no exception thrown
-        Assert.IsTrue(true, "Multiple Dispose calls should not throw.");
     }
 
     /// <summary>
@@ -666,12 +659,5 @@ public sealed class HotkeyDrawerTests
 
         // Act
         drawer.Dispose();
-
-        // Assert
-        // GC.SuppressFinalize is called internally; we verify this doesn't throw
-        // and that the object is properly disposed. No direct way to verify
-        // SuppressFinalize was called without relying on finalization behavior,
-        // but we can confirm Dispose completes successfully.
-        Assert.IsTrue(true, "Dispose should complete successfully and call GC.SuppressFinalize.");
     }
 }

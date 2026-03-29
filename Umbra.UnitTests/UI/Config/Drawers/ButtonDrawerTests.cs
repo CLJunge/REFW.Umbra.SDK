@@ -1,10 +1,6 @@
-﻿using System;
 using System.Numerics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.UI.Config.Drawers;
 
 
 namespace Umbra.UI.Config.Drawers.UnitTests;
@@ -28,9 +24,6 @@ public sealed class ButtonDrawerTests
         // Act - ImGui.TextDisabled will be called, but we cannot verify static calls
         // The method should not throw
         drawer.Draw(label, null!);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle null parameter gracefully");
     }
 
     /// <summary>
@@ -46,9 +39,6 @@ public sealed class ButtonDrawerTests
 
         // Act - ImGui.TextDisabled will be called for type mismatch
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle incorrect parameter type gracefully");
     }
 
     /// <summary>
@@ -60,18 +50,13 @@ public sealed class ButtonDrawerTests
         // Arrange
         var drawer = new ButtonDrawer();
         var label = "TestButton";
-        var actionInvoked = false;
-        Action testAction = () => actionInvoked = true;
-        var parameter = new Parameter<Action>(testAction)
+        var parameter = new Parameter<Action>(() => { })
         {
             Metadata = new ParameterMetadata()
         };
 
         // Act - Button will be rendered with default style, but we cannot verify ImGui calls
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle default metadata gracefully");
     }
 
     /// <summary>
@@ -97,9 +82,6 @@ public sealed class ButtonDrawerTests
 
         // Act - Second call should not log warning again
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception, warning logged internally
-        Assert.IsTrue(true, "Method should log warning once for misconfiguration");
     }
 
     /// <summary>
@@ -125,9 +107,6 @@ public sealed class ButtonDrawerTests
 
         // Act - Button will be rendered with custom colors
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should use custom colors when provided");
     }
 
     /// <summary>
@@ -149,9 +128,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should use default button style");
     }
 
     /// <summary>
@@ -173,9 +149,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should use danger button style");
     }
 
     /// <summary>
@@ -197,9 +170,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception, button sized automatically
-        Assert.IsTrue(true, "Method should default to auto-size when ControlWidth is null");
     }
 
     /// <summary>
@@ -221,9 +191,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should fill available width when ControlWidth is negative");
     }
 
     /// <summary>
@@ -245,9 +212,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should use fixed width when ControlWidth is positive");
     }
 
     /// <summary>
@@ -269,9 +233,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should use auto-size when ControlWidth is zero");
     }
 
     /// <summary>
@@ -293,9 +254,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception, no help marker rendered
-        Assert.IsTrue(true, "Method should not render help marker when Description is null");
     }
 
     /// <summary>
@@ -317,9 +275,6 @@ public sealed class ButtonDrawerTests
 
         // Act - Help marker will be rendered via ImGuiWidgets.DrawHelpMarker
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should render help marker when Description is provided");
     }
 
     /// <summary>
@@ -338,9 +293,6 @@ public sealed class ButtonDrawerTests
 
         // Act - Even if button is clicked, null action should be handled safely
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle null Action gracefully");
     }
 
     /// <summary>
@@ -359,9 +311,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle empty label gracefully");
     }
 
     /// <summary>
@@ -380,9 +329,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle whitespace label gracefully");
     }
 
     /// <summary>
@@ -401,9 +347,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle special characters in label");
     }
 
     /// <summary>
@@ -422,9 +365,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle very long label");
     }
 
     /// <summary>
@@ -450,9 +390,6 @@ public sealed class ButtonDrawerTests
 
         // Act - Custom colors should take priority over ButtonStyle
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should use custom colors even when ButtonStyle is not Custom");
     }
 
     /// <summary>
@@ -478,9 +415,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, $"Method should handle extreme ControlWidth value: {controlWidth}");
     }
 
     /// <summary>
@@ -505,9 +439,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle extreme color values gracefully");
     }
 
     /// <summary>
@@ -536,9 +467,6 @@ public sealed class ButtonDrawerTests
         // Act - Second calls should not log warning
         drawer1.Draw(label, parameter);
         drawer2.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Each drawer instance should maintain separate warning state");
     }
 
     /// <summary>
@@ -560,9 +488,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception, defaults to Default style
-        Assert.IsTrue(true, "Method should use Default style when ButtonStyle is null");
     }
 
     /// <summary>
@@ -584,9 +509,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle special characters in Description");
     }
 
     /// <summary>
@@ -608,9 +530,6 @@ public sealed class ButtonDrawerTests
 
         // Act
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should handle very long Description");
     }
 
     /// <summary>
@@ -632,8 +551,5 @@ public sealed class ButtonDrawerTests
 
         // Act - Empty string is non-null, so help marker should be rendered
         drawer.Draw(label, parameter);
-
-        // Assert - Method completes without exception
-        Assert.IsTrue(true, "Method should render help marker for empty Description string");
     }
 }
