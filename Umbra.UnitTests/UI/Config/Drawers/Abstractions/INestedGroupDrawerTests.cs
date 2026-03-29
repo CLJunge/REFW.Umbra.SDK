@@ -1,8 +1,4 @@
-﻿namespace Umbra.UI.Config.Drawers.UnitTests;
-
-using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+namespace Umbra.UI.Config.Drawers.UnitTests;
 /// <summary>
 /// Unit tests for <see cref="INestedGroupDrawer{T}"/>.
 /// </summary>

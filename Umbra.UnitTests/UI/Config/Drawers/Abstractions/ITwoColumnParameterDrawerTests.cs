@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Umbra.Config;
-using Umbra.UI.Config.Drawers;
 
 
 namespace Umbra.UI.Config.Drawers.UnitTests;
@@ -70,10 +68,12 @@ public class ITwoColumnParameterDrawerTests
     /// </summary>
     private sealed class DrawerWithFinalizer : ITwoColumnParameterDrawer
     {
+#pragma warning disable CA1821 // Remove empty Finalizers - intentionally empty for testing Dispose pattern
         ~DrawerWithFinalizer()
         {
             // Finalizer to ensure GC.SuppressFinalize is meaningful
         }
+#pragma warning restore CA1821
 
         public void Draw(IParameter parameter)
         {
