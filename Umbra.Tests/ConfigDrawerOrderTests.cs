@@ -84,11 +84,18 @@ public sealed class ConfigDrawerOrderTests
 
     private static IList? TryGetChildNodes(object node)
     {
-        var fields = node.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        var type = node.GetType();
+        var fields = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
         for (var i = 0; i < fields.Length; i++)
         {
-            var value = fields[i].GetValue(node);
+            var field = fields[i];
+            var name = field.Name;
+
+            if (name != "Children" && name != "children")
+                continue;
+
+            var value = field.GetValue(node);
             if (value is IList list)
                 return list;
         }
