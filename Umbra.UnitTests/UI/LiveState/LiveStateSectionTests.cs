@@ -66,14 +66,42 @@ public sealed class LiveStateSectionTests
     /// Test state class for LiveStateSection testing.
     /// Decorated with LiveStateSectionDrawer attribute to satisfy the generic constraint.
     /// </summary>
-    [LiveStateSectionDrawer<TestStateDrawer>]
+    [LiveStateSectionDrawer<TestDrawer>]
     private sealed class TestState
     {
         public int Value { get; set; }
     }
 
     /// <summary>
+    /// Test drawer that tracks disposal calls for verification.
+    /// </summary>
+    private sealed class TestDrawer : ILiveStateSectionDrawer<TestState>, IDisposable
+    {
+        private static int s_disposeCallCount;
+
+        /// <summary>
+        /// Gets the number of times Dispose has been called across all instances.
+        /// </summary>
+        public static int DisposeCallCount => s_disposeCallCount;
+
+        /// <summary>
+        /// Resets the dispose call counter.
+        /// </summary>
+        public static void Reset() => s_disposeCallCount = 0;
+
+        /// <inheritdoc/>
+        public void Draw(TestState state)
+        {
+            // No-op for testing
+        }
+
+        /// <inheritdoc/>
+        public void Dispose() => s_disposeCallCount++;
+    }
+
+    /// <summary>
     /// Test drawer implementation for TestState.
+    /// Retained for backward compatibility with existing tests.
     /// </summary>
     private sealed class TestStateDrawer : ILiveStateSectionDrawer<TestState>
     {
@@ -306,18 +334,78 @@ public sealed class LiveStateSectionTests
         Assert.AreEqual(100, section.Order);
     }
 
+    /// <summary>
+    /// Test state type with no <see cref="SectionOrderAttribute"/> for verifying the default order.
+    /// </summary>
+    [LiveStateSectionDrawer<StateWithoutOrderAttributeDrawer>]
     private sealed class StateWithoutOrderAttribute
     {
     }
 
+    /// <summary>
+    /// Test state type with an explicit zero <see cref="SectionOrderAttribute"/> value.
+    /// </summary>
+    [LiveStateSectionDrawer<StateWithOrderZeroDrawer>]
     [SectionOrder(0)]
     private sealed class StateWithOrderZero
     {
     }
 
+    /// <summary>
+    /// Test state type with a positive <see cref="SectionOrderAttribute"/> value.
+    /// </summary>
+    [LiveStateSectionDrawer<StateWithOrderPositiveDrawer>]
     [SectionOrder(100)]
     private sealed class StateWithOrderPositive
     {
+    }
+
+    /// <summary>
+    /// Minimal drawer for <see cref="StateWithoutOrderAttribute"/>.
+    /// </summary>
+    private sealed class StateWithoutOrderAttributeDrawer : ILiveStateSectionDrawer<StateWithoutOrderAttribute>
+    {
+        public void Draw(StateWithoutOrderAttribute state)
+        {
+            // No-op for testing
+        }
+
+        public void Dispose()
+        {
+            // No-op for testing
+        }
+    }
+
+    /// <summary>
+    /// Minimal drawer for <see cref="StateWithOrderZero"/>.
+    /// </summary>
+    private sealed class StateWithOrderZeroDrawer : ILiveStateSectionDrawer<StateWithOrderZero>
+    {
+        public void Draw(StateWithOrderZero state)
+        {
+            // No-op for testing
+        }
+
+        public void Dispose()
+        {
+            // No-op for testing
+        }
+    }
+
+    /// <summary>
+    /// Minimal drawer for <see cref="StateWithOrderPositive"/>.
+    /// </summary>
+    private sealed class StateWithOrderPositiveDrawer : ILiveStateSectionDrawer<StateWithOrderPositive>
+    {
+        public void Draw(StateWithOrderPositive state)
+        {
+            // No-op for testing
+        }
+
+        public void Dispose()
+        {
+            // No-op for testing
+        }
     }
 
     /// <summary>
@@ -354,32 +442,5 @@ public sealed class LiveStateSectionTests
 
         // Assert
         Assert.AreEqual(1, TestDrawer.DisposeCallCount, "Drawer should be disposed exactly once even after multiple Dispose calls.");
-    }
-
-    /// <summary>
-    /// Test drawer that tracks disposal calls for verification.
-    /// </summary>
-    private sealed class TestDrawer : ILiveStateSectionDrawer<TestState>, IDisposable
-    {
-        private static int s_disposeCallCount;
-
-        /// <summary>
-        /// Gets the number of times Dispose has been called across all instances.
-        /// </summary>
-        public static int DisposeCallCount => s_disposeCallCount;
-
-        /// <summary>
-        /// Resets the dispose call counter.
-        /// </summary>
-        public static void Reset() => s_disposeCallCount = 0;
-
-        /// <inheritdoc/>
-        public void Draw(TestState state)
-        {
-            // No-op for testing
-        }
-
-        /// <inheritdoc/>
-        public void Dispose() => s_disposeCallCount++;
     }
 }
