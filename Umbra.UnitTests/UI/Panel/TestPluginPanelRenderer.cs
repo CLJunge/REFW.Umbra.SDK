@@ -14,15 +14,9 @@ internal sealed class TestPluginPanelRenderer : IPluginPanelRenderer
     public int TreePopCount { get; private set; }
     public int SeparatorCount { get; private set; }
 
-    public void PushId(string scopeId)
-    {
-        PushIds.Add(scopeId);
-    }
+    public void PushId(string scopeId) => PushIds.Add(scopeId);
 
-    public void PopId()
-    {
-        PopIdCount++;
-    }
+    public void PopId() => PopIdCount++;
 
     public bool TreeNode(string label, ImGuiTreeNodeFlags flags)
     {
@@ -33,13 +27,7 @@ internal sealed class TestPluginPanelRenderer : IPluginPanelRenderer
         return TreeNodeResults.Dequeue();
     }
 
-    public void TreePop()
-    {
-        TreePopCount++;
-    }
+    public void TreePop() => TreePopCount++;
 
-    public void Separator()
-    {
-        SeparatorCount++;
-    }
+    public void Separator() => SeparatorCount++;
 }

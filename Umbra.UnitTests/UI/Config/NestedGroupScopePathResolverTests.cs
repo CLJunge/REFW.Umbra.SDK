@@ -219,7 +219,7 @@ public class NestedGroupScopePathResolverTests
         string propertyName)
     {
         PropertyInfo propertyInfo;
-        
+
         // Try to use a real property from TestPropertyHolder, otherwise use a mock
         var realProperty = typeof(TestPropertyHolder).GetProperty(propertyName);
         if (realProperty != null)
@@ -231,7 +231,7 @@ public class NestedGroupScopePathResolverTests
             // For property names not in TestPropertyHolder, create a mock
             propertyInfo = new MockPropertyInfo(propertyName);
         }
-        
+
         return new TypeDrawMetadata.PropertyDrawMetadata(
             property: propertyInfo,
             propertyType: typeof(object),

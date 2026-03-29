@@ -26,10 +26,7 @@ public sealed class ButtonStyleColorsTests
     /// Restores the default ImGui-backed color sink after each test.
     /// </summary>
     [TestCleanup]
-    public void TestCleanup()
-    {
-        ButtonStyleColors.ResetColorSink();
-    }
+    public void TestCleanup() => ButtonStyleColors.ResetColorSink();
 
     /// <summary>
     /// Tests that <see cref="ButtonStyleColors.Pop"/> pops three colors from the active sink.

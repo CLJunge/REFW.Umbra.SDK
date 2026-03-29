@@ -11,13 +11,7 @@ internal sealed class TestButtonStyleColorSink : IButtonStyleColorSink
     public List<(ImGuiCol Color, Vector4 Value)> PushedColors { get; } = [];
     public List<int> PopCounts { get; } = [];
 
-    public void PushStyleColor(ImGuiCol color, Vector4 value)
-    {
-        PushedColors.Add((color, value));
-    }
+    public void PushStyleColor(ImGuiCol color, Vector4 value) => PushedColors.Add((color, value));
 
-    public void PopStyleColor(int count)
-    {
-        PopCounts.Add(count);
-    }
+    public void PopStyleColor(int count) => PopCounts.Add(count);
 }
