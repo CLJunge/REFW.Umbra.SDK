@@ -71,10 +71,7 @@ public static class Logger
     /// The next enabled write recreates the default sink lazily so disabled paths remain free from
     /// host-specific logging calls.
     /// </remarks>
-    internal static void ResetLogSink()
-    {
-        Interlocked.Exchange(ref _logSink, null);
-    }
+    internal static void ResetLogSink() => Interlocked.Exchange(ref _logSink, null);
 
     /// <summary>
     /// Enables all Umbra logging.
@@ -114,7 +111,7 @@ public static class Logger
     }
 
     /// <summary>
-    /// Logs a formatted informational message via <see cref="API.LogInfo"/>.
+    /// Logs a formatted informational message via <see cref="REFrameworkNET.API.LogInfo"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if logging is globally disabled, or if
@@ -142,7 +139,7 @@ public static class Logger
     }
 
     /// <summary>
-    /// Logs a formatted warning message via <see cref="API.LogWarning"/>.
+    /// Logs a formatted warning message via <see cref="REFrameworkNET.API.LogWarning"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if logging is globally disabled, or if
@@ -170,7 +167,7 @@ public static class Logger
     }
 
     /// <summary>
-    /// Logs a formatted error message via <see cref="API.LogError"/>.
+    /// Logs a formatted error message via <see cref="REFrameworkNET.API.LogError"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if logging is globally disabled, or if
@@ -205,7 +202,7 @@ public static class Logger
 
     /// <summary>
     /// Logs a formatted error message accompanied by exception details, including the exception
-    /// type, message, and stack trace, via <see cref="API.LogError"/>.
+    /// type, message, and stack trace, via <see cref="REFrameworkNET.API.LogError"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if logging is globally disabled, or if

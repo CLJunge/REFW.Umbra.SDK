@@ -83,7 +83,7 @@ public sealed class PluginLogger
     }
 
     /// <summary>
-    /// Logs a formatted informational message via <see cref="API.LogInfo"/>.
+    /// Logs a formatted informational message via <see cref="REFrameworkNET.API.LogInfo"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out info logs, or if
@@ -111,7 +111,7 @@ public sealed class PluginLogger
     }
 
     /// <summary>
-    /// Logs a formatted warning message via <see cref="API.LogWarning"/>.
+    /// Logs a formatted warning message via <see cref="REFrameworkNET.API.LogWarning"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out warning logs, or if
@@ -139,7 +139,7 @@ public sealed class PluginLogger
     }
 
     /// <summary>
-    /// Logs a formatted error message via <see cref="API.LogError"/>.
+    /// Logs a formatted error message via <see cref="REFrameworkNET.API.LogError"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out error logs, or if
@@ -175,7 +175,7 @@ public sealed class PluginLogger
 
     /// <summary>
     /// Logs a formatted error message accompanied by exception details — the exception type,
-    /// message, and stack trace — via <see cref="API.LogError"/>.
+    /// message, and stack trace — via <see cref="REFrameworkNET.API.LogError"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out error logs or if

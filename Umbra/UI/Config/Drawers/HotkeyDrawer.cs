@@ -5,7 +5,7 @@ namespace Umbra.UI.Config.Drawers;
 /// <summary>
 /// An <see cref="IParameterDrawer"/> implementation that renders a hotkey-capture control
 /// for a <see cref="Parameter{T}"/> of type <see cref="int"/>, where the value represents
-/// an <see cref="ImGuiKey"/> cast to <see cref="int"/>.
+/// an <see cref="Hexa.NET.ImGui.ImGuiKey"/> cast to <see cref="int"/>.
 /// </summary>
 /// <remarks>
 /// At most one hotkey-capture drawer may be in capture mode at any given frame.
