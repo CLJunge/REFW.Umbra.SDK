@@ -1,10 +1,35 @@
 namespace Umbra.Logging.UnitTests;
 
+/// <summary>
+/// Records log messages in memory for unit tests.
+/// </summary>
+/// <remarks>
+/// Logger tests install this sink through <see cref="Logger.SetLogSink(ILogSink)"/> so they can
+/// assert emitted messages without depending on the REFramework runtime host.
+/// </remarks>
 internal sealed class TestLogSink : ILogSink
 {
-    public void Info(string message) { }
+    /// <summary>
+    /// Gets the informational messages written during a test.
+    /// </summary>
+    public List<string> InfoMessages { get; } = [];
 
-    public void Warning(string message) { }
+    /// <summary>
+    /// Gets the warning messages written during a test.
+    /// </summary>
+    public List<string> WarningMessages { get; } = [];
 
-    public void Error(string message) { }
+    /// <summary>
+    /// Gets the error messages written during a test.
+    /// </summary>
+    public List<string> ErrorMessages { get; } = [];
+
+    /// <inheritdoc/>
+    public void Info(string message) => InfoMessages.Add(message);
+
+    /// <inheritdoc/>
+    public void Warning(string message) => WarningMessages.Add(message);
+
+    /// <inheritdoc/>
+    public void Error(string message) => ErrorMessages.Add(message);
 }

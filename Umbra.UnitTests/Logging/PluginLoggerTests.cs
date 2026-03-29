@@ -1805,6 +1805,11 @@ public sealed class PluginLoggerTests
     private bool _originalLoggerEnabled;
 
     /// <summary>
+    /// Gets the in-memory sink installed for the current test.
+    /// </summary>
+    private static TestLogSink CurrentSink => (TestLogSink)Logger.GetLogSink();
+
+    /// <summary>
     /// Restores the Logger.Enabled state before each test.
     /// </summary>
     [TestInitialize]
@@ -1823,6 +1828,101 @@ public sealed class PluginLoggerTests
     {
         Logger.ResetLogSink();
         Logger.Enabled = _originalLoggerEnabled;
+    }
+
+    /// <summary>
+    /// Tests that <see cref="PluginLogger.Info(string)"/> writes a prefixed informational message
+    /// to the active sink when logging is enabled.
+    /// </summary>
+    [TestMethod]
+    public void Info_WithPrefix_WritesFormattedMessageToSink()
+    {
+        // Arrange
+        var logger = new PluginLogger("MyPlugin")
+        {
+            MinLevel = LogLevel.Info
+        };
+
+        // Act
+        logger.Info("Hello");
+
+        // Assert
+        Assert.HasCount(1, CurrentSink.InfoMessages);
+        Assert.AreEqual("[MyPlugin] Hello", CurrentSink.InfoMessages[0]);
+        Assert.IsEmpty(CurrentSink.WarningMessages);
+        Assert.IsEmpty(CurrentSink.ErrorMessages);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="PluginLogger.Warning(string)"/> writes a warning message using the
+    /// configured prefix format.
+    /// </summary>
+    [TestMethod]
+    public void Warning_WithCustomPrefixFormat_WritesFormattedMessageToSink()
+    {
+        // Arrange
+        var logger = new PluginLogger("MyPlugin")
+        {
+            PrefixFormat = "<<{0}>>",
+            MinLevel = LogLevel.Warning
+        };
+
+        // Act
+        logger.Warning("Careful");
+
+        // Assert
+        Assert.IsEmpty(CurrentSink.InfoMessages);
+        Assert.HasCount(1, CurrentSink.WarningMessages);
+        Assert.AreEqual("<<MyPlugin>> Careful", CurrentSink.WarningMessages[0]);
+        Assert.IsEmpty(CurrentSink.ErrorMessages);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="PluginLogger.Error(string)"/> does not write to the sink when the
+    /// minimum level filters out error logging.
+    /// </summary>
+    [TestMethod]
+    public void Error_WhenMinLevelIsNone_DoesNotWriteToSink()
+    {
+        // Arrange
+        var logger = new PluginLogger("MyPlugin")
+        {
+            MinLevel = LogLevel.None
+        };
+
+        // Act
+        logger.Error("Hidden");
+
+        // Assert
+        Assert.IsEmpty(CurrentSink.InfoMessages);
+        Assert.IsEmpty(CurrentSink.WarningMessages);
+        Assert.IsEmpty(CurrentSink.ErrorMessages);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="PluginLogger.Exception(Exception, string)"/> writes a prefixed error
+    /// message and exception details to the active sink.
+    /// </summary>
+    [TestMethod]
+    public void Exception_WithPrefix_WritesExceptionDetailsToErrorSink()
+    {
+        // Arrange
+        var logger = new PluginLogger("MyPlugin")
+        {
+            MinLevel = LogLevel.Error
+        };
+        var exception = new InvalidOperationException("Boom");
+
+        // Act
+        logger.Exception(exception, "Context");
+
+        // Assert
+        Assert.IsEmpty(CurrentSink.InfoMessages);
+        Assert.IsEmpty(CurrentSink.WarningMessages);
+        Assert.HasCount(1, CurrentSink.ErrorMessages);
+        Assert.Contains("[MyPlugin] Context", CurrentSink.ErrorMessages[0]);
+        Assert.Contains("InvalidOperationException: Boom", CurrentSink.ErrorMessages[0]);
+        Assert.Contains("Stack Trace:", CurrentSink.ErrorMessages[0]);
     }
 
     /// <summary>

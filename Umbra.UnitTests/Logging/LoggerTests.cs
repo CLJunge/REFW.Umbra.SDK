@@ -10,6 +10,11 @@ namespace Umbra.Logging.UnitTests;
 public sealed class LoggerTests
 {
     /// <summary>
+    /// Gets the in-memory sink installed for the current test.
+    /// </summary>
+    private static TestLogSink CurrentSink => (TestLogSink)Logger.GetLogSink();
+
+    /// <summary>
     /// Gets or sets the test context which provides information about and functionality for the current test run.
     /// </summary>
     public TestContext? TestContext { get; set; }
@@ -48,6 +53,71 @@ public sealed class LoggerTests
         {
             Logger.Error(format, args);
         }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="Logger.Error(string, object[])"/> writes the formatted message to the
+    /// active sink when logging is enabled.
+    /// </summary>
+    [TestMethod]
+    public void Error_WhenEnabled_WritesFormattedMessageToSink()
+    {
+        // Arrange
+        Logger.Enabled = true;
+
+        // Act
+        Logger.Error("Value: {0}", 42);
+
+        // Assert
+        Assert.IsEmpty(CurrentSink.InfoMessages);
+        Assert.IsEmpty(CurrentSink.WarningMessages);
+        Assert.HasCount(1, CurrentSink.ErrorMessages);
+        Assert.AreEqual("Value: 42", CurrentSink.ErrorMessages[0]);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="Logger.Warning(string)"/> does not write to the active sink while a
+    /// suppression scope is active.
+    /// </summary>
+    [TestMethod]
+    public void Warning_WhenSuppressed_DoesNotWriteToSink()
+    {
+        // Arrange
+        Logger.Enabled = true;
+
+        // Act
+        using (Logger.Suppress())
+        {
+            Logger.Warning("Suppressed warning");
+        }
+
+        // Assert
+        Assert.IsEmpty(CurrentSink.InfoMessages);
+        Assert.IsEmpty(CurrentSink.WarningMessages);
+        Assert.IsEmpty(CurrentSink.ErrorMessages);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="Logger.Exception(Exception, string)"/> writes the context message and
+    /// exception details to the active error sink.
+    /// </summary>
+    [TestMethod]
+    public void Exception_WhenEnabled_WritesExceptionDetailsToErrorSink()
+    {
+        // Arrange
+        Logger.Enabled = true;
+        var exception = new InvalidOperationException("Boom");
+
+        // Act
+        Logger.Exception(exception, "Context");
+
+        // Assert
+        Assert.IsEmpty(CurrentSink.InfoMessages);
+        Assert.IsEmpty(CurrentSink.WarningMessages);
+        Assert.HasCount(1, CurrentSink.ErrorMessages);
+        Assert.Contains("Context", CurrentSink.ErrorMessages[0]);
+        Assert.Contains("InvalidOperationException: Boom", CurrentSink.ErrorMessages[0]);
+        Assert.Contains("Stack Trace:", CurrentSink.ErrorMessages[0]);
     }
 
     /// <summary>
