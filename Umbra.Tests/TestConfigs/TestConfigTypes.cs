@@ -39,3 +39,49 @@ internal record NullableEnumConfig
     [UmbraSettingsParameter]
     public Parameter<NullableEnumValue?> Value { get; set; } = new(NullableEnumValue.First);
 }
+
+[UmbraAutoRegisterSettings]
+[UmbraSettingsPrefix("rootOrder")]
+internal record RootParameterOrderConfig
+{
+    [UmbraSettingsParameter]
+    public Parameter<int> UnorderedFirst { get; set; } = new(10);
+
+    [UmbraSettingsParameter]
+    [UmbraParameterOrder(1)]
+    public Parameter<int> OrderedSecond { get; set; } = new(20);
+
+    [UmbraSettingsParameter]
+    public Parameter<int> UnorderedSecond { get; set; } = new(30);
+
+    [UmbraSettingsParameter]
+    [UmbraParameterOrder(0)]
+    public Parameter<int> OrderedFirst { get; set; } = new(40);
+}
+
+[UmbraAutoRegisterSettings]
+[UmbraSettingsPrefix("nestedOrder")]
+internal record NestedParameterOrderConfig
+{
+    [UmbraSettingsParameter]
+    [UmbraSettingsPrefix("nested")]
+    public NestedParameterOrderGroup Nested { get; set; } = new();
+}
+
+[UmbraAutoRegisterSettings]
+internal record NestedParameterOrderGroup
+{
+    [UmbraSettingsParameter]
+    public Parameter<int> UnorderedFirst { get; set; } = new(10);
+
+    [UmbraSettingsParameter]
+    [UmbraParameterOrder(1)]
+    public Parameter<int> OrderedSecond { get; set; } = new(20);
+
+    [UmbraSettingsParameter]
+    public Parameter<int> UnorderedSecond { get; set; } = new(30);
+
+    [UmbraSettingsParameter]
+    [UmbraParameterOrder(0)]
+    public Parameter<int> OrderedFirst { get; set; } = new(40);
+}
