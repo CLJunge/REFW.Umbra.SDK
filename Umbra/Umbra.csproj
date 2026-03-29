@@ -62,6 +62,7 @@
 
     <ItemGroup>
       <InternalsVisibleTo Include="Umbra.UnitTests" />
+      <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
     </ItemGroup>
 
 </Project>
