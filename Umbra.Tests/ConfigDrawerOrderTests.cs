@@ -85,14 +85,25 @@ public sealed class ConfigDrawerOrderTests
     private static IList? TryGetChildNodes(object node)
     {
         var type = node.GetType();
+        var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+
+        for (var i = 0; i < properties.Length; i++)
+        {
+            var property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 || !IsDrawNodeListType(property.PropertyType))
+                continue;
+
+            if (property.GetValue(node) is IList list)
+                return list;
+        }
+
         var fields = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
         for (var i = 0; i < fields.Length; i++)
         {
             var field = fields[i];
-            var name = field.Name;
-
-            if (name != "Children" && name != "children")
+            if (!IsDrawNodeListType(field.FieldType))
                 continue;
 
             var value = field.GetValue(node);
@@ -101,6 +112,15 @@ public sealed class ConfigDrawerOrderTests
         }
 
         return null;
+    }
+
+    private static bool IsDrawNodeListType(Type type)
+    {
+        if (!typeof(IList).IsAssignableFrom(type) || !type.IsGenericType)
+            return false;
+
+        var arguments = type.GetGenericArguments();
+        return arguments.Length == 1 && arguments[0].FullName == "Umbra.UI.Config.Nodes.IDrawNode";
     }
 
     private static string GetParameterKey(object parameterNode)

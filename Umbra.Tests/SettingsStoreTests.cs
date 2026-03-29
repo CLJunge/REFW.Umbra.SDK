@@ -103,12 +103,12 @@ public sealed class SettingsStoreTests
         var filePath = Path.Combine(temp.Path, "config.json");
         File.WriteAllText(filePath, "{ this is not valid json }");
 
-        using var lockStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        using var backupBlocker = CreateBackupBlocker(filePath);
         using var store = new SettingsStore<BasicConfig>(filePath);
         var config = store.Load();
 
         Assert.NotNull(config);
-        lockStream.Dispose();
+        backupBlocker.Dispose();
 
         config.Enabled.Value = false;
         store.Save();
@@ -130,7 +130,7 @@ public sealed class SettingsStoreTests
         }
         """);
 
-        using var lockStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        using var backupBlocker = CreateBackupBlocker(filePath);
         using var store = new SettingsStore<BasicConfig>(filePath);
         var config = store.Load();
 
@@ -138,7 +138,7 @@ public sealed class SettingsStoreTests
         Assert.True(config.Enabled.Value);
         Assert.Equal(5, config.Count.Value);
 
-        lockStream.Dispose();
+        backupBlocker.Dispose();
         config.Count.Value = 99;
         store.Save();
 
@@ -146,5 +146,45 @@ public sealed class SettingsStoreTests
         Assert.Contains("\"tests.count\": 42", json);
         Assert.DoesNotContain("\"tests.count\": 99", json);
         Assert.Empty(Directory.GetFiles(temp.Path, "config.invalid-*.json"));
+    }
+
+    private static IDisposable CreateBackupBlocker(string filePath)
+    {
+        if (OperatingSystem.IsWindows())
+            return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        return new DirectoryWritePermissionScope(Path.GetDirectoryName(filePath)!);
+    }
+
+    private sealed class DirectoryWritePermissionScope : IDisposable
+    {
+        private readonly string _directoryPath;
+        private readonly UnixFileMode _originalMode;
+        private bool _disposed;
+
+        public DirectoryWritePermissionScope(string directoryPath)
+        {
+            if (OperatingSystem.IsWindows())
+                throw new PlatformNotSupportedException("Unix directory permissions are only used on non-Windows test runners.");
+
+            _directoryPath = directoryPath;
+            _originalMode = File.GetUnixFileMode(directoryPath);
+
+            File.SetUnixFileMode(
+                directoryPath,
+                _originalMode & ~(UnixFileMode.UserWrite | UnixFileMode.GroupWrite | UnixFileMode.OtherWrite));
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            if (OperatingSystem.IsWindows())
+                return;
+
+            _disposed = true;
+            File.SetUnixFileMode(_directoryPath, _originalMode);
+        }
     }
 }
