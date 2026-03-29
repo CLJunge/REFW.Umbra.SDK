@@ -115,8 +115,8 @@ public class KeyboardInputTests
     }
 
     /// <summary>
-    /// Tests that <see cref="KeyboardInput.GetKeyName"/> returns either a valid enum name
-    /// or a formatted fallback string for the zero value, which likely corresponds to ImGuiKey.None.
+    /// Tests that <see cref="KeyboardInput.GetKeyName"/> returns the canonical <c>None</c>
+    /// name for the zero value rather than the alternate zero-valued ImGui modifier alias.
     /// </summary>
     [TestMethod]
     public void GetKeyName_ZeroValue_ReturnsValidString()
@@ -129,8 +129,7 @@ public class KeyboardInputTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsTrue(result is "None" or "Key(0)",
-            $"Expected 'None' or 'Key(0)' but got '{result}'");
+        Assert.AreEqual("None", result);
     }
 
 }

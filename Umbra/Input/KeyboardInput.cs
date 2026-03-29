@@ -40,9 +40,16 @@ public static class KeyboardInput
     /// </summary>
     /// <param name="key">An <see cref="ImGuiKey"/> value cast to <see cref="int"/>.</param>
     /// <returns>
-    /// The enum member name if defined; otherwise <c>Key(n)</c> where <c>n</c> is the raw integer value.
+    /// <c>None</c> when <paramref name="key"/> is zero; otherwise the enum member name if defined;
+    /// otherwise <c>Key(n)</c> where <c>n</c> is the raw integer value.
     /// </returns>
-    public static string GetKeyName(int key) => Enum.GetName((ImGuiKey)key) ?? $"Key({key})";
+    public static string GetKeyName(int key)
+    {
+        if (key == (int)ImGuiKey.None)
+            return nameof(ImGuiKey.None);
+
+        return Enum.GetName((ImGuiKey)key) ?? $"Key({key})";
+    }
 
     /// <summary>
     /// Determines whether the given key value represents a valid, assigned key.
