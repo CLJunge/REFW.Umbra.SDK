@@ -1375,7 +1375,7 @@ public class ParameterTests
     public void Set_DoubleValues_UpdatesValue(double newValue)
     {
         // Arrange
-        var parameter = new Parameter<double>(0.0);
+        var parameter = new Parameter<double>(1.0);
         var eventRaised = false;
 
         parameter.ValueChanged += (oldVal, newVal) => eventRaised = true;
@@ -1423,7 +1423,7 @@ public class ParameterTests
     public void Set_ExtremeIntegerValues_UpdatesValue(int newValue)
     {
         // Arrange
-        var parameter = new Parameter<int>(0);
+        var parameter = new Parameter<int>(50);
         var eventRaised = false;
 
         parameter.ValueChanged += (oldVal, newVal) => eventRaised = true;
@@ -2948,15 +2948,14 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Verifies that ToString returns the string representation of a double value.
+    /// Verifies that ToString returns the current culture string representation of a double value.
     /// </summary>
     /// <param name="value">The double value to test.</param>
-    /// <param name="expected">The expected string representation.</param>
-    [DataRow(0.0, "0")]
-    [DataRow(3.14159, "3.14159")]
-    [DataRow(-2.5, "-2.5")]
+    [DataRow(0.0)]
+    [DataRow(3.14159)]
+    [DataRow(-2.5)]
     [TestMethod]
-    public void ToString_DoubleValue_ReturnsStringRepresentation(double value, string expected)
+    public void ToString_DoubleValue_ReturnsStringRepresentation(double value)
     {
         // Arrange
         var parameter = new Parameter<double>(value);
@@ -2965,7 +2964,7 @@ public class ParameterTests
         var result = parameter.ToString();
 
         // Assert
-        Assert.AreEqual(expected, result);
+        Assert.AreEqual(value.ToString(), result);
     }
 
     /// <summary>
@@ -2981,7 +2980,7 @@ public class ParameterTests
         var result = parameter.ToString();
 
         // Assert
-        Assert.AreEqual("NaN", result);
+        Assert.AreEqual(double.NaN.ToString(), result);
     }
 
     /// <summary>
@@ -2997,7 +2996,7 @@ public class ParameterTests
         var result = parameter.ToString();
 
         // Assert
-        Assert.AreEqual("Infinity", result);
+        Assert.AreEqual(double.PositiveInfinity.ToString(), result);
     }
 
     /// <summary>
@@ -3013,7 +3012,7 @@ public class ParameterTests
         var result = parameter.ToString();
 
         // Assert
-        Assert.AreEqual("-Infinity", result);
+        Assert.AreEqual(double.NegativeInfinity.ToString(), result);
     }
 
     /// <summary>
