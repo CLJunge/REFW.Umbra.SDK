@@ -8,14 +8,8 @@ namespace Umbra.UI.Config.Drawers;
 internal sealed class KeyboardHotkeyInputSource : IHotkeyInputSource
 {
     /// <inheritdoc/>
-    public bool TryCaptureKeyboardKey(out int capturedKey)
-    {
-        return KeyboardInput.TryCaptureKeyboardKey(out capturedKey);
-    }
+    public bool TryCaptureKeyboardKey(out int capturedKey) => KeyboardInput.TryCaptureKeyboardKey(out capturedKey);
 
     /// <inheritdoc/>
-    public string GetKeyName(int key)
-    {
-        return KeyboardInput.GetKeyName(key);
-    }
+    public string GetKeyName(int key) => KeyboardInput.GetKeyName(key);
 }

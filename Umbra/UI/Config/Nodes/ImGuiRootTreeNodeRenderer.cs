@@ -15,8 +15,5 @@ internal sealed class ImGuiRootTreeNodeRenderer : IRootTreeNodeRenderer
     }
 
     /// <inheritdoc/>
-    public void TreePop()
-    {
-        ImGui.TreePop();
-    }
+    public void TreePop() => ImGui.TreePop();
 }

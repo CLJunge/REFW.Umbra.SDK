@@ -8,32 +8,17 @@ namespace Umbra.UI.Panel;
 internal sealed class ImGuiPluginPanelRenderer : IPluginPanelRenderer
 {
     /// <inheritdoc/>
-    public void PushId(string scopeId)
-    {
-        ImGui.PushID(scopeId);
-    }
+    public void PushId(string scopeId) => ImGui.PushID(scopeId);
 
     /// <inheritdoc/>
-    public void PopId()
-    {
-        ImGui.PopID();
-    }
+    public void PopId() => ImGui.PopID();
 
     /// <inheritdoc/>
-    public bool TreeNode(string label, ImGuiTreeNodeFlags flags)
-    {
-        return ImGui.TreeNodeEx(label, flags);
-    }
+    public bool TreeNode(string label, ImGuiTreeNodeFlags flags) => ImGui.TreeNodeEx(label, flags);
 
     /// <inheritdoc/>
-    public void TreePop()
-    {
-        ImGui.TreePop();
-    }
+    public void TreePop() => ImGui.TreePop();
 
     /// <inheritdoc/>
-    public void Separator()
-    {
-        ImGui.Separator();
-    }
+    public void Separator() => ImGui.Separator();
 }

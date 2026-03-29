@@ -15,44 +15,23 @@ namespace Umbra.UI.Config.Drawers;
 internal sealed class ImGuiButtonDrawerRenderer : IButtonDrawerRenderer
 {
     /// <inheritdoc/>
-    public void TextDisabled(string text)
-    {
-        ImGui.TextDisabled(text);
-    }
+    public void TextDisabled(string text) => ImGui.TextDisabled(text);
 
     /// <inheritdoc/>
-    public bool PushButtonColors(ButtonStyle style)
-    {
-        return ButtonStyleColors.Push(style);
-    }
+    public bool PushButtonColors(ButtonStyle style) => ButtonStyleColors.Push(style);
 
     /// <inheritdoc/>
-    public bool PushButtonColors(Vector4 normal, Vector4 hovered, Vector4 active)
-    {
-        return ButtonStyleColors.Push(normal, hovered, active);
-    }
+    public bool PushButtonColors(Vector4 normal, Vector4 hovered, Vector4 active) => ButtonStyleColors.Push(normal, hovered, active);
 
     /// <inheritdoc/>
-    public void PopButtonColors()
-    {
-        ButtonStyleColors.Pop();
-    }
+    public void PopButtonColors() => ButtonStyleColors.Pop();
 
     /// <inheritdoc/>
-    public bool Button(string label, Vector2 size)
-    {
-        return ImGui.Button(label, size);
-    }
+    public bool Button(string label, Vector2 size) => ImGui.Button(label, size);
 
     /// <inheritdoc/>
-    public void SameLine()
-    {
-        ImGui.SameLine();
-    }
+    public void SameLine() => ImGui.SameLine();
 
     /// <inheritdoc/>
-    public void DrawHelpMarker(string description)
-    {
-        ImGuiWidgets.DrawHelpMarker(description);
-    }
+    public void DrawHelpMarker(string description) => ImGuiWidgets.DrawHelpMarker(description);
 }

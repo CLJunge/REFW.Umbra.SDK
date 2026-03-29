@@ -51,10 +51,7 @@ internal static class ButtonStyleColors
     /// <summary>
     /// Restores the default ImGui-backed color sink.
     /// </summary>
-    internal static void ResetColorSink()
-    {
-        Interlocked.Exchange(ref _colorSink, null);
-    }
+    internal static void ResetColorSink() => Interlocked.Exchange(ref _colorSink, null);
 
     /// <summary>
     /// Returns the currently active color sink, creating the default ImGui-backed sink on first use.

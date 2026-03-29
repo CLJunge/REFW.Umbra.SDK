@@ -8,14 +8,8 @@ namespace Umbra.UI.Config;
 internal sealed class ImGuiConfigDrawerScope : IConfigDrawerScope
 {
     /// <inheritdoc/>
-    public void PushId(string idScope)
-    {
-        ImGui.PushID(idScope);
-    }
+    public void PushId(string idScope) => ImGui.PushID(idScope);
 
     /// <inheritdoc/>
-    public void PopId()
-    {
-        ImGui.PopID();
-    }
+    public void PopId() => ImGui.PopID();
 }

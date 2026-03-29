@@ -8,8 +8,5 @@ namespace Umbra.UI.Config.Nodes;
 internal sealed class ImGuiParameterNodeRenderer : IParameterNodeRenderer
 {
     /// <inheritdoc/>
-    public void Spacing()
-    {
-        ImGui.Spacing();
-    }
+    public void Spacing() => ImGui.Spacing();
 }

@@ -8,32 +8,17 @@ namespace Umbra.UI.Config.Drawers;
 internal sealed class ImGuiHotkeyDrawerRenderer : IHotkeyDrawerRenderer
 {
     /// <inheritdoc/>
-    public void TextDisabled(string text)
-    {
-        ImGui.TextDisabled(text);
-    }
+    public void TextDisabled(string text) => ImGui.TextDisabled(text);
 
     /// <inheritdoc/>
-    public void Text(string text)
-    {
-        ImGui.Text(text);
-    }
+    public void Text(string text) => ImGui.Text(text);
 
     /// <inheritdoc/>
-    public void SameLine()
-    {
-        ImGui.SameLine();
-    }
+    public void SameLine() => ImGui.SameLine();
 
     /// <inheritdoc/>
-    public bool Button(string label)
-    {
-        return ImGui.Button(label);
-    }
+    public bool Button(string label) => ImGui.Button(label);
 
     /// <inheritdoc/>
-    public void DrawHelpMarker(string description)
-    {
-        ImGuiWidgets.DrawHelpMarker(description);
-    }
+    public void DrawHelpMarker(string description) => ImGuiWidgets.DrawHelpMarker(description);
 }

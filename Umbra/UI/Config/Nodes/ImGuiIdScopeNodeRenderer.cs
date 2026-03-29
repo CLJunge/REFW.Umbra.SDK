@@ -8,14 +8,8 @@ namespace Umbra.UI.Config.Nodes;
 internal sealed class ImGuiIdScopeNodeRenderer : IIdScopeNodeRenderer
 {
     /// <inheritdoc/>
-    public void PushId(string scopeId)
-    {
-        ImGui.PushID(scopeId);
-    }
+    public void PushId(string scopeId) => ImGui.PushID(scopeId);
 
     /// <inheritdoc/>
-    public void PopId()
-    {
-        ImGui.PopID();
-    }
+    public void PopId() => ImGui.PopID();
 }

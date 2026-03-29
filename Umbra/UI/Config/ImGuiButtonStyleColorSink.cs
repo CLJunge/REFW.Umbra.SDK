@@ -9,14 +9,8 @@ namespace Umbra.UI.Config;
 internal sealed class ImGuiButtonStyleColorSink : IButtonStyleColorSink
 {
     /// <inheritdoc/>
-    public void PushStyleColor(ImGuiCol color, Vector4 value)
-    {
-        ImGui.PushStyleColor(color, value);
-    }
+    public void PushStyleColor(ImGuiCol color, Vector4 value) => ImGui.PushStyleColor(color, value);
 
     /// <inheritdoc/>
-    public void PopStyleColor(int count)
-    {
-        ImGui.PopStyleColor(count);
-    }
+    public void PopStyleColor(int count) => ImGui.PopStyleColor(count);
 }

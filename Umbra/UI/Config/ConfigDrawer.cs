@@ -158,7 +158,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// <remarks>
     /// <para>
     /// All widget IDs rendered during this call are bracketed by
-        /// the configured draw scope's push/pop operations, making every
+    /// the configured draw scope's push/pop operations, making every
     /// <c>##key</c> label unique across plugins without any changes to individual controls or
     /// custom drawers. The scope is always popped before this method returns, even if a node
     /// throws while drawing.

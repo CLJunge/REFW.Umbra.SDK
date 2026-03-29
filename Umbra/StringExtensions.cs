@@ -55,5 +55,5 @@ public static class StringExtensions
         return sb.ToString();
     }
 
-    private static bool IsWordSeparator(char c) => c == '_' || c == '-' || c == '.' || c == '@';
+    private static bool IsWordSeparator(char c) => c is '_' or '-' or '.' or '@';
 }

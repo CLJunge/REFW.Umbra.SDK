@@ -1,5 +1,4 @@
 using System.Numerics;
-using Hexa.NET.ImGui;
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.Logging;

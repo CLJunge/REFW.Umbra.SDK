@@ -8,22 +8,13 @@ namespace Umbra.UI.Config.Nodes;
 internal sealed class ImGuiCategoryNodeRenderer : ICategoryNodeRenderer
 {
     /// <inheritdoc/>
-    public void Indent(float amount)
-    {
-        ImGui.Indent(amount);
-    }
+    public void Indent(float amount) => ImGui.Indent(amount);
 
     /// <inheritdoc/>
-    public void Unindent(float amount)
-    {
-        ImGui.Unindent(amount);
-    }
+    public void Unindent(float amount) => ImGui.Unindent(amount);
 
     /// <inheritdoc/>
-    public void SeparatorText(string label)
-    {
-        ImGui.SeparatorText(label);
-    }
+    public void SeparatorText(string label) => ImGui.SeparatorText(label);
 
     /// <inheritdoc/>
     public bool TreeNode(string label, bool defaultOpen)
@@ -33,8 +24,5 @@ internal sealed class ImGuiCategoryNodeRenderer : ICategoryNodeRenderer
     }
 
     /// <inheritdoc/>
-    public void TreePop()
-    {
-        ImGui.TreePop();
-    }
+    public void TreePop() => ImGui.TreePop();
 }
