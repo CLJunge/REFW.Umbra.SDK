@@ -35,10 +35,7 @@ public class ParameterNodeComposerTests
             SpacingBefore = 1,
             SpacingAfter = 2
         };
-        var parameterMock = new Mock<IParameter>();
-        parameterMock.Setup(p => p.Metadata).Returns(metadata);
-        parameterMock.Setup(p => p.ValueType).Returns(typeof(int));
-        parameterMock.Setup(p => p.GetValue()).Returns(42);
+        var parameter = new Parameter<int>(42) { Metadata = metadata };
 
         var owner = new object();
         var alignmentGroup = new LabelAlignmentGroup();
@@ -46,7 +43,7 @@ public class ParameterNodeComposerTests
 
         // Act
         var result = ParameterNodeComposer.Create(
-            parameterMock.Object,
+            parameter,
             owner,
             alignmentGroup,
             classIndentAmount: null,
@@ -71,10 +68,7 @@ public class ParameterNodeComposerTests
             SpacingBefore = 0,
             SpacingAfter = 0
         };
-        var parameterMock = new Mock<IParameter>();
-        parameterMock.Setup(p => p.Metadata).Returns(metadata);
-        parameterMock.Setup(p => p.ValueType).Returns(typeof(int));
-        parameterMock.Setup(p => p.GetValue()).Returns(42);
+        var parameter = new Parameter<int>(42) { Metadata = metadata };
 
         var owner = new object();
         var alignmentGroup = new LabelAlignmentGroup();
@@ -83,7 +77,7 @@ public class ParameterNodeComposerTests
 
         // Act
         var result = ParameterNodeComposer.Create(
-            parameterMock.Object,
+            parameter,
             owner,
             alignmentGroup,
             classIndentAmount: null,
@@ -109,17 +103,14 @@ public class ParameterNodeComposerTests
             SpacingBefore = 0,
             SpacingAfter = 0
         };
-        var parameterMock = new Mock<IParameter>();
-        parameterMock.Setup(p => p.Metadata).Returns(metadata);
-        parameterMock.Setup(p => p.ValueType).Returns(typeof(int));
-        parameterMock.Setup(p => p.GetValue()).Returns(0);
+        var parameter = new Parameter<int>(0) { Metadata = metadata };
 
         var owner = new object();
         var alignmentGroup = new LabelAlignmentGroup();
 
         // Act
         var (node, _) = ParameterNodeComposer.Create(
-            parameterMock.Object,
+            parameter,
             owner,
             alignmentGroup,
             classIndentAmount: null,
@@ -144,17 +135,14 @@ public class ParameterNodeComposerTests
             SpacingBefore = 0,
             SpacingAfter = 0
         };
-        var parameterMock = new Mock<IParameter>();
-        parameterMock.Setup(p => p.Metadata).Returns(metadata);
-        parameterMock.Setup(p => p.ValueType).Returns(typeof(int));
-        parameterMock.Setup(p => p.GetValue()).Returns(0);
+        var parameter = new Parameter<int>(0) { Metadata = metadata };
 
         var owner = new object();
         var alignmentGroup = new LabelAlignmentGroup();
 
         // Act
         var (node, _) = ParameterNodeComposer.Create(
-            parameterMock.Object,
+            parameter,
             owner,
             alignmentGroup,
             classIndentAmount: null,
@@ -185,17 +173,14 @@ public class ParameterNodeComposerTests
             SpacingBefore = 0,
             SpacingAfter = 0
         };
-        var parameterMock = new Mock<IParameter>();
-        parameterMock.Setup(p => p.Metadata).Returns(metadata);
-        parameterMock.Setup(p => p.ValueType).Returns(typeof(int));
-        parameterMock.Setup(p => p.GetValue()).Returns(0);
+        var parameter = new Parameter<int>(0) { Metadata = metadata };
 
         var owner = new object();
         var alignmentGroup = new LabelAlignmentGroup();
 
         // Act
         var (node, _) = ParameterNodeComposer.Create(
-            parameterMock.Object,
+            parameter,
             owner,
             alignmentGroup,
             classIndentAmount: null,
