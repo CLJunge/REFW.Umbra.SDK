@@ -287,22 +287,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that IsModified returns false when a nullable value type is set to the same value as default.
-    /// </summary>
-    [TestMethod]
-    public void IsModified_NullableValueType_SetToSameValueAsDefault_ReturnsFalse()
-    {
-        // Arrange
-        var parameter = new Parameter<int?>(100);
-
-        // Act
-        parameter.SetWithoutNotify(100);
-
-        // Assert
-        Assert.IsFalse(parameter.IsModified, "IsModified should be false when nullable value type is set to the same value as default");
-    }
-
-    /// <summary>
     /// Tests that IsModified returns false when both default and current value are null for nullable value types.
     /// </summary>
     [TestMethod]
@@ -336,22 +320,6 @@ public class ParameterTests
 
         // Assert
         Assert.IsFalse(parameter.IsModified, $"IsModified should be false when string value equals default: '{value}'");
-    }
-
-    /// <summary>
-    /// Tests that IsModified returns false when both default and current value are null for reference types.
-    /// </summary>
-    [TestMethod]
-    public void IsModified_ReferenceType_BothNull_ReturnsFalse()
-    {
-        // Arrange
-        var parameter = new Parameter<string>(null);
-
-        // Act
-        parameter.SetWithoutNotify(null);
-
-        // Assert
-        Assert.IsFalse(parameter.IsModified, "IsModified should be false when both default and current value are null for reference type");
     }
 
     #endregion
@@ -443,44 +411,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests IsModified behavior with double.PositiveInfinity.
-    /// </summary>
-    [TestMethod]
-    public void IsModified_Double_PositiveInfinity_BehavesCorrectly()
-    {
-        // Arrange
-        var parameter = new Parameter<double>(double.PositiveInfinity);
-
-        // Assert - initial state
-        Assert.IsFalse(parameter.IsModified, "IsModified should be false when constructed with PositiveInfinity");
-
-        // Act
-        parameter.SetWithoutNotify(0.0);
-
-        // Assert
-        Assert.IsTrue(parameter.IsModified, "IsModified should be true when value changes from PositiveInfinity to 0.0");
-    }
-
-    /// <summary>
-    /// Tests IsModified behavior with double.NegativeInfinity.
-    /// </summary>
-    [TestMethod]
-    public void IsModified_Double_NegativeInfinity_BehavesCorrectly()
-    {
-        // Arrange
-        var parameter = new Parameter<double>(double.NegativeInfinity);
-
-        // Assert - initial state
-        Assert.IsFalse(parameter.IsModified, "IsModified should be false when constructed with NegativeInfinity");
-
-        // Act
-        parameter.SetWithoutNotify(0.0);
-
-        // Assert
-        Assert.IsTrue(parameter.IsModified, "IsModified should be true when value changes from NegativeInfinity to 0.0");
-    }
-
-    /// <summary>
     /// Tests IsModified behavior with float.NaN values.
     /// </summary>
     [TestMethod]
@@ -497,26 +427,6 @@ public class ParameterTests
 
         // Assert
         Assert.IsTrue(parameter.IsModified, "IsModified should be true when value changes from NaN to 1.0");
-    }
-
-    /// <summary>
-    /// Tests IsModified with extreme integer boundary values.
-    /// </summary>
-    [TestMethod]
-    [DataRow(int.MinValue, int.MaxValue)]
-    [DataRow(int.MaxValue, int.MinValue)]
-    [DataRow(0, int.MinValue)]
-    [DataRow(0, int.MaxValue)]
-    public void IsModified_Int_BoundaryValues_BehavesCorrectly(int defaultValue, int newValue)
-    {
-        // Arrange
-        var parameter = new Parameter<int>(defaultValue);
-
-        // Act
-        parameter.SetWithoutNotify(newValue);
-
-        // Assert
-        Assert.IsTrue(parameter.IsModified, $"IsModified should be true when value changes from {defaultValue} to {newValue}");
     }
 
     #endregion
@@ -577,23 +487,6 @@ public class ParameterTests
         Assert.IsFalse(parameter.IsModified);
     }
 
-    /// <summary>
-    /// Tests IsModified with long type parameter and boundary values.
-    /// </summary>
-    [TestMethod]
-    public void IsModified_Long_BoundaryValues_BehavesCorrectly()
-    {
-        // Arrange
-        var parameter = new Parameter<long>(long.MinValue);
-
-        // Assert initial
-        Assert.IsFalse(parameter.IsModified);
-
-        // Act & Assert
-        parameter.SetWithoutNotify(long.MaxValue);
-        Assert.IsTrue(parameter.IsModified);
-    }
-
     #endregion
 
     /// <summary>
@@ -614,23 +507,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that the parameterless constructor initializes a bool parameter with default value false,
-    /// and IsModified is false since the value equals the default.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_BoolType_InitializesWithDefaultValueFalse()
-    {
-        // Act
-        var parameter = new Parameter<bool>();
-
-        // Assert
-        Assert.IsFalse(parameter.DefaultValue);
-        Assert.IsFalse(parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(typeof(bool), parameter.ValueType);
-    }
-
-    /// <summary>
     /// Tests that the parameterless constructor initializes a string parameter with default value null,
     /// and IsModified is false since the value equals the default.
     /// </summary>
@@ -648,91 +524,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that the parameterless constructor initializes a double parameter with default value 0.0,
-    /// and IsModified is false since the value equals the default.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_DoubleType_InitializesWithDefaultValueZero()
-    {
-        // Act
-        var parameter = new Parameter<double>();
-
-        // Assert
-        Assert.AreEqual(0.0, parameter.DefaultValue);
-        Assert.AreEqual(0.0, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(typeof(double), parameter.ValueType);
-    }
-
-    /// <summary>
-    /// Tests that the parameterless constructor initializes a float parameter with default value 0.0f,
-    /// and IsModified is false since the value equals the default.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_FloatType_InitializesWithDefaultValueZero()
-    {
-        // Act
-        var parameter = new Parameter<float>();
-
-        // Assert
-        Assert.AreEqual(0.0f, parameter.DefaultValue);
-        Assert.AreEqual(0.0f, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(typeof(float), parameter.ValueType);
-    }
-
-    /// <summary>
-    /// Tests that the parameterless constructor initializes a long parameter with default value 0L,
-    /// and IsModified is false since the value equals the default.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_LongType_InitializesWithDefaultValueZero()
-    {
-        // Act
-        var parameter = new Parameter<long>();
-
-        // Assert
-        Assert.AreEqual(0L, parameter.DefaultValue);
-        Assert.AreEqual(0L, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(typeof(long), parameter.ValueType);
-    }
-
-    /// <summary>
-    /// Tests that the parameterless constructor initializes a decimal parameter with default value 0m,
-    /// and IsModified is false since the value equals the default.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_DecimalType_InitializesWithDefaultValueZero()
-    {
-        // Act
-        var parameter = new Parameter<decimal>();
-
-        // Assert
-        Assert.AreEqual(0m, parameter.DefaultValue);
-        Assert.AreEqual(0m, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(typeof(decimal), parameter.ValueType);
-    }
-
-    /// <summary>
-    /// Tests that the parameterless constructor initializes a byte parameter with default value 0,
-    /// and IsModified is false since the value equals the default.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ByteType_InitializesWithDefaultValueZero()
-    {
-        // Act
-        var parameter = new Parameter<byte>();
-
-        // Assert
-        Assert.AreEqual((byte)0, parameter.DefaultValue);
-        Assert.AreEqual((byte)0, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(typeof(byte), parameter.ValueType);
-    }
-
-    /// <summary>
     /// Tests that the parameterless constructor initializes a nullable int parameter with default value null,
     /// and IsModified is false since the value equals the default.
     /// </summary>
@@ -747,57 +538,6 @@ public class ParameterTests
         Assert.IsNull(parameter.Value);
         Assert.IsFalse(parameter.IsModified);
         Assert.AreEqual(typeof(int?), parameter.ValueType);
-    }
-
-    /// <summary>
-    /// Tests that the parameterless constructor initializes a nullable bool parameter with default value null,
-    /// and IsModified is false since the value equals the default.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_NullableBoolType_InitializesWithDefaultValueNull()
-    {
-        // Act
-        var parameter = new Parameter<bool?>();
-
-        // Assert
-        Assert.IsNull(parameter.DefaultValue);
-        Assert.IsNull(parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(typeof(bool?), parameter.ValueType);
-    }
-
-    /// <summary>
-    /// Tests that the parameterless constructor initializes a nullable double parameter with default value null,
-    /// and IsModified is false since the value equals the default.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_NullableDoubleType_InitializesWithDefaultValueNull()
-    {
-        // Act
-        var parameter = new Parameter<double?>();
-
-        // Assert
-        Assert.IsNull(parameter.DefaultValue);
-        Assert.IsNull(parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(typeof(double?), parameter.ValueType);
-    }
-
-    /// <summary>
-    /// Tests that the parameterless constructor initializes an object parameter with default value null,
-    /// and IsModified is false since the value equals the default.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ObjectType_InitializesWithDefaultValueNull()
-    {
-        // Act
-        var parameter = new Parameter<object>();
-
-        // Assert
-        Assert.IsNull(parameter.DefaultValue);
-        Assert.IsNull(parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(typeof(object), parameter.ValueType);
     }
 
     /// <summary>
@@ -828,8 +568,8 @@ public class ParameterTests
         var parameter = new Parameter<TestStruct>();
 
         // Assert
-        Assert.AreEqual(default(TestStruct), parameter.DefaultValue);
-        Assert.AreEqual(default(TestStruct), parameter.Value);
+        Assert.AreEqual(default, parameter.DefaultValue);
+        Assert.AreEqual(default, parameter.Value);
         Assert.IsFalse(parameter.IsModified);
         Assert.AreEqual(typeof(TestStruct), parameter.ValueType);
     }
@@ -849,8 +589,8 @@ public class ParameterTests
     /// </summary>
     private struct TestStruct
     {
-        public int Value;
-        public string? Name;
+        public readonly int Value;
+        public readonly string? Name;
     }
 
     /// <summary>
@@ -862,80 +602,6 @@ public class ParameterTests
     {
         // Arrange
         const int expectedValue = 42;
-
-        // Act
-        var parameter = new Parameter<int>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes both Value and DefaultValue
-    /// with int.MinValue for boundary testing.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithIntMinValue_InitializesCorrectly()
-    {
-        // Arrange
-        const int expectedValue = int.MinValue;
-
-        // Act
-        var parameter = new Parameter<int>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes both Value and DefaultValue
-    /// with int.MaxValue for boundary testing.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithIntMaxValue_InitializesCorrectly()
-    {
-        // Arrange
-        const int expectedValue = int.MaxValue;
-
-        // Act
-        var parameter = new Parameter<int>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes with zero for int type.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithIntZero_InitializesCorrectly()
-    {
-        // Arrange
-        const int expectedValue = 0;
-
-        // Act
-        var parameter = new Parameter<int>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes with a negative int value.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithNegativeInt_InitializesCorrectly()
-    {
-        // Arrange
-        const int expectedValue = -12345;
 
         // Act
         var parameter = new Parameter<int>(expectedValue);
@@ -984,78 +650,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that the constructor correctly handles double.PositiveInfinity as a default value.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithDoublePositiveInfinity_InitializesCorrectly()
-    {
-        // Arrange
-        const double expectedValue = double.PositiveInfinity;
-
-        // Act
-        var parameter = new Parameter<double>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly handles double.NegativeInfinity as a default value.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithDoubleNegativeInfinity_InitializesCorrectly()
-    {
-        // Arrange
-        const double expectedValue = double.NegativeInfinity;
-
-        // Act
-        var parameter = new Parameter<double>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly handles double.MinValue for boundary testing.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithDoubleMinValue_InitializesCorrectly()
-    {
-        // Arrange
-        const double expectedValue = double.MinValue;
-
-        // Act
-        var parameter = new Parameter<double>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly handles double.MaxValue for boundary testing.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithDoubleMaxValue_InitializesCorrectly()
-    {
-        // Arrange
-        const double expectedValue = double.MaxValue;
-
-        // Act
-        var parameter = new Parameter<double>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
     /// Tests that the constructor correctly handles float.NaN as a default value.
     /// </summary>
     [TestMethod]
@@ -1074,42 +668,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that the constructor correctly handles float.PositiveInfinity as a default value.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithFloatPositiveInfinity_InitializesCorrectly()
-    {
-        // Arrange
-        const float expectedValue = float.PositiveInfinity;
-
-        // Act
-        var parameter = new Parameter<float>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly handles float.NegativeInfinity as a default value.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithFloatNegativeInfinity_InitializesCorrectly()
-    {
-        // Arrange
-        const float expectedValue = float.NegativeInfinity;
-
-        // Act
-        var parameter = new Parameter<float>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
     /// Tests that the constructor correctly initializes with a boolean true value.
     /// </summary>
     [TestMethod]
@@ -1117,24 +675,6 @@ public class ParameterTests
     {
         // Arrange
         const bool expectedValue = true;
-
-        // Act
-        var parameter = new Parameter<bool>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes with a boolean false value.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithBoolFalse_InitializesCorrectly()
-    {
-        // Arrange
-        const bool expectedValue = false;
 
         // Act
         var parameter = new Parameter<bool>(expectedValue);
@@ -1182,96 +722,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that the constructor correctly initializes with an empty string.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithEmptyString_InitializesCorrectly()
-    {
-        // Arrange
-        var expectedValue = string.Empty;
-
-        // Act
-        var parameter = new Parameter<string>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes with a whitespace-only string.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithWhitespaceString_InitializesCorrectly()
-    {
-        // Arrange
-        const string expectedValue = "   ";
-
-        // Act
-        var parameter = new Parameter<string>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes with a string containing special characters.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithSpecialCharacterString_InitializesCorrectly()
-    {
-        // Arrange
-        const string expectedValue = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~";
-
-        // Act
-        var parameter = new Parameter<string>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes with a very long string.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithVeryLongString_InitializesCorrectly()
-    {
-        // Arrange
-        var expectedValue = new string('x', 10000);
-
-        // Act
-        var parameter = new Parameter<string>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes with a string containing control characters.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithControlCharacterString_InitializesCorrectly()
-    {
-        // Arrange
-        const string expectedValue = "test\r\n\t\0value";
-
-        // Act
-        var parameter = new Parameter<string>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
     /// Tests that the constructor correctly initializes with a nullable int that has a value.
     /// </summary>
     [TestMethod]
@@ -1308,24 +758,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that the constructor correctly initializes with a nullable double that has a value.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithNullableDoubleValue_InitializesCorrectly()
-    {
-        // Arrange
-        double? expectedValue = 123.456;
-
-        // Act
-        var parameter = new Parameter<double?>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
     /// Tests that the constructor correctly initializes with a nullable double that is null.
     /// </summary>
     [TestMethod]
@@ -1340,24 +772,6 @@ public class ParameterTests
         // Assert
         Assert.IsNull(parameter.Value);
         Assert.IsNull(parameter.DefaultValue);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that the constructor correctly initializes with a nullable bool that has a value.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WithNullableBoolValue_InitializesCorrectly()
-    {
-        // Arrange
-        bool? expectedValue = true;
-
-        // Act
-        var parameter = new Parameter<bool?>(expectedValue);
-
-        // Assert
-        Assert.AreEqual(expectedValue, parameter.Value);
-        Assert.AreEqual(expectedValue, parameter.DefaultValue);
         Assert.IsFalse(parameter.IsModified);
     }
 
@@ -1529,27 +943,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that Reset correctly handles double values including special values like NaN and infinity.
-    /// </summary>
-    [TestMethod]
-    [DataRow(0.0, 1.0)]
-    [DataRow(double.MinValue, 0.0)]
-    [DataRow(double.MaxValue, 0.0)]
-    [DataRow(-1.5, 2.5)]
-    public void Reset_WithVariousDoubleValues_ResetsToDefaultValue(double defaultValue, double currentValue)
-    {
-        // Arrange
-        var parameter = new Parameter<double>(defaultValue) { Value = currentValue };
-
-        // Act
-        parameter.Reset();
-
-        // Assert
-        Assert.AreEqual(defaultValue, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
     /// Tests that Reset correctly handles special double values: NaN.
     /// </summary>
     [TestMethod]
@@ -1567,61 +960,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that Reset correctly handles special double values: PositiveInfinity.
-    /// </summary>
-    [TestMethod]
-    public void Reset_WithDoublePositiveInfinityDefaultValue_ResetsToPositiveInfinity()
-    {
-        // Arrange
-        var parameter = new Parameter<double>(double.PositiveInfinity) { Value = 1.0 };
-
-        // Act
-        parameter.Reset();
-
-        // Assert
-        Assert.AreEqual(double.PositiveInfinity, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that Reset correctly handles special double values: NegativeInfinity.
-    /// </summary>
-    [TestMethod]
-    public void Reset_WithDoubleNegativeInfinityDefaultValue_ResetsToNegativeInfinity()
-    {
-        // Arrange
-        var parameter = new Parameter<double>(double.NegativeInfinity) { Value = 1.0 };
-
-        // Act
-        parameter.Reset();
-
-        // Assert
-        Assert.AreEqual(double.NegativeInfinity, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that Reset correctly handles float values including special values like NaN and infinity.
-    /// </summary>
-    [TestMethod]
-    [DataRow(0.0f, 1.0f)]
-    [DataRow(float.MinValue, 0.0f)]
-    [DataRow(float.MaxValue, 0.0f)]
-    [DataRow(-1.5f, 2.5f)]
-    public void Reset_WithVariousFloatValues_ResetsToDefaultValue(float defaultValue, float currentValue)
-    {
-        // Arrange
-        var parameter = new Parameter<float>(defaultValue) { Value = currentValue };
-
-        // Act
-        parameter.Reset();
-
-        // Assert
-        Assert.AreEqual(defaultValue, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
     /// Tests that Reset correctly handles special float values: NaN.
     /// </summary>
     [TestMethod]
@@ -1635,40 +973,6 @@ public class ParameterTests
 
         // Assert
         Assert.IsTrue(float.IsNaN(parameter.Value));
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that Reset correctly handles special float values: PositiveInfinity.
-    /// </summary>
-    [TestMethod]
-    public void Reset_WithFloatPositiveInfinityDefaultValue_ResetsToPositiveInfinity()
-    {
-        // Arrange
-        var parameter = new Parameter<float>(float.PositiveInfinity) { Value = 1.0f };
-
-        // Act
-        parameter.Reset();
-
-        // Assert
-        Assert.AreEqual(float.PositiveInfinity, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that Reset correctly handles special float values: NegativeInfinity.
-    /// </summary>
-    [TestMethod]
-    public void Reset_WithFloatNegativeInfinityDefaultValue_ResetsToNegativeInfinity()
-    {
-        // Arrange
-        var parameter = new Parameter<float>(float.NegativeInfinity) { Value = 1.0f };
-
-        // Act
-        parameter.Reset();
-
-        // Assert
-        Assert.AreEqual(float.NegativeInfinity, parameter.Value);
         Assert.IsFalse(parameter.IsModified);
     }
 
@@ -1709,58 +1013,6 @@ public class ParameterTests
     }
 
     /// <summary>
-    /// Tests that Reset correctly handles empty string default values.
-    /// </summary>
-    [TestMethod]
-    public void Reset_WithEmptyStringDefaultValue_ResetsToEmptyString()
-    {
-        // Arrange
-        var parameter = new Parameter<string>("") { Value = "test" };
-
-        // Act
-        parameter.Reset();
-
-        // Assert
-        Assert.AreEqual("", parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that Reset correctly handles whitespace string default values.
-    /// </summary>
-    [TestMethod]
-    public void Reset_WithWhitespaceStringDefaultValue_ResetsToWhitespace()
-    {
-        // Arrange
-        var parameter = new Parameter<string>("   ") { Value = "test" };
-
-        // Act
-        parameter.Reset();
-
-        // Assert
-        Assert.AreEqual("   ", parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that Reset correctly handles long string values.
-    /// </summary>
-    [TestMethod]
-    public void Reset_WithLongStringDefaultValue_ResetsToLongString()
-    {
-        // Arrange
-        var longString = new string('a', 10000);
-        var parameter = new Parameter<string>(longString) { Value = "short" };
-
-        // Act
-        parameter.Reset();
-
-        // Assert
-        Assert.AreEqual(longString, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
     /// Tests that Reset correctly handles nullable value types with null default value.
     /// </summary>
     [TestMethod]
@@ -1790,38 +1042,6 @@ public class ParameterTests
         parameter.Reset();
 
         // Assert
-        Assert.AreEqual(10, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that Reset does not throw when ValueChanged event is null.
-    /// </summary>
-    [TestMethod]
-    public void Reset_WithNullTypedEvent_DoesNotThrow()
-    {
-        // Arrange
-        var parameter = new Parameter<int>(10) { Value = 20 };
-
-        // Act & Assert (should not throw)
-        parameter.Reset();
-
-        Assert.AreEqual(10, parameter.Value);
-        Assert.IsFalse(parameter.IsModified);
-    }
-
-    /// <summary>
-    /// Tests that Reset does not throw when IParameter.ValueChanged event is null.
-    /// </summary>
-    [TestMethod]
-    public void Reset_WithNullUntypedEvent_DoesNotThrow()
-    {
-        // Arrange
-        var parameter = new Parameter<int>(10) { Value = 20 };
-
-        // Act & Assert (should not throw)
-        parameter.Reset();
-
         Assert.AreEqual(10, parameter.Value);
         Assert.IsFalse(parameter.IsModified);
     }

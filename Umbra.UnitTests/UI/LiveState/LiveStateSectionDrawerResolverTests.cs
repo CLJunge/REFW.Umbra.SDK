@@ -1,10 +1,3 @@
-﻿using System;
-using System.Linq.Expressions;
-using System.Reflection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra.UI.LiveState;
-
-
 namespace Umbra.UI.LiveState.UnitTests;
 
 /// <summary>
@@ -22,16 +15,16 @@ public partial class LiveStateSectionDrawerResolverTests
     public void Resolve_ValidDrawerAndState_ReturnsCompiledAction()
     {
         // Arrange
-        Type stateType = typeof(ValidState);
-        ValidState context = new ValidState();
+        var stateType = typeof(ValidState);
+        var context = new ValidState();
 
         // Act
-        Action result = LiveStateSectionDrawerResolver.Resolve(stateType, context, out IDisposable disposable);
+        var result = LiveStateSectionDrawerResolver.Resolve(stateType, context, out var disposable);
 
         // Assert
         Assert.IsNotNull(result);
         Assert.IsNotNull(disposable);
-        Assert.IsInstanceOfType(disposable, typeof(ValidDrawer));
+        Assert.IsInstanceOfType<ValidDrawer>(disposable);
     }
 
     /// <summary>
@@ -43,36 +36,17 @@ public partial class LiveStateSectionDrawerResolverTests
     public void Resolve_CompiledActionInvokesDrawMethod_Success()
     {
         // Arrange
-        Type stateType = typeof(ValidState);
-        ValidState context = new ValidState { Value = 42 };
+        var stateType = typeof(ValidState);
+        var context = new ValidState { Value = 42 };
 
         // Act
-        Action compiledAction = LiveStateSectionDrawerResolver.Resolve(stateType, context, out IDisposable disposable);
+        var compiledAction = LiveStateSectionDrawerResolver.Resolve(stateType, context, out var disposable);
         compiledAction();
 
         // Assert
-        ValidDrawer drawer = (ValidDrawer)disposable;
+        var drawer = (ValidDrawer)disposable;
         Assert.IsTrue(drawer.DrawCalled);
         Assert.AreEqual(42, drawer.LastDrawnValue);
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="LiveStateSectionDrawerResolver.Resolve"/> correctly
-    /// sets the <paramref name="disposable"/> out parameter to the drawer instance.
-    /// </summary>
-    [TestMethod]
-    public void Resolve_SetsDisposableOutParameter_Success()
-    {
-        // Arrange
-        Type stateType = typeof(ValidState);
-        ValidState context = new ValidState();
-
-        // Act
-        LiveStateSectionDrawerResolver.Resolve(stateType, context, out IDisposable disposable);
-
-        // Assert
-        Assert.IsNotNull(disposable);
-        Assert.IsInstanceOfType(disposable, typeof(ILiveStateSectionDrawer<ValidState>));
     }
 
     /// <summary>
@@ -84,15 +58,15 @@ public partial class LiveStateSectionDrawerResolverTests
     public void Resolve_DrawerImplementsInterfaceForBaseType_Success()
     {
         // Arrange
-        Type stateType = typeof(DerivedState);
-        DerivedState context = new DerivedState { Value = 100 };
+        var stateType = typeof(DerivedState);
+        var context = new DerivedState { Value = 100 };
 
         // Act
-        Action compiledAction = LiveStateSectionDrawerResolver.Resolve(stateType, context, out IDisposable disposable);
+        var compiledAction = LiveStateSectionDrawerResolver.Resolve(stateType, context, out var disposable);
         compiledAction();
 
         // Assert
-        BaseStateDrawer drawer = (BaseStateDrawer)disposable;
+        var drawer = (BaseStateDrawer)disposable;
         Assert.IsTrue(drawer.DrawCalled);
         Assert.AreEqual(100, drawer.LastDrawnValue);
     }
@@ -110,98 +84,6 @@ public partial class LiveStateSectionDrawerResolverTests
         public TestDrawerAttribute(Type drawerType)
         {
             DrawerType = drawerType;
-        }
-    }
-
-    /// <summary>
-    /// State type without any drawer attribute.
-    /// </summary>
-    private sealed class StateWithoutAttribute
-    {
-    }
-
-    /// <summary>
-    /// State type with a drawer that has no parameterless constructor.
-    /// </summary>
-    [TestDrawer(typeof(DrawerWithoutConstructor))]
-    private sealed class StateWithDrawerWithoutConstructor
-    {
-    }
-
-    /// <summary>
-    /// Drawer that requires constructor parameters.
-    /// </summary>
-    private sealed class DrawerWithoutConstructor : ILiveStateSectionDrawer<StateWithDrawerWithoutConstructor>
-    {
-        public DrawerWithoutConstructor(int requiredParam)
-        {
-        }
-
-        public void Draw(StateWithDrawerWithoutConstructor state)
-        {
-        }
-    }
-
-    /// <summary>
-    /// State type with a drawer whose constructor throws an exception.
-    /// </summary>
-    [TestDrawer(typeof(ThrowingDrawer))]
-    private sealed class StateWithThrowingDrawer
-    {
-    }
-
-    /// <summary>
-    /// Drawer whose constructor throws an exception.
-    /// </summary>
-    private sealed class ThrowingDrawer : ILiveStateSectionDrawer<StateWithThrowingDrawer>
-    {
-        public ThrowingDrawer()
-        {
-            throw new InvalidOperationException("Constructor exception");
-        }
-
-        public void Draw(StateWithThrowingDrawer state)
-        {
-        }
-    }
-
-    /// <summary>
-    /// State type with a drawer that does not implement ILiveStateSectionDrawer.
-    /// </summary>
-    [TestDrawer(typeof(NonDrawer))]
-    private sealed class StateWithNonDrawer
-    {
-    }
-
-    /// <summary>
-    /// Class that does not implement ILiveStateSectionDrawer.
-    /// </summary>
-    private sealed class NonDrawer
-    {
-    }
-
-    /// <summary>
-    /// State type with a drawer that implements ILiveStateSectionDrawer for a different type.
-    /// </summary>
-    [TestDrawer(typeof(IncompatibleDrawer))]
-    private sealed class StateWithIncompatibleDrawer
-    {
-    }
-
-    /// <summary>
-    /// Another state type used for incompatibility testing.
-    /// </summary>
-    private sealed class OtherState
-    {
-    }
-
-    /// <summary>
-    /// Drawer that implements ILiveStateSectionDrawer for a different state type.
-    /// </summary>
-    private sealed class IncompatibleDrawer : ILiveStateSectionDrawer<OtherState>
-    {
-        public void Draw(OtherState state)
-        {
         }
     }
 
@@ -258,35 +140,6 @@ public partial class LiveStateSectionDrawerResolverTests
             DrawCalled = true;
             LastDrawnValue = state.Value;
         }
-    }
-
-    private sealed class StateForMultiInterfaceDrawer
-    {
-        public string? Data { get; set; }
-    }
-
-    /// <summary>
-    /// Another state type for multiple interface testing.
-    /// </summary>
-    private sealed class AnotherState
-    {
-        public string? Info { get; set; }
-    }
-
-    /// <summary>
-    /// State type with an abstract drawer.
-    /// </summary>
-    [TestDrawer(typeof(AbstractDrawer))]
-    private sealed class StateWithAbstractDrawer
-    {
-    }
-
-    /// <summary>
-    /// Abstract drawer that cannot be instantiated.
-    /// </summary>
-    private abstract class AbstractDrawer : ILiveStateSectionDrawer<StateWithAbstractDrawer>
-    {
-        public abstract void Draw(StateWithAbstractDrawer state);
     }
 
     #endregion

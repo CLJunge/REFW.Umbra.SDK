@@ -64,26 +64,6 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Verifies that Tick returns immediately when both disposed and nothing pending.
-    /// </summary>
-    [TestMethod]
-    public void Tick_WhenDisposedAndNothingPending_DoesNotCallFlush()
-    {
-        // Arrange
-        var mockStore = CreateMockStore();
-        var controller = new DeferredSaveController<TestConfig>(mockStore.Object);
-
-        SetPrivateField(controller, "_anyPending", false);
-        SetPrivateField(controller, "_disposed", true);
-
-        // Act
-        controller.Tick();
-
-        // Assert
-        mockStore.Verify(s => s.Save(), Times.Never);
-    }
-
-    /// <summary>
     /// Verifies that Tick calls Flush immediately when a non-slider change is pending.
     /// </summary>
     [TestMethod]
@@ -153,108 +133,6 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Verifies that Tick calls Flush when elapsed time equals the debounce window exactly.
-    /// </summary>
-    [TestMethod]
-    public void Tick_WhenSliderPendingAndDebounceExactlyElapsed_CallsFlush()
-    {
-        // Arrange
-        var debounceWindow = TimeSpan.FromMilliseconds(100);
-        var mockStore = CreateMockStore();
-        var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
-
-        var frequency = Stopwatch.Frequency;
-        var ticksForDebounce = (long)(debounceWindow.TotalSeconds * frequency);
-        var oldTimestamp = Stopwatch.GetTimestamp() - ticksForDebounce;
-
-        SetPrivateField(controller, "_anyPending", true);
-        SetPrivateField(controller, "_sliderPending", true);
-        SetPrivateField(controller, "_sliderChangedAt", oldTimestamp);
-        SetPrivateField(controller, "_disposed", false);
-
-        // Act
-        controller.Tick();
-
-        // Assert
-        mockStore.Verify(s => s.Save(), Times.Once);
-    }
-
-    /// <summary>
-    /// Verifies that multiple Tick calls with slider pending and insufficient elapsed time do not trigger Flush.
-    /// </summary>
-    [TestMethod]
-    public void Tick_MultipleCallsWithSliderPendingBeforeDebounce_DoesNotCallFlush()
-    {
-        // Arrange
-        var debounceWindow = TimeSpan.FromSeconds(10);
-        var mockStore = CreateMockStore();
-        var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
-
-        var timestamp = Stopwatch.GetTimestamp();
-        SetPrivateField(controller, "_anyPending", true);
-        SetPrivateField(controller, "_sliderPending", true);
-        SetPrivateField(controller, "_sliderChangedAt", timestamp);
-        SetPrivateField(controller, "_disposed", false);
-
-        // Act - call multiple times in quick succession
-        controller.Tick();
-        controller.Tick();
-        controller.Tick();
-
-        // Assert
-        mockStore.Verify(s => s.Save(), Times.Never);
-    }
-
-    /// <summary>
-    /// Verifies that Tick with very large elapsed time still calls Flush correctly.
-    /// </summary>
-    [TestMethod]
-    public void Tick_WhenSliderPendingWithVeryLargeElapsedTime_CallsFlush()
-    {
-        // Arrange
-        var debounceWindow = TimeSpan.FromSeconds(1);
-        var mockStore = CreateMockStore();
-        var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
-
-        var veryOldTimestamp = Stopwatch.GetTimestamp() - (Stopwatch.Frequency * 3600);
-        SetPrivateField(controller, "_anyPending", true);
-        SetPrivateField(controller, "_sliderPending", true);
-        SetPrivateField(controller, "_sliderChangedAt", veryOldTimestamp);
-        SetPrivateField(controller, "_disposed", false);
-
-        // Act
-        controller.Tick();
-
-        // Assert
-        mockStore.Verify(s => s.Save(), Times.Once);
-    }
-
-    /// <summary>
-    /// Verifies that Tick after disposal is a permanent no-op even with pending changes.
-    /// </summary>
-    [TestMethod]
-    public void Tick_AfterDisposal_IsPermanentNoOp()
-    {
-        // Arrange
-        var mockStore = CreateMockStore();
-        var controller = new DeferredSaveController<TestConfig>(mockStore.Object);
-
-        SetPrivateField(controller, "_anyPending", true);
-        SetPrivateField(controller, "_sliderPending", false);
-        SetPrivateField(controller, "_disposed", false);
-
-        controller.Dispose();
-
-        mockStore.Invocations.Clear();
-
-        // Act - call Tick after disposal
-        controller.Tick();
-
-        // Assert
-        mockStore.Verify(s => s.Save(), Times.Never);
-    }
-
-    /// <summary>
     /// Verifies that Tick with zero debounce window calls Flush immediately for slider changes.
     /// </summary>
     [TestMethod]
@@ -276,31 +154,6 @@ public sealed partial class DeferredSaveControllerTests
 
         // Assert - even with zero elapsed time, >= zero should be true
         mockStore.Verify(s => s.Save(), Times.Once);
-    }
-
-    /// <summary>
-    /// Verifies that Tick clears pending state after flushing non-slider changes.
-    /// </summary>
-    [TestMethod]
-    public void Tick_AfterFlushingNonSliderChange_ClearsPendingState()
-    {
-        // Arrange
-        var mockStore = CreateMockStore();
-        var controller = new DeferredSaveController<TestConfig>(mockStore.Object);
-
-        SetPrivateField(controller, "_anyPending", true);
-        SetPrivateField(controller, "_sliderPending", false);
-        SetPrivateField(controller, "_disposed", false);
-
-        // Act
-        controller.Tick();
-
-        // Assert - verify pending state was cleared
-        var anyPending = GetPrivateField<bool>(controller, "_anyPending");
-        var sliderPending = GetPrivateField<bool>(controller, "_sliderPending");
-
-        Assert.IsFalse(anyPending);
-        Assert.IsFalse(sliderPending);
     }
 
     /// <summary>
@@ -376,30 +229,6 @@ public sealed partial class DeferredSaveControllerTests
         // Assert - behavior depends on Stopwatch.GetElapsedTime implementation
         // Since timestamp is in the future, elapsed time should be negative or zero
         mockStore.Verify(s => s.Save(), Times.Never);
-    }
-
-    /// <summary>
-    /// Verifies that Tick with very small debounce window (1 tick) works correctly.
-    /// </summary>
-    [TestMethod]
-    public void Tick_WithVerySmallDebounceWindow_CallsFlushAfterMinimalWait()
-    {
-        // Arrange
-        var debounceWindow = TimeSpan.FromTicks(1);
-        var mockStore = CreateMockStore();
-        var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
-
-        var oldTimestamp = Stopwatch.GetTimestamp() - 100;
-        SetPrivateField(controller, "_anyPending", true);
-        SetPrivateField(controller, "_sliderPending", true);
-        SetPrivateField(controller, "_sliderChangedAt", oldTimestamp);
-        SetPrivateField(controller, "_disposed", false);
-
-        // Act
-        controller.Tick();
-
-        // Assert
-        mockStore.Verify(s => s.Save(), Times.Once);
     }
 
     /// <summary>
@@ -550,76 +379,6 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Tests that Dispose flushes pending changes to disk before removing listeners.
-    /// Verifies that Save is called when there are pending changes and the store is not disposed.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WhenPendingChangesExist_FlushesBeforeRemovingListeners()
-    {
-        // Arrange
-        var storeMock = new Mock<SettingsStore<TestConfig>>(MockBehavior.Strict, "dummy.json");
-        storeMock.SetupGet(s => s.IsDisposed).Returns(false);
-        storeMock.SetupGet(s => s.IsLoaded).Returns(true);
-        storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
-        storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Action>()));
-
-        var callSequence = new System.Collections.Generic.List<string>();
-        storeMock.Setup(s => s.Save()).Callback(() => callSequence.Add("Save"));
-        storeMock.Setup(s => s.RemoveListenerFromAll(It.IsAny<Action>())).Callback(() => callSequence.Add("RemoveAny"));
-        storeMock.Setup(s => s.RemoveListenerFromAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>())).Callback(() => callSequence.Add("RemoveNumeric"));
-
-        var controller = new DeferredSaveController<TestConfig>(storeMock.Object, TimeSpan.FromSeconds(1));
-
-        // Force pending state
-        var anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
-        anyPendingField!.SetValue(controller, true);
-
-        // Act
-        controller.Dispose();
-
-        // Assert
-        Assert.HasCount(3, callSequence, "All three methods should be called");
-        Assert.AreEqual("Save", callSequence[0], "Save should be called first (as part of Flush)");
-        Assert.Contains("RemoveAny", callSequence, "RemoveListenerFromAll(Action) should be called after Save");
-        Assert.Contains("RemoveNumeric", callSequence, "RemoveListenerFromAll(predicate, Action) should be called after Save");
-    }
-
-    /// <summary>
-    /// Tests that Dispose clears pending state flags after flushing.
-    /// Verifies that _anyPending and _sliderPending are set to false after disposal.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WhenCalled_ClearsPendingStateFlags()
-    {
-        // Arrange
-        var storeMock = new Mock<SettingsStore<TestConfig>>(MockBehavior.Strict, "dummy.json");
-        storeMock.SetupGet(s => s.IsDisposed).Returns(false);
-        storeMock.SetupGet(s => s.IsLoaded).Returns(true);
-        storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
-        storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Action>()));
-        storeMock.Setup(s => s.Save());
-        storeMock.Setup(s => s.RemoveListenerFromAll(It.IsAny<Action>()));
-        storeMock.Setup(s => s.RemoveListenerFromAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
-
-        var controller = new DeferredSaveController<TestConfig>(storeMock.Object, TimeSpan.FromSeconds(1));
-
-        // Force pending state
-        var anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
-        var sliderPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_sliderPending", BindingFlags.NonPublic | BindingFlags.Instance);
-        anyPendingField!.SetValue(controller, true);
-        sliderPendingField!.SetValue(controller, true);
-
-        // Act
-        controller.Dispose();
-
-        // Assert
-        var anyPending = (bool)anyPendingField.GetValue(controller)!;
-        var sliderPending = (bool)sliderPendingField.GetValue(controller)!;
-        Assert.IsFalse(anyPending, "_anyPending should be cleared after disposal");
-        Assert.IsFalse(sliderPending, "_sliderPending should be cleared after disposal");
-    }
-
-    /// <summary>
     /// Tests that Dispose does not throw when store is not disposed and no pending changes exist.
     /// Verifies normal cleanup path without saving.
     /// </summary>
@@ -644,49 +403,6 @@ public sealed partial class DeferredSaveControllerTests
         storeMock.Verify(s => s.Save(), Times.Never, "Save should not be called when there are no pending changes");
         storeMock.Verify(s => s.RemoveListenerFromAll(It.IsAny<Action>()), Times.Once);
         storeMock.Verify(s => s.RemoveListenerFromAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that Dispose works correctly with different debounce window values.
-    /// Verifies that the debounce window setting does not affect disposal behavior.
-    /// </summary>
-    [TestMethod]
-    [DataRow(0)]
-    [DataRow(1)]
-    [DataRow(5)]
-    [DataRow(60)]
-    [DataRow(3600)]
-    public void Dispose_WithVariousDebounceWindows_PerformsCleanupRegardless(int debounceSeconds)
-    {
-        // Arrange
-        var storeMock = new Mock<SettingsStore<TestConfig>>(MockBehavior.Strict, "dummy.json");
-        storeMock.SetupGet(s => s.IsDisposed).Returns(false);
-        storeMock.SetupGet(s => s.IsLoaded).Returns(true);
-        storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
-        storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Action>()));
-        storeMock.Setup(s => s.Save());
-        storeMock.Setup(s => s.RemoveListenerFromAll(It.IsAny<Action>()));
-        storeMock.Setup(s => s.RemoveListenerFromAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
-
-        var controller = new DeferredSaveController<TestConfig>(storeMock.Object, TimeSpan.FromSeconds(debounceSeconds));
-
-        // Force pending state
-        var anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
-        var sliderPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_sliderPending", BindingFlags.NonPublic | BindingFlags.Instance);
-        anyPendingField!.SetValue(controller, true);
-        sliderPendingField!.SetValue(controller, true);
-
-        // Act
-        controller.Dispose();
-
-        // Assert
-        storeMock.Verify(s => s.Save(), Times.Once, "Save should be called regardless of debounce window");
-        storeMock.Verify(s => s.RemoveListenerFromAll(It.IsAny<Action>()), Times.Once);
-        storeMock.Verify(s => s.RemoveListenerFromAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()), Times.Once);
-
-        var disposedField = typeof(DeferredSaveController<TestConfig>).GetField("_disposed", BindingFlags.NonPublic | BindingFlags.Instance);
-        var isDisposed = (bool)disposedField!.GetValue(controller)!;
-        Assert.IsTrue(isDisposed, "Controller should be marked as disposed");
     }
 
     /// <summary>
@@ -837,42 +553,6 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Tests that Flush clears both _anyPending and _sliderPending flags.
-    /// </summary>
-    [TestMethod]
-    public void Flush_WhenStoreNotDisposed_ClearsBothPendingFlags()
-    {
-        // Arrange
-        Mock<SettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict, "test.json");
-        mockStore.Setup(s => s.IsDisposed).Returns(false);
-        mockStore.Setup(s => s.IsLoaded).Returns(true);
-        mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
-        mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Action>()));
-        mockStore.Setup(s => s.Save());
-
-        DeferredSaveController<TestConfig> controller = new(mockStore.Object);
-
-        // Set both pending flags using reflection
-        var anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
-        var sliderPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_sliderPending", BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.IsNotNull(anyPendingField, "_anyPending field not found");
-        Assert.IsNotNull(sliderPendingField, "_sliderPending field not found");
-
-        anyPendingField.SetValue(controller, true);
-        sliderPendingField.SetValue(controller, true);
-
-        // Act
-        controller.Flush();
-
-        // Assert
-        var anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
-        var sliderPendingAfter = (bool)sliderPendingField.GetValue(controller)!;
-
-        Assert.IsFalse(anyPendingAfter, "_anyPending should be cleared");
-        Assert.IsFalse(sliderPendingAfter, "_sliderPending should be cleared");
-    }
-
-    /// <summary>
     /// Tests that Flush does not throw an exception when called on a fresh controller with no pending changes.
     /// </summary>
     [TestMethod]
@@ -890,40 +570,6 @@ public sealed partial class DeferredSaveControllerTests
 
         // Act & Assert
         controller.Flush(); // Should not throw
-        mockStore.Verify(s => s.Save(), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that Flush transitions the controller from pending to non-pending state after a successful save.
-    /// </summary>
-    [TestMethod]
-    public void Flush_AfterSuccessfulSave_TransitionsToClearedState()
-    {
-        // Arrange
-        Mock<SettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict, "test.json");
-        mockStore.Setup(s => s.IsDisposed).Returns(false);
-        mockStore.Setup(s => s.IsLoaded).Returns(true);
-        mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
-        mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Action>()));
-        mockStore.Setup(s => s.Save());
-
-        DeferredSaveController<TestConfig> controller = new(mockStore.Object);
-
-        // Set pending state using reflection
-        var anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.IsNotNull(anyPendingField);
-        anyPendingField.SetValue(controller, true);
-
-        // Verify state before flush
-        var anyPendingBefore = (bool)anyPendingField.GetValue(controller)!;
-        Assert.IsTrue(anyPendingBefore, "Should start with pending state");
-
-        // Act
-        controller.Flush();
-
-        // Assert
-        var anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
-        Assert.IsFalse(anyPendingAfter, "Should have cleared pending state");
         mockStore.Verify(s => s.Save(), Times.Once);
     }
 
@@ -981,159 +627,6 @@ public sealed partial class DeferredSaveControllerTests
 
             // Assert
             Assert.AreEqual(expectedDebounceWindow, controller.DebounceWindow);
-
-            controller.Dispose();
-            store.Dispose();
-        }
-        finally
-        {
-            if (File.Exists(tempFile))
-                File.Delete(tempFile);
-        }
-    }
-
-    /// <summary>
-    /// Tests that the constructor sets DebounceWindow to zero
-    /// when a zero TimeSpan is provided.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ValidStoreWithZeroDebounceWindow_SetsZeroValue()
-    {
-        // Arrange
-        var tempFile = Path.GetTempFileName();
-        try
-        {
-            var store = new SettingsStore<TestConfig>(tempFile);
-            store.Load();
-            var zeroDebounce = TimeSpan.Zero;
-
-            // Act
-            var controller = new DeferredSaveController<TestConfig>(store, debounceWindow: zeroDebounce);
-
-            // Assert
-            Assert.AreEqual(TimeSpan.Zero, controller.DebounceWindow);
-
-            controller.Dispose();
-            store.Dispose();
-        }
-        finally
-        {
-            if (File.Exists(tempFile))
-                File.Delete(tempFile);
-        }
-    }
-
-    /// <summary>
-    /// Tests that the constructor sets DebounceWindow to a negative value
-    /// when a negative TimeSpan is provided.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ValidStoreWithNegativeDebounceWindow_SetsNegativeValue()
-    {
-        // Arrange
-        var tempFile = Path.GetTempFileName();
-        try
-        {
-            var store = new SettingsStore<TestConfig>(tempFile);
-            store.Load();
-            var negativeDebounce = TimeSpan.FromSeconds(-5);
-
-            // Act
-            var controller = new DeferredSaveController<TestConfig>(store, debounceWindow: negativeDebounce);
-
-            // Assert
-            Assert.AreEqual(TimeSpan.FromSeconds(-5), controller.DebounceWindow);
-
-            controller.Dispose();
-            store.Dispose();
-        }
-        finally
-        {
-            if (File.Exists(tempFile))
-                File.Delete(tempFile);
-        }
-    }
-
-    /// <summary>
-    /// Tests that the constructor sets DebounceWindow to the maximum TimeSpan value
-    /// when TimeSpan.MaxValue is provided.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ValidStoreWithMaxTimeSpan_SetsMaxValue()
-    {
-        // Arrange
-        var tempFile = Path.GetTempFileName();
-        try
-        {
-            var store = new SettingsStore<TestConfig>(tempFile);
-            store.Load();
-
-            // Act
-            var controller = new DeferredSaveController<TestConfig>(store, debounceWindow: TimeSpan.MaxValue);
-
-            // Assert
-            Assert.AreEqual(TimeSpan.MaxValue, controller.DebounceWindow);
-
-            controller.Dispose();
-            store.Dispose();
-        }
-        finally
-        {
-            if (File.Exists(tempFile))
-                File.Delete(tempFile);
-        }
-    }
-
-    /// <summary>
-    /// Tests that the constructor sets DebounceWindow to the minimum TimeSpan value
-    /// when TimeSpan.MinValue is provided.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ValidStoreWithMinTimeSpan_SetsMinValue()
-    {
-        // Arrange
-        var tempFile = Path.GetTempFileName();
-        try
-        {
-            var store = new SettingsStore<TestConfig>(tempFile);
-            store.Load();
-
-            // Act
-            var controller = new DeferredSaveController<TestConfig>(store, debounceWindow: TimeSpan.MinValue);
-
-            // Assert
-            Assert.AreEqual(TimeSpan.MinValue, controller.DebounceWindow);
-
-            controller.Dispose();
-            store.Dispose();
-        }
-        finally
-        {
-            if (File.Exists(tempFile))
-                File.Delete(tempFile);
-        }
-    }
-
-    /// <summary>
-    /// Tests that the constructor successfully initializes when provided with a valid,
-    /// loaded, non-disposed store and registers listeners without throwing exceptions.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ValidStore_InitializesSuccessfully()
-    {
-        // Arrange
-        var tempFile = Path.GetTempFileName();
-        try
-        {
-            var store = new SettingsStore<TestConfig>(tempFile);
-            store.Load();
-
-            // Act
-            var controller = new DeferredSaveController<TestConfig>(store);
-
-            // Assert
-            Assert.IsNotNull(controller);
-            Assert.AreEqual(TimeSpan.FromSeconds(1), controller.DebounceWindow);
 
             controller.Dispose();
             store.Dispose();

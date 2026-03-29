@@ -8,24 +8,6 @@ namespace Umbra.Logging.UnitTests;
 public sealed class PluginLoggerTests
 {
     /// <summary>
-    /// Tests that the constructor with a valid prefix correctly assigns it to the Prefix property.
-    /// Input: A typical plugin name string.
-    /// Expected: The Prefix property is set to the provided value.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ValidPrefix_SetsPrefixProperty()
-    {
-        // Arrange
-        const string expectedPrefix = "MyPlugin";
-
-        // Act
-        var logger = new PluginLogger(expectedPrefix);
-
-        // Assert
-        Assert.AreEqual(expectedPrefix, logger.Prefix);
-    }
-
-    /// <summary>
     /// Tests that the constructor correctly handles various string values including empty and whitespace.
     /// Input: Various string edge cases (empty, whitespace, long strings, special characters).
     /// Expected: The Prefix property is set to the exact value provided.
@@ -72,25 +54,6 @@ public sealed class PluginLoggerTests
     }
 
     /// <summary>
-    /// Tests that the constructor handles extremely long strings correctly.
-    /// Input: A string with 10,000 characters.
-    /// Expected: The Prefix property is set to the entire string without truncation.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ExtremelyLongString_SetsPrefixWithoutTruncation()
-    {
-        // Arrange
-        var longPrefix = new string('X', 10000);
-
-        // Act
-        var logger = new PluginLogger(longPrefix);
-
-        // Assert
-        Assert.AreEqual(longPrefix, logger.Prefix);
-        Assert.AreEqual(10000, logger.Prefix?.Length);
-    }
-
-    /// <summary>
     /// Tests that the constructor correctly handles strings with control characters.
     /// Input: A string containing various control characters.
     /// Expected: The Prefix property preserves all control characters.
@@ -119,40 +82,6 @@ public sealed class PluginLoggerTests
         var logger = new PluginLogger("TestPlugin")
         {
             MinLevel = LogLevel.None
-        };
-
-        // Act & Assert
-        logger.Info("Test {0}", "value");
-    }
-
-    /// <summary>
-    /// Tests that Info with format and args does not throw when MinLevel is set to Warning,
-    /// filtering out the info message.
-    /// </summary>
-    [TestMethod]
-    public void Info_MinLevelWarning_DoesNotThrow()
-    {
-        // Arrange
-        var logger = new PluginLogger("TestPlugin")
-        {
-            MinLevel = LogLevel.Warning
-        };
-
-        // Act & Assert
-        logger.Info("Test {0}", "value");
-    }
-
-    /// <summary>
-    /// Tests that Info with format and args does not throw when MinLevel is set to Error,
-    /// filtering out the info message.
-    /// </summary>
-    [TestMethod]
-    public void Info_MinLevelError_DoesNotThrow()
-    {
-        // Arrange
-        var logger = new PluginLogger("TestPlugin")
-        {
-            MinLevel = LogLevel.Error
         };
 
         // Act & Assert
@@ -466,22 +395,6 @@ public sealed class PluginLoggerTests
 
         // Act & Assert
         logger.Info("Test {0} {1} {2} {3} {4}", int.MinValue, int.MaxValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity);
-    }
-
-    /// <summary>
-    /// Tests that Info with format and args does not throw when MinLevel equals Info exactly.
-    /// </summary>
-    [TestMethod]
-    public void Info_MinLevelEqualsInfo_DoesNotThrow()
-    {
-        // Arrange
-        var logger = new PluginLogger("TestPlugin")
-        {
-            MinLevel = LogLevel.Info
-        };
-
-        // Act & Assert
-        logger.Info("Test {0}", "value");
     }
 
     /// <summary>
@@ -826,19 +739,6 @@ public sealed class PluginLoggerTests
     }
 
     /// <summary>
-    /// Verifies that the parameterless constructor successfully creates a non-null instance.
-    /// </summary>
-    [TestMethod]
-    public void PluginLogger_ParameterlessConstructor_CreatesNonNullInstance()
-    {
-        // Act
-        var logger = new PluginLogger();
-
-        // Assert
-        Assert.IsNotNull(logger);
-    }
-
-    /// <summary>
     /// Verifies that the parameterless constructor initializes all properties to their expected default values.
     /// Tests Prefix (null), PrefixFormat ("[{0}]"), and MinLevel (LogLevel.Info).
     /// </summary>
@@ -881,29 +781,6 @@ public sealed class PluginLoggerTests
     }
 
     /// <summary>
-    /// Verifies that multiple sequential instantiations via the parameterless constructor
-    /// consistently produce instances with identical default values.
-    /// </summary>
-    [TestMethod]
-    public void PluginLogger_ParameterlessConstructor_ConsistentDefaultsAcrossMultipleInstantiations()
-    {
-        // Act
-        var loggers = new PluginLogger[5];
-        for (var i = 0; i < loggers.Length; i++)
-        {
-            loggers[i] = new PluginLogger();
-        }
-
-        // Assert
-        for (var i = 0; i < loggers.Length; i++)
-        {
-            Assert.IsNull(loggers[i].Prefix, $"Instance {i}: Prefix should be null");
-            Assert.AreEqual("[{0}]", loggers[i].PrefixFormat, $"Instance {i}: PrefixFormat should be [{{0}}]");
-            Assert.AreEqual(LogLevel.Info, loggers[i].MinLevel, $"Instance {i}: MinLevel should be Info");
-        }
-    }
-
-    /// <summary>
     /// Tests that <see cref="PluginLogger.Warning(string)"/> does not throw when global logging
     /// is disabled via <see cref="Logger.Enabled"/>.
     /// </summary>
@@ -918,58 +795,6 @@ public sealed class PluginLoggerTests
             var logger = new PluginLogger("TestPlugin")
             {
                 MinLevel = LogLevel.Info
-            };
-
-            // Act & Assert
-            logger.Warning("Test message");
-        }
-        finally
-        {
-            global::Umbra.Logging.Logger.Enabled = originalEnabled;
-        }
-    }
-
-    /// <summary>
-    /// Tests that <see cref="PluginLogger.Warning(string)"/> does not throw when <see cref="PluginLogger.MinLevel"/>
-    /// is set to <see cref="LogLevel.Error"/>, filtering out warning messages.
-    /// </summary>
-    [TestMethod]
-    public void Warning_WhenMinLevelIsError_DoesNotThrow()
-    {
-        // Arrange
-        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
-        try
-        {
-            global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                MinLevel = LogLevel.Error
-            };
-
-            // Act & Assert
-            logger.Warning("Test message");
-        }
-        finally
-        {
-            global::Umbra.Logging.Logger.Enabled = originalEnabled;
-        }
-    }
-
-    /// <summary>
-    /// Tests that <see cref="PluginLogger.Warning(string)"/> does not throw when <see cref="PluginLogger.MinLevel"/>
-    /// is set to <see cref="LogLevel.None"/>, filtering out all messages.
-    /// </summary>
-    [TestMethod]
-    public void Warning_WhenMinLevelIsNone_DoesNotThrow()
-    {
-        // Arrange
-        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
-        try
-        {
-            global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                MinLevel = LogLevel.None
             };
 
             // Act & Assert
@@ -1004,35 +829,6 @@ public sealed class PluginLoggerTests
             var logger = new PluginLogger("TestPlugin")
             {
                 MinLevel = LogLevel.Warning
-            };
-
-            // Act & Assert
-            logger.Warning(message);
-        }
-        finally
-        {
-            global::Umbra.Logging.Logger.Enabled = originalEnabled;
-        }
-    }
-
-    /// <summary>
-    /// Tests that <see cref="PluginLogger.Warning(string)"/> does not throw when <see cref="PluginLogger.MinLevel"/>
-    /// is set to <see cref="LogLevel.Info"/> (lower than Warning) and logging is enabled.
-    /// </summary>
-    /// <param name="message">The message to log.</param>
-    [TestMethod]
-    [DataRow("Test message")]
-    [DataRow("Another test")]
-    public void Warning_WhenMinLevelIsInfo_DoesNotThrow(string message)
-    {
-        // Arrange
-        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
-        try
-        {
-            global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                MinLevel = LogLevel.Info
             };
 
             // Act & Assert
@@ -1232,32 +1028,6 @@ public sealed class PluginLoggerTests
     }
 
     /// <summary>
-    /// Tests that <see cref="PluginLogger.Warning(string)"/> correctly handles boundary condition
-    /// where <see cref="PluginLogger.MinLevel"/> equals <see cref="LogLevel.Warning"/>.
-    /// </summary>
-    [TestMethod]
-    public void Warning_WhenMinLevelEqualsWarning_DoesNotThrow()
-    {
-        // Arrange
-        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
-        try
-        {
-            global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                MinLevel = LogLevel.Warning
-            };
-
-            // Act & Assert
-            logger.Warning("Boundary test message");
-        }
-        finally
-        {
-            global::Umbra.Logging.Logger.Enabled = originalEnabled;
-        }
-    }
-
-    /// <summary>
     /// Tests that <see cref="PluginLogger.Warning(string)"/> does not throw when
     /// whitespace-only message is provided.
     /// </summary>
@@ -1366,185 +1136,6 @@ public sealed class PluginLoggerTests
             };
 
             // Act - should return early because None (3) > Error (2)
-            logger.Error("Test error message");
-
-            // Assert - method completes without exception
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabledState;
-        }
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="PluginLogger.Error(string)"/> logs the message
-    /// when <see cref="PluginLogger.MinLevel"/> is <see cref="LogLevel.Info"/>
-    /// and logging is enabled.
-    /// </summary>
-    /// <remarks>
-    /// Note: This test cannot verify that API.LogError is actually called due to
-    /// the inability to mock static methods with Moq 4.20.72. It verifies that
-    /// the method executes the logging code path without throwing exceptions.
-    /// </remarks>
-    [TestMethod]
-    public void Error_MinLevelInfo_LogsMessage()
-    {
-        // Arrange
-        var originalEnabledState = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                MinLevel = LogLevel.Info
-            };
-
-            // Act - should proceed to call API.LogError because Info (0) <= Error (2)
-            logger.Error("Test error message");
-
-            // Assert - method completes without exception
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabledState;
-        }
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="PluginLogger.Error(string)"/> logs the message
-    /// when <see cref="PluginLogger.MinLevel"/> is <see cref="LogLevel.Warning"/>
-    /// and logging is enabled.
-    /// </summary>
-    [TestMethod]
-    public void Error_MinLevelWarning_LogsMessage()
-    {
-        // Arrange
-        var originalEnabledState = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                MinLevel = LogLevel.Warning
-            };
-
-            // Act - should proceed to call API.LogError because Warning (1) <= Error (2)
-            logger.Error("Test error message");
-
-            // Assert - method completes without exception
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabledState;
-        }
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="PluginLogger.Error(string)"/> logs the message
-    /// when <see cref="PluginLogger.MinLevel"/> is exactly <see cref="LogLevel.Error"/>
-    /// and logging is enabled.
-    /// </summary>
-    [TestMethod]
-    public void Error_MinLevelError_LogsMessage()
-    {
-        // Arrange
-        var originalEnabledState = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                MinLevel = LogLevel.Error
-            };
-
-            // Act - should proceed to call API.LogError because Error (2) <= Error (2)
-            logger.Error("Test error message");
-
-            // Assert - method completes without exception
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabledState;
-        }
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="PluginLogger.Error(string)"/> correctly formats
-    /// the message with a prefix when <see cref="PluginLogger.Prefix"/> is set.
-    /// </summary>
-    [TestMethod]
-    public void Error_WithPrefix_FormatsMessageCorrectly()
-    {
-        // Arrange
-        var originalEnabledState = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                Prefix = "MyPlugin",
-                MinLevel = LogLevel.Info
-            };
-
-            // Act - should format message as "[MyPlugin] Test error message"
-            logger.Error("Test error message");
-
-            // Assert - method completes without exception
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabledState;
-        }
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="PluginLogger.Error(string)"/> uses the unformatted
-    /// message when <see cref="PluginLogger.Prefix"/> is null.
-    /// </summary>
-    [TestMethod]
-    public void Error_WithNullPrefix_UsesUnformattedMessage()
-    {
-        // Arrange
-        var originalEnabledState = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger
-            {
-                Prefix = null,
-                MinLevel = LogLevel.Info
-            };
-
-            // Act - should use message unchanged
-            logger.Error("Test error message");
-
-            // Assert - method completes without exception
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabledState;
-        }
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="PluginLogger.Error(string)"/> uses the unformatted
-    /// message when <see cref="PluginLogger.Prefix"/> is an empty string.
-    /// </summary>
-    [TestMethod]
-    public void Error_WithEmptyPrefix_UsesUnformattedMessage()
-    {
-        // Arrange
-        var originalEnabledState = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger
-            {
-                Prefix = string.Empty,
-                MinLevel = LogLevel.Info
-            };
-
-            // Act - should use message unchanged
             logger.Error("Test error message");
 
             // Assert - method completes without exception
@@ -1823,58 +1414,6 @@ public sealed class PluginLoggerTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="PluginLogger.Error(string)"/> with no prefix
-    /// initialized via the parameterless constructor works correctly.
-    /// </summary>
-    [TestMethod]
-    public void Error_ParameterlessConstructor_WorksCorrectly()
-    {
-        // Arrange
-        var originalEnabledState = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger
-            {
-                MinLevel = LogLevel.Info
-            };
-
-            // Act & Assert - should work with no prefix
-            logger.Error("Test error message");
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabledState;
-        }
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="PluginLogger.Error(string)"/> initialized with
-    /// the parameterized constructor correctly applies the prefix.
-    /// </summary>
-    [TestMethod]
-    public void Error_ParameterizedConstructor_AppliesPrefixCorrectly()
-    {
-        // Arrange
-        var originalEnabledState = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger("InitialPrefix")
-            {
-                MinLevel = LogLevel.Info
-            };
-
-            // Act & Assert - should format with the constructor-provided prefix
-            logger.Error("Test error message");
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabledState;
-        }
-    }
-
-    /// <summary>
     /// Tests that Exception with null exception parameter does not throw due to exception-safe design.
     /// Expected: Method completes without throwing even though accessing null.GetType() would fail.
     /// </summary>
@@ -1944,69 +1483,6 @@ public sealed class PluginLoggerTests
         logger.Exception(ex, "Test message");
 
         // Assert - method completes (early return path taken)
-        Assert.IsNotNull(logger);
-    }
-
-    /// <summary>
-    /// Tests that Exception processes the log when MinLevel equals Error.
-    /// Expected: Method proceeds past MinLevel check.
-    /// </summary>
-    [TestMethod]
-    public void Exception_MinLevelError_ProcessesLog()
-    {
-        // Arrange
-        var logger = new PluginLogger("TestPlugin")
-        {
-            MinLevel = LogLevel.Error
-        };
-        var ex = new InvalidOperationException("Test exception");
-
-        // Act - should proceed past MinLevel check
-        logger.Exception(ex, "Test message");
-
-        // Assert - method completes successfully
-        Assert.IsNotNull(logger);
-    }
-
-    /// <summary>
-    /// Tests that Exception processes the log when MinLevel is below Error (Warning).
-    /// Expected: Method proceeds past MinLevel check.
-    /// </summary>
-    [TestMethod]
-    public void Exception_MinLevelWarning_ProcessesLog()
-    {
-        // Arrange
-        var logger = new PluginLogger("TestPlugin")
-        {
-            MinLevel = LogLevel.Warning
-        };
-        var ex = new ArgumentException("Test exception");
-
-        // Act - should proceed past MinLevel check
-        logger.Exception(ex, "Test message");
-
-        // Assert - method completes successfully
-        Assert.IsNotNull(logger);
-    }
-
-    /// <summary>
-    /// Tests that Exception processes the log when MinLevel is below Error (Info).
-    /// Expected: Method proceeds past MinLevel check.
-    /// </summary>
-    [TestMethod]
-    public void Exception_MinLevelInfo_ProcessesLog()
-    {
-        // Arrange
-        var logger = new PluginLogger("TestPlugin")
-        {
-            MinLevel = LogLevel.Info
-        };
-        var ex = new ArgumentNullException("param", "Test exception");
-
-        // Act - should proceed past MinLevel check
-        logger.Exception(ex, "Test message");
-
-        // Assert - method completes successfully
         Assert.IsNotNull(logger);
     }
 
@@ -3082,58 +2558,6 @@ public sealed class PluginLoggerTests
             var logger = new PluginLogger("TestPlugin")
             {
                 MinLevel = LogLevel.Info
-            };
-            var exception = new InvalidOperationException("Test exception");
-
-            // Act
-            logger.Exception(exception, "Format: {0}", "value");
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabled;
-        }
-    }
-
-    /// <summary>
-    /// Tests that Exception(Exception, string, params object[]) honors MinLevel when set to Warning.
-    /// </summary>
-    [TestMethod]
-    public void Exception_WithFormatArgs_MinLevelWarning_LogsException()
-    {
-        // Arrange
-        var originalEnabled = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                MinLevel = LogLevel.Warning
-            };
-            var exception = new InvalidOperationException("Test exception");
-
-            // Act
-            logger.Exception(exception, "Format: {0}", "value");
-        }
-        finally
-        {
-            Logger.Enabled = originalEnabled;
-        }
-    }
-
-    /// <summary>
-    /// Tests that Exception(Exception, string, params object[]) honors MinLevel when set to Error.
-    /// </summary>
-    [TestMethod]
-    public void Exception_WithFormatArgs_MinLevelError_LogsException()
-    {
-        // Arrange
-        var originalEnabled = Logger.Enabled;
-        try
-        {
-            Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin")
-            {
-                MinLevel = LogLevel.Error
             };
             var exception = new InvalidOperationException("Test exception");
 

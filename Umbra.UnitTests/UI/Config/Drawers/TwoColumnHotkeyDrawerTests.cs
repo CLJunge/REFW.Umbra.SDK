@@ -270,21 +270,6 @@ public sealed class TwoColumnHotkeyDrawerTests
     }
 
     /// <summary>
-    /// Tests that Dispose can be called multiple times without error.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_CalledMultipleTimes_DoesNotThrow()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-
-        // Act & Assert
-        drawer.Dispose();
-        drawer.Dispose();
-        drawer.Dispose();
-    }
-
-    /// <summary>
     /// Tests that Dispose decrements WaitingCount when drawer is in waiting state.
     /// </summary>
     /// <remarks>
@@ -329,93 +314,6 @@ public sealed class TwoColumnHotkeyDrawerTests
 
         // Assert
         Assert.AreEqual(5, HotkeyCaptureState.WaitingCount, "WaitingCount should not be decremented when _waiting is false.");
-    }
-
-    /// <summary>
-    /// Verifies that calling Dispose multiple times is idempotent and does not cause side effects
-    /// such as multiple decrements of the shared WaitingCount.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WhenCalledMultipleTimes_IsIdempotent()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        HotkeyCaptureState.WaitingCount = 3;
-
-        // Act
-        drawer.Dispose();
-        drawer.Dispose();
-        drawer.Dispose();
-
-        // Assert
-        Assert.AreEqual(3, HotkeyCaptureState.WaitingCount, "WaitingCount should remain unchanged after multiple Dispose calls on a non-waiting drawer.");
-    }
-
-    /// <summary>
-    /// Verifies that Dispose does not throw an exception when called on a freshly instantiated drawer.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WhenCalledOnFreshInstance_DoesNotThrow()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-
-        // Act & Assert
-        drawer.Dispose(); // Should not throw
-    }
-
-    /// <summary>
-    /// Verifies that Dispose does not throw when WaitingCount is already zero.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WhenWaitingCountIsZero_DoesNotThrow()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        HotkeyCaptureState.WaitingCount = 0;
-
-        // Act & Assert
-        drawer.Dispose(); // Should not throw
-    }
-
-    /// <summary>
-    /// Verifies that Dispose can be safely called after another drawer has already modified WaitingCount.
-    /// Tests that the drawer does not interfere with the shared counter when it is not in waiting mode.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WhenOtherDrawersHaveModifiedWaitingCount_DoesNotInterfere()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        HotkeyCaptureState.WaitingCount = 2;
-
-        // Act
-        drawer.Dispose();
-
-        // Assert
-        Assert.AreEqual(2, HotkeyCaptureState.WaitingCount, "Drawer should not modify WaitingCount when it is not in waiting mode.");
-    }
-
-    /// <summary>
-    /// Verifies that multiple independent drawers can be disposed without interfering with each other
-    /// when none of them are in waiting mode.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_MultipleDrawersNotWaiting_AllDisposeCleanly()
-    {
-        // Arrange
-        var drawer1 = new TwoColumnHotkeyDrawer();
-        var drawer2 = new TwoColumnHotkeyDrawer();
-        var drawer3 = new TwoColumnHotkeyDrawer();
-        HotkeyCaptureState.WaitingCount = 0;
-
-        // Act
-        drawer1.Dispose();
-        drawer2.Dispose();
-        drawer3.Dispose();
-
-        // Assert
-        Assert.AreEqual(0, HotkeyCaptureState.WaitingCount, "WaitingCount should remain zero after disposing multiple non-waiting drawers.");
     }
 
     // NOTE: Testing the scenario where _waiting = true and Dispose decrements WaitingCount

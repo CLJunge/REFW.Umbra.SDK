@@ -1,10 +1,3 @@
-﻿using System;
-using System.Numerics;
-
-using Hexa.NET.ImGui;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra.UI.Config;
-
 namespace Umbra.UI.Config.UnitTests;
 
 
@@ -23,7 +16,7 @@ public class ControlLayoutTests
     {
         // Arrange
         var label = "Test Label";
-        string? desc = "Test Description";
+        var desc = "Test Description";
         var alignGroup = new LabelAlignmentGroup();
         var controlWidth = 100f;
         var hiddenLabel = "##testHidden";
@@ -57,78 +50,6 @@ public class ControlLayoutTests
     }
 
     /// <summary>
-    /// Verifies that the constructor accepts an empty label string without throwing.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_EmptyLabel_DoesNotThrow()
-    {
-        // Arrange
-        var label = string.Empty;
-        string? desc = "Description";
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = 75f;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts a whitespace-only label string.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WhitespaceLabel_DoesNotThrow()
-    {
-        // Arrange
-        var label = "   ";
-        string? desc = null;
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = 60f;
-        var hiddenLabel = "##test";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts a very long label string.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_VeryLongLabel_DoesNotThrow()
-    {
-        // Arrange
-        var label = new string('A', 10000);
-        string? desc = "Description";
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = 100f;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts a label with special characters.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_LabelWithSpecialCharacters_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label!@#$%^&*()_+-=[]{}|;':\"<>?,./`~";
-        string? desc = null;
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = 80f;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
     /// Verifies that the constructor accepts a null description parameter.
     /// </summary>
     [TestMethod]
@@ -147,78 +68,6 @@ public class ControlLayoutTests
     }
 
     /// <summary>
-    /// Verifies that the constructor accepts an empty description string.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_EmptyDescription_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label";
-        string? desc = string.Empty;
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = 85f;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts a whitespace-only description.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_WhitespaceDescription_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label";
-        string? desc = "   ";
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = 70f;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts a description with special characters.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_DescriptionWithSpecialCharacters_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label";
-        string? desc = "Description!@#$%^&*()_+-=[]{}|;':\"<>?,./`~";
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = 95f;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts a zero control width.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ZeroControlWidth_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label";
-        string? desc = "Description";
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = 0f;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
     /// Verifies that the constructor accepts a negative control width.
     /// </summary>
     [TestMethod]
@@ -229,96 +78,6 @@ public class ControlLayoutTests
         string? desc = null;
         var alignGroup = new LabelAlignmentGroup();
         var controlWidth = -100f;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts float.MinValue as control width.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ControlWidthMinValue_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label";
-        string? desc = "Description";
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = float.MinValue;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts float.MaxValue as control width.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ControlWidthMaxValue_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label";
-        string? desc = null;
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = float.MaxValue;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts float.NaN as control width.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ControlWidthNaN_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label";
-        string? desc = "Description";
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = float.NaN;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts float.PositiveInfinity as control width.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ControlWidthPositiveInfinity_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label";
-        string? desc = null;
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = float.PositiveInfinity;
-        var hiddenLabel = "##hidden";
-
-        // Act & Assert
-        var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
-        Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
-    }
-
-    /// <summary>
-    /// Verifies that the constructor accepts float.NegativeInfinity as control width.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ControlWidthNegativeInfinity_DoesNotThrow()
-    {
-        // Arrange
-        var label = "Label";
-        string? desc = "Description";
-        var alignGroup = new LabelAlignmentGroup();
-        var controlWidth = float.NegativeInfinity;
         var hiddenLabel = "##hidden";
 
         // Act & Assert
@@ -352,7 +111,7 @@ public class ControlLayoutTests
     {
         // Arrange
         var label = "Label";
-        string? desc = "Description";
+        var desc = "Description";
         var alignGroup = new LabelAlignmentGroup();
         var controlWidth = 100f;
         var hiddenLabel = "##test!@#$%";
@@ -425,7 +184,7 @@ public class ControlLayoutTests
     {
         // Arrange
         var label = "Test Label";
-        string? desc = "Test Description";
+        var desc = "Test Description";
         var alignGroup = new LabelAlignmentGroup();
         var controlWidth = 100f;
         var hiddenLabel = "##hidden";

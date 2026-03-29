@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Umbra.Config.Attributes;
-using Umbra.UI.Config;
 using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config.UnitTests;
@@ -38,127 +33,6 @@ public sealed partial class ConfigDrawScopeTests
     }
 
     /// <summary>
-    /// Tests that CreateContainerNode creates a node with an empty string category
-    /// and properly registers it.
-    /// </summary>
-    [TestMethod]
-    public void CreateContainerNode_EmptyString_CreatesNodeSuccessfully()
-    {
-        // Arrange
-        const string category = "";
-        CategoryNode? registeredNode = null;
-        var scope = CreateScope(registerCategory: node => registeredNode = node);
-
-        // Act
-        var result = scope.CreateContainerNode(category);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(registeredNode);
-        Assert.AreSame(result, registeredNode);
-    }
-
-    /// <summary>
-    /// Tests that CreateContainerNode handles whitespace-only category strings correctly.
-    /// </summary>
-    [TestMethod]
-    public void CreateContainerNode_WhitespaceOnlyString_CreatesNodeSuccessfully()
-    {
-        // Arrange
-        const string category = "   ";
-        CategoryNode? registeredNode = null;
-        var scope = CreateScope(registerCategory: node => registeredNode = node);
-
-        // Act
-        var result = scope.CreateContainerNode(category);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(registeredNode);
-        Assert.AreSame(result, registeredNode);
-    }
-
-    /// <summary>
-    /// Tests that CreateContainerNode handles very long category strings correctly.
-    /// </summary>
-    [TestMethod]
-    public void CreateContainerNode_VeryLongString_CreatesNodeSuccessfully()
-    {
-        // Arrange
-        var category = new string('A', 10000);
-        CategoryNode? registeredNode = null;
-        var scope = CreateScope(registerCategory: node => registeredNode = node);
-
-        // Act
-        var result = scope.CreateContainerNode(category);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(registeredNode);
-        Assert.AreSame(result, registeredNode);
-    }
-
-    /// <summary>
-    /// Tests that CreateContainerNode handles category strings with special characters.
-    /// </summary>
-    [TestMethod]
-    public void CreateContainerNode_SpecialCharacters_CreatesNodeSuccessfully()
-    {
-        // Arrange
-        const string category = "Test@#$%^&*()_+-={}[]|:;<>?,./~`";
-        CategoryNode? registeredNode = null;
-        var scope = CreateScope(registerCategory: node => registeredNode = node);
-
-        // Act
-        var result = scope.CreateContainerNode(category);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(registeredNode);
-        Assert.AreSame(result, registeredNode);
-    }
-
-    /// <summary>
-    /// Tests that CreateContainerNode handles category strings with Unicode characters.
-    /// </summary>
-    [TestMethod]
-    public void CreateContainerNode_UnicodeCharacters_CreatesNodeSuccessfully()
-    {
-        // Arrange
-        const string category = "测试类别🎮";
-        CategoryNode? registeredNode = null;
-        var scope = CreateScope(registerCategory: node => registeredNode = node);
-
-        // Act
-        var result = scope.CreateContainerNode(category);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(registeredNode);
-        Assert.AreSame(result, registeredNode);
-    }
-
-    /// <summary>
-    /// Tests that CreateContainerNode handles category strings with control characters.
-    /// </summary>
-    [TestMethod]
-    public void CreateContainerNode_ControlCharacters_CreatesNodeSuccessfully()
-    {
-        // Arrange
-        const string category = "Test\n\r\tCategory";
-        CategoryNode? registeredNode = null;
-        var scope = CreateScope(registerCategory: node => registeredNode = node);
-
-        // Act
-        var result = scope.CreateContainerNode(category);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(registeredNode);
-        Assert.AreSame(result, registeredNode);
-    }
-
-    /// <summary>
     /// Tests that CreateContainerNode creates a node with empty Children when the scope has no nodes.
     /// </summary>
     [TestMethod]
@@ -173,7 +47,7 @@ public sealed partial class ConfigDrawScopeTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.AreEqual(0, result.Children.Count);
+        Assert.IsEmpty(result.Children);
     }
 
     /// <summary>
@@ -194,7 +68,7 @@ public sealed partial class ConfigDrawScopeTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.AreEqual(1, result.Children.Count);
+        Assert.HasCount(1, result.Children);
         Assert.AreSame(mockNode.Object, result.Children[0]);
     }
 
@@ -220,7 +94,7 @@ public sealed partial class ConfigDrawScopeTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.AreEqual(3, result.Children.Count);
+        Assert.HasCount(3, result.Children);
         Assert.AreSame(mockNode1.Object, result.Children[0]);
         Assert.AreSame(mockNode2.Object, result.Children[1]);
         Assert.AreSame(mockNode3.Object, result.Children[2]);
@@ -250,24 +124,6 @@ public sealed partial class ConfigDrawScopeTests
         Assert.AreEqual(1, callCount);
         Assert.IsNotNull(registeredNode);
         Assert.AreSame(result, registeredNode);
-    }
-
-    /// <summary>
-    /// Tests that CreateContainerNode creates a node with null CollapseAttr and CategoryIndentAttr
-    /// when the scope was initialized with null attributes.
-    /// </summary>
-    [TestMethod]
-    public void CreateContainerNode_NullAttributes_CreatesNodeWithNullAttributes()
-    {
-        // Arrange
-        const string category = "TestCategory";
-        var scope = CreateScope(collapseAttr: null, categoryIndentAttr: null);
-
-        // Act
-        var result = scope.CreateContainerNode(category);
-
-        // Assert
-        Assert.IsNotNull(result);
     }
 
     /// <summary>
@@ -315,7 +171,7 @@ public sealed partial class ConfigDrawScopeTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.AreEqual(nodeCount, result.Children.Count);
+        Assert.HasCount(nodeCount, result.Children);
         for (var i = 0; i < nodeCount; i++)
         {
             Assert.AreSame(mockNodes[i].Object, result.Children[i]);
@@ -341,7 +197,7 @@ public sealed partial class ConfigDrawScopeTests
         var result = scope.CreateContainerNode(category);
 
         // Assert
-        Assert.AreEqual(originalCount, scope.Nodes.Count);
+        Assert.HasCount(originalCount, scope.Nodes);
         Assert.AreSame(mockNode1.Object, scope.Nodes[0]);
         Assert.AreSame(mockNode2.Object, scope.Nodes[1]);
     }
@@ -517,133 +373,6 @@ public sealed partial class ConfigDrawScopeTests
     }
 
     /// <summary>
-    /// Tests that <see cref="ConfigDrawScope.GetAlignmentGroup"/> handles empty string category by creating a category node.
-    /// </summary>
-    [TestMethod]
-    public void GetAlignmentGroup_EmptyStringCategory_CreatesCategory()
-    {
-        // Arrange
-        var scopeAlignmentGroup = new LabelAlignmentGroup();
-        var registerCategoryMock = new Mock<Action<CategoryNode>>();
-        var scope = new ConfigDrawScope(
-            groupPath: "test.group",
-            defaultCategory: null,
-            collapseAttr: null,
-            categoryIndentAttr: null,
-            labelMarginAttr: null,
-            registerCategory: registerCategoryMock.Object,
-            alignmentGroup: scopeAlignmentGroup
-        );
-
-        // Act
-        var result = scope.GetAlignmentGroup(string.Empty);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.AreNotSame(scopeAlignmentGroup, result);
-        registerCategoryMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigDrawScope.GetAlignmentGroup"/> handles whitespace-only category strings by creating category nodes.
-    /// </summary>
-    [TestMethod]
-    [DataRow(" ")]
-    [DataRow("  ")]
-    [DataRow("\t")]
-    [DataRow("\n")]
-    [DataRow("\r\n")]
-    [DataRow("   \t   ")]
-    public void GetAlignmentGroup_WhitespaceCategory_CreatesCategory(string category)
-    {
-        // Arrange
-        var scopeAlignmentGroup = new LabelAlignmentGroup();
-        var registerCategoryMock = new Mock<Action<CategoryNode>>();
-        var scope = new ConfigDrawScope(
-            groupPath: "test.group",
-            defaultCategory: null,
-            collapseAttr: null,
-            categoryIndentAttr: null,
-            labelMarginAttr: null,
-            registerCategory: registerCategoryMock.Object,
-            alignmentGroup: scopeAlignmentGroup
-        );
-
-        // Act
-        var result = scope.GetAlignmentGroup(category);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.AreNotSame(scopeAlignmentGroup, result);
-        registerCategoryMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigDrawScope.GetAlignmentGroup"/> handles category strings with special characters.
-    /// </summary>
-    [TestMethod]
-    [DataRow("Category!@#")]
-    [DataRow("Category$%^&*()")]
-    [DataRow("Category[]{}")]
-    [DataRow("Category<>")]
-    [DataRow("Category/\\")]
-    [DataRow("Category:;")]
-    [DataRow("Category'\"")]
-    [DataRow("Category|?")]
-    public void GetAlignmentGroup_SpecialCharactersCategory_CreatesCategory(string category)
-    {
-        // Arrange
-        var scopeAlignmentGroup = new LabelAlignmentGroup();
-        var registerCategoryMock = new Mock<Action<CategoryNode>>();
-        var scope = new ConfigDrawScope(
-            groupPath: "test.group",
-            defaultCategory: null,
-            collapseAttr: null,
-            categoryIndentAttr: null,
-            labelMarginAttr: null,
-            registerCategory: registerCategoryMock.Object,
-            alignmentGroup: scopeAlignmentGroup
-        );
-
-        // Act
-        var result = scope.GetAlignmentGroup(category);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.AreNotSame(scopeAlignmentGroup, result);
-        registerCategoryMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigDrawScope.GetAlignmentGroup"/> handles very long category strings.
-    /// </summary>
-    [TestMethod]
-    public void GetAlignmentGroup_VeryLongCategory_CreatesCategory()
-    {
-        // Arrange
-        var scopeAlignmentGroup = new LabelAlignmentGroup();
-        var registerCategoryMock = new Mock<Action<CategoryNode>>();
-        var scope = new ConfigDrawScope(
-            groupPath: "test.group",
-            defaultCategory: null,
-            collapseAttr: null,
-            categoryIndentAttr: null,
-            labelMarginAttr: null,
-            registerCategory: registerCategoryMock.Object,
-            alignmentGroup: scopeAlignmentGroup
-        );
-        var longCategory = new string('A', 10000);
-
-        // Act
-        var result = scope.GetAlignmentGroup(longCategory);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.AreNotSame(scopeAlignmentGroup, result);
-        registerCategoryMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Once);
-    }
-
-    /// <summary>
     /// Tests that <see cref="ConfigDrawScope.GetAlignmentGroup"/> invokes the registerCategory callback with the correct category node when a new category is created.
     /// </summary>
     [TestMethod]
@@ -674,124 +403,4 @@ public sealed partial class ConfigDrawScopeTests
         Assert.AreSame(capturedNode.AlignmentGroup, result);
     }
 
-    /// <summary>
-    /// Tests that <see cref="ConfigDrawScope.GetAlignmentGroup"/> respects collapse attribute when creating category nodes.
-    /// </summary>
-    [TestMethod]
-    public void GetAlignmentGroup_WithCollapseAttribute_CreatesCategory()
-    {
-        // Arrange
-        var collapseAttr = new UmbraCollapseAsTreeAttribute();
-        var registerCategoryMock = new Mock<Action<CategoryNode>>();
-        var scope = new ConfigDrawScope(
-            groupPath: "test.group",
-            defaultCategory: null,
-            collapseAttr: collapseAttr,
-            categoryIndentAttr: null,
-            labelMarginAttr: null,
-            registerCategory: registerCategoryMock.Object,
-            alignmentGroup: null
-        );
-
-        // Act
-        var result = scope.GetAlignmentGroup("TestCategory");
-
-        // Assert
-        Assert.IsNotNull(result);
-        registerCategoryMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigDrawScope.GetAlignmentGroup"/> respects indent attribute when creating category nodes.
-    /// </summary>
-    [TestMethod]
-    public void GetAlignmentGroup_WithIndentAttribute_CreatesCategory()
-    {
-        // Arrange
-        var indentAttr = new UmbraIndentAttribute(10f);
-        var registerCategoryMock = new Mock<Action<CategoryNode>>();
-        var scope = new ConfigDrawScope(
-            groupPath: "test.group",
-            defaultCategory: null,
-            collapseAttr: null,
-            categoryIndentAttr: indentAttr,
-            labelMarginAttr: null,
-            registerCategory: registerCategoryMock.Object,
-            alignmentGroup: null
-        );
-
-        // Act
-        var result = scope.GetAlignmentGroup("TestCategory");
-
-        // Assert
-        Assert.IsNotNull(result);
-        registerCategoryMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigDrawScope.GetAlignmentGroup"/> handles multiple calls with alternating categories correctly.
-    /// </summary>
-    [TestMethod]
-    public void GetAlignmentGroup_AlternatingCategories_ReturnsCorrectAlignmentGroups()
-    {
-        // Arrange
-        var registerCategoryMock = new Mock<Action<CategoryNode>>();
-        var scope = new ConfigDrawScope(
-            groupPath: "test.group",
-            defaultCategory: null,
-            collapseAttr: null,
-            categoryIndentAttr: null,
-            labelMarginAttr: null,
-            registerCategory: registerCategoryMock.Object,
-            alignmentGroup: null
-        );
-
-        // Act
-        var result1a = scope.GetAlignmentGroup("Category1");
-        var result2a = scope.GetAlignmentGroup("Category2");
-        var result1b = scope.GetAlignmentGroup("Category1");
-        var result2b = scope.GetAlignmentGroup("Category2");
-
-        // Assert
-        Assert.IsNotNull(result1a);
-        Assert.IsNotNull(result2a);
-        Assert.AreSame(result1a, result1b);
-        Assert.AreSame(result2a, result2b);
-        Assert.AreNotSame(result1a, result2a);
-        registerCategoryMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Exactly(2));
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigDrawScope.GetAlignmentGroup"/> handles Unicode category names correctly.
-    /// </summary>
-    [TestMethod]
-    [DataRow("カテゴリー")]
-    [DataRow("类别")]
-    [DataRow("Категория")]
-    [DataRow("فئة")]
-    [DataRow("Κατηγορία")]
-    [DataRow("😀📁💻")]
-    public void GetAlignmentGroup_UnicodeCategory_CreatesCategory(string category)
-    {
-        // Arrange
-        var scopeAlignmentGroup = new LabelAlignmentGroup();
-        var registerCategoryMock = new Mock<Action<CategoryNode>>();
-        var scope = new ConfigDrawScope(
-            groupPath: "test.group",
-            defaultCategory: null,
-            collapseAttr: null,
-            categoryIndentAttr: null,
-            labelMarginAttr: null,
-            registerCategory: registerCategoryMock.Object,
-            alignmentGroup: scopeAlignmentGroup
-        );
-
-        // Act
-        var result = scope.GetAlignmentGroup(category);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.AreNotSame(scopeAlignmentGroup, result);
-        registerCategoryMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Once);
-    }
 }

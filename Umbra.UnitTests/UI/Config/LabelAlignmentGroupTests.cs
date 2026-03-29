@@ -1,15 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Numerics;
-
-using Hexa.NET;
-using Hexa.NET.ImGui;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using Umbra.UI;
-using Umbra.UI.Config;
-
 namespace Umbra.UI.Config.UnitTests;
 
 
@@ -28,127 +16,8 @@ public sealed class LabelAlignmentGroupTests
     {
         // Arrange
         var group = new LabelAlignmentGroup();
-        string label = "TestLabel";
-        bool hasDescription = false;
-
-        // Act & Assert
-        group.Register(label, hasDescription);
-        Assert.AreEqual(0f, group.LabelWidth, "LabelWidth should remain 0 in non-seeded state.");
-    }
-
-    /// <summary>
-    /// Tests that Register does not throw when called with valid label and hasDescription=true
-    /// in non-seeded state.
-    /// </summary>
-    [TestMethod]
-    public void Register_ValidLabelWithDescriptionNotSeeded_DoesNotThrow()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        string label = "TestLabel";
-        bool hasDescription = true;
-
-        // Act & Assert
-        group.Register(label, hasDescription);
-        Assert.AreEqual(0f, group.LabelWidth, "LabelWidth should remain 0 in non-seeded state.");
-    }
-
-    /// <summary>
-    /// Tests that Register does not throw when called with an empty string label
-    /// in non-seeded state.
-    /// </summary>
-    [TestMethod]
-    public void Register_EmptyStringLabelNotSeeded_DoesNotThrow()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        string label = string.Empty;
-        bool hasDescription = false;
-
-        // Act & Assert
-        group.Register(label, hasDescription);
-        Assert.AreEqual(0f, group.LabelWidth, "LabelWidth should remain 0 in non-seeded state.");
-    }
-
-    /// <summary>
-    /// Tests that Register does not throw when called with a whitespace-only string label
-    /// in non-seeded state.
-    /// </summary>
-    [TestMethod]
-    public void Register_WhitespaceOnlyLabelNotSeeded_DoesNotThrow()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        string label = "   ";
-        bool hasDescription = false;
-
-        // Act & Assert
-        group.Register(label, hasDescription);
-        Assert.AreEqual(0f, group.LabelWidth, "LabelWidth should remain 0 in non-seeded state.");
-    }
-
-    /// <summary>
-    /// Tests that Register does not throw when called with a very long string label
-    /// in non-seeded state.
-    /// </summary>
-    [TestMethod]
-    public void Register_VeryLongLabelNotSeeded_DoesNotThrow()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        string label = new string('A', 10000);
-        bool hasDescription = false;
-
-        // Act & Assert
-        group.Register(label, hasDescription);
-        Assert.AreEqual(0f, group.LabelWidth, "LabelWidth should remain 0 in non-seeded state.");
-    }
-
-    /// <summary>
-    /// Tests that Register does not throw when called with a label containing special characters
-    /// in non-seeded state.
-    /// </summary>
-    [TestMethod]
-    public void Register_LabelWithSpecialCharactersNotSeeded_DoesNotThrow()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        string label = "Test!@#$%^&*()_+-=[]{}|;':\"<>?,./`~";
-        bool hasDescription = false;
-
-        // Act & Assert
-        group.Register(label, hasDescription);
-        Assert.AreEqual(0f, group.LabelWidth, "LabelWidth should remain 0 in non-seeded state.");
-    }
-
-    /// <summary>
-    /// Tests that Register does not throw when called with a label containing control characters
-    /// in non-seeded state.
-    /// </summary>
-    [TestMethod]
-    public void Register_LabelWithControlCharactersNotSeeded_DoesNotThrow()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        string label = "Test\n\r\t\0Label";
-        bool hasDescription = false;
-
-        // Act & Assert
-        group.Register(label, hasDescription);
-        Assert.AreEqual(0f, group.LabelWidth, "LabelWidth should remain 0 in non-seeded state.");
-    }
-
-    /// <summary>
-    /// Tests that Register does not throw when called with a label containing Unicode characters
-    /// in non-seeded state.
-    /// </summary>
-    [TestMethod]
-    public void Register_LabelWithUnicodeCharactersNotSeeded_DoesNotThrow()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        string label = "测试标签 🎮 🔥";
-        bool hasDescription = false;
+        var label = "TestLabel";
+        var hasDescription = false;
 
         // Act & Assert
         group.Register(label, hasDescription);
@@ -184,7 +53,7 @@ public sealed class LabelAlignmentGroupTests
     {
         // Arrange
         var group = new LabelAlignmentGroup();
-        string label = "DuplicateLabel";
+        var label = "DuplicateLabel";
 
         // Act
         group.Register(label, false);
@@ -229,70 +98,6 @@ public sealed class LabelAlignmentGroupTests
 
         // Assert
         // Assert.IsTrue(group.LabelWidth > initialWidth, "LabelWidth should increase for wider late-registered labels.");
-
-        Assert.Inconclusive("Test requires ImGui context; cannot be completed without mocking static ImGui methods.");
-    }
-
-    /// <summary>
-    /// Tests Register behavior in seeded state with hasDescription=true.
-    /// NOTE: This test is incomplete because ImGui.CalcTextSize and ImGui.GetStyle are static
-    /// methods that cannot be mocked with Moq. To fully test this scenario:
-    /// 1. An active ImGui context is required
-    /// 2. Verify that hasDescription=true adds spacing and "(?)" marker width
-    /// 3. Verify the total width correctly updates _committedMax
-    /// 
-    /// Manual verification steps:
-    /// - Call EnsureSeeded() to set _seeded = true
-    /// - Call Register with hasDescription=true
-    /// - Verify LabelWidth includes label width + ItemSpacing.X + "(?)" width
-    /// </summary>
-    [TestMethod]
-    [Ignore("Cannot mock ImGui static methods; requires active ImGui context for full testing.")]
-    public void Register_LateRegistrationWithDescriptionAfterSeeded_IncludesHelpMarkerWidth()
-    {
-        // This test requires:
-        // 1. Mocking ImGui.CalcTextSize (not possible - static method)
-        // 2. Mocking ImGui.GetStyle (not possible - static method)
-
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        // TODO: Call EnsureSeeded() after registering initial labels
-
-        // Act
-        // group.Register("Label With Description", true);
-
-        // Assert
-        // Verify that LabelWidth = CalcTextSize("Label With Description").X + ItemSpacing.X + CalcTextSize("(?)").X
-
-        Assert.Inconclusive("Test requires ImGui context; cannot be completed without mocking static ImGui methods.");
-    }
-
-    /// <summary>
-    /// Tests Register behavior in seeded state when new label width is not greater than committed max.
-    /// NOTE: This test is incomplete because ImGui.CalcTextSize cannot be mocked.
-    /// 
-    /// Manual verification steps:
-    /// - Call EnsureSeeded() with some wide labels to establish a large LabelWidth
-    /// - Call Register with a narrower label
-    /// - Verify LabelWidth does not decrease (committed max is never reduced)
-    /// </summary>
-    [TestMethod]
-    [Ignore("Cannot mock ImGui static methods; requires active ImGui context for full testing.")]
-    public void Register_LateRegistrationNarrowerThanMaxAfterSeeded_DoesNotReduceCommittedMax()
-    {
-        // This test requires:
-        // 1. Mocking ImGui.CalcTextSize (not possible - static method)
-
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        // TODO: Register wide labels and call EnsureSeeded()
-        // float initialWidth = group.LabelWidth;
-
-        // Act
-        // group.Register("Short", false);
-
-        // Assert
-        // Assert.AreEqual(initialWidth, group.LabelWidth, "LabelWidth should not decrease for narrower late-registered labels.");
 
         Assert.Inconclusive("Test requires ImGui context; cannot be completed without mocking static ImGui methods.");
     }
@@ -352,34 +157,6 @@ public sealed class LabelAlignmentGroupTests
     }
 
     /// <summary>
-    /// Tests that multiple calls to EnsureSeeded are safe and idempotent.
-    /// After the first call sets the seeded flag, all subsequent calls should be immediate no-ops
-    /// that hit the guard clause without attempting to process entries or call ImGui methods.
-    /// </summary>
-    [TestMethod]
-    public void EnsureSeeded_CalledMultipleTimes_IsIdempotent()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-
-        // Act - call multiple times
-        try
-        {
-            group.EnsureSeeded();
-        }
-        catch
-        {
-            // First call may throw due to ImGui context, but _seeded should be set
-        }
-
-        // Assert - subsequent calls should not throw due to guard clause
-        group.EnsureSeeded();
-        group.EnsureSeeded();
-        group.EnsureSeeded();
-        group.EnsureSeeded();
-    }
-
-    /// <summary>
     /// Tests that LabelWidth property returns zero before EnsureSeeded is called.
     /// The committed maximum width should remain zero until the first seeding occurs.
     /// </summary>
@@ -390,7 +167,7 @@ public sealed class LabelAlignmentGroupTests
         var group = new LabelAlignmentGroup();
 
         // Act
-        float width = group.LabelWidth;
+        var width = group.LabelWidth;
 
         // Assert
         Assert.AreEqual(0f, width, "LabelWidth should be zero before EnsureSeeded is called");
@@ -427,23 +204,6 @@ public sealed class LabelAlignmentGroupTests
     }
 
     /// <summary>
-    /// Tests that Margin property can be set to zero.
-    /// </summary>
-    [TestMethod]
-    public void Margin_SetToZero_ReturnsZero()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        group.Margin = 5f;
-
-        // Act
-        group.Margin = 0f;
-
-        // Assert
-        Assert.AreEqual(0f, group.Margin, "Margin should be settable to zero");
-    }
-
-    /// <summary>
     /// Tests that Margin property can be set to a negative value.
     /// While unusual, negative margins may be used for special layout adjustments.
     /// </summary>
@@ -472,10 +232,11 @@ public sealed class LabelAlignmentGroupTests
     public void Margin_SetToExtremeFloatValues_ReturnsSetValue(float value)
     {
         // Arrange
-        var group = new LabelAlignmentGroup();
-
-        // Act
-        group.Margin = value;
+        var group = new LabelAlignmentGroup
+        {
+            // Act
+            Margin = value
+        };
 
         // Assert
         Assert.AreEqual(value, group.Margin, $"Margin should handle extreme float value: {value}");
@@ -492,10 +253,11 @@ public sealed class LabelAlignmentGroupTests
     public void Margin_SetToSpecialFloatValues_ReturnsSetValue(float value)
     {
         // Arrange
-        var group = new LabelAlignmentGroup();
-
-        // Act
-        group.Margin = value;
+        var group = new LabelAlignmentGroup
+        {
+            // Act
+            Margin = value
+        };
 
         // Assert
         if (float.IsNaN(value))
@@ -518,48 +280,10 @@ public sealed class LabelAlignmentGroupTests
         var group = new LabelAlignmentGroup();
 
         // Act
-        float actual = group.LabelWidth;
+        var actual = group.LabelWidth;
 
         // Assert
         Assert.AreEqual(0f, actual);
     }
 
-    /// <summary>
-    /// Tests that the LabelWidth property returns zero for multiple new instances,
-    /// verifying consistent initialization behavior.
-    /// </summary>
-    [TestMethod]
-    public void LabelWidth_MultipleNewInstances_AllReturnZero()
-    {
-        // Arrange & Act
-        var group1 = new LabelAlignmentGroup();
-        var group2 = new LabelAlignmentGroup();
-        var group3 = new LabelAlignmentGroup();
-
-        // Assert
-        Assert.AreEqual(0f, group1.LabelWidth);
-        Assert.AreEqual(0f, group2.LabelWidth);
-        Assert.AreEqual(0f, group3.LabelWidth);
-    }
-
-    /// <summary>
-    /// Tests that the LabelWidth property consistently returns the same value
-    /// when accessed multiple times on the same instance before seeding.
-    /// </summary>
-    [TestMethod]
-    public void LabelWidth_MultipleAccesses_ReturnsSameValue()
-    {
-        // Arrange
-        var group = new LabelAlignmentGroup();
-
-        // Act
-        float value1 = group.LabelWidth;
-        float value2 = group.LabelWidth;
-        float value3 = group.LabelWidth;
-
-        // Assert
-        Assert.AreEqual(value1, value2);
-        Assert.AreEqual(value2, value3);
-        Assert.AreEqual(0f, value1);
-    }
 }

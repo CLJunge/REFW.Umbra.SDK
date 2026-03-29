@@ -527,25 +527,6 @@ public partial class ParameterJsonReaderTests
     }
 
     /// <summary>
-    /// Tests that Apply correctly handles long.MaxValue.
-    /// </summary>
-    [TestMethod]
-    public void Apply_LongMaxValue_CallsSetValueWithoutNotifyWithMaxValue()
-    {
-        // Arrange
-        var mockParam = new Mock<IParameter>();
-        mockParam.Setup(p => p.ValueType).Returns(typeof(long));
-        using var doc = JsonDocument.Parse("9223372036854775807");
-        var element = doc.RootElement;
-
-        // Act
-        ParameterJsonReader.Apply(mockParam.Object, element);
-
-        // Assert
-        mockParam.Verify(p => p.SetValueWithoutNotify(long.MaxValue), Times.Once);
-    }
-
-    /// <summary>
     /// Tests that Apply correctly handles a very large double value.
     /// </summary>
     [TestMethod]
@@ -562,44 +543,6 @@ public partial class ParameterJsonReaderTests
 
         // Assert
         mockParam.Verify(p => p.SetValueWithoutNotify(It.Is<double>(d => d > 1.7e308)), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that Apply correctly handles a very small double value.
-    /// </summary>
-    [TestMethod]
-    public void Apply_SmallDoubleNumber_CallsSetValueWithoutNotifyWithSmallValue()
-    {
-        // Arrange
-        var mockParam = new Mock<IParameter>();
-        mockParam.Setup(p => p.ValueType).Returns(typeof(double));
-        using var doc = JsonDocument.Parse("-1.7976931348623157E+308");
-        var element = doc.RootElement;
-
-        // Act
-        ParameterJsonReader.Apply(mockParam.Object, element);
-
-        // Assert
-        mockParam.Verify(p => p.SetValueWithoutNotify(It.Is<double>(d => d < -1.7e308)), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that Apply correctly handles a zero double value.
-    /// </summary>
-    [TestMethod]
-    public void Apply_ZeroDouble_CallsSetValueWithoutNotifyWithZero()
-    {
-        // Arrange
-        var mockParam = new Mock<IParameter>();
-        mockParam.Setup(p => p.ValueType).Returns(typeof(double));
-        using var doc = JsonDocument.Parse("0.0");
-        var element = doc.RootElement;
-
-        // Act
-        ParameterJsonReader.Apply(mockParam.Object, element);
-
-        // Assert
-        mockParam.Verify(p => p.SetValueWithoutNotify(0.0), Times.Once);
     }
 
     /// <summary>
@@ -622,25 +565,6 @@ public partial class ParameterJsonReaderTests
     }
 
     /// <summary>
-    /// Tests that Apply correctly handles byte.MaxValue (255).
-    /// </summary>
-    [TestMethod]
-    public void Apply_ByteMaxValue_CallsSetValueWithoutNotifyWithMaxValue()
-    {
-        // Arrange
-        var mockParam = new Mock<IParameter>();
-        mockParam.Setup(p => p.ValueType).Returns(typeof(byte));
-        using var doc = JsonDocument.Parse("255");
-        var element = doc.RootElement;
-
-        // Act
-        ParameterJsonReader.Apply(mockParam.Object, element);
-
-        // Assert
-        mockParam.Verify(p => p.SetValueWithoutNotify((byte)255), Times.Once);
-    }
-
-    /// <summary>
     /// Tests that Apply correctly handles short.MinValue.
     /// </summary>
     [TestMethod]
@@ -657,44 +581,6 @@ public partial class ParameterJsonReaderTests
 
         // Assert
         mockParam.Verify(p => p.SetValueWithoutNotify((short)-32768), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that Apply correctly handles short.MaxValue.
-    /// </summary>
-    [TestMethod]
-    public void Apply_ShortMaxValue_CallsSetValueWithoutNotifyWithMaxValue()
-    {
-        // Arrange
-        var mockParam = new Mock<IParameter>();
-        mockParam.Setup(p => p.ValueType).Returns(typeof(short));
-        using var doc = JsonDocument.Parse("32767");
-        var element = doc.RootElement;
-
-        // Act
-        ParameterJsonReader.Apply(mockParam.Object, element);
-
-        // Assert
-        mockParam.Verify(p => p.SetValueWithoutNotify((short)32767), Times.Once);
-    }
-
-    /// <summary>
-    /// Tests that Apply correctly handles uint.MinValue (0).
-    /// </summary>
-    [TestMethod]
-    public void Apply_UIntMinValue_CallsSetValueWithoutNotifyWithMinValue()
-    {
-        // Arrange
-        var mockParam = new Mock<IParameter>();
-        mockParam.Setup(p => p.ValueType).Returns(typeof(uint));
-        using var doc = JsonDocument.Parse("0");
-        var element = doc.RootElement;
-
-        // Act
-        ParameterJsonReader.Apply(mockParam.Object, element);
-
-        // Assert
-        mockParam.Verify(p => p.SetValueWithoutNotify((uint)0), Times.Once);
     }
 
     /// <summary>

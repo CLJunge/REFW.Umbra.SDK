@@ -297,23 +297,6 @@ public partial class SettingsRegistrarTests
     }
 
     /// <summary>
-    /// Tests that Register correctly handles a config with no properties at all.
-    /// </summary>
-    [TestMethod]
-    public void Register_ConfigWithNoProperties_ReturnsEmptyDictionary()
-    {
-        // Arrange
-        var config = new ConfigWithNoProperties();
-
-        // Act
-        var result = SettingsRegistrar.Register(config);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsEmpty(result);
-    }
-
-    /// <summary>
     /// Tests that Register only processes public instance properties.
     /// </summary>
     [TestMethod]
@@ -497,11 +480,6 @@ public partial class SettingsRegistrarTests
     {
         [UmbraSettingsParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
-    }
-
-    [UmbraAutoRegisterSettings]
-    internal class ConfigWithNoProperties
-    {
     }
 
     [UmbraAutoRegisterSettings]

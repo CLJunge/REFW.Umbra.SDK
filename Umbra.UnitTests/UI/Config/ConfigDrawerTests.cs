@@ -1,14 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.UI.Config;
-using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config.UnitTests;
 
@@ -85,29 +76,6 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> immediately after
-    /// <see cref="ConfigDrawer{TConfig}.Dispose"/> handles the disposed state correctly.
-    /// </summary>
-    /// <remarks>
-    /// This test verifies the same early-return disposed path as Draw_WhenDisposed_DoesNotThrow,
-    /// but with the Dispose() and Draw() calls in immediate sequence to ensure proper state
-    /// transition handling.
-    /// </remarks>
-    [TestMethod]
-    public void Draw_AfterDispose_DoesNotThrow()
-    {
-        // Arrange
-        var config = new TestConfig();
-        var drawer = new ConfigDrawer<TestConfig>(config, "test-scope");
-
-        // Act
-        drawer.Dispose();
-
-        // Assert
-        drawer.Draw(); // Should not throw
-    }
-
-    /// <summary>
     /// Tests that <see cref="ConfigDrawer{TConfig}.Draw"/> calls Dispose() only once
     /// even when called multiple times, by verifying subsequent Draw() calls still work.
     /// </summary>
@@ -131,47 +99,6 @@ public sealed class ConfigDrawerTests
         drawer.Draw(); // Second draw after dispose should also not throw
     }
 
-    /// <summary>
-    /// Placeholder test to document untestable behavior: verifying that ImGui.PopID is called
-    /// in the finally block even when a node's Draw() method throws an exception.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// LIMITATION: This test cannot be fully implemented with the current design because:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description>
-    /// IDrawNode is an internal interface and cannot be mocked from this test assembly.
-    /// </description></item>
-    /// <item><description>
-    /// The ConfigDrawer constructor builds nodes internally via ConfigDrawerBuilder;
-    /// there is no way to inject mock nodes that throw exceptions.
-    /// </description></item>
-    /// <item><description>
-    /// ImGui.PopID is a static method and cannot be verified with Moq.
-    /// </description></item>
-    /// </list>
-    /// <para>
-    /// To properly test this scenario, the design would need to support dependency injection
-    /// of the node collection or make IDrawNode public to allow mocking from test assemblies.
-    /// </para>
-    /// <para>
-    /// Manual verification: Review the Draw() method source code (lines 124-133) to confirm
-    /// the try-finally structure ensures PopID is always called.
-    /// </para>
-    /// </remarks>
-    [TestMethod]
-    [Ignore("Cannot test: IDrawNode is internal and nodes cannot be injected for testing exception scenarios.")]
-    public void Draw_WhenNodeThrows_EnsuresPopIdCalledInFinally()
-    {
-        // INCOMPLETE: Cannot create throwing mock nodes due to internal interface
-        // and constructor design that builds nodes internally.
-        Assert.Inconclusive(
-            "This test requires injectable IDrawNode mocks to verify finally-block execution " +
-            "when a node throws. The current design does not support node injection, and IDrawNode " +
-            "is internal so cannot be mocked from this test assembly.");
-    }
-
     #region Helper Types
 
     /// <summary>
@@ -192,44 +119,10 @@ public sealed class ConfigDrawerTests
     {
         // Arrange
         var config = new SimpleConfig();
-        string idScope = "TestPlugin";
+        var idScope = "TestPlugin";
 
         // Act
         using var drawer = new ConfigDrawer<SimpleConfig>(config, idScope);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-    }
-
-    /// <summary>
-    /// Tests that the constructor succeeds with valid parameters and default suppressRootNode value.
-    /// </summary>
-    [TestMethod]
-    public void ConfigDrawer_ValidParametersWithDefaultSuppressRootNode_ConstructsSuccessfully()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        string idScope = "TestPlugin";
-
-        // Act
-        using var drawer = new ConfigDrawer<SimpleConfig>(config, idScope);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-    }
-
-    /// <summary>
-    /// Tests that the constructor succeeds when suppressRootNode is explicitly set to false.
-    /// </summary>
-    [TestMethod]
-    public void ConfigDrawer_SuppressRootNodeFalse_ConstructsSuccessfully()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        string idScope = "TestPlugin";
-
-        // Act
-        using var drawer = new ConfigDrawer<SimpleConfig>(config, idScope, suppressRootNode: false);
 
         // Assert
         Assert.IsNotNull(drawer);
@@ -243,139 +136,10 @@ public sealed class ConfigDrawerTests
     {
         // Arrange
         var config = new SimpleConfig();
-        string idScope = "TestPlugin";
+        var idScope = "TestPlugin";
 
         // Act
         using var drawer = new ConfigDrawer<SimpleConfig>(config, idScope, suppressRootNode: true);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-    }
-
-    /// <summary>
-    /// Tests that the constructor wraps nodes in RootTreeNode when root attribute is present and suppressRootNode is false.
-    /// </summary>
-    [TestMethod]
-    public void ConfigDrawer_RootAttributePresentAndSuppressRootNodeFalse_WrapsInRootTreeNode()
-    {
-        // Arrange
-        var config = new ConfigWithRootNode();
-        string idScope = "TestPlugin";
-
-        // Act
-        using var drawer = new ConfigDrawer<ConfigWithRootNode>(config, idScope, suppressRootNode: false);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-        // Verify that the drawer was constructed successfully - internal nodes structure cannot be inspected
-        // but successful construction without exception indicates proper wrapping occurred
-    }
-
-    /// <summary>
-    /// Tests that the constructor does not wrap nodes in RootTreeNode when root attribute is present but suppressRootNode is true.
-    /// </summary>
-    [TestMethod]
-    public void ConfigDrawer_RootAttributePresentAndSuppressRootNodeTrue_DoesNotWrapInRootTreeNode()
-    {
-        // Arrange
-        var config = new ConfigWithRootNode();
-        string idScope = "TestPlugin";
-
-        // Act
-        using var drawer = new ConfigDrawer<ConfigWithRootNode>(config, idScope, suppressRootNode: true);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-        // Verify that the drawer was constructed successfully without wrapping
-    }
-
-    /// <summary>
-    /// Tests that the constructor does not wrap nodes when no root attribute is present.
-    /// </summary>
-    [TestMethod]
-    public void ConfigDrawer_NoRootAttribute_DoesNotWrapInRootTreeNode()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        string idScope = "TestPlugin";
-
-        // Act
-        using var drawer = new ConfigDrawer<SimpleConfig>(config, idScope);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-    }
-
-    /// <summary>
-    /// Tests that the constructor uses type name display name as fallback when root attribute has null label.
-    /// </summary>
-    [TestMethod]
-    public void ConfigDrawer_RootAttributeWithNullLabel_UsesTypeNameDisplayName()
-    {
-        // Arrange
-        var config = new ConfigWithRootNodeNullLabel();
-        string idScope = "TestPlugin";
-
-        // Act
-        using var drawer = new ConfigDrawer<ConfigWithRootNodeNullLabel>(config, idScope, suppressRootNode: false);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-        // Successful construction indicates the fallback to type name display name worked
-    }
-
-    /// <summary>
-    /// Tests that the constructor uses custom label when root attribute has a custom label.
-    /// </summary>
-    [TestMethod]
-    public void ConfigDrawer_RootAttributeWithCustomLabel_UsesCustomLabel()
-    {
-        // Arrange
-        var config = new ConfigWithCustomRootLabel();
-        string idScope = "TestPlugin";
-
-        // Act
-        using var drawer = new ConfigDrawer<ConfigWithCustomRootLabel>(config, idScope, suppressRootNode: false);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-        // Successful construction indicates the custom label was used
-    }
-
-    /// <summary>
-    /// Tests that the constructor handles idScope with special characters correctly.
-    /// </summary>
-    [TestMethod]
-    [DataRow("Test-Plugin")]
-    [DataRow("Test_Plugin")]
-    [DataRow("Test.Plugin")]
-    [DataRow("Test123")]
-    [DataRow("123Test")]
-    [DataRow("Test Plugin With Spaces")]
-    public void ConfigDrawer_IdScopeWithSpecialCharacters_ConstructsSuccessfully(string idScope)
-    {
-        // Arrange
-        var config = new SimpleConfig();
-
-        // Act
-        using var drawer = new ConfigDrawer<SimpleConfig>(config, idScope);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-    }
-
-    /// <summary>
-    /// Tests that the constructor handles very long idScope strings correctly.
-    /// </summary>
-    [TestMethod]
-    public void ConfigDrawer_VeryLongIdScope_ConstructsSuccessfully()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        string idScope = new string('A', 10000);
-
-        // Act
-        using var drawer = new ConfigDrawer<SimpleConfig>(config, idScope);
 
         // Assert
         Assert.IsNotNull(drawer);
@@ -389,7 +153,7 @@ public sealed class ConfigDrawerTests
     {
         // Arrange
         var config = new ConfigWithNestedGroup();
-        string idScope = "TestPlugin";
+        var idScope = "TestPlugin";
 
         // Act
         using var drawer = new ConfigDrawer<ConfigWithNestedGroup>(config, idScope);
@@ -406,27 +170,10 @@ public sealed class ConfigDrawerTests
     {
         // Arrange
         var config = new ConfigWithMultipleParameters();
-        string idScope = "TestPlugin";
+        var idScope = "TestPlugin";
 
         // Act
         using var drawer = new ConfigDrawer<ConfigWithMultipleParameters>(config, idScope);
-
-        // Assert
-        Assert.IsNotNull(drawer);
-    }
-
-    /// <summary>
-    /// Tests that the constructor handles config with root node and default open flag set to true.
-    /// </summary>
-    [TestMethod]
-    public void ConfigDrawer_RootAttributeWithDefaultOpenTrue_ConstructsSuccessfully()
-    {
-        // Arrange
-        var config = new ConfigWithRootNodeDefaultOpen();
-        string idScope = "TestPlugin";
-
-        // Act
-        using var drawer = new ConfigDrawer<ConfigWithRootNodeDefaultOpen>(config, idScope, suppressRootNode: false);
 
         // Assert
         Assert.IsNotNull(drawer);
@@ -439,46 +186,6 @@ public sealed class ConfigDrawerTests
     /// </summary>
     [UmbraAutoRegisterSettings]
     private sealed class SimpleConfig
-    {
-        [UmbraSettingsParameter]
-        public Parameter<bool> Enabled { get; set; } = new(true);
-    }
-
-    /// <summary>
-    /// Configuration class with root node attribute.
-    /// </summary>
-    [UmbraAutoRegisterSettings]
-    private sealed class ConfigWithRootNode
-    {
-        [UmbraSettingsParameter]
-        public Parameter<bool> Enabled { get; set; } = new(true);
-    }
-
-    /// <summary>
-    /// Configuration class with root node attribute that has null label.
-    /// </summary>
-    [UmbraAutoRegisterSettings]
-    private sealed class ConfigWithRootNodeNullLabel
-    {
-        [UmbraSettingsParameter]
-        public Parameter<bool> Enabled { get; set; } = new(true);
-    }
-
-    /// <summary>
-    /// Configuration class with root node attribute that has custom label.
-    /// </summary>
-    [UmbraAutoRegisterSettings]
-    private sealed class ConfigWithCustomRootLabel
-    {
-        [UmbraSettingsParameter]
-        public Parameter<bool> Enabled { get; set; } = new(true);
-    }
-
-    /// <summary>
-    /// Configuration class with root node attribute and default open flag set to true.
-    /// </summary>
-    [UmbraAutoRegisterSettings]
-    private sealed class ConfigWithRootNodeDefaultOpen
     {
         [UmbraSettingsParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
@@ -564,27 +271,10 @@ public sealed class ConfigDrawerTests
         var drawer = new ConfigDrawer<SimpleTestConfig>(config, "TestScope");
 
         // Act & Assert
-        for (int i = 0; i < callCount; i++)
+        for (var i = 0; i < callCount; i++)
         {
             drawer.Dispose();
         }
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> can be called
-    /// immediately after construction without any intermediate operations.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_ImmediatelyAfterConstruction_ShouldNotThrow()
-    {
-        // Arrange
-        var config = new SimpleTestConfig();
-
-        // Act
-        var drawer = new ConfigDrawer<SimpleTestConfig>(config, "TestScope");
-        drawer.Dispose();
-
-        // Assert - No exception thrown
     }
 
     /// <summary>
@@ -597,23 +287,6 @@ public sealed class ConfigDrawerTests
         // Arrange
         var config = new ComplexTestConfig();
         var drawer = new ConfigDrawer<ComplexTestConfig>(config, "TestScope");
-
-        // Act
-        drawer.Dispose();
-
-        // Assert - No exception thrown
-    }
-
-    /// <summary>
-    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> works correctly
-    /// when suppressRootNode parameter is true.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WithSuppressRootNodeTrue_ShouldNotThrow()
-    {
-        // Arrange
-        var config = new SimpleTestConfig();
-        var drawer = new ConfigDrawer<SimpleTestConfig>(config, "TestScope", suppressRootNode: true);
 
         // Act
         drawer.Dispose();

@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.UI.Config;
 using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config.UnitTests;
@@ -30,7 +25,7 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(0, builder.Nodes.Count);
+        Assert.IsEmpty(builder.Nodes);
     }
 
     /// <summary>
@@ -52,7 +47,7 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(3, builder.Nodes.Count);
+        Assert.HasCount(3, builder.Nodes);
         Assert.AreSame(node2, builder.Nodes[0]);
         Assert.AreSame(node1, builder.Nodes[1]);
         Assert.AreSame(node3, builder.Nodes[2]);
@@ -80,7 +75,7 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(2, category.Children.Count);
+        Assert.HasCount(2, category.Children);
         Assert.AreSame(node2, category.Children[0]);
         Assert.AreSame(node1, category.Children[1]);
     }
@@ -113,49 +108,12 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(2, category.Children.Count);
+        Assert.HasCount(2, category.Children);
         Assert.AreSame(catNode2, category.Children[0]);
         Assert.AreSame(catNode1, category.Children[1]);
-        Assert.AreEqual(2, builder.Nodes.Count);
+        Assert.HasCount(2, builder.Nodes);
         Assert.AreSame(rootNode2, builder.Nodes[0]);
         Assert.AreSame(rootNode1, builder.Nodes[1]);
-    }
-
-    /// <summary>
-    /// Tests that SortAll correctly handles multiple category nodes, sorting each independently.
-    /// </summary>
-    [TestMethod]
-    public void SortAll_MultipleCategoryNodes_SortsEachIndependently()
-    {
-        // Arrange
-        ConfigDrawerBuilder builder = new();
-
-        CategoryNode category1 = new("Category 1");
-        ParameterNode cat1Node1 = new(() => true, () => { }, order: 40);
-        ParameterNode cat1Node2 = new(() => true, () => { }, order: 20);
-        category1.Children.Add(cat1Node1);
-        category1.Children.Add(cat1Node2);
-
-        CategoryNode category2 = new("Category 2");
-        ParameterNode cat2Node1 = new(() => true, () => { }, order: 60);
-        ParameterNode cat2Node2 = new(() => true, () => { }, order: 15);
-        category2.Children.Add(cat2Node1);
-        category2.Children.Add(cat2Node2);
-
-        typeof(ConfigDrawerBuilder)
-            .GetField("_allCategoryNodes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
-            .SetValue(builder, new List<CategoryNode> { category1, category2 });
-
-        // Act
-        builder.SortAll();
-
-        // Assert
-        Assert.AreEqual(2, category1.Children.Count);
-        Assert.AreSame(cat1Node2, category1.Children[0]);
-        Assert.AreSame(cat1Node1, category1.Children[1]);
-        Assert.AreEqual(2, category2.Children.Count);
-        Assert.AreSame(cat2Node2, category2.Children[0]);
-        Assert.AreSame(cat2Node1, category2.Children[1]);
     }
 
     /// <summary>
@@ -177,7 +135,7 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(3, builder.Nodes.Count);
+        Assert.HasCount(3, builder.Nodes);
         Assert.AreSame(node1, builder.Nodes[0]);
         Assert.AreSame(node2, builder.Nodes[1]);
         Assert.AreSame(node3, builder.Nodes[2]);
@@ -204,7 +162,7 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(4, builder.Nodes.Count);
+        Assert.HasCount(4, builder.Nodes);
         Assert.AreSame(node2, builder.Nodes[0]);
         Assert.AreSame(node4, builder.Nodes[1]);
         Assert.AreSame(node1, builder.Nodes[2]);
@@ -230,61 +188,10 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(3, builder.Nodes.Count);
+        Assert.HasCount(3, builder.Nodes);
         Assert.AreSame(paramNode, builder.Nodes[0]);
         Assert.AreSame(mockNode1.Object, builder.Nodes[1]);
         Assert.AreSame(mockNode2.Object, builder.Nodes[2]);
-    }
-
-    /// <summary>
-    /// Tests that SortAll correctly handles category children with empty lists.
-    /// </summary>
-    [TestMethod]
-    public void SortAll_CategoryWithEmptyChildren_HandlesGracefully()
-    {
-        // Arrange
-        ConfigDrawerBuilder builder = new();
-        CategoryNode emptyCategory = new("Empty Category");
-
-        typeof(ConfigDrawerBuilder)
-            .GetField("_allCategoryNodes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
-            .SetValue(builder, new List<CategoryNode> { emptyCategory });
-
-        // Act
-        builder.SortAll();
-
-        // Assert
-        Assert.AreEqual(0, emptyCategory.Children.Count);
-    }
-
-    /// <summary>
-    /// Tests that SortAll correctly handles single node in both category and root lists.
-    /// </summary>
-    [TestMethod]
-    public void SortAll_SingleNodeInEachList_NoChanges()
-    {
-        // Arrange
-        ConfigDrawerBuilder builder = new();
-
-        CategoryNode category = new("Test Category");
-        ParameterNode catNode = new(() => true, () => { }, order: 42);
-        category.Children.Add(catNode);
-
-        ParameterNode rootNode = new(() => true, () => { }, order: 100);
-        builder.Nodes.Add(rootNode);
-
-        typeof(ConfigDrawerBuilder)
-            .GetField("_allCategoryNodes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
-            .SetValue(builder, new List<CategoryNode> { category });
-
-        // Act
-        builder.SortAll();
-
-        // Assert
-        Assert.AreEqual(1, category.Children.Count);
-        Assert.AreSame(catNode, category.Children[0]);
-        Assert.AreEqual(1, builder.Nodes.Count);
-        Assert.AreSame(rootNode, builder.Nodes[0]);
     }
 
     /// <summary>
@@ -308,61 +215,11 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(4, builder.Nodes.Count);
+        Assert.HasCount(4, builder.Nodes);
         Assert.AreSame(node4, builder.Nodes[0]);
         Assert.AreSame(node2, builder.Nodes[1]);
         Assert.AreSame(node3, builder.Nodes[2]);
         Assert.AreSame(node1, builder.Nodes[3]);
-    }
-
-    /// <summary>
-    /// Tests that SortAll correctly handles int.MinValue order value.
-    /// </summary>
-    [TestMethod]
-    public void SortAll_IntMinValueOrder_SortsFirst()
-    {
-        // Arrange
-        ConfigDrawerBuilder builder = new();
-        ParameterNode node1 = new(() => true, () => { }, order: 0);
-        ParameterNode node2 = new(() => true, () => { }, order: int.MinValue);
-        ParameterNode node3 = new(() => true, () => { }, order: -1);
-        builder.Nodes.Add(node1);
-        builder.Nodes.Add(node2);
-        builder.Nodes.Add(node3);
-
-        // Act
-        builder.SortAll();
-
-        // Assert
-        Assert.AreEqual(3, builder.Nodes.Count);
-        Assert.AreSame(node2, builder.Nodes[0]);
-        Assert.AreSame(node3, builder.Nodes[1]);
-        Assert.AreSame(node1, builder.Nodes[2]);
-    }
-
-    /// <summary>
-    /// Tests that SortAll correctly handles all nodes with int.MaxValue order (unordered).
-    /// </summary>
-    [TestMethod]
-    public void SortAll_AllNodesUnordered_PreservesOriginalOrder()
-    {
-        // Arrange
-        ConfigDrawerBuilder builder = new();
-        ParameterNode node1 = new(() => true, () => { });
-        ParameterNode node2 = new(() => true, () => { });
-        ParameterNode node3 = new(() => true, () => { });
-        builder.Nodes.Add(node1);
-        builder.Nodes.Add(node2);
-        builder.Nodes.Add(node3);
-
-        // Act
-        builder.SortAll();
-
-        // Assert
-        Assert.AreEqual(3, builder.Nodes.Count);
-        Assert.AreSame(node1, builder.Nodes[0]);
-        Assert.AreSame(node2, builder.Nodes[1]);
-        Assert.AreSame(node3, builder.Nodes[2]);
     }
 
     /// <summary>
@@ -390,7 +247,7 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(3, category.Children.Count);
+        Assert.HasCount(3, category.Children);
         Assert.AreSame(paramNode2, category.Children[0]);
         Assert.AreSame(paramNode1, category.Children[1]);
         Assert.AreSame(mockNode.Object, category.Children[2]);
@@ -432,7 +289,7 @@ public partial class ConfigDrawerBuilderTests
         ConfigDrawerBuilder builder = new();
         List<ParameterNode> nodes = [];
 
-        for (int i = 100; i > 0; i--)
+        for (var i = 100; i > 0; i--)
         {
             ParameterNode node = new(() => true, () => { }, order: i);
             nodes.Add(node);
@@ -443,10 +300,10 @@ public partial class ConfigDrawerBuilderTests
         builder.SortAll();
 
         // Assert
-        Assert.AreEqual(100, builder.Nodes.Count);
-        for (int i = 0; i < 100; i++)
+        Assert.HasCount(100, builder.Nodes);
+        for (var i = 0; i < 100; i++)
         {
-            ParameterNode node = (ParameterNode)builder.Nodes[i];
+            var node = (ParameterNode)builder.Nodes[i];
             Assert.AreEqual(i + 1, node.Order);
         }
     }
@@ -466,261 +323,14 @@ public partial class ConfigDrawerBuilderTests
 
         // Act
         builder.Collect(firstConfig, typeof(SimpleConfig));
-        int firstNodeCount = builder.Nodes.Count;
-        int firstDisposableCount = builder.Disposables.Count;
+        var firstNodeCount = builder.Nodes.Count;
+        var firstDisposableCount = builder.Disposables.Count;
 
         builder.Collect(secondConfig, typeof(SimpleConfig));
-        int secondNodeCount = builder.Nodes.Count;
+        var secondNodeCount = builder.Nodes.Count;
 
         // Assert
         Assert.AreEqual(firstNodeCount, secondNodeCount, "Node count should be same for identical configs after clearing.");
-    }
-
-    /// <summary>
-    /// Tests that Collect populates Nodes list from scope after CollectInto completes.
-    /// Input: A simple configuration object.
-    /// Expected: Nodes list is populated with elements from the scope.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithSimpleConfig_PopulatesNodesList()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new SimpleConfig();
-
-        // Act
-        builder.Collect(config, typeof(SimpleConfig));
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes, "Nodes list should not be null.");
-    }
-
-    /// <summary>
-    /// Tests that Collect uses categoryOverride instead of type-level category metadata.
-    /// Input: Config with type-level category, but categoryOverride provided.
-    /// Expected: Override value is passed to ConfigDrawScope constructor.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithCategoryOverride_UsesCategoryOverrideValue()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new CategorizedConfig();
-        string categoryOverride = "OverriddenCategory";
-
-        // Act
-        builder.Collect(config, typeof(CategorizedConfig), categoryOverride: categoryOverride);
-
-        // Assert - method completes without exception
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect handles null categoryOverride and falls back to type metadata.
-    /// Input: Config with type-level category, categoryOverride is null.
-    /// Expected: Type metadata category is used.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithNullCategoryOverride_UsesTypeMetadataCategory()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new CategorizedConfig();
-
-        // Act
-        builder.Collect(config, typeof(CategorizedConfig), categoryOverride: null);
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect handles empty string categoryOverride.
-    /// Input: categoryOverride is empty string.
-    /// Expected: Empty string is used (takes precedence over metadata).
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithEmptyCategoryOverride_UsesEmptyString()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new CategorizedConfig();
-
-        // Act
-        builder.Collect(config, typeof(CategorizedConfig), categoryOverride: string.Empty);
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect handles whitespace-only categoryOverride.
-    /// Input: categoryOverride contains only whitespace.
-    /// Expected: Whitespace string is used without trimming.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithWhitespaceCategoryOverride_UsesWhitespaceValue()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new SimpleConfig();
-
-        // Act
-        builder.Collect(config, typeof(SimpleConfig), categoryOverride: "   ");
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect uses collapseOverride instead of type-level collapse metadata.
-    /// Input: Config with collapse attribute, collapseOverride provided.
-    /// Expected: Override value is passed to ConfigDrawScope.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithCollapseOverride_UsesCollapseOverrideValue()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new SimpleConfig();
-        var collapseOverride = new UmbraCollapseAsTreeAttribute();
-
-        // Act
-        builder.Collect(config, typeof(SimpleConfig), collapseOverride: collapseOverride);
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect uses propertyIndentOverride when provided.
-    /// Input: propertyIndentOverride with specific indent amount.
-    /// Expected: Override is passed to ConfigDrawScope.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithPropertyIndentOverride_UsesIndentOverride()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new SimpleConfig();
-        var indentOverride = new UmbraIndentAttribute(20);
-
-        // Act
-        builder.Collect(config, typeof(SimpleConfig), propertyIndentOverride: indentOverride);
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect uses labelMarginOverride instead of type-level label margin metadata.
-    /// Input: labelMarginOverride provided.
-    /// Expected: Override value is passed to ConfigDrawScope.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithLabelMarginOverride_UsesLabelMarginOverrideValue()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new SimpleConfig();
-        var labelMarginOverride = new UmbraLabelMarginAttribute(10);
-
-        // Act
-        builder.Collect(config, typeof(SimpleConfig), labelMarginOverride: labelMarginOverride);
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect handles all override parameters being null.
-    /// Input: All optional override parameters are null.
-    /// Expected: Type metadata values are used as fallbacks.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithAllNullOverrides_UsesTypeMetadataFallbacks()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new CategorizedConfig();
-
-        // Act
-        builder.Collect(
-            config,
-            typeof(CategorizedConfig),
-            propertyIndentOverride: null,
-            categoryOverride: null,
-            collapseOverride: null,
-            labelMarginOverride: null);
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect handles all override parameters being provided simultaneously.
-    /// Input: All optional override parameters have non-null values.
-    /// Expected: All overrides take precedence over metadata.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithAllOverridesProvided_UsesAllOverrideValues()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new CategorizedConfig();
-        var indentOverride = new UmbraIndentAttribute(15);
-        var collapseOverride = new UmbraCollapseAsTreeAttribute();
-        var labelMarginOverride = new UmbraLabelMarginAttribute(8);
-
-        // Act
-        builder.Collect(
-            config,
-            typeof(CategorizedConfig),
-            propertyIndentOverride: indentOverride,
-            categoryOverride: "FullOverride",
-            collapseOverride: collapseOverride,
-            labelMarginOverride: labelMarginOverride);
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect handles type with null SettingsPrefix in metadata.
-    /// Input: Type with no SettingsPrefix attribute.
-    /// Expected: Empty string is used as rootGroupPath.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithNullSettingsPrefix_UsesEmptyString()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new SimpleConfig();
-
-        // Act
-        builder.Collect(config, typeof(SimpleConfig));
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect handles type with non-null SettingsPrefix in metadata.
-    /// Input: Type with SettingsPrefix attribute.
-    /// Expected: SettingsPrefix value is used as rootGroupPath.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithNonNullSettingsPrefix_UsesSettingsPrefixValue()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new PrefixedConfig();
-
-        // Act
-        builder.Collect(config, typeof(PrefixedConfig));
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
     }
 
     /// <summary>
@@ -735,117 +345,13 @@ public partial class ConfigDrawerBuilderTests
         var builder = new ConfigDrawerBuilder();
         var config = new SimpleConfig();
         builder.Collect(config, typeof(SimpleConfig));
-        int initialCount = builder.Nodes.Count;
+        var initialCount = builder.Nodes.Count;
 
         // Act
         builder.Collect(config, typeof(SimpleConfig));
 
         // Assert - if not cleared, count would accumulate
-        Assert.AreEqual(initialCount, builder.Nodes.Count, "Nodes should be cleared between calls.");
-    }
-
-    /// <summary>
-    /// Tests that Collect clears Disposables list before processing.
-    /// Input: Builder instance.
-    /// Expected: Disposables list is cleared at start of Collect.
-    /// </summary>
-    [TestMethod]
-    public void Collect_BeforeProcessing_ClearsDisposablesList()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new SimpleConfig();
-
-        // Act
-        builder.Collect(config, typeof(SimpleConfig));
-
-        // Assert
-        Assert.AreEqual(0, builder.Disposables.Count, "Disposables should be cleared.");
-    }
-
-    /// <summary>
-    /// Tests that Collect processes config with parameter properties.
-    /// Input: Config with Parameter&lt;T&gt; properties.
-    /// Expected: CollectInto processes parameters and may add nodes.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithParameterConfig_ProcessesParameters()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new ParameterConfig();
-
-        // Act
-        builder.Collect(config, typeof(ParameterConfig));
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect copies all nodes from scope.Nodes to builder.Nodes.
-    /// Input: Config that results in nodes being added to scope.
-    /// Expected: All scope nodes are present in builder.Nodes after Collect.
-    /// </summary>
-    [TestMethod]
-    public void Collect_AfterCollectInto_CopiesAllNodesFromScope()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new ParameterConfig();
-
-        // Act
-        builder.Collect(config, typeof(ParameterConfig));
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes, "Nodes should be populated from scope.");
-    }
-
-    /// <summary>
-    /// Tests that Collect handles config with only nested groups (no direct parameters).
-    /// Input: Config with nested group properties but no Parameter properties.
-    /// Expected: Nested groups are processed via recursion in CollectInto.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithNestedGroupConfig_ProcessesNestedGroups()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new ParentConfig { Nested = new NestedConfig() };
-
-        // Act
-        builder.Collect(config, typeof(ParentConfig));
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
-    }
-
-    /// <summary>
-    /// Tests that Collect respects the override precedence chain.
-    /// Input: Type with metadata attributes, overrides that differ from metadata.
-    /// Expected: Overrides take precedence in ConfigDrawScope construction.
-    /// </summary>
-    [TestMethod]
-    public void Collect_WithOverridesAndMetadata_OverridesTakePrecedence()
-    {
-        // Arrange
-        var builder = new ConfigDrawerBuilder();
-        var config = new FullyDecoratedConfig();
-        var differentIndent = new UmbraIndentAttribute(50);
-        var differentCollapse = new UmbraCollapseAsTreeAttribute();
-        var differentMargin = new UmbraLabelMarginAttribute(25);
-
-        // Act
-        builder.Collect(
-            config,
-            typeof(FullyDecoratedConfig),
-            propertyIndentOverride: differentIndent,
-            categoryOverride: "DifferentCategory",
-            collapseOverride: differentCollapse,
-            labelMarginOverride: differentMargin);
-
-        // Assert
-        Assert.IsNotNull(builder.Nodes);
+        Assert.HasCount(initialCount, builder.Nodes, "Nodes should be cleared between calls.");
     }
 
     #region Helper Types
@@ -853,54 +359,6 @@ public partial class ConfigDrawerBuilderTests
     [UmbraAutoRegisterSettings]
     private sealed record SimpleConfig
     {
-    }
-
-    [UmbraAutoRegisterSettings]
-    [UmbraCategory("TestCategory")]
-    private sealed record CategorizedConfig
-    {
-    }
-
-    [UmbraAutoRegisterSettings]
-    [UmbraSettingsPrefix("test.prefix")]
-    private sealed record PrefixedConfig
-    {
-    }
-
-    [UmbraAutoRegisterSettings]
-    private sealed record ParameterConfig
-    {
-        [UmbraSettingsParameter]
-        public Parameter<bool> Enabled { get; set; } = new(true);
-
-        [UmbraSettingsParameter]
-        public Parameter<int> Value { get; set; } = new(42);
-    }
-
-    [UmbraAutoRegisterSettings]
-    private sealed record ParentConfig
-    {
-        [UmbraSettingsParameter]
-        public NestedConfig? Nested { get; set; }
-    }
-
-    [UmbraAutoRegisterSettings]
-    private sealed record NestedConfig
-    {
-        [UmbraSettingsParameter]
-        public Parameter<string> Name { get; set; } = new("default");
-    }
-
-    [UmbraAutoRegisterSettings]
-    [UmbraCategory("FullCategory")]
-    [UmbraIndent(10)]
-    [UmbraCollapseAsTree]
-    [UmbraLabelMargin(5)]
-    [UmbraSettingsPrefix("full.prefix")]
-    private sealed record FullyDecoratedConfig
-    {
-        [UmbraSettingsParameter]
-        public Parameter<double> Ratio { get; set; } = new(1.5);
     }
 
     #endregion

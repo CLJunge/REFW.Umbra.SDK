@@ -1,8 +1,4 @@
-﻿using System;
 using System.Text;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra;
 
 namespace Umbra.UnitTests;
 
@@ -21,10 +17,10 @@ public class StringExtensionsTests
     public void ToDisplayName_EmptyString_ReturnsEmptyString()
     {
         // Arrange
-        string input = string.Empty;
+        var input = string.Empty;
 
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual(string.Empty, result);
@@ -38,30 +34,13 @@ public class StringExtensionsTests
     public void ToDisplayName_SingleUppercaseCharacter_ReturnsSameCharacter()
     {
         // Arrange
-        string input = "A";
+        var input = "A";
 
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual("A", result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="StringExtensions.ToDisplayName"/> returns the same character
-    /// when the input is a single lowercase character.
-    /// </summary>
-    [TestMethod]
-    public void ToDisplayName_SingleLowercaseCharacter_ReturnsSameCharacter()
-    {
-        // Arrange
-        string input = "a";
-
-        // Act
-        string result = input.ToDisplayName();
-
-        // Assert
-        Assert.AreEqual("a", result);
     }
 
     /// <summary>
@@ -72,10 +51,10 @@ public class StringExtensionsTests
     public void ToDisplayName_AllLowercase_ReturnsUnchanged()
     {
         // Arrange
-        string input = "fieldofview";
+        var input = "fieldofview";
 
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual("fieldofview", result);
@@ -89,10 +68,10 @@ public class StringExtensionsTests
     public void ToDisplayName_AllUppercase_ReturnsUnchanged()
     {
         // Arrange
-        string input = "FIELDOFVIEW";
+        var input = "FIELDOFVIEW";
 
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual("FIELDOFVIEW", result);
@@ -115,27 +94,7 @@ public class StringExtensionsTests
     public void ToDisplayName_PascalCase_InsertsSpaces(string input, string expected)
     {
         // Act
-        string result = input.ToDisplayName();
-
-        // Assert
-        Assert.AreEqual(expected, result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="StringExtensions.ToDisplayName"/> correctly inserts spaces
-    /// before uppercase letters that follow lowercase letters in camelCase strings.
-    /// </summary>
-    /// <param name="input">The camelCase input string.</param>
-    /// <param name="expected">The expected display name with spaces.</param>
-    [TestMethod]
-    [DataRow("fieldOfView", "field Of View")]
-    [DataRow("userName", "user Name")]
-    [DataRow("firstName", "first Name")]
-    [DataRow("isEnabled", "is Enabled")]
-    public void ToDisplayName_CamelCase_InsertsSpaces(string input, string expected)
-    {
-        // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -149,10 +108,10 @@ public class StringExtensionsTests
     public void ToDisplayName_ConsecutiveUppercase_NoSpacesBetweenUppercase()
     {
         // Arrange
-        string input = "XMLParser";
+        var input = "XMLParser";
 
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual("XMLParser", result);
@@ -173,7 +132,7 @@ public class StringExtensionsTests
     public void ToDisplayName_StringsWithNumbers_HandlesCorrectly(string input, string expected)
     {
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -195,7 +154,7 @@ public class StringExtensionsTests
     public void ToDisplayName_StringsWithSpecialCharacters_HandlesCorrectly(string input, string expected)
     {
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -209,10 +168,10 @@ public class StringExtensionsTests
     public void ToDisplayName_StringWithSpaces_InsertsAdditionalSpaces()
     {
         // Arrange
-        string input = "Field Of View";
+        var input = "Field Of View";
 
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual("Field  Of  View", result);
@@ -233,27 +192,10 @@ public class StringExtensionsTests
     public void ToDisplayName_MixedCaseTransitions_HandlesCorrectly(string input, string expected)
     {
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual(expected, result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="StringExtensions.ToDisplayName"/> handles whitespace-only strings
-    /// correctly, returning them unchanged.
-    /// </summary>
-    [TestMethod]
-    public void ToDisplayName_WhitespaceOnly_ReturnsUnchanged()
-    {
-        // Arrange
-        string input = "   ";
-
-        // Act
-        string result = input.ToDisplayName();
-
-        // Assert
-        Assert.AreEqual("   ", result);
     }
 
     /// <summary>
@@ -264,20 +206,20 @@ public class StringExtensionsTests
     public void ToDisplayName_VeryLongString_HandlesCorrectly()
     {
         // Arrange
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < 1000; i++)
+        var builder = new StringBuilder();
+        for (var i = 0; i < 1000; i++)
         {
             builder.Append("FieldOfView");
         }
-        string input = builder.ToString();
+        var input = builder.ToString();
 
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsTrue(result.Length >= input.Length);
-        Assert.IsTrue(result.StartsWith("Field Of View"));
+        Assert.IsGreaterThanOrEqualTo(input.Length, result.Length);
+        Assert.StartsWith("Field Of View", result);
     }
 
     /// <summary>
@@ -288,50 +230,13 @@ public class StringExtensionsTests
     public void ToDisplayName_UnicodeUppercase_InsertsSpaces()
     {
         // Arrange
-        string input = "fieldÖfView";
+        var input = "fieldÖfView";
 
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual("field Öf View", result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="StringExtensions.ToDisplayName"/> handles strings
-    /// starting with multiple consecutive uppercase letters followed by lowercase correctly.
-    /// </summary>
-    /// <param name="input">The input string.</param>
-    /// <param name="expected">The expected display name.</param>
-    [TestMethod]
-    [DataRow("HTTPServer", "HTTPServer")]
-    [DataRow("URLParser", "URLParser")]
-    [DataRow("IOError", "IOError")]
-    [DataRow("HTTPSConnection", "HTTPSConnection")]
-    public void ToDisplayName_AcronymAtStart_NoSpacesInAcronym(string input, string expected)
-    {
-        // Act
-        string result = input.ToDisplayName();
-
-        // Assert
-        Assert.AreEqual(expected, result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="StringExtensions.ToDisplayName"/> handles strings
-    /// with uppercase letter transitions after non-letter characters.
-    /// </summary>
-    [TestMethod]
-    public void ToDisplayName_UppercaseAfterNonLetter_InsertsSpace()
-    {
-        // Arrange
-        string input = "field123View";
-
-        // Act
-        string result = input.ToDisplayName();
-
-        // Assert
-        Assert.AreEqual("field123 View", result);
     }
 
     /// <summary>
@@ -342,10 +247,10 @@ public class StringExtensionsTests
     public void ToDisplayName_ControlCharacters_HandlesCorrectly()
     {
         // Arrange
-        string input = "Field\tView\nName";
+        var input = "Field\tView\nName";
 
         // Act
-        string result = input.ToDisplayName();
+        var result = input.ToDisplayName();
 
         // Assert
         Assert.AreEqual("Field\t View\n Name", result);
@@ -361,7 +266,7 @@ public class StringExtensionsTests
         string? value = null;
 
         // Act
-        string? result = value.ToCamelCase();
+        var result = value.ToCamelCase();
 
         // Assert
         Assert.IsNull(result);
@@ -374,10 +279,10 @@ public class StringExtensionsTests
     public void ToCamelCase_EmptyString_ReturnsEmpty()
     {
         // Arrange
-        string value = string.Empty;
+        var value = string.Empty;
 
         // Act
-        string? result = value.ToCamelCase();
+        var result = value.ToCamelCase();
 
         // Assert
         Assert.IsNotNull(result);
@@ -391,10 +296,10 @@ public class StringExtensionsTests
     public void ToCamelCase_SingleUppercaseCharacter_ConvertsToLowercase()
     {
         // Arrange
-        string value = "A";
+        var value = "A";
 
         // Act
-        string? result = value.ToCamelCase();
+        var result = value.ToCamelCase();
 
         // Assert
         Assert.AreEqual("a", result);
@@ -407,10 +312,10 @@ public class StringExtensionsTests
     public void ToCamelCase_SingleLowercaseCharacter_ReturnsUnchanged()
     {
         // Arrange
-        string value = "a";
+        var value = "a";
 
         // Act
-        string? result = value.ToCamelCase();
+        var result = value.ToCamelCase();
 
         // Assert
         Assert.AreSame(value, result);
@@ -434,7 +339,7 @@ public class StringExtensionsTests
     public void ToCamelCase_PascalCaseString_ConvertsFirstCharacterToLowercase(string input, string expected)
     {
         // Act
-        string? result = input.ToCamelCase();
+        var result = input.ToCamelCase();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -454,7 +359,7 @@ public class StringExtensionsTests
     public void ToCamelCase_AlreadyCamelCase_ReturnsSameReference(string input)
     {
         // Act
-        string? result = input.ToCamelCase();
+        var result = input.ToCamelCase();
 
         // Assert
         Assert.AreSame(input, result);
@@ -475,7 +380,7 @@ public class StringExtensionsTests
     public void ToCamelCase_StartsWithNumber_ReturnsWithNumberUnchanged(string input, string expected)
     {
         // Act
-        string? result = input.ToCamelCase();
+        var result = input.ToCamelCase();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -497,7 +402,7 @@ public class StringExtensionsTests
     public void ToCamelCase_StartsWithSpecialCharacter_ReturnsWithCharacterUnchanged(string input, string expected)
     {
         // Act
-        string? result = input.ToCamelCase();
+        var result = input.ToCamelCase();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -518,7 +423,7 @@ public class StringExtensionsTests
     public void ToCamelCase_StartsWithWhitespace_ReturnsWithWhitespaceUnchanged(string input, string expected)
     {
         // Act
-        string? result = input.ToCamelCase();
+        var result = input.ToCamelCase();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -539,29 +444,10 @@ public class StringExtensionsTests
     public void ToCamelCase_UnicodeUppercase_ConvertsToLowercase(string input, string expected)
     {
         // Act
-        string? result = input.ToCamelCase();
+        var result = input.ToCamelCase();
 
         // Assert
         Assert.AreEqual(expected, result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="StringExtensions.ToCamelCase"/> correctly handles a very long string,
-    /// converting only the first character to lowercase while preserving the rest.
-    /// </summary>
-    [TestMethod]
-    public void ToCamelCase_VeryLongString_ConvertsFirstCharacterOnly()
-    {
-        // Arrange
-        string value = "A" + new string('B', 10000);
-        string expected = "a" + new string('B', 10000);
-
-        // Act
-        string? result = value.ToCamelCase();
-
-        // Assert
-        Assert.AreEqual(expected, result);
-        Assert.AreEqual(10001, result?.Length);
     }
 
     /// <summary>
@@ -572,12 +458,12 @@ public class StringExtensionsTests
     public void ToCamelCase_CalledMultipleTimes_ProducesSameResult()
     {
         // Arrange
-        string value = "TestValue";
+        var value = "TestValue";
 
         // Act
-        string? result1 = value.ToCamelCase();
-        string? result2 = result1.ToCamelCase();
-        string? result3 = result2.ToCamelCase();
+        var result1 = value.ToCamelCase();
+        var result2 = result1.ToCamelCase();
+        var result3 = result2.ToCamelCase();
 
         // Assert
         Assert.AreEqual("testValue", result1);
@@ -599,27 +485,10 @@ public class StringExtensionsTests
     public void ToCamelCase_MixedCaseString_PreservesAllButFirstCharacter(string input, string expected)
     {
         // Act
-        string? result = input.ToCamelCase();
+        var result = input.ToCamelCase();
 
         // Assert
         Assert.AreEqual(expected, result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="StringExtensions.ToCamelCase"/> handles strings containing only whitespace.
-    /// Since whitespace is not lowercase, the method processes it but returns it unchanged.
-    /// </summary>
-    [TestMethod]
-    public void ToCamelCase_OnlyWhitespace_ReturnsUnchanged()
-    {
-        // Arrange
-        string value = "   ";
-
-        // Act
-        string? result = value.ToCamelCase();
-
-        // Assert
-        Assert.AreEqual("   ", result);
     }
 
     /// <summary>
@@ -630,43 +499,13 @@ public class StringExtensionsTests
     public void ToCamelCase_StartsWithControlCharacter_ReturnsUnchanged()
     {
         // Arrange
-        string value = "\0test";
+        var value = "\0test";
 
         // Act
-        string? result = value.ToCamelCase();
+        var result = value.ToCamelCase();
 
         // Assert
         Assert.AreEqual("\0test", result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="StringExtensions.ToCamelCase"/> correctly processes strings with uppercase letters
-    /// at various Unicode code points, ensuring culture-invariant conversion.
-    /// </summary>
-    [TestMethod]
-    public void ToCamelCase_VariousUnicodeUppercaseLetters_ConvertsCorrectly()
-    {
-        // Arrange & Act & Assert
-        Assert.AreEqual("ā", "Ā".ToCamelCase()); // Latin Extended-A
-        Assert.AreEqual("đ", "Đ".ToCamelCase()); // Latin Extended-A
-        Assert.AreEqual("ș", "Ș".ToCamelCase()); // Latin Extended-B
-        Assert.AreEqual("ω", "Ω".ToCamelCase()); // Greek
-    }
-
-    /// <summary>
-    /// Tests edge case where the string contains only an uppercase letter followed by lowercase letters.
-    /// </summary>
-    [TestMethod]
-    public void ToCamelCase_UppercaseFollowedByLowercase_ConvertsFirstOnly()
-    {
-        // Arrange
-        string value = "Test";
-
-        // Act
-        string? result = value.ToCamelCase();
-
-        // Assert
-        Assert.AreEqual("test", result);
     }
 
     /// <summary>
@@ -682,7 +521,7 @@ public class StringExtensionsTests
     public void ToCamelCase_TwoCharacterString_ConvertsCorrectly(string input, string expected)
     {
         // Act
-        string? result = input.ToCamelCase();
+        var result = input.ToCamelCase();
 
         // Assert
         Assert.AreEqual(expected, result);

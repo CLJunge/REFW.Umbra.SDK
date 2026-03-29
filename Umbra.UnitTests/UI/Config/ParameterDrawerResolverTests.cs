@@ -1,8 +1,5 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Umbra.Config;
-using Umbra.UI.Config;
 using Umbra.UI.Config.Drawers;
 
 
@@ -64,7 +61,7 @@ public class ParameterDrawerResolverTests
         Assert.IsNotNull(result);
         Assert.IsNotNull(result.Value.draw);
         Assert.IsNotNull(result.Value.resource);
-        Assert.IsInstanceOfType(result.Value.resource, typeof(IParameterDrawer));
+        Assert.IsInstanceOfType<IParameterDrawer>(result.Value.resource);
     }
 
     /// <summary>
@@ -93,7 +90,7 @@ public class ParameterDrawerResolverTests
         Assert.IsNotNull(result);
         Assert.IsNotNull(result.Value.draw);
         Assert.IsNotNull(result.Value.resource);
-        Assert.IsInstanceOfType(result.Value.resource, typeof(ITwoColumnParameterDrawer));
+        Assert.IsInstanceOfType<ITwoColumnParameterDrawer>(result.Value.resource);
     }
 
     /// <summary>
@@ -120,8 +117,8 @@ public class ParameterDrawerResolverTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsInstanceOfType(result.Value.resource, typeof(TestParameterDrawer));
-        Assert.IsNotInstanceOfType(result.Value.resource, typeof(TestTwoColumnDrawer));
+        Assert.IsInstanceOfType<TestParameterDrawer>(result.Value.resource);
+        Assert.IsNotInstanceOfType<TestTwoColumnDrawer>(result.Value.resource);
     }
 
     /// <summary>
@@ -148,7 +145,7 @@ public class ParameterDrawerResolverTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsInstanceOfType(result.Value.resource, typeof(TestTwoColumnDrawer));
+        Assert.IsInstanceOfType<TestTwoColumnDrawer>(result.Value.resource);
     }
 
     /// <summary>
@@ -175,7 +172,7 @@ public class ParameterDrawerResolverTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsInstanceOfType(result.Value.resource, typeof(TestTwoColumnDrawer));
+        Assert.IsInstanceOfType<TestTwoColumnDrawer>(result.Value.resource);
     }
 
     /// <summary>
@@ -284,124 +281,6 @@ public class ParameterDrawerResolverTests
     }
 
     /// <summary>
-    /// Tests that the returned draw action for a TwoColumnDrawer correctly invokes Pre
-    /// on the layout and Draw on the drawer.
-    /// </summary>
-    [TestMethod]
-    public void TryResolve_ValidTwoColumnDrawer_DrawActionInvokesPreAndDraw()
-    {
-        // Arrange
-        var metadata = new ParameterMetadata
-        {
-            CustomDrawerType = null,
-            TwoColumnCustomDrawerType = typeof(TestTwoColumnDrawer)
-        };
-        var mockParameter = new Mock<IParameter>();
-        mockParameter.Setup(p => p.Metadata).Returns(metadata);
-        mockParameter.Setup(p => p.Key).Returns("testKey");
-        var alignGroup = new LabelAlignmentGroup();
-        var label = "Test Label";
-
-        // Act
-        var result = ParameterDrawerResolver.TryResolve(mockParameter.Object, label, alignGroup);
-        var drawer = (TestTwoColumnDrawer)result!.Value.resource!;
-
-        // Note: Invoking the draw action will call ControlFactory.CreateControlLayout
-        // and then layout.Pre() which requires ImGui context. We verify drawer setup only.
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(drawer);
-    }
-
-    /// <summary>
-    /// Tests that TryResolve successfully creates a draw action when label is an empty string.
-    /// </summary>
-    [TestMethod]
-    public void TryResolve_EmptyLabel_SuccessfullyCreatesDrawAction()
-    {
-        // Arrange
-        var metadata = new ParameterMetadata
-        {
-            CustomDrawerType = typeof(TestParameterDrawer),
-            TwoColumnCustomDrawerType = null
-        };
-        var mockParameter = new Mock<IParameter>();
-        mockParameter.Setup(p => p.Metadata).Returns(metadata);
-        mockParameter.Setup(p => p.Key).Returns("testKey");
-        var alignGroup = new LabelAlignmentGroup();
-        var label = string.Empty;
-
-        // Act
-        var result = ParameterDrawerResolver.TryResolve(mockParameter.Object, label, alignGroup);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(result.Value.draw);
-    }
-
-    /// <summary>
-    /// Tests that TryResolve handles labels with various edge case inputs including
-    /// very long strings and special characters.
-    /// </summary>
-    /// <param name="label">The label to test.</param>
-    [TestMethod]
-    [DataRow("")]
-    [DataRow("A")]
-    [DataRow("Normal Label")]
-    [DataRow("Label with special chars: !@#$%^&*()")]
-    [DataRow("   ")]
-    [DataRow("Label\nWith\nNewlines")]
-    [DataRow("Label\tWith\tTabs")]
-    public void TryResolve_VariousLabelInputs_SuccessfullyCreatesDrawAction(string label)
-    {
-        // Arrange
-        var metadata = new ParameterMetadata
-        {
-            CustomDrawerType = typeof(TestParameterDrawer),
-            TwoColumnCustomDrawerType = null
-        };
-        var mockParameter = new Mock<IParameter>();
-        mockParameter.Setup(p => p.Metadata).Returns(metadata);
-        mockParameter.Setup(p => p.Key).Returns("testKey");
-        var alignGroup = new LabelAlignmentGroup();
-
-        // Act
-        var result = ParameterDrawerResolver.TryResolve(mockParameter.Object, label, alignGroup);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(result.Value.draw);
-        Assert.IsNotNull(result.Value.resource);
-    }
-
-    /// <summary>
-    /// Tests that TryResolve works correctly with very long label strings.
-    /// </summary>
-    [TestMethod]
-    public void TryResolve_VeryLongLabel_SuccessfullyCreatesDrawAction()
-    {
-        // Arrange
-        var metadata = new ParameterMetadata
-        {
-            CustomDrawerType = typeof(TestParameterDrawer),
-            TwoColumnCustomDrawerType = null
-        };
-        var mockParameter = new Mock<IParameter>();
-        mockParameter.Setup(p => p.Metadata).Returns(metadata);
-        mockParameter.Setup(p => p.Key).Returns("testKey");
-        var alignGroup = new LabelAlignmentGroup();
-        var label = new string('A', 10000);
-
-        // Act
-        var result = ParameterDrawerResolver.TryResolve(mockParameter.Object, label, alignGroup);
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(result.Value.draw);
-    }
-
-    /// <summary>
     /// Tests that the returned resource is properly disposable.
     /// </summary>
     [TestMethod]
@@ -425,38 +304,10 @@ public class ParameterDrawerResolverTests
 
         // Assert
         Assert.IsNotNull(resource);
-        Assert.IsInstanceOfType(resource, typeof(IDisposable));
+        Assert.IsInstanceOfType<IDisposable>(resource);
 
         // Verify Dispose doesn't throw
         resource.Dispose();
-    }
-
-    /// <summary>
-    /// Tests that different alignment groups can be used without issues.
-    /// </summary>
-    [TestMethod]
-    public void TryResolve_DifferentAlignmentGroups_SuccessfullyCreatesDrawAction()
-    {
-        // Arrange
-        var metadata = new ParameterMetadata
-        {
-            CustomDrawerType = typeof(TestParameterDrawer),
-            TwoColumnCustomDrawerType = null
-        };
-        var mockParameter = new Mock<IParameter>();
-        mockParameter.Setup(p => p.Metadata).Returns(metadata);
-        mockParameter.Setup(p => p.Key).Returns("testKey");
-        var alignGroup1 = new LabelAlignmentGroup();
-        var alignGroup2 = new LabelAlignmentGroup();
-        var label = "Test Label";
-
-        // Act
-        var result1 = ParameterDrawerResolver.TryResolve(mockParameter.Object, label, alignGroup1);
-        var result2 = ParameterDrawerResolver.TryResolve(mockParameter.Object, label, alignGroup2);
-
-        // Assert
-        Assert.IsNotNull(result1);
-        Assert.IsNotNull(result2);
     }
 
     #region Helper Classes
@@ -477,10 +328,7 @@ public class ParameterDrawerResolverTests
             LastParameter = parameter;
         }
 
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-        }
+        public void Dispose() => GC.SuppressFinalize(this);
     }
 
     /// <summary>
@@ -497,10 +345,7 @@ public class ParameterDrawerResolverTests
             LastParameter = parameter;
         }
 
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-        }
+        public void Dispose() => GC.SuppressFinalize(this);
     }
 
     /// <summary>

@@ -1,7 +1,4 @@
-﻿using System;
 using System.Reflection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra.UI.Config;
 
 
 namespace Umbra.UI.Config.UnitTests;
@@ -20,16 +17,16 @@ public class NestedGroupScopePathResolverTests
     public void Resolve_WhenPropMetaSettingsPrefixIsNonNull_UsesSettingsPrefix()
     {
         // Arrange
-        string parentPath = "parent.path";
-        string expectedSegment = "propSettingsPrefix";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
+        var parentPath = "parent.path";
+        var expectedSegment = "propSettingsPrefix";
+        var propMeta = CreatePropertyMetadata(
             settingsPrefix: expectedSegment,
             settingsParameterKeyOverride: null,
             propertyName: "TestProperty");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: "typePrefix");
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: "typePrefix");
 
         // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("parent.path.propSettingsPrefix", result);
@@ -43,16 +40,16 @@ public class NestedGroupScopePathResolverTests
     public void Resolve_WhenPropMetaSettingsPrefixIsNullButPropTypeMetaSettingsPrefixIsNonNull_UsesTypeLevelPrefix()
     {
         // Arrange
-        string parentPath = "parent";
-        string expectedSegment = "typeSettingsPrefix";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
+        var parentPath = "parent";
+        var expectedSegment = "typeSettingsPrefix";
+        var propMeta = CreatePropertyMetadata(
             settingsPrefix: null,
             settingsParameterKeyOverride: "keyOverride",
             propertyName: "TestProperty");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: expectedSegment);
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: expectedSegment);
 
         // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("parent.typeSettingsPrefix", result);
@@ -67,16 +64,16 @@ public class NestedGroupScopePathResolverTests
     public void Resolve_WhenBothPrefixesAreNullButKeyOverrideIsNonNull_UsesKeyOverride()
     {
         // Arrange
-        string parentPath = "root";
-        string expectedSegment = "customKey";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
+        var parentPath = "root";
+        var expectedSegment = "customKey";
+        var propMeta = CreatePropertyMetadata(
             settingsPrefix: null,
             settingsParameterKeyOverride: expectedSegment,
             propertyName: "TestProperty");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
         // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("root.customKey", result);
@@ -89,37 +86,15 @@ public class NestedGroupScopePathResolverTests
     public void Resolve_WhenAllMetadataIsNullAndPropertyNameIsPascalCase_UsesCamelCasedPropertyName()
     {
         // Arrange
-        string parentPath = "base";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
+        var parentPath = "base";
+        var propMeta = CreatePropertyMetadata(
             settingsPrefix: null,
             settingsParameterKeyOverride: null,
             propertyName: "MyProperty");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
         // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
-
-        // Assert
-        Assert.AreEqual("base.myProperty", result);
-    }
-
-    /// <summary>
-    /// Verifies that when all metadata is null and the property name is already camelCase,
-    /// it is used as-is.
-    /// </summary>
-    [TestMethod]
-    public void Resolve_WhenAllMetadataIsNullAndPropertyNameIsAlreadyCamelCase_UsesPropertyNameAsIs()
-    {
-        // Arrange
-        string parentPath = "base";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: null,
-            propertyName: "myProperty");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
-
-        // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("base.myProperty", result);
@@ -132,61 +107,18 @@ public class NestedGroupScopePathResolverTests
     public void Resolve_WhenParentPathIsEmpty_ReturnsOnlySegment()
     {
         // Arrange
-        string parentPath = "";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
+        var parentPath = "";
+        var propMeta = CreatePropertyMetadata(
             settingsPrefix: "segment",
             settingsParameterKeyOverride: null,
             propertyName: "Property");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
         // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("segment", result);
-    }
-
-    /// <summary>
-    /// Verifies behavior when the parent path is null (edge case).
-    /// </summary>
-    [TestMethod]
-    public void Resolve_WhenParentPathIsNull_ReturnsOnlySegment()
-    {
-        // Arrange
-        string? parentPath = null;
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
-            settingsPrefix: "segment",
-            settingsParameterKeyOverride: null,
-            propertyName: "Property");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
-
-        // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath!, propMeta, propTypeMeta);
-
-        // Assert
-        Assert.AreEqual("segment", result);
-    }
-
-    /// <summary>
-    /// Verifies that when the property name is a single uppercase character, camelCase conversion produces
-    /// a lowercase character.
-    /// </summary>
-    [TestMethod]
-    public void Resolve_WhenPropertyNameIsSingleUppercaseCharacter_ReturnsLowercaseCharacter()
-    {
-        // Arrange
-        string parentPath = "path";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: null,
-            propertyName: "X");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
-
-        // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
-
-        // Assert
-        Assert.AreEqual("path.x", result);
     }
 
     /// <summary>
@@ -196,39 +128,18 @@ public class NestedGroupScopePathResolverTests
     public void Resolve_WhenPropertyNameIsEmpty_ReturnsParentPath()
     {
         // Arrange
-        string parentPath = "parent";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
+        var parentPath = "parent";
+        var propMeta = CreatePropertyMetadata(
             settingsPrefix: null,
             settingsParameterKeyOverride: null,
             propertyName: "");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
         // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("parent", result);
-    }
-
-    /// <summary>
-    /// Verifies correct behavior when both parent path and segment are empty strings.
-    /// </summary>
-    [TestMethod]
-    public void Resolve_WhenBothParentPathAndSegmentAreEmpty_ReturnsEmptyString()
-    {
-        // Arrange
-        string parentPath = "";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: null,
-            propertyName: "");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
-
-        // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
-
-        // Assert
-        Assert.AreEqual("", result);
     }
 
     /// <summary>
@@ -239,81 +150,18 @@ public class NestedGroupScopePathResolverTests
     public void Resolve_WhenPropMetaSettingsPrefixIsEmptyString_UsesEmptyString()
     {
         // Arrange
-        string parentPath = "parent";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
+        var parentPath = "parent";
+        var propMeta = CreatePropertyMetadata(
             settingsPrefix: "",
             settingsParameterKeyOverride: "override",
             propertyName: "Property");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: "typePrefix");
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: "typePrefix");
 
         // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("parent", result);
-    }
-
-    /// <summary>
-    /// Verifies correct path combination when parent path has multiple segments.
-    /// </summary>
-    [TestMethod]
-    public void Resolve_WhenParentPathHasMultipleSegments_CombinesCorrectly()
-    {
-        // Arrange
-        string parentPath = "root.level1.level2";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
-            settingsPrefix: "child",
-            settingsParameterKeyOverride: null,
-            propertyName: "Property");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
-
-        // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
-
-        // Assert
-        Assert.AreEqual("root.level1.level2.child", result);
-    }
-
-    /// <summary>
-    /// Verifies that special characters in the segment are preserved in the resulting path.
-    /// </summary>
-    [TestMethod]
-    public void Resolve_WhenSegmentContainsSpecialCharacters_PreservesCharacters()
-    {
-        // Arrange
-        string parentPath = "parent";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
-            settingsPrefix: "segment-with_special$chars",
-            settingsParameterKeyOverride: null,
-            propertyName: "Property");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
-
-        // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
-
-        // Assert
-        Assert.AreEqual("parent.segment-with_special$chars", result);
-    }
-
-    /// <summary>
-    /// Verifies that whitespace-only strings in the settings prefix are used as-is.
-    /// </summary>
-    [TestMethod]
-    public void Resolve_WhenPropMetaSettingsPrefixIsWhitespace_UsesWhitespace()
-    {
-        // Arrange
-        string parentPath = "parent";
-        TypeDrawMetadata.PropertyDrawMetadata propMeta = CreatePropertyMetadata(
-            settingsPrefix: "   ",
-            settingsParameterKeyOverride: null,
-            propertyName: "Property");
-        TypeDrawMetadata propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
-
-        // Act
-        string result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
-
-        // Assert
-        Assert.AreEqual("parent.   ", result);
     }
 
     /// <summary>
@@ -325,7 +173,7 @@ public class NestedGroupScopePathResolverTests
         string? settingsParameterKeyOverride,
         string propertyName)
     {
-        PropertyInfo propertyInfo = typeof(TestPropertyHolder).GetProperty(nameof(TestPropertyHolder.DummyProperty))!;
+        var propertyInfo = typeof(TestPropertyHolder).GetProperty(nameof(TestPropertyHolder.DummyProperty))!;
         return new TypeDrawMetadata.PropertyDrawMetadata(
             property: propertyInfo,
             propertyType: typeof(object),

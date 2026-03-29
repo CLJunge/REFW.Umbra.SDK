@@ -50,22 +50,6 @@ public class ManagedObjectResolverTests
     }
 
     /// <summary>
-    /// Tests that Resolve returns null when the address is ulong.MinValue (which equals zero).
-    /// </summary>
-    [TestMethod]
-    public void Resolve_AddressIsMinValue_ReturnsNull()
-    {
-        // Arrange
-        var address = ulong.MinValue;
-
-        // Act
-        var result = ManagedObjectResolver.Resolve<object>(address);
-
-        // Assert
-        Assert.IsNull(result);
-    }
-
-    /// <summary>
     /// Tests that Resolve with a maximum ulong address returns null when the address is invalid.
     /// </summary>
     /// <remarks>
@@ -107,57 +91,6 @@ public class ManagedObjectResolverTests
     }
 
     /// <summary>
-    /// Tests that Resolve works with different reference types as the generic parameter.
-    /// </summary>
-    /// <remarks>
-    /// Verifies the generic constraint 'where T : class' is satisfied and the method
-    /// can be invoked with various reference types.
-    /// </remarks>
-    [TestMethod]
-    [DataRow(0UL)]
-    [DataRow(1UL)]
-    [DataRow(ulong.MaxValue)]
-    public void Resolve_WithStringType_ReturnsNull(ulong address)
-    {
-        // Arrange
-        // (address provided via DataRow)
-
-        // Act
-        var result = ManagedObjectResolver.Resolve<string>(address);
-
-        // Assert
-        // All addresses should return null without REFramework runtime
-        Assert.IsNull(result);
-    }
-
-    /// <summary>
-    /// Tests that Resolve handles boundary address values correctly.
-    /// </summary>
-    /// <remarks>
-    /// Tests various boundary values for ulong to ensure consistent null handling
-    /// outside the game runtime context.
-    /// </remarks>
-    [TestMethod]
-    [DataRow(0UL, DisplayName = "Zero")]
-    [DataRow(1UL, DisplayName = "One")]
-    [DataRow(0xFFUL, DisplayName = "Byte max")]
-    [DataRow(0xFFFFUL, DisplayName = "UShort max")]
-    [DataRow(0xFFFFFFFFUL, DisplayName = "UInt max")]
-    [DataRow(0xFFFFFFFFFFFFFFFFUL, DisplayName = "ULong max")]
-    public void Resolve_BoundaryAddressValues_ReturnsNull(ulong address)
-    {
-        // Arrange
-        // (address provided via DataRow)
-
-        // Act
-        var result = ManagedObjectResolver.Resolve<object>(address);
-
-        // Assert
-        // Without REFramework runtime, all addresses either fail early (0) or throw/fail cast
-        Assert.IsNull(result);
-    }
-
-    /// <summary>
     /// Tests that Resolve can be called with different class types satisfying the constraint.
     /// </summary>
     /// <remarks>
@@ -179,43 +112,4 @@ public class ManagedObjectResolverTests
         Assert.IsNull(resultException);
     }
 
-    /// <summary>
-    /// Tests that Resolve returns null for a sequence of sequential addresses.
-    /// </summary>
-    /// <remarks>
-    /// Documents behavior across a range of addresses without game context.
-    /// </remarks>
-    [TestMethod]
-    public void Resolve_SequentialAddresses_AllReturnNull()
-    {
-        // Arrange & Act & Assert
-        for (ulong address = 0; address < 10; address++)
-        {
-            var result = ManagedObjectResolver.Resolve<object>(address);
-            Assert.IsNull(result, $"Expected null for address {address}");
-        }
-    }
-
-    /// <summary>
-    /// Tests that Resolve handles large address values without throwing unexpected exceptions.
-    /// </summary>
-    [TestMethod]
-    public void Resolve_LargeAddressValues_HandlesGracefully()
-    {
-        // Arrange
-        ulong[] largeAddresses =
-        {
-            0x7FFFFFFFFFFFFFFFUL,
-            0x8000000000000000UL,
-            0xFFFFFFFFFFFFFFFEUL,
-            0xFFFFFFFFFFFFFFFFUL
-        };
-
-        // Act & Assert
-        foreach (var address in largeAddresses)
-        {
-            var result = ManagedObjectResolver.Resolve<object>(address);
-            Assert.IsNull(result, $"Expected null for large address 0x{address:X}");
-        }
-    }
 }

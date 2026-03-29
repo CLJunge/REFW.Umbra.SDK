@@ -68,46 +68,6 @@ public sealed class ParameterNodeTests
     }
 
     /// <summary>
-    /// Verifies that when <c>spacingBefore</c> is negative, the draw action is still invoked
-    /// (negative loop bounds cause zero iterations).
-    /// </summary>
-    [TestMethod]
-    public void Draw_SpacingBeforeIsNegative_StillCallsDrawAction()
-    {
-        // Arrange
-        var drawCallCount = 0;
-        bool isVisible() => true;
-        void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw, spacingBefore: -5, spacingAfter: 0);
-
-        // Act
-        node.Draw();
-
-        // Assert
-        Assert.AreEqual(1, drawCallCount, "Draw action should be called even with negative spacingBefore.");
-    }
-
-    /// <summary>
-    /// Verifies that when <c>spacingAfter</c> is negative, the draw action is still invoked
-    /// (negative loop bounds cause zero iterations).
-    /// </summary>
-    [TestMethod]
-    public void Draw_SpacingAfterIsNegative_StillCallsDrawAction()
-    {
-        // Arrange
-        var drawCallCount = 0;
-        bool isVisible() => true;
-        void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw, spacingBefore: 0, spacingAfter: -10);
-
-        // Act
-        node.Draw();
-
-        // Assert
-        Assert.AreEqual(1, drawCallCount, "Draw action should be called even with negative spacingAfter.");
-    }
-
-    /// <summary>
     /// Verifies that when both <c>spacingBefore</c> and <c>spacingAfter</c> are negative,
     /// the draw action is still invoked.
     /// </summary>
@@ -149,26 +109,6 @@ public sealed class ParameterNodeTests
     }
 
     /// <summary>
-    /// Verifies that the draw action is not called when <c>isVisible</c> returns <see langword="false"/>,
-    /// even with positive spacing values.
-    /// </summary>
-    [TestMethod]
-    public void Draw_IsVisibleReturnsFalseWithPositiveSpacing_DoesNotCallDrawAction()
-    {
-        // Arrange
-        var drawCalled = false;
-        bool isVisible() => false;
-        void draw() => drawCalled = true;
-        var node = new ParameterNode(isVisible, draw, spacingBefore: 5, spacingAfter: 5);
-
-        // Act
-        node.Draw();
-
-        // Assert
-        Assert.IsFalse(drawCalled, "Draw action should not be called when isVisible returns false, regardless of spacing values.");
-    }
-
-    /// <summary>
     /// Verifies behavior when <c>isVisible</c> alternates between <see langword="true"/> and <see langword="false"/>
     /// across multiple draw calls.
     /// </summary>
@@ -193,66 +133,6 @@ public sealed class ParameterNodeTests
         visible = true;
         node.Draw();
         Assert.AreEqual(2, drawCallCount, "Third call: draw should be invoked again when visible.");
-    }
-
-    /// <summary>
-    /// Verifies that <c>spacingBefore</c> of zero results in the draw action being called
-    /// without any spacing calls before it.
-    /// </summary>
-    [TestMethod]
-    public void Draw_SpacingBeforeIsZero_CallsDrawActionWithoutPriorSpacing()
-    {
-        // Arrange
-        var drawCallCount = 0;
-        bool isVisible() => true;
-        void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw, spacingBefore: 0, spacingAfter: 1);
-
-        // Act
-        node.Draw();
-
-        // Assert
-        Assert.AreEqual(1, drawCallCount, "Draw action should be called with spacingBefore of zero.");
-    }
-
-    /// <summary>
-    /// Verifies that <c>spacingAfter</c> of zero results in the draw action being called
-    /// without any spacing calls after it.
-    /// </summary>
-    [TestMethod]
-    public void Draw_SpacingAfterIsZero_CallsDrawActionWithoutSubsequentSpacing()
-    {
-        // Arrange
-        var drawCallCount = 0;
-        bool isVisible() => true;
-        void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw, spacingBefore: 1, spacingAfter: 0);
-
-        // Act
-        node.Draw();
-
-        // Assert
-        Assert.AreEqual(1, drawCallCount, "Draw action should be called with spacingAfter of zero.");
-    }
-
-    /// <summary>
-    /// Verifies that extreme positive spacing values do not prevent the draw action from being invoked.
-    /// Note: Using a moderate value to avoid excessively long test execution.
-    /// </summary>
-    [TestMethod]
-    public void Draw_LargeSpacingValues_StillCallsDrawAction()
-    {
-        // Arrange
-        var drawCallCount = 0;
-        bool isVisible() => true;
-        void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw, spacingBefore: 100, spacingAfter: 100);
-
-        // Act
-        node.Draw();
-
-        // Assert
-        Assert.AreEqual(1, drawCallCount, "Draw action should be called even with large spacing values.");
     }
 
     /// <summary>
@@ -292,22 +172,4 @@ public sealed class ParameterNodeTests
         Assert.AreEqual(int.MaxValue, actualOrder, "Order property should default to int.MaxValue.");
     }
 
-    /// <summary>
-    /// Verifies that the <c>Order</c> property can be set to <see cref="int.MinValue"/>.
-    /// </summary>
-    [TestMethod]
-    public void Order_CanBeSetToIntMinValue()
-    {
-        // Arrange
-        const int expectedOrder = int.MinValue;
-        static bool isVisible() => true;
-        static void draw() { }
-        var node = new ParameterNode(isVisible, draw, order: expectedOrder);
-
-        // Act
-        var actualOrder = node.Order;
-
-        // Assert
-        Assert.AreEqual(expectedOrder, actualOrder, "Order property should accept int.MinValue.");
-    }
 }

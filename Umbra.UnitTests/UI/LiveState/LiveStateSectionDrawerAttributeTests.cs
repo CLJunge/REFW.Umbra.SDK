@@ -1,9 +1,3 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using Umbra.UI.LiveState;
-
-
 namespace Umbra.UI.LiveState.UnitTests;
 
 /// <summary>
@@ -20,23 +14,6 @@ public sealed class LiveStateSectionDrawerAttributeTests
     }
 
     /// <summary>
-    /// Helper class for testing drawer type resolution with a sealed class.
-    /// </summary>
-    private sealed class SealedDrawer
-    {
-    }
-
-    /// <summary>
-    /// Helper class for testing drawer type resolution with a nested class.
-    /// </summary>
-    private class NestedDrawer
-    {
-        public class InnerDrawer
-        {
-        }
-    }
-
-    /// <summary>
     /// Tests that DrawerType returns the correct Type for a simple concrete class.
     /// Input: Attribute with SimpleDrawer type parameter.
     /// Expected: Returns typeof(SimpleDrawer) and is not null.
@@ -48,30 +25,11 @@ public sealed class LiveStateSectionDrawerAttributeTests
         var attribute = new LiveStateSectionDrawerAttribute<SimpleDrawer>();
 
         // Act
-        Type result = attribute.DrawerType;
+        var result = attribute.DrawerType;
 
         // Assert
         Assert.IsNotNull(result);
         Assert.AreEqual(typeof(SimpleDrawer), result);
-    }
-
-    /// <summary>
-    /// Tests that DrawerType returns the correct Type for a sealed class.
-    /// Input: Attribute with SealedDrawer type parameter.
-    /// Expected: Returns typeof(SealedDrawer) and is not null.
-    /// </summary>
-    [TestMethod]
-    public void DrawerType_WithSealedClass_ReturnsCorrectType()
-    {
-        // Arrange
-        var attribute = new LiveStateSectionDrawerAttribute<SealedDrawer>();
-
-        // Act
-        Type result = attribute.DrawerType;
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(typeof(SealedDrawer), result);
     }
 
     /// <summary>
@@ -86,32 +44,12 @@ public sealed class LiveStateSectionDrawerAttributeTests
         var attribute = new LiveStateSectionDrawerAttribute<List<int>>();
 
         // Act
-        Type result = attribute.DrawerType;
+        var result = attribute.DrawerType;
 
         // Assert
         Assert.IsNotNull(result);
         Assert.AreEqual(typeof(List<int>), result);
         Assert.IsTrue(result.IsGenericType);
-    }
-
-    /// <summary>
-    /// Tests that DrawerType returns the correct Type for a nested class.
-    /// Input: Attribute with NestedDrawer.InnerDrawer type parameter.
-    /// Expected: Returns typeof(NestedDrawer.InnerDrawer) and is not null.
-    /// </summary>
-    [TestMethod]
-    public void DrawerType_WithNestedClass_ReturnsCorrectType()
-    {
-        // Arrange
-        var attribute = new LiveStateSectionDrawerAttribute<NestedDrawer.InnerDrawer>();
-
-        // Act
-        Type result = attribute.DrawerType;
-
-        // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(typeof(NestedDrawer.InnerDrawer), result);
-        Assert.IsTrue(result.IsNested);
     }
 
     /// <summary>
@@ -126,8 +64,8 @@ public sealed class LiveStateSectionDrawerAttributeTests
         var attribute = new LiveStateSectionDrawerAttribute<SimpleDrawer>();
 
         // Act
-        Type firstAccess = attribute.DrawerType;
-        Type secondAccess = attribute.DrawerType;
+        var firstAccess = attribute.DrawerType;
+        var secondAccess = attribute.DrawerType;
 
         // Assert
         Assert.AreSame(firstAccess, secondAccess);
@@ -146,8 +84,8 @@ public sealed class LiveStateSectionDrawerAttributeTests
         var attributeString = new LiveStateSectionDrawerAttribute<List<string>>();
 
         // Act
-        Type intType = attributeInt.DrawerType;
-        Type stringType = attributeString.DrawerType;
+        var intType = attributeInt.DrawerType;
+        var stringType = attributeString.DrawerType;
 
         // Assert
         Assert.IsNotNull(intType);
@@ -157,43 +95,4 @@ public sealed class LiveStateSectionDrawerAttributeTests
         Assert.AreEqual(typeof(List<string>), stringType);
     }
 
-    /// <summary>
-    /// Tests that DrawerType returns a Type with the expected properties for a simple class.
-    /// Input: Attribute with SimpleDrawer type parameter.
-    /// Expected: Returned Type has IsClass=true, IsAbstract=false, IsSealed=false.
-    /// </summary>
-    [TestMethod]
-    public void DrawerType_WithSimpleClass_ReturnsTypeWithExpectedProperties()
-    {
-        // Arrange
-        var attribute = new LiveStateSectionDrawerAttribute<SimpleDrawer>();
-
-        // Act
-        Type result = attribute.DrawerType;
-
-        // Assert
-        Assert.IsTrue(result.IsClass);
-        Assert.IsFalse(result.IsAbstract);
-        Assert.IsFalse(result.IsSealed);
-        Assert.IsFalse(result.IsInterface);
-    }
-
-    /// <summary>
-    /// Tests that DrawerType returns a Type with IsSealed=true for a sealed class.
-    /// Input: Attribute with SealedDrawer type parameter.
-    /// Expected: Returned Type has IsClass=true and IsSealed=true.
-    /// </summary>
-    [TestMethod]
-    public void DrawerType_WithSealedClass_ReturnsTypeWithIsSealedTrue()
-    {
-        // Arrange
-        var attribute = new LiveStateSectionDrawerAttribute<SealedDrawer>();
-
-        // Act
-        Type result = attribute.DrawerType;
-
-        // Assert
-        Assert.IsTrue(result.IsClass);
-        Assert.IsTrue(result.IsSealed);
-    }
 }

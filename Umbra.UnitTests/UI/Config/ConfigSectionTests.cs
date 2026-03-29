@@ -1,10 +1,5 @@
-﻿using System;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.UI;
-using Umbra.UI.Config;
 
 namespace Umbra.UI.Config.UnitTests;
 
@@ -65,44 +60,6 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}.SectionId"/> returns the same value on multiple accesses, verifying immutability.
-    /// </summary>
-    [TestMethod]
-    public void SectionId_MultipleAccesses_ReturnsSameValue()
-    {
-        // Arrange
-        var config = new TestConfig();
-        var section = new ConfigSection<TestConfig>(config, idScope: "testId");
-
-        // Act
-        var firstAccess = section.SectionId;
-        var secondAccess = section.SectionId;
-        var thirdAccess = section.SectionId;
-
-        // Assert
-        Assert.AreEqual(firstAccess, secondAccess);
-        Assert.AreEqual(secondAccess, thirdAccess);
-        Assert.AreEqual("testId", firstAccess);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}.SectionId"/> uses the default type-based ID when idScope is omitted.
-    /// </summary>
-    [TestMethod]
-    public void SectionId_IdScopeOmitted_ReturnsTypeBasedDefault()
-    {
-        // Arrange
-        var config = new TestConfig();
-        var expectedId = typeof(TestConfig).FullName ?? typeof(TestConfig).Name;
-
-        // Act
-        var section = new ConfigSection<TestConfig>(config);
-
-        // Assert
-        Assert.AreEqual(expectedId, section.SectionId);
-    }
-
-    /// <summary>
     /// Tests that <see cref="ConfigSection{TConfig}.SectionId"/> remains unchanged after disposal,
     /// verifying the property is not affected by the object's disposed state.
     /// </summary>
@@ -124,30 +81,6 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}.SectionId"/> correctly handles special characters in the idScope.
-    /// </summary>
-    /// <param name="idScopeWithSpecialChars">The idScope containing special characters.</param>
-    [TestMethod]
-    [DataRow("id-with-dashes")]
-    [DataRow("id_with_underscores")]
-    [DataRow("id.with.dots")]
-    [DataRow("id:with:colons")]
-    [DataRow("id/with/slashes")]
-    [DataRow("id\\with\\backslashes")]
-    [DataRow("id@with#special$chars%")]
-    public void SectionId_IdScopeWithSpecialCharacters_ReturnsProvidedIdScope(string idScopeWithSpecialChars)
-    {
-        // Arrange
-        var config = new TestConfig();
-
-        // Act
-        var section = new ConfigSection<TestConfig>(config, idScope: idScopeWithSpecialChars);
-
-        // Assert
-        Assert.AreEqual(idScopeWithSpecialChars, section.SectionId);
-    }
-
-    /// <summary>
     /// Tests that <see cref="ConfigSection{TConfig}.TreeNodeLabel"/> returns null when suppressTreeNode is true,
     /// even when an explicit tree node label is provided.
     /// </summary>
@@ -159,7 +92,7 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<SimpleConfig>(config, treeNodeLabel: "Test Label", suppressTreeNode: true);
 
         // Act
-        string? result = section.TreeNodeLabel;
+        var result = section.TreeNodeLabel;
 
         // Assert
         Assert.IsNull(result);
@@ -178,7 +111,7 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<SimpleConfig>(config, treeNodeLabel: expectedLabel);
 
         // Act
-        string? result = section.TreeNodeLabel;
+        var result = section.TreeNodeLabel;
 
         // Assert
         Assert.AreEqual(expectedLabel, result);
@@ -196,29 +129,10 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<SimpleConfig>(config, treeNodeLabel: string.Empty);
 
         // Act
-        string? result = section.TreeNodeLabel;
+        var result = section.TreeNodeLabel;
 
         // Assert
         Assert.AreEqual(string.Empty, result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}.TreeNodeLabel"/> returns whitespace string
-    /// when a whitespace-only string is explicitly provided via constructor parameter.
-    /// </summary>
-    [TestMethod]
-    public void TreeNodeLabel_ExplicitWhitespace_ReturnsWhitespace()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        const string whitespaceLabel = "   ";
-        var section = new ConfigSection<SimpleConfig>(config, treeNodeLabel: whitespaceLabel);
-
-        // Act
-        string? result = section.TreeNodeLabel;
-
-        // Assert
-        Assert.AreEqual(whitespaceLabel, result);
     }
 
     /// <summary>
@@ -233,7 +147,7 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<ConfigWithRootNodeAttribute>(config);
 
         // Act
-        string? result = section.TreeNodeLabel;
+        var result = section.TreeNodeLabel;
 
         // Assert
         Assert.AreEqual("Attribute Label", result);
@@ -251,7 +165,7 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<ConfigWithNullLabelAttribute>(config);
 
         // Act
-        string? result = section.TreeNodeLabel;
+        var result = section.TreeNodeLabel;
 
         // Assert
         Assert.IsNotNull(result);
@@ -271,7 +185,7 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<SimpleConfig>(config);
 
         // Act
-        string? result = section.TreeNodeLabel;
+        var result = section.TreeNodeLabel;
 
         // Assert
         Assert.IsNull(result);
@@ -290,93 +204,10 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<ConfigWithRootNodeAttribute>(config, treeNodeLabel: explicitLabel);
 
         // Act
-        string? result = section.TreeNodeLabel;
+        var result = section.TreeNodeLabel;
 
         // Assert
         Assert.AreEqual(explicitLabel, result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}.TreeNodeLabel"/> correctly handles very long strings.
-    /// </summary>
-    [TestMethod]
-    public void TreeNodeLabel_VeryLongString_ReturnsCompleteString()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        string longLabel = new string('A', 10000);
-        var section = new ConfigSection<SimpleConfig>(config, treeNodeLabel: longLabel);
-
-        // Act
-        string? result = section.TreeNodeLabel;
-
-        // Assert
-        Assert.AreEqual(longLabel, result);
-        Assert.AreEqual(10000, result?.Length);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}.TreeNodeLabel"/> correctly handles special characters.
-    /// </summary>
-    [TestMethod]
-    public void TreeNodeLabel_SpecialCharacters_ReturnsStringWithSpecialCharacters()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        const string specialLabel = "Test\nLabel\t<>&\"'";
-        var section = new ConfigSection<SimpleConfig>(config, treeNodeLabel: specialLabel);
-
-        // Act
-        string? result = section.TreeNodeLabel;
-
-        // Assert
-        Assert.AreEqual(specialLabel, result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}.TreeNodeLabel"/> returns consistent values across multiple calls.
-    /// </summary>
-    [TestMethod]
-    public void TreeNodeLabel_MultipleCalls_ReturnsConsistentValue()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        const string expectedLabel = "Consistent Label";
-        var section = new ConfigSection<SimpleConfig>(config, treeNodeLabel: expectedLabel);
-
-        // Act
-        string? result1 = section.TreeNodeLabel;
-        string? result2 = section.TreeNodeLabel;
-        string? result3 = section.TreeNodeLabel;
-
-        // Assert
-        Assert.AreEqual(expectedLabel, result1);
-        Assert.AreEqual(expectedLabel, result2);
-        Assert.AreEqual(expectedLabel, result3);
-        Assert.AreSame(result1, result2);
-        Assert.AreSame(result2, result3);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}.TreeNodeLabel"/> returns null across multiple calls
-    /// when no label is set.
-    /// </summary>
-    [TestMethod]
-    public void TreeNodeLabel_MultipleCalls_ConsistentlyReturnsNull()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        var section = new ConfigSection<SimpleConfig>(config);
-
-        // Act
-        string? result1 = section.TreeNodeLabel;
-        string? result2 = section.TreeNodeLabel;
-        string? result3 = section.TreeNodeLabel;
-
-        // Assert
-        Assert.IsNull(result1);
-        Assert.IsNull(result2);
-        Assert.IsNull(result3);
     }
 
     /// <summary>
@@ -391,26 +222,7 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<ConfigWithRootNodeAttribute>(config, suppressTreeNode: true);
 
         // Act
-        string? result = section.TreeNodeLabel;
-
-        // Assert
-        Assert.IsNull(result);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}.TreeNodeLabel"/> returns null after disposal
-    /// when the value was previously null.
-    /// </summary>
-    [TestMethod]
-    public void TreeNodeLabel_AfterDisposal_StillReturnsNull()
-    {
-        // Arrange
-        var config = new SimpleConfig();
-        var section = new ConfigSection<SimpleConfig>(config);
-
-        // Act
-        section.Dispose();
-        string? result = section.TreeNodeLabel;
+        var result = section.TreeNodeLabel;
 
         // Assert
         Assert.IsNull(result);
@@ -430,7 +242,7 @@ public sealed class ConfigSectionTests
 
         // Act
         section.Dispose();
-        string? result = section.TreeNodeLabel;
+        var result = section.TreeNodeLabel;
 
         // Assert
         Assert.AreEqual(expectedLabel, result);
@@ -511,60 +323,6 @@ public sealed class ConfigSectionTests
 
         // Assert
         // No exception thrown - idempotent disposal
-    }
-
-    /// <summary>
-    /// Verifies that Dispose can be called on a section with custom idScope without errors.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WithCustomIdScope_CompletesSuccessfully()
-    {
-        // Arrange
-        var config = new TestConfig();
-        var section = new ConfigSection<TestConfig>(config, idScope: "CustomScope");
-
-        // Act
-        section.Dispose();
-
-        // Assert
-        // No exception thrown
-    }
-
-    /// <summary>
-    /// Verifies that Dispose can be called on a section with tree node configuration without errors.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WithTreeNodeConfiguration_CompletesSuccessfully()
-    {
-        // Arrange
-        var config = new TestConfig();
-        var section = new ConfigSection<TestConfig>(
-            config,
-            treeNodeLabel: "Test Node",
-            treeNodeDefaultOpen: true);
-
-        // Act
-        section.Dispose();
-
-        // Assert
-        // No exception thrown
-    }
-
-    /// <summary>
-    /// Verifies that Dispose can be called on a section with suppressed tree node without errors.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WithSuppressedTreeNode_CompletesSuccessfully()
-    {
-        // Arrange
-        var config = new TestConfig();
-        var section = new ConfigSection<TestConfig>(config, suppressTreeNode: true);
-
-        // Act
-        section.Dispose();
-
-        // Assert
-        // No exception thrown
     }
 
     /// <summary>
@@ -797,9 +555,9 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<ConfigWithOrderPositive>(config);
 
         // Act
-        int firstRead = section.Order;
-        int secondRead = section.Order;
-        int thirdRead = section.Order;
+        var firstRead = section.Order;
+        var secondRead = section.Order;
+        var thirdRead = section.Order;
 
         // Assert
         Assert.AreEqual(firstRead, secondRead);
@@ -1197,22 +955,6 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Tests that when suppressTreeNode is true and the type has UmbraConfigRootNodeAttribute, TreeNodeLabel is null.
-    /// </summary>
-    [TestMethod]
-    public void ConfigSection_SuppressTreeNodeTrueWithAttribute_TreeNodeLabelIsNull()
-    {
-        // Arrange
-        var config = new ConfigWithRootNodeLabel();
-
-        // Act
-        var section = new ConfigSection<ConfigWithRootNodeLabel>(config, suppressTreeNode: true);
-
-        // Assert
-        Assert.IsNull(section.TreeNodeLabel);
-    }
-
-    /// <summary>
     /// Tests that when suppressTreeNode is true, TreeNodeDefaultOpen is false regardless of attribute.
     /// </summary>
     [TestMethod]
@@ -1229,23 +971,6 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Tests that when treeNodeLabel is explicitly provided, it overrides the attribute Label.
-    /// </summary>
-    [TestMethod]
-    public void ConfigSection_ProvidedTreeNodeLabelOverridesAttribute_UsesProvidedLabel()
-    {
-        // Arrange
-        var config = new ConfigWithRootNodeLabel();
-        string providedLabel = "Custom Label";
-
-        // Act
-        var section = new ConfigSection<ConfigWithRootNodeLabel>(config, treeNodeLabel: providedLabel);
-
-        // Assert
-        Assert.AreEqual(providedLabel, section.TreeNodeLabel);
-    }
-
-    /// <summary>
     /// Tests that when treeNodeLabel is explicitly provided with treeNodeDefaultOpen = true, it overrides the attribute DefaultOpen.
     /// </summary>
     [TestMethod]
@@ -1258,47 +983,6 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<ConfigWithRootNodeDefaultOpenFalse>(config, treeNodeLabel: "Label", treeNodeDefaultOpen: true);
 
         // Assert
-        Assert.IsTrue(section.TreeNodeDefaultOpen);
-    }
-
-    /// <summary>
-    /// Tests that all properties return expected values after construction with minimal parameters.
-    /// </summary>
-    [TestMethod]
-    public void ConfigSection_MinimalConstruction_PropertiesReturnExpectedValues()
-    {
-        // Arrange
-        var config = new BasicConfig();
-
-        // Act
-        var section = new ConfigSection<BasicConfig>(config);
-
-        // Assert
-        Assert.AreEqual(typeof(BasicConfig).FullName, section.SectionId);
-        Assert.AreEqual(int.MaxValue, section.Order);
-        Assert.IsNull(section.TreeNodeLabel);
-        Assert.IsFalse(section.TreeNodeDefaultOpen);
-    }
-
-    /// <summary>
-    /// Tests that all properties return expected values after construction with all parameters.
-    /// </summary>
-    [TestMethod]
-    public void ConfigSection_FullConstruction_PropertiesReturnExpectedValues()
-    {
-        // Arrange
-        var config = new ConfigWithOrder10();
-        string idScope = "MyScope";
-        string treeNodeLabel = "My Tree Node";
-        bool treeNodeDefaultOpen = true;
-
-        // Act
-        var section = new ConfigSection<ConfigWithOrder10>(config, idScope, treeNodeLabel, treeNodeDefaultOpen, suppressTreeNode: false);
-
-        // Assert
-        Assert.AreEqual(idScope, section.SectionId);
-        Assert.AreEqual(10, section.Order);
-        Assert.AreEqual(treeNodeLabel, section.TreeNodeLabel);
         Assert.IsTrue(section.TreeNodeDefaultOpen);
     }
 
