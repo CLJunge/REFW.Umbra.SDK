@@ -65,44 +65,6 @@ public sealed class LabelAlignmentGroupTests
     }
 
     /// <summary>
-    /// Tests Register behavior in seeded state.
-    /// NOTE: This test is incomplete because ImGui.CalcTextSize and ImGui.GetStyle are static
-    /// methods that cannot be mocked with Moq. To fully test this scenario:
-    /// 1. An active ImGui context is required
-    /// 2. The test would need to call EnsureSeeded() first, which also requires ImGui context
-    /// 3. Then verify that late registrations correctly update _committedMax
-    /// 
-    /// Manual verification steps:
-    /// - Call EnsureSeeded() to set _seeded = true
-    /// - Call Register with a label wider than current LabelWidth
-    /// - Verify LabelWidth increases to accommodate the new label
-    /// - Call Register with a narrower label
-    /// - Verify LabelWidth does not decrease
-    /// </summary>
-    [TestMethod]
-    [Ignore("Cannot mock ImGui static methods; requires active ImGui context for full testing.")]
-    public void Register_LateRegistrationAfterSeeded_UpdatesCommittedMaxWhenWider()
-    {
-        // This test requires:
-        // 1. Mocking ImGui.CalcTextSize (not possible - static method)
-        // 2. Mocking ImGui.GetStyle (not possible - static method)
-        // 3. Or creating an actual ImGui context (out of scope for unit tests)
-
-        // Arrange
-        var group = new LabelAlignmentGroup();
-        // TODO: Call EnsureSeeded() after registering some initial labels
-        // TODO: Register a new label with known width > current LabelWidth
-
-        // Act
-        // group.Register("Very Long Label That Should Update Width", false);
-
-        // Assert
-        // Assert.IsTrue(group.LabelWidth > initialWidth, "LabelWidth should increase for wider late-registered labels.");
-
-        Assert.Inconclusive("Test requires ImGui context; cannot be completed without mocking static ImGui methods.");
-    }
-
-    /// <summary>
     /// Tests that EnsureSeeded returns immediately without processing when already seeded.
     /// This verifies the idempotency guarantee: subsequent calls after the first are no-ops.
     /// </summary>
