@@ -60,4 +60,8 @@
         <Using Remove="System.Linq" />
     </ItemGroup>
 
+    <ItemGroup>
+      <InternalsVisibleTo Include="Umbra.UnitTests" />
+    </ItemGroup>
+
 </Project>
