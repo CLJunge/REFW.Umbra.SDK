@@ -17,8 +17,8 @@ namespace Umbra.UI.Config;
 /// even when the attribute is present.
 /// </para>
 /// <para>
-/// The ID scope defaults to the runtime config type's <see cref="Type.FullName"/>, falling back
-/// to <see cref="System.Reflection.MemberInfo.Name"/> when the full name is unavailable.
+/// The ID scope defaults to the compile-time type argument <c>typeof(<typeparamref name="TConfig"/>).FullName</c>,
+/// falling back to <c>typeof(<typeparamref name="TConfig"/>).Name</c> when the full name is unavailable.
 /// <see cref="PluginPanel"/> pushes a top-level ImGui ID scope before calling <see cref="Draw"/>;
 /// this sub-scope nests inside it, preventing widget ID collisions when two config sections of
 /// the same type appear in the same panel. When an explicit constructor-supplied ID scope is used,
