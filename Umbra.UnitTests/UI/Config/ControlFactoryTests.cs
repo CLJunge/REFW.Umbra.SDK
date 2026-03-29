@@ -20,7 +20,7 @@ public partial class ControlFactoryTests
         const string parameterKey = "testKey";
         const string expectedHiddenLabel = "##testKey";
         var mockParameter = new Mock<IParameter>();
-        var mockAlignGroup = new Mock<LabelAlignmentGroup>();
+        var alignGroup = new LabelAlignmentGroup();
         var metadata = new ParameterMetadata
         {
             HiddenLabel = null,
@@ -30,7 +30,7 @@ public partial class ControlFactoryTests
         mockParameter.SetupGet(p => p.Metadata).Returns(metadata);
         mockParameter.SetupGet(p => p.Key).Returns(parameterKey);
         // Act
-        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, mockAlignGroup.Object);
+        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, alignGroup);
         // Assert
         Assert.AreEqual(expectedHiddenLabel, result.HiddenLabel);
     }
@@ -46,7 +46,7 @@ public partial class ControlFactoryTests
         const string parameterKey = "";
         const string expectedHiddenLabel = "##";
         var mockParameter = new Mock<IParameter>();
-        var mockAlignGroup = new Mock<LabelAlignmentGroup>();
+        var alignGroup = new LabelAlignmentGroup();
         var metadata = new ParameterMetadata
         {
             HiddenLabel = null,
@@ -56,7 +56,7 @@ public partial class ControlFactoryTests
         mockParameter.SetupGet(p => p.Metadata).Returns(metadata);
         mockParameter.SetupGet(p => p.Key).Returns(parameterKey);
         // Act
-        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, mockAlignGroup.Object);
+        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, alignGroup);
         // Assert
         Assert.AreEqual(expectedHiddenLabel, result.HiddenLabel);
     }
@@ -72,7 +72,7 @@ public partial class ControlFactoryTests
         const string parameterKey = "test.key/with\\special@chars";
         var expectedHiddenLabel = "##" + parameterKey;
         var mockParameter = new Mock<IParameter>();
-        var mockAlignGroup = new Mock<LabelAlignmentGroup>();
+        var alignGroup = new LabelAlignmentGroup();
         var metadata = new ParameterMetadata
         {
             HiddenLabel = null,
@@ -82,7 +82,7 @@ public partial class ControlFactoryTests
         mockParameter.SetupGet(p => p.Metadata).Returns(metadata);
         mockParameter.SetupGet(p => p.Key).Returns(parameterKey);
         // Act
-        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, mockAlignGroup.Object);
+        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, alignGroup);
         // Assert
         Assert.AreEqual(expectedHiddenLabel, result.HiddenLabel);
     }
@@ -98,7 +98,7 @@ public partial class ControlFactoryTests
         const string parameterKey = "testKey";
         const string hiddenLabel = "";
         var mockParameter = new Mock<IParameter>();
-        var mockAlignGroup = new Mock<LabelAlignmentGroup>();
+        var alignGroup = new LabelAlignmentGroup();
         var metadata = new ParameterMetadata
         {
             HiddenLabel = hiddenLabel,
@@ -108,7 +108,7 @@ public partial class ControlFactoryTests
         mockParameter.SetupGet(p => p.Metadata).Returns(metadata);
         mockParameter.SetupGet(p => p.Key).Returns(parameterKey);
         // Act
-        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, mockAlignGroup.Object);
+        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, alignGroup);
         // Assert
         Assert.AreEqual(hiddenLabel, result.HiddenLabel);
     }
@@ -124,7 +124,7 @@ public partial class ControlFactoryTests
         const string parameterKey = "testKey";
         const string providedHiddenLabel = "##CustomLabel";
         var mockParameter = new Mock<IParameter>();
-        var mockAlignGroup = new Mock<LabelAlignmentGroup>();
+        var alignGroup = new LabelAlignmentGroup();
         var metadata = new ParameterMetadata
         {
             HiddenLabel = providedHiddenLabel,
@@ -134,7 +134,7 @@ public partial class ControlFactoryTests
         mockParameter.SetupGet(p => p.Metadata).Returns(metadata);
         mockParameter.SetupGet(p => p.Key).Returns(parameterKey);
         // Act
-        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, mockAlignGroup.Object);
+        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, alignGroup);
         // Assert
         Assert.AreEqual(providedHiddenLabel, result.HiddenLabel);
     }
