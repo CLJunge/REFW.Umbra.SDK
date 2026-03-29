@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Hexa.NET.ImGui;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Umbra.UI.Config.Nodes;
 
 
 namespace Umbra.UI.Config.Nodes.UnitTests;
@@ -279,7 +274,7 @@ public sealed class RootTreeNodeTests
         var children = new List<IDrawNode>();
         var mocks = new List<Mock<IDrawNode>>();
 
-        for (int i = 0; i < 100; i++)
+        for (var i = 0; i < 100; i++)
         {
             var mock = new Mock<IDrawNode>();
             mocks.Add(mock);
@@ -316,7 +311,7 @@ public sealed class RootTreeNodeTests
         var label = "Test Node";
         var children = new List<IDrawNode>();
 
-        for (int i = 0; i < childCount; i++)
+        for (var i = 0; i < childCount; i++)
         {
             var mock = new Mock<IDrawNode>();
             children.Add(mock.Object);

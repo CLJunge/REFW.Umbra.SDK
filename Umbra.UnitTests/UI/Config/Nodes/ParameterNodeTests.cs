@@ -1,7 +1,3 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-
 namespace Umbra.UI.Config.Nodes.UnitTests;
 
 /// <summary>
@@ -18,9 +14,9 @@ public sealed class ParameterNodeTests
     public void Draw_IsVisibleReturnsFalse_DoesNotCallDrawAction()
     {
         // Arrange
-        bool drawCalled = false;
-        Func<bool> isVisible = () => false;
-        Action draw = () => drawCalled = true;
+        var drawCalled = false;
+        bool isVisible() => false;
+        void draw() => drawCalled = true;
         var node = new ParameterNode(isVisible, draw);
 
         // Act
@@ -38,9 +34,9 @@ public sealed class ParameterNodeTests
     public void Draw_IsVisibleReturnsTrueWithZeroSpacing_CallsDrawActionOnce()
     {
         // Arrange
-        int drawCallCount = 0;
-        Func<bool> isVisible = () => true;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw, spacingBefore: 0, spacingAfter: 0);
 
         // Act
@@ -59,9 +55,9 @@ public sealed class ParameterNodeTests
     public void Draw_IsVisibleReturnsTrueWithPositiveSpacing_CallsDrawAction()
     {
         // Arrange
-        int drawCallCount = 0;
-        Func<bool> isVisible = () => true;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw, spacingBefore: 2, spacingAfter: 3);
 
         // Act
@@ -79,9 +75,9 @@ public sealed class ParameterNodeTests
     public void Draw_SpacingBeforeIsNegative_StillCallsDrawAction()
     {
         // Arrange
-        int drawCallCount = 0;
-        Func<bool> isVisible = () => true;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw, spacingBefore: -5, spacingAfter: 0);
 
         // Act
@@ -99,9 +95,9 @@ public sealed class ParameterNodeTests
     public void Draw_SpacingAfterIsNegative_StillCallsDrawAction()
     {
         // Arrange
-        int drawCallCount = 0;
-        Func<bool> isVisible = () => true;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw, spacingBefore: 0, spacingAfter: -10);
 
         // Act
@@ -119,9 +115,9 @@ public sealed class ParameterNodeTests
     public void Draw_BothSpacingValuesNegative_StillCallsDrawAction()
     {
         // Arrange
-        int drawCallCount = 0;
-        Func<bool> isVisible = () => true;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw, spacingBefore: -1, spacingAfter: -1);
 
         // Act
@@ -138,9 +134,9 @@ public sealed class ParameterNodeTests
     public void Draw_CalledMultipleTimes_InvokesDrawActionEachTime()
     {
         // Arrange
-        int drawCallCount = 0;
-        Func<bool> isVisible = () => true;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw);
 
         // Act
@@ -160,9 +156,9 @@ public sealed class ParameterNodeTests
     public void Draw_IsVisibleReturnsFalseWithPositiveSpacing_DoesNotCallDrawAction()
     {
         // Arrange
-        bool drawCalled = false;
-        Func<bool> isVisible = () => false;
-        Action draw = () => drawCalled = true;
+        var drawCalled = false;
+        bool isVisible() => false;
+        void draw() => drawCalled = true;
         var node = new ParameterNode(isVisible, draw, spacingBefore: 5, spacingAfter: 5);
 
         // Act
@@ -180,10 +176,10 @@ public sealed class ParameterNodeTests
     public void Draw_IsVisibleAlternates_CallsDrawActionOnlyWhenVisible()
     {
         // Arrange
-        int drawCallCount = 0;
-        bool visible = true;
-        Func<bool> isVisible = () => visible;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        var visible = true;
+        bool isVisible() => visible;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw);
 
         // Act & Assert
@@ -207,9 +203,9 @@ public sealed class ParameterNodeTests
     public void Draw_SpacingBeforeIsZero_CallsDrawActionWithoutPriorSpacing()
     {
         // Arrange
-        int drawCallCount = 0;
-        Func<bool> isVisible = () => true;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw, spacingBefore: 0, spacingAfter: 1);
 
         // Act
@@ -227,9 +223,9 @@ public sealed class ParameterNodeTests
     public void Draw_SpacingAfterIsZero_CallsDrawActionWithoutSubsequentSpacing()
     {
         // Arrange
-        int drawCallCount = 0;
-        Func<bool> isVisible = () => true;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw, spacingBefore: 1, spacingAfter: 0);
 
         // Act
@@ -247,9 +243,9 @@ public sealed class ParameterNodeTests
     public void Draw_LargeSpacingValues_StillCallsDrawAction()
     {
         // Arrange
-        int drawCallCount = 0;
-        Func<bool> isVisible = () => true;
-        Action draw = () => drawCallCount++;
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
         var node = new ParameterNode(isVisible, draw, spacingBefore: 100, spacingAfter: 100);
 
         // Act
@@ -267,12 +263,12 @@ public sealed class ParameterNodeTests
     {
         // Arrange
         const int expectedOrder = 42;
-        Func<bool> isVisible = () => true;
-        Action draw = () => { };
+        static bool isVisible() => true;
+        static void draw() { }
         var node = new ParameterNode(isVisible, draw, order: expectedOrder);
 
         // Act
-        int actualOrder = node.Order;
+        var actualOrder = node.Order;
 
         // Assert
         Assert.AreEqual(expectedOrder, actualOrder, "Order property should return the value provided during construction.");
@@ -285,12 +281,12 @@ public sealed class ParameterNodeTests
     public void Order_DefaultsToIntMaxValue()
     {
         // Arrange
-        Func<bool> isVisible = () => true;
-        Action draw = () => { };
+        static bool isVisible() => true;
+        static void draw() { }
         var node = new ParameterNode(isVisible, draw);
 
         // Act
-        int actualOrder = node.Order;
+        var actualOrder = node.Order;
 
         // Assert
         Assert.AreEqual(int.MaxValue, actualOrder, "Order property should default to int.MaxValue.");
@@ -304,12 +300,12 @@ public sealed class ParameterNodeTests
     {
         // Arrange
         const int expectedOrder = int.MinValue;
-        Func<bool> isVisible = () => true;
-        Action draw = () => { };
+        static bool isVisible() => true;
+        static void draw() { }
         var node = new ParameterNode(isVisible, draw, order: expectedOrder);
 
         // Act
-        int actualOrder = node.Order;
+        var actualOrder = node.Order;
 
         // Assert
         Assert.AreEqual(expectedOrder, actualOrder, "Order property should accept int.MinValue.");
