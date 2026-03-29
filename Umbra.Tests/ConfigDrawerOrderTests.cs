@@ -69,7 +69,7 @@ public sealed class ConfigDrawerOrderTests
 
     private static void CollectParameterKeys(object node, List<string> keys)
     {
-        if (node.GetType().Name == "ParameterNode")
+        if (node.GetType().FullName == "Umbra.UI.Config.Nodes.ParameterNode")
         {
             keys.Add(GetParameterKey(node));
             return;
