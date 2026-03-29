@@ -55,10 +55,7 @@ public static class ManagedObjectResolver
     /// <summary>
     /// Restores the default REFramework-backed resolution bridge.
     /// </summary>
-    internal static void ResetBridge()
-    {
-        Interlocked.Exchange(ref _bridge, null);
-    }
+    internal static void ResetBridge() => Interlocked.Exchange(ref _bridge, null);
 
     /// <summary>
     /// Returns the currently active resolution bridge, creating the default REFramework-backed
