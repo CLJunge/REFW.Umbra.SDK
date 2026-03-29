@@ -1,9 +1,3 @@
-﻿using System;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using Umbra.Logging;
-
 namespace Umbra.Logging.UnitTests;
 
 
@@ -86,7 +80,7 @@ public sealed class PluginLoggerTests
     public void Constructor_ExtremelyLongString_SetsPrefixWithoutTruncation()
     {
         // Arrange
-        string longPrefix = new string('X', 10000);
+        var longPrefix = new string('X', 10000);
 
         // Act
         var logger = new PluginLogger(longPrefix);
@@ -105,7 +99,7 @@ public sealed class PluginLoggerTests
     public void Constructor_StringWithControlCharacters_PreservesControlCharacters()
     {
         // Arrange
-        string prefixWithControls = "Plugin\u0001\u0002\u0003\u001F";
+        var prefixWithControls = "Plugin\u0001\u0002\u0003\u001F";
 
         // Act
         var logger = new PluginLogger(prefixWithControls);
@@ -335,7 +329,7 @@ public sealed class PluginLoggerTests
         };
 
         // Act & Assert
-        logger.Info("Test {0} {1}", null, null);
+        logger.Info("Test {0} {1}", null!, null!);
     }
 
     /// <summary>
@@ -515,7 +509,7 @@ public sealed class PluginLoggerTests
     public void Info_LoggerDisabled_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = false;
@@ -542,7 +536,7 @@ public sealed class PluginLoggerTests
     public void Info_MinLevelAboveInfo_DoesNotThrow(LogLevel minLevel)
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -573,7 +567,7 @@ public sealed class PluginLoggerTests
     public void Info_VariousMessages_DoesNotThrow(string message)
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -596,7 +590,7 @@ public sealed class PluginLoggerTests
     public void Info_NullMessage_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -619,7 +613,7 @@ public sealed class PluginLoggerTests
     public void Info_VeryLongMessage_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -643,7 +637,7 @@ public sealed class PluginLoggerTests
     public void Info_WithPrefix_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -666,7 +660,7 @@ public sealed class PluginLoggerTests
     public void Info_WithoutPrefix_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -689,7 +683,7 @@ public sealed class PluginLoggerTests
     public void Info_EmptyPrefix_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -712,7 +706,7 @@ public sealed class PluginLoggerTests
     public void Info_CustomPrefixFormat_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -739,7 +733,7 @@ public sealed class PluginLoggerTests
     public void Info_BothConditionsFail_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = false;
@@ -762,7 +756,7 @@ public sealed class PluginLoggerTests
     public void Info_LoggerSuppressed_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -788,12 +782,12 @@ public sealed class PluginLoggerTests
     public void Info_MessageWithControlCharacters_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
             PluginLogger logger = new("TestPlugin") { MinLevel = LogLevel.Info };
-            string messageWithControlChars = "Test\0message\u0001with\u001Fcontrol\u007Fchars";
+            var messageWithControlChars = "Test\0message\u0001with\u001Fcontrol\u007Fchars";
 
             // Act & Assert
             logger.Info(messageWithControlChars);
@@ -812,7 +806,7 @@ public sealed class PluginLoggerTests
     public void Info_PrefixWithFormatSpecifiers_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -895,13 +889,13 @@ public sealed class PluginLoggerTests
     {
         // Act
         var loggers = new PluginLogger[5];
-        for (int i = 0; i < loggers.Length; i++)
+        for (var i = 0; i < loggers.Length; i++)
         {
             loggers[i] = new PluginLogger();
         }
 
         // Assert
-        for (int i = 0; i < loggers.Length; i++)
+        for (var i = 0; i < loggers.Length; i++)
         {
             Assert.IsNull(loggers[i].Prefix, $"Instance {i}: Prefix should be null");
             Assert.AreEqual("[{0}]", loggers[i].PrefixFormat, $"Instance {i}: PrefixFormat should be [{{0}}]");
@@ -917,12 +911,14 @@ public sealed class PluginLoggerTests
     public void Warning_WhenLoggerDisabled_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = false;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.Info;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.Info
+            };
 
             // Act & Assert
             logger.Warning("Test message");
@@ -941,12 +937,14 @@ public sealed class PluginLoggerTests
     public void Warning_WhenMinLevelIsError_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.Error;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.Error
+            };
 
             // Act & Assert
             logger.Warning("Test message");
@@ -965,12 +963,14 @@ public sealed class PluginLoggerTests
     public void Warning_WhenMinLevelIsNone_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.None;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.None
+            };
 
             // Act & Assert
             logger.Warning("Test message");
@@ -997,12 +997,14 @@ public sealed class PluginLoggerTests
     public void Warning_WhenMinLevelIsWarningAndEnabledWithVariousMessages_DoesNotThrow(string message)
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning(message);
@@ -1024,12 +1026,14 @@ public sealed class PluginLoggerTests
     public void Warning_WhenMinLevelIsInfo_DoesNotThrow(string message)
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.Info;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.Info
+            };
 
             // Act & Assert
             logger.Warning(message);
@@ -1048,12 +1052,14 @@ public sealed class PluginLoggerTests
     public void Warning_WithNullMessage_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning(null!);
@@ -1072,12 +1078,14 @@ public sealed class PluginLoggerTests
     public void Warning_WithPrefix_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("MyPlugin");
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger("MyPlugin")
+            {
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning("Test message");
@@ -1096,13 +1104,15 @@ public sealed class PluginLoggerTests
     public void Warning_WithNullPrefix_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger();
-            logger.Prefix = null;
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger
+            {
+                Prefix = null,
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning("Test message");
@@ -1121,13 +1131,15 @@ public sealed class PluginLoggerTests
     public void Warning_WithEmptyPrefix_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger();
-            logger.Prefix = string.Empty;
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger
+            {
+                Prefix = string.Empty,
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning("Test message");
@@ -1146,13 +1158,15 @@ public sealed class PluginLoggerTests
     public void Warning_WithCustomPrefixFormat_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.PrefixFormat = "({0})";
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                PrefixFormat = "({0})",
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning("Test message");
@@ -1172,13 +1186,15 @@ public sealed class PluginLoggerTests
     public void Warning_WithInvalidPrefixFormat_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.PrefixFormat = "{0} {1} {2}"; // Format expects 3 args but only 1 provided
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                PrefixFormat = "{0} {1} {2}", // Format expects 3 args but only 1 provided
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning("Test message");
@@ -1197,12 +1213,14 @@ public sealed class PluginLoggerTests
     public void Warning_WithSpecialCharactersInMessageAndPrefix_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("Plugin{0}");
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger("Plugin{0}")
+            {
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning("Message with {braces} and %specials%");
@@ -1221,12 +1239,14 @@ public sealed class PluginLoggerTests
     public void Warning_WhenMinLevelEqualsWarning_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning("Boundary test message");
@@ -1250,12 +1270,14 @@ public sealed class PluginLoggerTests
     public void Warning_WithWhitespaceOnlyMessage_DoesNotThrow(string message)
     {
         // Arrange
-        bool originalEnabled = global::Umbra.Logging.Logger.Enabled;
+        var originalEnabled = global::Umbra.Logging.Logger.Enabled;
         try
         {
             global::Umbra.Logging.Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.Warning;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.Warning
+            };
 
             // Act & Assert
             logger.Warning(message);
@@ -1278,8 +1300,10 @@ public sealed class PluginLoggerTests
         try
         {
             Logger.Enabled = false;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.Info;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.Info
+            };
 
             // Act - should return early without calling API.LogError
             logger.Error("Test error message");
@@ -1304,8 +1328,10 @@ public sealed class PluginLoggerTests
         try
         {
             Logger.Enabled = true;
-            var logger = new PluginLogger("TestPlugin");
-            logger.MinLevel = LogLevel.Info;
+            var logger = new PluginLogger("TestPlugin")
+            {
+                MinLevel = LogLevel.Info
+            };
 
             using (Logger.Suppress())
             {
@@ -2272,7 +2298,7 @@ public sealed class PluginLoggerTests
         var ex = new InvalidOperationException("Test exception");
 
         // Act & Assert - should not throw on repeated calls
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             logger.Exception(ex, $"Message {i}");
         }
@@ -2295,7 +2321,7 @@ public sealed class PluginLoggerTests
     /// </summary>
     private sealed class CustomExceptionWithNullMessage : Exception
     {
-        public override string? Message => null;
+        public override string Message => null!;
     }
     /// <summary>
     /// Stores the original Logger.Enabled value before each test.
@@ -2316,10 +2342,7 @@ public sealed class PluginLoggerTests
     /// Restores the Logger.Enabled state after each test.
     /// </summary>
     [TestCleanup]
-    public void TestCleanup()
-    {
-        Logger.Enabled = _originalLoggerEnabled;
-    }
+    public void TestCleanup() => Logger.Enabled = _originalLoggerEnabled;
 
     /// <summary>
     /// Tests that Error with format and args returns early without throwing
@@ -2330,8 +2353,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = false;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw
         logger.Error("Test {0}", "arg");
@@ -2346,8 +2371,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.None;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.None
+        };
 
         // Act & Assert - should not throw
         logger.Error("Test {0}", "arg");
@@ -2362,8 +2389,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Error;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Error
+        };
 
         // Act & Assert - should not throw
         logger.Error("Test message: {0}", "value");
@@ -2378,8 +2407,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw despite null format
         logger.Error(null!, new object[] { "arg" });
@@ -2394,8 +2425,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw despite null args
         logger.Error("Test {0}", null!);
@@ -2410,8 +2443,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw
         logger.Error(string.Empty);
@@ -2426,8 +2461,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw, extra args are ignored
         logger.Error("Test message", "unused", "args");
@@ -2442,8 +2479,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw despite format mismatch
         logger.Error("Test {0} {1} {2}", "arg1");
@@ -2458,8 +2497,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw, extra args are ignored
         logger.Error("Test {0}", "arg1", "arg2", "arg3");
@@ -2474,8 +2515,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw despite invalid format
         logger.Error("Test {0", "arg");
@@ -2490,8 +2533,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw
         logger.Error("Error code: {0}, Message: {1}", 404, "Not Found");
@@ -2506,8 +2551,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Warning;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Warning
+        };
 
         // Act & Assert - should not throw
         logger.Error("Error: {0}", "Something went wrong");
@@ -2522,8 +2569,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Error;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Error
+        };
 
         // Act & Assert - should not throw
         logger.Error("Critical error: {0}", "System failure");
@@ -2538,11 +2587,13 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw, null is formatted as empty string
-        logger.Error("Value: {0}", (object?)null);
+        logger.Error("Value: {0}", (object?)null!);
     }
 
     /// <summary>
@@ -2554,8 +2605,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw
         logger.Error("Error: {0} - Line: {1}", "File not found", 42);
@@ -2570,9 +2623,11 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
-        string longFormat = new string('x', 10000) + " {0}";
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
+        var longFormat = new string('x', 10000) + " {0}";
 
         // Act & Assert - should not throw
         logger.Error(longFormat, "end");
@@ -2587,8 +2642,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw
         logger.Error("Simple message", Array.Empty<object>());
@@ -2603,8 +2660,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw despite invalid placeholder
         logger.Error("Test {-1}", "arg");
@@ -2619,8 +2678,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw
         logger.Error("Object: {{ {0} }}", "value");
@@ -2635,8 +2696,10 @@ public sealed class PluginLoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        PluginLogger logger = new();
-        logger.MinLevel = LogLevel.Info;
+        PluginLogger logger = new()
+        {
+            MinLevel = LogLevel.Info
+        };
 
         // Act & Assert - should not throw
         logger.Error("Values: {0}, {1}, {2}, {3}, {4}", 1, 2, 3, 4, 5);
@@ -2661,10 +2724,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, "Format: {0}", "value");
-
-            // Assert
-            // No exception thrown, method returns silently
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2691,10 +2750,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, "Format: {0}", "value");
-
-            // Assert
-            // No exception thrown, method returns silently
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2721,10 +2776,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, "Format: {0}", "value");
-
-            // Assert
-            // No exception thrown, method returns silently
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2751,10 +2802,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, null!, "arg1", "arg2");
-
-            // Assert
-            // No exception thrown, method returns silently
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2781,10 +2828,6 @@ public sealed class PluginLoggerTests
 
             // Act - format string expects 2 args but only 1 provided
             logger.Exception(exception, "Format: {0} {1}", "value1");
-
-            // Assert
-            // No exception thrown, method returns silently
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2811,10 +2854,6 @@ public sealed class PluginLoggerTests
 
             // Act - invalid format specifier
             logger.Exception(exception, "Format: {0:INVALID}", "value");
-
-            // Assert
-            // No exception thrown, method returns silently
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2841,10 +2880,6 @@ public sealed class PluginLoggerTests
 
             // Act - format string expects 1 arg but 3 provided (extra args ignored by string.Format)
             logger.Exception(exception, "Format: {0}", "value1", "value2", "value3");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2871,10 +2906,6 @@ public sealed class PluginLoggerTests
 
             // Act - no format placeholders, empty args
             logger.Exception(exception, "No placeholders");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2901,10 +2932,6 @@ public sealed class PluginLoggerTests
 
             // Act - null args array
             logger.Exception(exception, "Format: {0}", null!);
-
-            // Assert
-            // No exception thrown, method returns silently
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2930,10 +2957,6 @@ public sealed class PluginLoggerTests
 
             // Act - null exception (the overload will handle it)
             logger.Exception(null!, "Format: {0}", "value");
-
-            // Assert
-            // No exception thrown, method completes (may fail in overload but shouldn't propagate)
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2960,10 +2983,6 @@ public sealed class PluginLoggerTests
 
             // Act - valid format with args
             logger.Exception(exception, "Error occurred: {0} at {1}", "TestOperation", DateTime.Now.ToString());
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -2990,10 +3009,6 @@ public sealed class PluginLoggerTests
 
             // Act - empty format string
             logger.Exception(exception, string.Empty, "arg1");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3020,10 +3035,6 @@ public sealed class PluginLoggerTests
 
             // Act - whitespace format string
             logger.Exception(exception, "   ", "arg1");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3049,11 +3060,7 @@ public sealed class PluginLoggerTests
             var exception = new InvalidOperationException("Test exception");
 
             // Act - args containing null
-            logger.Exception(exception, "Value: {0}, Null: {1}", "test", null);
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
+            logger.Exception(exception, "Value: {0}, Null: {1}", "test", null!);
         }
         finally
         {
@@ -3080,10 +3087,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, "Format: {0}", "value");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3110,10 +3113,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, "Format: {0}", "value");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3140,10 +3139,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, "Format: {0}", "value");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3170,10 +3165,6 @@ public sealed class PluginLoggerTests
 
             // Act - format string with special chars
             logger.Exception(exception, "Error\n\t{0}: {1}", "Code", 404);
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3201,10 +3192,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, longFormat, "value");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3232,10 +3219,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, "Error: {0}", "TestError");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3262,10 +3245,6 @@ public sealed class PluginLoggerTests
 
             // Act
             logger.Exception(exception, "{0} {1} {2} {3} {4}", "One", "Two", "Three", "Four", "Five");
-
-            // Assert
-            // No exception thrown, method completes successfully
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3292,10 +3271,6 @@ public sealed class PluginLoggerTests
 
             // Act - unmatched braces (should cause string.Format to throw)
             logger.Exception(exception, "Error: {0} extra {", "value");
-
-            // Assert
-            // No exception thrown, method returns silently
-            Assert.IsTrue(true);
         }
         finally
         {
@@ -3310,7 +3285,7 @@ public sealed class PluginLoggerTests
     public void Warning_ValidFormatAndArgs_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3336,7 +3311,7 @@ public sealed class PluginLoggerTests
     public void Warning_LoggerDisabled_ReturnsEarlyWithoutThrowing()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = false;
@@ -3361,7 +3336,7 @@ public sealed class PluginLoggerTests
     public void Warning_MinLevelError_ReturnsEarlyWithoutThrowing()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3386,7 +3361,7 @@ public sealed class PluginLoggerTests
     public void Warning_MinLevelNone_ReturnsEarlyWithoutThrowing()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3411,7 +3386,7 @@ public sealed class PluginLoggerTests
     public void Warning_MinLevelWarning_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3436,7 +3411,7 @@ public sealed class PluginLoggerTests
     public void Warning_MinLevelInfo_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3461,7 +3436,7 @@ public sealed class PluginLoggerTests
     public void Warning_InvalidFormatString_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3489,7 +3464,7 @@ public sealed class PluginLoggerTests
     public void Warning_TooFewArguments_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3515,7 +3490,7 @@ public sealed class PluginLoggerTests
     public void Warning_TooManyArguments_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3540,7 +3515,7 @@ public sealed class PluginLoggerTests
     public void Warning_NullFormatString_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3565,7 +3540,7 @@ public sealed class PluginLoggerTests
     public void Warning_NullArgsArray_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3590,7 +3565,7 @@ public sealed class PluginLoggerTests
     public void Warning_EmptyArgsWithNoPlaceholders_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3615,7 +3590,7 @@ public sealed class PluginLoggerTests
     public void Warning_NullElementsInArgs_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3625,8 +3600,8 @@ public sealed class PluginLoggerTests
             };
 
             // Act & Assert - null elements should format as empty string
-            logger.Warning("Test {0} {1}", null, "value");
-            logger.Warning("Test {0}", (object?)null);
+            logger.Warning("Test {0} {1}", null!, "value");
+            logger.Warning("Test {0}", (object?)null!);
         }
         finally
         {
@@ -3641,7 +3616,7 @@ public sealed class PluginLoggerTests
     public void Warning_VariousArgumentTypes_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3668,7 +3643,7 @@ public sealed class PluginLoggerTests
     public void Warning_FormatWithSpecialCharacters_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3694,7 +3669,7 @@ public sealed class PluginLoggerTests
     public void Warning_LoggerDisabledAndMinLevelFilters_ReturnsEarly()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = false;
@@ -3719,7 +3694,7 @@ public sealed class PluginLoggerTests
     public void Warning_EmptyFormatString_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3744,7 +3719,7 @@ public sealed class PluginLoggerTests
     public void Warning_WhitespaceFormatString_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3770,7 +3745,7 @@ public sealed class PluginLoggerTests
     public void Warning_FormatStringOnlyBraces_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -3797,7 +3772,7 @@ public sealed class PluginLoggerTests
     public void Warning_NumericFormatSpecifiers_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
