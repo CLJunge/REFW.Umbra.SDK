@@ -1,36 +1,56 @@
 using System.Numerics;
+using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
 
 namespace Umbra.UI.Config.UnitTests;
-
 
 /// <summary>
 /// Unit tests for the <see cref="ButtonStyleColors"/> class.
 /// </summary>
 [TestClass]
-public class ButtonStyleColorsTests
+public sealed class ButtonStyleColorsTests
 {
-    /// <summary>
-    /// Tests that <see cref="ButtonStyleColors.Pop"/> executes without throwing an exception.
-    /// Note: This test has limited coverage because Pop() delegates to the static ImGui.PopStyleColor method,
-    /// which cannot be mocked with Moq. The test verifies the method can be invoked, but cannot verify
-    /// the internal ImGui state changes. In a real scenario, Pop should only be called after a successful
-    /// Push operation that returned true, which would have pushed 3 colors onto the ImGui style stack.
-    /// </summary>
-    [TestMethod]
-    public void Pop_WhenCalled_DoesNotThrow() =>
-        // Arrange - no setup needed for this static method
-
-        // Act - method should execute without throwing
-        ButtonStyleColors.Pop();// Assert - if we reach here without exception, the test passes// Note: Without ImGui context initialization, PopStyleColor may be a no-op// or may operate on an uninitialized stack, but it should not throw
+    private TestButtonStyleColorSink _colorSink = null!;
 
     /// <summary>
-    /// Tests that Push with typical valid RGBA color values returns true.
-    /// Note: Cannot verify ImGui.PushStyleColor calls due to static method mocking limitations with Moq.
-    /// Full verification requires integration testing or runtime inspection.
+    /// Installs a recording color sink before each test.
+    /// </summary>
+    [TestInitialize]
+    public void TestInitialize()
+    {
+        _colorSink = new TestButtonStyleColorSink();
+        ButtonStyleColors.SetColorSink(_colorSink);
+    }
+
+    /// <summary>
+    /// Restores the default ImGui-backed color sink after each test.
+    /// </summary>
+    [TestCleanup]
+    public void TestCleanup()
+    {
+        ButtonStyleColors.ResetColorSink();
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ButtonStyleColors.Pop"/> pops three colors from the active sink.
     /// </summary>
     [TestMethod]
-    public void Push_ValidColorVectors_ReturnsTrue()
+    public void Pop_WhenCalled_PopsThreeColors()
+    {
+        // Act
+        ButtonStyleColors.Pop();
+
+        // Assert
+        Assert.HasCount(1, _colorSink.PopCounts);
+        Assert.AreEqual(3, _colorSink.PopCounts[0]);
+    }
+
+    /// <summary>
+    /// Tests that pushing fully custom colors returns <see langword="true"/> and forwards all
+    /// three colors to the active sink.
+    /// </summary>
+    [TestMethod]
+    public void Push_ValidColorVectors_ReturnsTrueAndPushesAllColors()
     {
         // Arrange
         Vector4 normal = new(0.20f, 0.45f, 0.80f, 1.0f);
@@ -42,14 +62,17 @@ public class ButtonStyleColorsTests
 
         // Assert
         Assert.IsTrue(result);
+        Assert.HasCount(3, _colorSink.PushedColors);
+        Assert.AreEqual((ImGuiCol.Button, normal), _colorSink.PushedColors[0]);
+        Assert.AreEqual((ImGuiCol.ButtonHovered, hovered), _colorSink.PushedColors[1]);
+        Assert.AreEqual((ImGuiCol.ButtonActive, active), _colorSink.PushedColors[2]);
     }
 
     /// <summary>
-    /// Tests that Push handles NaN (Not-a-Number) components without throwing.
-    /// Verifies resilience against special floating-point values.
+    /// Tests that custom color vectors with NaN components are still forwarded to the active sink.
     /// </summary>
     [TestMethod]
-    public void Push_NaNComponents_ReturnsTrue()
+    public void Push_NaNComponents_ReturnsTrueAndPushesAllColors()
     {
         // Arrange
         Vector4 normal = new(float.NaN, float.NaN, float.NaN, float.NaN);
@@ -61,105 +84,84 @@ public class ButtonStyleColorsTests
 
         // Assert
         Assert.IsTrue(result);
+        Assert.HasCount(3, _colorSink.PushedColors);
     }
 
     /// <summary>
-    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <c>true</c>
-    /// when invoked with <see cref="ButtonStyle.Primary"/>, indicating that style colors
-    /// were pushed to the ImGui color stack.
+    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <see langword="true"/>
+    /// for <see cref="ButtonStyle.Primary"/> and pushes three preset colors.
     /// </summary>
-    /// <remarks>
-    /// NOTE: This test cannot verify that ImGui.PushStyleColor was actually called
-    /// because it is a static method that cannot be mocked with Moq. This test only
-    /// verifies the return value. In a production environment, ImGui must be initialized
-    /// for the actual PushStyleColor calls to succeed.
-    /// </remarks>
     [TestMethod]
-    public void Push_Primary_ReturnsTrue()
+    public void Push_Primary_ReturnsTrueAndPushesPresetColors()
     {
-        // Arrange
-        var style = ButtonStyle.Primary;
-
         // Act
-        // NOTE: This will attempt to call ImGui.PushStyleColor (static, cannot mock).
-        // If ImGui is not initialized in the test environment, this may throw or fail.
-        var result = ButtonStyleColors.Push(style);
+        var result = ButtonStyleColors.Push(ButtonStyle.Primary);
 
         // Assert
-        Assert.IsTrue(result, "Push should return true for Primary style.");
+        Assert.IsTrue(result);
+        Assert.HasCount(3, _colorSink.PushedColors);
+        Assert.AreEqual(ImGuiCol.Button, _colorSink.PushedColors[0].Color);
+        Assert.AreEqual(ImGuiCol.ButtonHovered, _colorSink.PushedColors[1].Color);
+        Assert.AreEqual(ImGuiCol.ButtonActive, _colorSink.PushedColors[2].Color);
     }
 
     /// <summary>
-    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <c>false</c>
-    /// when invoked with <see cref="ButtonStyle.Default"/>, which is not present in the
-    /// internal color dictionary. This ensures the method correctly handles styles that
-    /// should use the default ImGui theme colors.
+    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <see langword="false"/>
+    /// for <see cref="ButtonStyle.Default"/> and does not push any colors.
     /// </summary>
     [TestMethod]
     public void Push_Default_ReturnsFalse()
     {
-        // Arrange
-        var style = ButtonStyle.Default;
-
         // Act
-        var result = ButtonStyleColors.Push(style);
+        var result = ButtonStyleColors.Push(ButtonStyle.Default);
 
         // Assert
-        Assert.IsFalse(result, "Push should return false for Default style (not in color dictionary).");
+        Assert.IsFalse(result);
+        Assert.IsEmpty(_colorSink.PushedColors);
     }
 
     /// <summary>
-    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <c>false</c>
-    /// when invoked with <see cref="ButtonStyle.Custom"/>, which is not present in the
-    /// internal color dictionary. Custom styles are handled separately via custom color attributes.
+    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <see langword="false"/>
+    /// for <see cref="ButtonStyle.Custom"/> and does not push any colors.
     /// </summary>
     [TestMethod]
     public void Push_Custom_ReturnsFalse()
     {
-        // Arrange
-        var style = ButtonStyle.Custom;
-
         // Act
-        var result = ButtonStyleColors.Push(style);
+        var result = ButtonStyleColors.Push(ButtonStyle.Custom);
 
         // Assert
-        Assert.IsFalse(result, "Push should return false for Custom style (not in color dictionary).");
+        Assert.IsFalse(result);
+        Assert.IsEmpty(_colorSink.PushedColors);
     }
 
     /// <summary>
-    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <c>false</c>
-    /// when invoked with an undefined enum value outside the declared range.
-    /// This verifies graceful handling of invalid enum values.
+    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <see langword="false"/>
+    /// for an undefined enum value.
     /// </summary>
     [TestMethod]
     public void Push_UndefinedEnumValue_ReturnsFalse()
     {
-        // Arrange
-        var style = (ButtonStyle)999;
-
         // Act
-        var result = ButtonStyleColors.Push(style);
+        var result = ButtonStyleColors.Push((ButtonStyle)999);
 
         // Assert
-        Assert.IsFalse(result, "Push should return false for undefined enum value.");
+        Assert.IsFalse(result);
+        Assert.IsEmpty(_colorSink.PushedColors);
     }
 
     /// <summary>
-    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <c>false</c>
-    /// when invoked with a negative enum value cast from -1.
-    /// This verifies graceful handling of invalid negative enum values.
+    /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <see langword="false"/>
+    /// for a negative enum value.
     /// </summary>
     [TestMethod]
     public void Push_NegativeEnumValue_ReturnsFalse()
     {
-        // Arrange
-        var style = (ButtonStyle)(-1);
-
         // Act
-        var result = ButtonStyleColors.Push(style);
+        var result = ButtonStyleColors.Push((ButtonStyle)(-1));
 
         // Assert
-        Assert.IsFalse(result, "Push should return false for negative enum value.");
+        Assert.IsFalse(result);
+        Assert.IsEmpty(_colorSink.PushedColors);
     }
-
 }
