@@ -111,7 +111,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
                 $"DeferredSaveController<{typeof(TConfig).Name}> cannot attach to a disposed settings store.");
         if (!store.IsLoaded)
             throw new InvalidOperationException(
-                $"DeferredSaveController<{typeof(TConfig).Name}> requires a SettingsStore that has already completed Load().");
+                $"DeferredSaveController<{typeof(TConfig).Name}> requires a settings store that has already completed Load().");
 
         _store = store;
         DebounceWindow = debounceWindow ?? TimeSpan.FromSeconds(1);
