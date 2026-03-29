@@ -597,6 +597,7 @@ public partial class SettingsStoreTests
     }
 
     #region Test Configuration Classes
+    [UmbraAutoRegisterSettings]
     public partial record TestConfig
     {
         [UmbraSettingsParameter]
