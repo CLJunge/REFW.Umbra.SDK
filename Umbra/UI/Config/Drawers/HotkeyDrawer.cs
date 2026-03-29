@@ -1,6 +1,4 @@
-using Hexa.NET.ImGui;
 using Umbra.Config;
-using Umbra.Input;
 
 namespace Umbra.UI.Config.Drawers;
 
@@ -16,11 +14,41 @@ namespace Umbra.UI.Config.Drawers;
 /// in the same assembly. <see cref="Dispose"/> must be called (via the owning
 /// <see cref="Config.ConfigDrawer{TConfig}"/>) on plugin unload so that any in-progress capture
 /// does not permanently block future captures.
+/// The default constructor renders through ImGui and captures keys through
+/// <see cref="Umbra.Input.KeyboardInput"/>. Unit tests can replace those dependencies through the
+/// internal constructor so the state machine can be verified without a live runtime host.
 /// </remarks>
 public sealed class HotkeyDrawer : IParameterDrawer
 {
     private bool _waiting;
     private bool _disposed;
+    private readonly IHotkeyDrawerRenderer _renderer;
+    private readonly IHotkeyInputSource _inputSource;
+
+    /// <summary>
+    /// Initializes a new <see cref="HotkeyDrawer"/> that renders through the active ImGui frame and
+    /// captures keys through <see cref="Umbra.Input.KeyboardInput"/>.
+    /// </summary>
+    public HotkeyDrawer()
+        : this(new ImGuiHotkeyDrawerRenderer(), new KeyboardHotkeyInputSource())
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new <see cref="HotkeyDrawer"/> with the specified renderer and keyboard input source.
+    /// </summary>
+    /// <param name="renderer">The renderer used for hotkey-drawer UI operations.</param>
+    /// <param name="inputSource">The source used for key capture and key naming.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="renderer"/> or <paramref name="inputSource"/> is <see langword="null"/>.
+    /// </exception>
+    internal HotkeyDrawer(IHotkeyDrawerRenderer renderer, IHotkeyInputSource inputSource)
+    {
+        ArgumentNullException.ThrowIfNull(renderer);
+        ArgumentNullException.ThrowIfNull(inputSource);
+        _renderer = renderer;
+        _inputSource = inputSource;
+    }
 
     /// <inheritdoc/>
     public void Draw(string label, IParameter parameter)
@@ -29,7 +57,7 @@ public sealed class HotkeyDrawer : IParameterDrawer
 
         if (parameter is not Parameter<int> p)
         {
-            ImGui.TextDisabled($"{label}: (HotkeyDrawer requires Parameter<int>)");
+            _renderer.TextDisabled($"{label}: (HotkeyDrawer requires Parameter<int>)");
             return;
         }
 
@@ -45,11 +73,11 @@ public sealed class HotkeyDrawer : IParameterDrawer
         // same display label do not share an ImGui button ID within the same window.
         if (_waiting)
         {
-            ImGui.Text($"{label}: Press any key...");
-            ImGui.SameLine();
-            if (ImGui.Button($"Cancel##{p.Key}"))
+            _renderer.Text($"{label}: Press any key...");
+            _renderer.SameLine();
+            if (_renderer.Button($"Cancel##{p.Key}"))
                 _waiting = false;
-            else if (KeyboardInput.TryCaptureKeyboardKey(out var captured))
+            else if (_inputSource.TryCaptureKeyboardKey(out var captured))
             {
                 v = captured;
                 _waiting = false;
@@ -57,9 +85,9 @@ public sealed class HotkeyDrawer : IParameterDrawer
         }
         else
         {
-            ImGui.Text($"{label}: {KeyboardInput.GetKeyName(v)}");
-            ImGui.SameLine();
-            if (ImGui.Button($"Change##{p.Key}") && !otherWaiting)
+            _renderer.Text($"{label}: {_inputSource.GetKeyName(v)}");
+            _renderer.SameLine();
+            if (_renderer.Button($"Change##{p.Key}") && !otherWaiting)
                 _waiting = true;
         }
 
@@ -72,8 +100,8 @@ public sealed class HotkeyDrawer : IParameterDrawer
         var metadata = parameter.Metadata;
         if (metadata.Description is not null)
         {
-            ImGui.SameLine();
-            ImGuiWidgets.DrawHelpMarker(metadata.Description);
+            _renderer.SameLine();
+            _renderer.DrawHelpMarker(metadata.Description);
         }
     }
 

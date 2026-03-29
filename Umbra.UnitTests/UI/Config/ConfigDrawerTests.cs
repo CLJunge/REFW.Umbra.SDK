@@ -1,108 +1,189 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
+using Umbra.Logging;
+using Umbra.Logging.UnitTests;
+using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config.UnitTests;
 
-
 /// <summary>
-/// Unit tests for the <see cref="ConfigDrawer{TConfig}.Draw"/> method.
+/// Unit tests for <see cref="ConfigDrawer{TConfig}"/>.
 /// </summary>
 [TestClass]
 public sealed class ConfigDrawerTests
 {
+    private TestLogSink _logSink = null!;
+    private bool _originalLoggingEnabled;
+
     /// <summary>
-    /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> on a disposed instance
-    /// does not throw an exception and handles the disposed state gracefully.
+    /// Installs a recording log sink before each test.
     /// </summary>
-    /// <remarks>
-    /// This test verifies the early-return path when <c>_disposed</c> is <see langword="true"/>.
-    /// The method should log a warning (via <see cref="Umbra.Logging.Logger.Warning"/>)
-    /// and return without processing nodes or calling ImGui methods. Since Logger is static
-    /// and cannot be mocked with Moq, we can only verify that no exception is thrown.
-    /// </remarks>
+    [TestInitialize]
+    public void TestInitialize()
+    {
+        _logSink = new TestLogSink();
+        _originalLoggingEnabled = Logger.Enabled;
+        Logger.SetLogSink(_logSink);
+        Logger.EnableAll();
+    }
+
+    /// <summary>
+    /// Restores the default logger state after each test.
+    /// </summary>
+    [TestCleanup]
+    public void TestCleanup()
+    {
+        Logger.ResetLogSink();
+        Logger.Enabled = _originalLoggingEnabled;
+    }
+
+    /// <summary>
+    /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> on a disposed instance logs a
+    /// warning and skips rendering work.
+    /// </summary>
     [TestMethod]
-    public void Draw_WhenDisposed_DoesNotThrow()
+    public void Draw_WhenDisposed_LogsWarningAndSkipsRendering()
     {
         // Arrange
-        var config = new TestConfig();
-        var drawer = new ConfigDrawer<TestConfig>(config, "test-scope");
+        var scope = new TestConfigDrawerScope();
+        var node = new TestDrawNode();
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [node],
+            [],
+            scope);
         drawer.Dispose();
-
-        // Act & Assert
-        drawer.Draw(); // Should not throw
-    }
-
-    /// <summary>
-    /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> on a valid, non-disposed
-    /// instance executes without throwing an exception.
-    /// </summary>
-    /// <remarks>
-    /// This test verifies the normal execution path. The method should push an ImGui ID scope,
-    /// iterate through all nodes calling their Draw methods, and pop the ID scope in the finally block.
-    /// Since ImGui static methods cannot be mocked and nodes are built internally by the constructor,
-    /// we can only verify that the method completes without throwing.
-    /// </remarks>
-    [TestMethod]
-    public void Draw_WhenNotDisposed_DoesNotThrow()
-    {
-        // Arrange
-        var config = new TestConfig();
-        var drawer = new ConfigDrawer<TestConfig>(config, "test-scope");
-
-        // Act & Assert
-        drawer.Draw(); // Should not throw
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigDrawer{TConfig}.Draw"/> can be called multiple times
-    /// sequentially on the same instance without issues.
-    /// </summary>
-    /// <remarks>
-    /// This verifies that the Draw method is idempotent and can be invoked repeatedly
-    /// during the render loop without accumulating state or causing errors.
-    /// </remarks>
-    [TestMethod]
-    public void Draw_CalledMultipleTimes_DoesNotThrow()
-    {
-        // Arrange
-        var config = new TestConfig();
-        var drawer = new ConfigDrawer<TestConfig>(config, "test-scope");
-
-        // Act & Assert
-        drawer.Draw(); // First call
-        drawer.Draw(); // Second call
-        drawer.Draw(); // Third call
-        // All calls should complete without throwing
-    }
-
-    /// <summary>
-    /// Tests that <see cref="ConfigDrawer{TConfig}.Draw"/> calls Dispose() only once
-    /// even when called multiple times, by verifying subsequent Draw() calls still work.
-    /// </summary>
-    /// <remarks>
-    /// This verifies that Dispose() is idempotent and that calling Draw() multiple times
-    /// after disposal continues to handle the disposed state gracefully.
-    /// </remarks>
-    [TestMethod]
-    public void Draw_AfterMultipleDisposes_DoesNotThrow()
-    {
-        // Arrange
-        var config = new TestConfig();
-        var drawer = new ConfigDrawer<TestConfig>(config, "test-scope");
 
         // Act
-        drawer.Dispose();
-        drawer.Dispose(); // Second dispose should be safe
+        drawer.Draw();
 
         // Assert
-        drawer.Draw(); // Should not throw
-        drawer.Draw(); // Second draw after dispose should also not throw
+        Assert.IsEmpty(scope.PushedIds);
+        Assert.AreEqual(0, scope.PopCount);
+        Assert.AreEqual(0, node.DrawCount);
+        Assert.HasCount(1, _logSink.WarningMessages);
+        Assert.AreEqual(true, _logSink.WarningMessages[0].Contains("disposed instance"));
+    }
+
+    /// <summary>
+    /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> on a valid instance pushes the
+    /// configured scope, draws each node once, and pops the scope afterward.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenNotDisposed_PushesScopeAndDrawsNodes()
+    {
+        // Arrange
+        var scope = new TestConfigDrawerScope();
+        var firstNode = new TestDrawNode();
+        var secondNode = new TestDrawNode();
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [firstNode, secondNode],
+            [],
+            scope);
+
+        // Act
+        drawer.Draw();
+
+        // Assert
+        Assert.HasCount(1, scope.PushedIds);
+        Assert.AreEqual("test-scope", scope.PushedIds[0]);
+        Assert.AreEqual(1, scope.PopCount);
+        Assert.AreEqual(1, firstNode.DrawCount);
+        Assert.AreEqual(1, secondNode.DrawCount);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigDrawer{TConfig}.Draw"/> can be called multiple times sequentially
+    /// on the same instance.
+    /// </summary>
+    [TestMethod]
+    public void Draw_CalledMultipleTimes_DrawsNodesOnEachCall()
+    {
+        // Arrange
+        var scope = new TestConfigDrawerScope();
+        var node = new TestDrawNode();
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [node],
+            [],
+            scope);
+
+        // Act
+        drawer.Draw();
+        drawer.Draw();
+        drawer.Draw();
+
+        // Assert
+        Assert.HasCount(3, scope.PushedIds);
+        Assert.AreEqual(3, scope.PopCount);
+        Assert.AreEqual(3, node.DrawCount);
+    }
+
+    /// <summary>
+    /// Tests that the draw scope is popped even when a node throws during rendering.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenNodeThrows_PopsScopeBeforeRethrowing()
+    {
+        // Arrange
+        var scope = new TestConfigDrawerScope();
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [new TestDrawNode(() => throw new InvalidOperationException("boom"))],
+            [],
+            scope);
+
+        // Act
+        InvalidOperationException? exception = null;
+        try
+        {
+            drawer.Draw();
+        }
+        catch (InvalidOperationException ex)
+        {
+            exception = ex;
+        }
+
+        // Assert
+        Assert.IsNotNull(exception);
+        Assert.AreEqual("boom", exception.Message);
+        Assert.HasCount(1, scope.PushedIds);
+        Assert.AreEqual(1, scope.PopCount);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigDrawer{TConfig}.Draw"/> remains safe after multiple dispose calls.
+    /// </summary>
+    [TestMethod]
+    public void Draw_AfterMultipleDisposes_StillLogsWarningWithoutRendering()
+    {
+        // Arrange
+        var scope = new TestConfigDrawerScope();
+        var node = new TestDrawNode();
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [node],
+            [],
+            scope);
+        drawer.Dispose();
+        drawer.Dispose();
+
+        // Act
+        drawer.Draw();
+        drawer.Draw();
+
+        // Assert
+        Assert.AreEqual(0, node.DrawCount);
+        Assert.IsEmpty(scope.PushedIds);
+        Assert.AreEqual(0, scope.PopCount);
+        Assert.HasCount(2, _logSink.WarningMessages);
     }
 
     #region Helper Types
 
     /// <summary>
-    /// Minimal test configuration class for ConfigDrawer tests.
+    /// Minimal test configuration class for ConfigDrawer draw tests.
     /// </summary>
     [UmbraAutoRegisterSettings]
     private sealed class TestConfig
@@ -240,46 +321,57 @@ public sealed class ConfigDrawerTests
     #endregion
 
     /// <summary>
-    /// Verifies that calling <see cref="ConfigDrawer{TConfig}.Dispose"/> once
-    /// completes successfully without throwing any exceptions.
+    /// Verifies that calling <see cref="ConfigDrawer{TConfig}.Dispose"/> once disposes owned
+    /// resources successfully.
     /// </summary>
     [TestMethod]
-    public void Dispose_WhenCalledOnce_ShouldNotThrow()
+    public void Dispose_WhenCalledOnce_DisposesOwnedResources()
     {
         // Arrange
-        var config = new SimpleTestConfig();
-        var drawer = new ConfigDrawer<SimpleTestConfig>(config, "TestScope");
+        var disposable = new TestDisposable();
+        using var drawer = new ConfigDrawer<SimpleTestConfig>(
+            "TestScope",
+            [],
+            [disposable],
+            new TestConfigDrawerScope());
 
-        // Act & Assert
+        // Act
         drawer.Dispose();
+
+        // Assert
+        Assert.AreEqual(1, disposable.DisposeCount);
     }
 
     /// <summary>
-    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> is idempotent
-    /// and can be called multiple times without throwing exceptions or causing errors.
-    /// Tests with 2, 5, and 10 consecutive calls.
+    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> is idempotent and can be called
+    /// multiple times without disposing owned resources more than once.
     /// </summary>
-    /// <param name="callCount">The number of times to call Dispose.</param>
+    /// <param name="callCount">The number of times to call <see cref="ConfigDrawer{TConfig}.Dispose"/>.</param>
     [TestMethod]
     [DataRow(2)]
     [DataRow(5)]
     [DataRow(10)]
-    public void Dispose_WhenCalledMultipleTimes_ShouldBeIdempotent(int callCount)
+    public void Dispose_WhenCalledMultipleTimes_DisposesOwnedResourcesOnce(int callCount)
     {
         // Arrange
-        var config = new SimpleTestConfig();
-        var drawer = new ConfigDrawer<SimpleTestConfig>(config, "TestScope");
+        var disposable = new TestDisposable();
+        using var drawer = new ConfigDrawer<SimpleTestConfig>(
+            "TestScope",
+            [],
+            [disposable],
+            new TestConfigDrawerScope());
 
-        // Act & Assert
+        // Act
         for (var i = 0; i < callCount; i++)
-        {
             drawer.Dispose();
-        }
+
+        // Assert
+        Assert.AreEqual(1, disposable.DisposeCount);
     }
 
     /// <summary>
-    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> works correctly
-    /// with a config that has multiple parameters of different types.
+    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> works correctly with a config that
+    /// has multiple parameters of different types.
     /// </summary>
     [TestMethod]
     public void Dispose_WithComplexConfig_ShouldNotThrow()
@@ -295,24 +387,34 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> can be called
-    /// on multiple instances without interference.
+    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> can be called on multiple instances
+    /// without interference.
     /// </summary>
     [TestMethod]
-    public void Dispose_MultipleInstances_ShouldDisposeIndependently()
+    public void Dispose_MultipleInstances_DisposeIndependently()
     {
         // Arrange
-        var config1 = new SimpleTestConfig();
-        var config2 = new SimpleTestConfig();
-        var drawer1 = new ConfigDrawer<SimpleTestConfig>(config1, "TestScope1");
-        var drawer2 = new ConfigDrawer<SimpleTestConfig>(config2, "TestScope2");
+        var disposable1 = new TestDisposable();
+        var disposable2 = new TestDisposable();
+        using var drawer1 = new ConfigDrawer<SimpleTestConfig>(
+            "TestScope1",
+            [],
+            [disposable1],
+            new TestConfigDrawerScope());
+        using var drawer2 = new ConfigDrawer<SimpleTestConfig>(
+            "TestScope2",
+            [],
+            [disposable2],
+            new TestConfigDrawerScope());
 
         // Act
         drawer1.Dispose();
         drawer2.Dispose();
-        drawer1.Dispose(); // Verify idempotency for first instance
+        drawer1.Dispose();
 
-        // Assert - No exception thrown
+        // Assert
+        Assert.AreEqual(1, disposable1.DisposeCount);
+        Assert.AreEqual(1, disposable2.DisposeCount);
     }
 
     #region Test Config Classes

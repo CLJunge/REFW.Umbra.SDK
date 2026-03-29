@@ -1,8 +1,6 @@
-using Moq;
 using Umbra.Config;
 
 namespace Umbra.UI.Config.Drawers.UnitTests;
-
 
 /// <summary>
 /// Unit tests for <see cref="TwoColumnHotkeyDrawer"/>.
@@ -10,321 +8,223 @@ namespace Umbra.UI.Config.Drawers.UnitTests;
 [TestClass]
 public sealed class TwoColumnHotkeyDrawerTests
 {
+    private TestHotkeyDrawerRenderer _renderer = null!;
+    private TestHotkeyInputSource _inputSource = null!;
+
     /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> returns early when the drawer is disposed.
+    /// Resets the shared capture state and creates deterministic test doubles before each test.
+    /// </summary>
+    [TestInitialize]
+    public void TestInitialize()
+    {
+        HotkeyCaptureState.WaitingCount = 0;
+        _renderer = new TestHotkeyDrawerRenderer();
+        _inputSource = new TestHotkeyInputSource();
+    }
+
+    /// <summary>
+    /// Resets the shared capture state after each test.
+    /// </summary>
+    [TestCleanup]
+    public void TestCleanup()
+    {
+        HotkeyCaptureState.WaitingCount = 0;
+    }
+
+    /// <summary>
+    /// Verifies that drawing a disposed drawer returns immediately without rendering.
     /// </summary>
     [TestMethod]
     public void Draw_DisposedDrawer_ReturnsEarly()
     {
         // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
         drawer.Dispose();
-        var mockParameter = new Mock<IParameter>();
 
-        // Act - should not throw and should return early without interacting with parameter
-        drawer.Draw(mockParameter.Object);
+        // Act
+        drawer.Draw(new Parameter<int>(70));
 
         // Assert
-        mockParameter.VerifyNoOtherCalls();
+        Assert.IsEmpty(_renderer.DisabledTexts);
+        Assert.IsEmpty(_renderer.Texts);
+        Assert.IsEmpty(_renderer.Buttons);
+        Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
     }
 
     /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> handles null parameter gracefully.
+    /// Verifies that null or wrong-typed parameters render disabled text.
     /// </summary>
-    /// <remarks>
-    /// This test verifies behavior when a null parameter is passed. Due to the pattern-matching
-    /// cast (parameter is not Parameter&lt;int&gt;), the null will fail the type check and ImGui.TextDisabled
-    /// will be called. Full validation requires ImGui context which cannot be mocked.
-    /// </remarks>
-    [TestMethod]
-    public void Draw_NullParameter_HandlesGracefully()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-
-        // Act - should not throw
-        drawer.Draw(null!);
-
-        // Assert - no exception thrown (ImGui call cannot be verified without real context)
-    }
-
-    /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> handles wrong parameter type by showing disabled text.
-    /// </summary>
-    /// <remarks>
-    /// When parameter is not Parameter&lt;int&gt;, ImGui.TextDisabled is called with a message.
-    /// The type check logic is tested here; ImGui rendering cannot be verified without a real ImGui context.
-    /// </remarks>
     [TestMethod]
     public void Draw_WrongParameterType_ShowsDisabledText()
     {
         // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var mockParameter = new Mock<IParameter>();
-
-        // Act - should not throw
-        drawer.Draw(mockParameter.Object);
-
-        // Assert - no exception thrown (ImGui call cannot be verified without real context)
-    }
-
-    /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> handles Parameter&lt;string&gt; as wrong type.
-    /// </summary>
-    [TestMethod]
-    public void Draw_ParameterOfWrongGenericType_ShowsDisabledText()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var stringParameter = new Parameter<string>("test") { Key = "testKey" };
-
-        // Act - should not throw
-        drawer.Draw(stringParameter);
-
-        // Assert - no exception thrown (ImGui call cannot be verified without real context)
-    }
-
-    /// <summary>
-    /// Tests that WaitingCount is not incremented when drawer is disposed before Draw is called.
-    /// </summary>
-    [TestMethod]
-    public void Draw_DisposedBeforeDraw_DoesNotModifyWaitingCount()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var parameter = new Parameter<int>(70) { Key = "testHotkey" };
-        var initialCount = HotkeyCaptureState.WaitingCount;
-        drawer.Dispose();
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
 
         // Act
-        drawer.Draw(parameter);
+        drawer.Draw(null!);
 
         // Assert
-        Assert.AreEqual(initialCount, HotkeyCaptureState.WaitingCount);
+        Assert.HasCount(1, _renderer.DisabledTexts);
+        Assert.AreEqual("(TwoColumnHotkeyDrawer requires Parameter<int>)", _renderer.DisabledTexts[0]);
     }
 
     /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> with valid Parameter&lt;int&gt; does not throw.
+    /// Verifies that a non-waiting drawer renders the current key name and a change button.
     /// </summary>
-    /// <remarks>
-    /// This test validates that the basic path with a correct parameter type executes without exception.
-    /// Full interaction testing (button clicks, key capture) requires a real ImGui context and cannot be
-    /// performed in unit tests. Integration tests with ImGui initialized are required for comprehensive coverage.
-    /// </remarks>
     [TestMethod]
-    public void Draw_ValidParameterInt_DoesNotThrow()
+    public void Draw_ValidParameterInt_RendersKeyNameAndChangeButton()
     {
         // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
+        _inputSource.SetKeyName(70, "F2");
         var parameter = new Parameter<int>(70) { Key = "testHotkey" };
 
-        // Act & Assert - should not throw
-        // Note: ImGui.Text, ImGui.Button, and KeyboardInput interactions cannot be tested
-        // without a real ImGui context. This test only verifies no exception is thrown.
+        // Act
         drawer.Draw(parameter);
+
+        // Assert
+        Assert.HasCount(1, _renderer.Texts);
+        Assert.AreEqual("F2", _renderer.Texts[0]);
+        Assert.HasCount(1, _renderer.Buttons);
+        Assert.AreEqual("Change##testHotkey", _renderer.Buttons[0]);
+        Assert.AreEqual(1, _renderer.SameLineCount);
+        Assert.AreEqual(0, _inputSource.CaptureCallCount);
+        Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
     }
 
     /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> with Parameter&lt;int&gt; having int.MinValue does not throw.
+    /// Verifies that clicking Change enters waiting mode and increments the shared waiting count.
     /// </summary>
     [TestMethod]
-    public void Draw_ParameterValueIntMinValue_DoesNotThrow()
+    public void Draw_WhenChangeButtonClicked_EntersWaitingMode()
     {
         // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var parameter = new Parameter<int>(int.MinValue) { Key = "minValueKey" };
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
+        _renderer.ButtonResults.Enqueue(true);
+        var parameter = new Parameter<int>(70) { Key = "testHotkey" };
 
-        // Act & Assert
+        // Act
         drawer.Draw(parameter);
+
+        // Assert
+        Assert.AreEqual(1, HotkeyCaptureState.WaitingCount);
+
+        // Act again to observe waiting UI.
+        drawer.Draw(parameter);
+
+        // Assert
+        Assert.AreEqual("Press any key...", _renderer.Texts[1]);
+        Assert.AreEqual("Cancel##testHotkey", _renderer.Buttons[1]);
     }
 
     /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> with Parameter&lt;int&gt; having int.MaxValue does not throw.
+    /// Verifies that another waiting drawer prevents this drawer from entering capture mode.
     /// </summary>
     [TestMethod]
-    public void Draw_ParameterValueIntMaxValue_DoesNotThrow()
+    public void Draw_WhenAnotherDrawerIsWaiting_DoesNotEnterWaitingMode()
     {
         // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var parameter = new Parameter<int>(int.MaxValue) { Key = "maxValueKey" };
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
+        _renderer.ButtonResults.Enqueue(true);
+        HotkeyCaptureState.WaitingCount = 1;
+        var parameter = new Parameter<int>(70) { Key = "testHotkey" };
 
-        // Act & Assert
+        // Act
         drawer.Draw(parameter);
+
+        // Assert
+        Assert.AreEqual(1, HotkeyCaptureState.WaitingCount);
+        drawer.Draw(parameter);
+        Assert.AreEqual("Change##testHotkey", _renderer.Buttons[1]);
     }
 
     /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> with Parameter&lt;int&gt; having zero value does not throw.
+    /// Verifies that clicking Cancel exits waiting mode without changing the stored hotkey value.
     /// </summary>
     [TestMethod]
-    public void Draw_ParameterValueZero_DoesNotThrow()
+    public void Draw_WhenCancelClicked_LeavesWaitingModeWithoutChangingValue()
     {
         // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var parameter = new Parameter<int>(0) { Key = "zeroKey" };
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
+        _renderer.ButtonResults.Enqueue(true);
+        _renderer.ButtonResults.Enqueue(true);
+        var parameter = new Parameter<int>(70) { Key = "testHotkey" };
 
-        // Act & Assert
+        // Act
         drawer.Draw(parameter);
+        drawer.Draw(parameter);
+
+        // Assert
+        Assert.AreEqual(70, parameter.Value);
+        Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
+        drawer.Draw(parameter);
+        Assert.AreEqual("Key(70)", _renderer.Texts[2]);
     }
 
     /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> with Parameter&lt;int&gt; having negative value does not throw.
+    /// Verifies that a captured key updates the parameter value and exits waiting mode.
     /// </summary>
     [TestMethod]
-    public void Draw_ParameterValueNegative_DoesNotThrow()
+    public void Draw_WhenKeyIsCaptured_UpdatesValueAndLeavesWaitingMode()
     {
         // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var parameter = new Parameter<int>(-1) { Key = "negativeKey" };
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
+        _renderer.ButtonResults.Enqueue(true);
+        _renderer.ButtonResults.Enqueue(false);
+        _inputSource.QueueCapturedKey(71);
+        _inputSource.SetKeyName(71, "F3");
+        var parameter = new Parameter<int>(70) { Key = "testHotkey" };
 
-        // Act & Assert
+        // Act
         drawer.Draw(parameter);
+        drawer.Draw(parameter);
+        drawer.Draw(parameter);
+
+        // Assert
+        Assert.AreEqual(71, parameter.Value);
+        Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
+        Assert.AreEqual("F3", _renderer.Texts[2]);
+        Assert.AreEqual(1, _inputSource.CaptureCallCount);
     }
 
     /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> with empty parameter key does not throw.
+    /// Verifies that multiple calls without user interaction leave the stored value unchanged.
     /// </summary>
     [TestMethod]
-    public void Draw_ParameterKeyEmpty_DoesNotThrow()
+    public void Draw_MultipleCallsSameParameter_DoesNotModifyValue()
     {
         // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var parameter = new Parameter<int>(70) { Key = "" };
-
-        // Act & Assert
-        drawer.Draw(parameter);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> with null parameter key does not throw.
-    /// </summary>
-    [TestMethod]
-    public void Draw_ParameterKeyNull_DoesNotThrow()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var parameter = new Parameter<int>(70) { Key = null! };
-
-        // Act & Assert
-        drawer.Draw(parameter);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> with very long parameter key does not throw.
-    /// </summary>
-    [TestMethod]
-    public void Draw_ParameterKeyVeryLong_DoesNotThrow()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var parameter = new Parameter<int>(70) { Key = new string('a', 10000) };
-
-        // Act & Assert
-        drawer.Draw(parameter);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> with special characters in parameter key does not throw.
-    /// </summary>
-    [TestMethod]
-    public void Draw_ParameterKeySpecialCharacters_DoesNotThrow()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var parameter = new Parameter<int>(70) { Key = "test##key$$special@@chars!!" };
-
-        // Act & Assert
-        drawer.Draw(parameter);
-    }
-
-    /// <summary>
-    /// Tests that multiple calls to <see cref="TwoColumnHotkeyDrawer.Draw"/> with the same parameter do not throw.
-    /// </summary>
-    [TestMethod]
-    public void Draw_MultipleCallsSameParameter_DoesNotThrow()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
         var parameter = new Parameter<int>(70) { Key = "testKey" };
 
-        // Act & Assert
+        // Act
         drawer.Draw(parameter);
         drawer.Draw(parameter);
         drawer.Draw(parameter);
+
+        // Assert
+        Assert.AreEqual(70, parameter.Value);
+        Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
+        Assert.AreEqual(0, _inputSource.CaptureCallCount);
     }
 
     /// <summary>
-    /// Tests that <see cref="TwoColumnHotkeyDrawer.Draw"/> called after Dispose is idempotent.
+    /// Verifies that disposing a waiting drawer decrements the shared waiting count exactly once.
     /// </summary>
     [TestMethod]
-    public void Draw_CalledAfterDispose_IsIdempotent()
+    public void Dispose_WhenWaiting_DecrementsWaitingCountOnce()
     {
         // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
+        _renderer.ButtonResults.Enqueue(true);
         var parameter = new Parameter<int>(70) { Key = "testKey" };
-        drawer.Dispose();
-
-        // Act & Assert
         drawer.Draw(parameter);
-        drawer.Draw(parameter);
-        drawer.Draw(parameter);
-    }
-
-    /// <summary>
-    /// Tests that Dispose decrements WaitingCount when drawer is in waiting state.
-    /// </summary>
-    /// <remarks>
-    /// This test verifies the synchronization logic for the shared WaitingCount.
-    /// Due to the static nature of HotkeyCaptureState.WaitingCount and the dependency on ImGui button clicks
-    /// to enter waiting state, this test can only verify disposal behavior, not the full state transition.
-    /// Integration tests with ImGui are required for comprehensive coverage of waiting state transitions.
-    /// </remarks>
-    [TestMethod]
-    public void Dispose_WhenNotWaiting_DoesNotDecrementWaitingCount()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        var initialCount = HotkeyCaptureState.WaitingCount;
 
         // Act
         drawer.Dispose();
-
-        // Assert
-        Assert.AreEqual(initialCount, HotkeyCaptureState.WaitingCount);
-    }
-
-    /// <summary>
-    /// Ensures the static WaitingCount field is reset before each test to avoid cross-test contamination.
-    /// </summary>
-    [TestInitialize]
-    public void Initialize() => HotkeyCaptureState.WaitingCount = 0;
-
-    /// <summary>
-    /// Verifies that calling Dispose on a newly created drawer (with _waiting = false by default)
-    /// sets the object as disposed and does not decrement the shared WaitingCount.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WhenCalledOnNewDrawer_SetsDisposedAndDoesNotDecrementWaitingCount()
-    {
-        // Arrange
-        var drawer = new TwoColumnHotkeyDrawer();
-        HotkeyCaptureState.WaitingCount = 5;
-
-        // Act
         drawer.Dispose();
 
         // Assert
-        Assert.AreEqual(5, HotkeyCaptureState.WaitingCount, "WaitingCount should not be decremented when _waiting is false.");
+        Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
     }
-
-    // NOTE: Testing the scenario where _waiting = true and Dispose decrements WaitingCount
-    // requires setting the private _waiting field to true. This can only be achieved by:
-    // 1. Calling Draw() with a proper ImGui context and simulating user interaction (clicking the "Change" button)
-    // 2. Using reflection (explicitly prohibited by test generation requirements)
-    //
-    // Since ImGui is a static class marked as "Cannot be mocked" and reflection is not allowed,
-    // the _waiting = true disposal path cannot be fully tested with the current constraints.
-    //
-    // In a real-world scenario, this would be tested through integration tests with a live ImGui context,
-    // or the class design could be refactored to make _waiting testable (e.g., protected virtual for test subclassing,
-    // or constructor injection of initial state for testing purposes).
 }

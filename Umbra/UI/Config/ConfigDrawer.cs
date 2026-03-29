@@ -46,6 +46,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     private readonly List<IDrawNode> _nodes;
     private readonly List<IDisposable> _disposables;
     private readonly string _idScope;
+    private readonly IConfigDrawerScope _scope;
     private bool _disposed;
 
     /// <summary>
@@ -74,12 +75,33 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
     public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)
+        : this(config, idScope, new ImGuiConfigDrawerScope(), suppressRootNode)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new <see cref="ConfigDrawer{TConfig}"/> by reflecting over
+    /// <paramref name="config"/> once to build the complete draw tree, using the specified
+    /// draw-scope implementation.
+    /// </summary>
+    /// <param name="config">The configuration instance whose draw tree should be built.</param>
+    /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
+    /// <param name="scope">The scope implementation used to bracket each draw call.</param>
+    /// <param name="suppressRootNode">
+    /// When <see langword="true"/>, suppresses the root-node-attribute-driven root tree wrapper.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="config"/> or <paramref name="scope"/> is <see langword="null"/>.
+    /// </exception>
+    internal ConfigDrawer(TConfig config, string idScope, IConfigDrawerScope scope, bool suppressRootNode = false)
     {
         ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(scope);
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
+        _scope = scope;
         var builder = new ConfigDrawerBuilder();
         builder.Collect(config, typeof(TConfig));
         builder.SortAll();
@@ -98,13 +120,45 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     }
 
     /// <summary>
+    /// Initializes a new <see cref="ConfigDrawer{TConfig}"/> with a pre-built node list.
+    /// </summary>
+    /// <remarks>
+    /// This constructor exists for tests that need to verify draw ordering, disposal behavior, and
+    /// scope cleanup without building a runtime-backed ImGui node tree.
+    /// </remarks>
+    /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
+    /// <param name="nodes">The pre-built nodes to draw each frame.</param>
+    /// <param name="disposables">The disposable resources owned by the drawer.</param>
+    /// <param name="scope">The scope implementation used to bracket each draw call.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="nodes"/>, <paramref name="disposables"/>, or
+    /// <paramref name="scope"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.
+    /// </exception>
+    internal ConfigDrawer(string idScope, List<IDrawNode> nodes, List<IDisposable> disposables, IConfigDrawerScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(nodes);
+        ArgumentNullException.ThrowIfNull(disposables);
+        ArgumentNullException.ThrowIfNull(scope);
+        if (string.IsNullOrWhiteSpace(idScope))
+            throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
+
+        _idScope = idScope;
+        _nodes = nodes;
+        _disposables = disposables;
+        _scope = scope;
+    }
+
+    /// <summary>
     /// Renders the full settings UI for one ImGui frame.
     /// Must be called from within an active ImGui window or child window.
     /// </summary>
     /// <remarks>
     /// <para>
     /// All widget IDs rendered during this call are bracketed by
-    /// <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>, making every
+        /// the configured draw scope's push/pop operations, making every
     /// <c>##key</c> label unique across plugins without any changes to individual controls or
     /// custom drawers. The scope is always popped before this method returns, even if a node
     /// throws while drawing.
@@ -121,7 +175,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
             Logger.Warning($"ConfigDrawer<{typeof(TConfig).Name}>.Draw called on a disposed instance; skipping.");
             return;
         }
-        ImGui.PushID(_idScope);
+        _scope.PushId(_idScope);
         try
         {
             foreach (var node in _nodes)
@@ -129,7 +183,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
         }
         finally
         {
-            ImGui.PopID();
+            _scope.PopId();
         }
     }
 
