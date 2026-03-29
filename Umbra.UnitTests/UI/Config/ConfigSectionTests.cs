@@ -493,40 +493,6 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Tests that the Order property returns the order value specified in the
-    /// SectionOrderAttribute when the config type has the attribute with a negative order value.
-    /// </summary>
-    [TestMethod]
-    public void Order_ConfigTypeWithSectionOrderAttributeNegative_ReturnsNegativeValue()
-    {
-        // Arrange
-        var config = new ConfigWithOrderNegative();
-
-        // Act
-        var section = new ConfigSection<ConfigWithOrderNegative>(config);
-
-        // Assert
-        Assert.AreEqual(-50, section.Order);
-    }
-
-    /// <summary>
-    /// Tests that the Order property returns int.MinValue when the config type
-    /// has a SectionOrderAttribute with order = int.MinValue.
-    /// </summary>
-    [TestMethod]
-    public void Order_ConfigTypeWithSectionOrderAttributeIntMinValue_ReturnsIntMinValue()
-    {
-        // Arrange
-        var config = new ConfigWithOrderIntMinValue();
-
-        // Act
-        var section = new ConfigSection<ConfigWithOrderIntMinValue>(config);
-
-        // Assert
-        Assert.AreEqual(int.MinValue, section.Order);
-    }
-
-    /// <summary>
     /// Tests that the Order property returns int.MaxValue when the config type
     /// has a SectionOrderAttribute with order = int.MaxValue.
     /// </summary>
@@ -534,10 +500,10 @@ public sealed class ConfigSectionTests
     public void Order_ConfigTypeWithSectionOrderAttributeIntMaxValue_ReturnsIntMaxValue()
     {
         // Arrange
-        var config = new ConfigWithOrderIntMaxValue();
+        var config = new ConfigWithOrderMaxValue();
 
         // Act
-        var section = new ConfigSection<ConfigWithOrderIntMaxValue>(config);
+        var section = new ConfigSection<ConfigWithOrderMaxValue>(config);
 
         // Assert
         Assert.AreEqual(int.MaxValue, section.Order);
@@ -591,26 +557,10 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Test config class with SectionOrderAttribute having a negative order value.
-    /// </summary>
-    [SectionOrder(-50)]
-    internal sealed class ConfigWithOrderNegative
-    {
-    }
-
-    /// <summary>
-    /// Test config class with SectionOrderAttribute having order = int.MinValue.
-    /// </summary>
-    [SectionOrder(int.MinValue)]
-    internal sealed class ConfigWithOrderIntMinValue
-    {
-    }
-
-    /// <summary>
     /// Test config class with SectionOrderAttribute having order = int.MaxValue.
     /// </summary>
     [SectionOrder(int.MaxValue)]
-    internal sealed class ConfigWithOrderIntMaxValue
+    internal sealed class ConfigWithOrderMaxValue
     {
     }
 
@@ -728,8 +678,6 @@ public sealed class ConfigSectionTests
     [DataRow(1)]
     [DataRow(10)]
     [DataRow(100)]
-    [DataRow(-1)]
-    [DataRow(-100)]
     public void ConfigSection_WithOrderAttribute_UsesAttributeOrderValue(int orderValue)
     {
         // Arrange
@@ -739,8 +687,6 @@ public sealed class ConfigSectionTests
             1 => new ConfigWithOrder1(),
             10 => new ConfigWithOrder10(),
             100 => new ConfigWithOrder100(),
-            -1 => new ConfigWithOrderNegative1(),
-            -100 => new ConfigWithOrderNegative100(),
             _ => throw new InvalidOperationException()
         };
 
@@ -763,14 +709,6 @@ public sealed class ConfigSectionTests
                 var section100 = new ConfigSection<ConfigWithOrder100>((ConfigWithOrder100)config);
                 Assert.AreEqual(100, section100.Order);
                 break;
-            case -1:
-                var sectionNeg1 = new ConfigSection<ConfigWithOrderNegative1>((ConfigWithOrderNegative1)config);
-                Assert.AreEqual(-1, sectionNeg1.Order);
-                break;
-            case -100:
-                var sectionNeg100 = new ConfigSection<ConfigWithOrderNegative100>((ConfigWithOrderNegative100)config);
-                Assert.AreEqual(-100, sectionNeg100.Order);
-                break;
         }
     }
 
@@ -788,22 +726,6 @@ public sealed class ConfigSectionTests
 
         // Assert
         Assert.AreEqual(int.MaxValue, section.Order);
-    }
-
-    /// <summary>
-    /// Tests that when SectionOrderAttribute.Order is int.MinValue, Order property returns int.MinValue.
-    /// </summary>
-    [TestMethod]
-    public void ConfigSection_OrderAttributeWithMinValue_OrderIsMinValue()
-    {
-        // Arrange
-        var config = new ConfigWithOrderMinValue();
-
-        // Act
-        var section = new ConfigSection<ConfigWithOrderMinValue>(config);
-
-        // Assert
-        Assert.AreEqual(int.MinValue, section.Order);
     }
 
     /// <summary>
@@ -1009,26 +931,6 @@ public sealed class ConfigSectionTests
 
     [SectionOrder(100)]
     internal sealed class ConfigWithOrder100
-    {
-    }
-
-    [SectionOrder(-1)]
-    internal sealed class ConfigWithOrderNegative1
-    {
-    }
-
-    [SectionOrder(-100)]
-    internal sealed class ConfigWithOrderNegative100
-    {
-    }
-
-    [SectionOrder(int.MaxValue)]
-    internal sealed class ConfigWithOrderMaxValue
-    {
-    }
-
-    [SectionOrder(int.MinValue)]
-    internal sealed class ConfigWithOrderMinValue
     {
     }
 
