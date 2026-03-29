@@ -118,7 +118,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
 
         // Assert
         Assert.IsNotNull(result.FullName);
-        Assert.IsTrue(result.FullName.Contains(nameof(TestDrawer1)));
+        Assert.Contains(nameof(TestDrawer1), result.FullName);
     }
 
     /// <summary>
