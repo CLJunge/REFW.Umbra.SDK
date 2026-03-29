@@ -39,6 +39,7 @@ public class EnumControlBuilderTests
         mockParameter.Setup(p => p.ValueType).Returns(typeof(TestEnum));
         mockParameter.Setup(p => p.GetValue()).Returns(TestEnum.First);
         mockParameter.Setup(p => p.Key).Returns("testKey");
+        mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
         var alignGroup = new LabelAlignmentGroup();
         var label = "Test Label";
 
@@ -60,6 +61,7 @@ public class EnumControlBuilderTests
         mockParameter.Setup(p => p.ValueType).Returns(typeof(TestEnum?));
         mockParameter.Setup(p => p.GetValue()).Returns(TestEnum.First);
         mockParameter.Setup(p => p.Key).Returns("testKey");
+        mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
         var alignGroup = new LabelAlignmentGroup();
         var label = "Test Label";
 
@@ -81,6 +83,7 @@ public class EnumControlBuilderTests
         mockParameter.Setup(p => p.ValueType).Returns(typeof(SingleValueEnum));
         mockParameter.Setup(p => p.GetValue()).Returns(SingleValueEnum.OnlyValue);
         mockParameter.Setup(p => p.Key).Returns("testKey");
+        mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
         var alignGroup = new LabelAlignmentGroup();
         var label = "Single Value Label";
 
@@ -105,6 +108,7 @@ public class EnumControlBuilderTests
         // Return an invalid cast enum value that's not in the defined enum
         mockParameter.Setup(p => p.GetValue()).Returns((TestEnum)999);
         mockParameter.Setup(p => p.Key).Returns("testKey");
+        mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
         var alignGroup = new LabelAlignmentGroup();
         var label = "Test Label";
 
