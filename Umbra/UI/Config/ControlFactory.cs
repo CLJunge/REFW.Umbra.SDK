@@ -19,7 +19,7 @@ namespace Umbra.UI.Config;
 /// are registered with the group at build time and measured once on the first draw frame via
 /// <see cref="LabelAlignmentGroup.EnsureSeeded"/>; no per-frame measurement occurs after that.
 /// The widget width defaults to fill-to-right-edge (<c>SetNextItemWidth(-1f)</c>) and can be
-/// fixed with <c>[ControlWidth(px)]</c>.
+/// fixed with <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(px)]</c>).
 /// </remarks>
 internal static class ControlFactory
 {
@@ -121,21 +121,25 @@ internal static class ControlFactory
     ///       <see cref="LabelAlignmentGroup.Register"/>. On the first draw frame,
     ///       <see cref="ControlLayout.Pre"/> triggers <see cref="LabelAlignmentGroup.EnsureSeeded"/>,
     ///       which measures all registered labels in one <see cref="ImGui.CalcTextSize(string)"/>
-    ///       batch and commits the maximum. <c>ImGui.SetCursorPosX</c> then advances the cursor to
+    ///       batch and commits the maximum. <see cref="ImGui.SetCursorPosX(float)"/> then advances
+    ///       the cursor to
     ///       <c>startX + <see cref="LabelAlignmentGroup.LabelWidth"/> +
     ///       <see cref="LabelAlignmentGroup.Margin"/> + spacing</c> before the widget call.
     ///       The cursor is never moved backward: if a label is wider than the committed group
     ///       maximum (possible on frame 1), the control is placed immediately after the label
     ///       with no overlap. After seeding the committed maximum is frozen and never decreases,
-    ///       so hiding parameters via <c>[HideIf]</c> cannot narrow the column.
+    ///       so hiding parameters via
+    ///       <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>)
+    ///       cannot narrow the column.
     ///     </description>
     ///   </item>
     ///   <item>
     ///     <term>Widget width</term>
     ///     <description>
-    ///       <c>[ControlWidth(px)]</c> fixes the widget to the specified number of pixels via
-    ///       <c>SetNextItemWidth</c>. When no <c>[ControlWidth]</c> is present, <c>-1f</c> is
-    ///       used, which fills to the right content-region edge.
+    ///       <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(px)]</c>)
+    ///       fixes the widget to the specified number of pixels via <c>SetNextItemWidth</c>.
+    ///       When no <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth]</c>)
+    ///       is present, <c>-1f</c> is used, which fills to the right content-region edge.
     ///     </description>
     ///   </item>
     /// </list>

@@ -2,8 +2,9 @@ namespace Umbra.Config.Attributes;
 
 /// <summary>
 /// Marks the decorated settings class as the root node of a plugin configuration tree,
-/// causing <see cref="UI.Config.ConfigDrawer{TConfig}"/> to wrap all child categories and parameters
-/// inside a single collapsible top-level <c>ImGui.TreeNode</c>.
+/// causing <see cref="UI.Config.ConfigDrawer{TConfig}"/> to wrap all child categories and
+/// parameters inside a single collapsible top-level
+/// <see cref="Hexa.NET.ImGui.ImGui.TreeNode(string)"/>.
 /// </summary>
 /// <param name="label">
 /// The label displayed on the root tree node header, or <see langword="null"/> to fall back

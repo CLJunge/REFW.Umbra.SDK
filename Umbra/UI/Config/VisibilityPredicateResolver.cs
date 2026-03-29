@@ -53,10 +53,12 @@ internal static class VisibilityPredicateResolver
     /// When an explicit comparison value is present, equality is evaluated with
     /// <see cref="object.Equals(object?, object?)"/> against the boxed runtime value returned by
     /// the accessor. This keeps the comparison path simple and works for the primitive, string,
-    /// enum, and nullable values typically used by config-backed <c>[HideIf]</c> conditions.
+    /// enum, and nullable values typically used by config-backed
+    /// <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>) conditions.
     /// </para>
     /// <para>
-    /// Invalid <c>[HideIf]</c> bindings are warned only once per owner-type/member-name pair.
+    /// Invalid <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>)
+    /// bindings are warned only once per owner-type/member-name pair.
     /// This avoids repeating the same warning every time a panel or drawer is rebuilt while still
     /// surfacing the configuration issue to the developer.
     /// </para>

@@ -10,16 +10,20 @@ namespace Umbra.UI.Config.Drawers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Use this interface with <c>[TwoColumnCustomDrawer&lt;TDrawer&gt;]</c> when you need a fully
-/// custom control but still want the label aligned with all other parameters in the same
-/// category or root scope. For complete layout control (custom label rendering, non-standard
-/// row structure), use <see cref="IParameterDrawer"/> with <c>[CustomDrawer&lt;TDrawer&gt;]</c>
-/// instead.
+/// Use this interface with
+/// <see cref="Umbra.Config.Attributes.UmbraTwoColumnCustomDrawerAttribute{TDrawer}"/>
+/// (<c>[UmbraTwoColumnCustomDrawer&lt;TDrawer&gt;]</c>) when you need a fully custom control but still
+/// want the label aligned with all other parameters in the same category or root scope. For
+/// complete layout control (custom label rendering, non-standard row structure), use
+/// <see cref="IParameterDrawer"/> with
+/// <see cref="Umbra.Config.Attributes.UmbraCustomDrawerAttribute{TDrawer}"/>
+/// (<c>[UmbraCustomDrawer&lt;TDrawer&gt;]</c>) instead.
 /// </para>
 /// <para>
 /// When <see cref="Draw"/> is called, <see cref="ImGui.SetNextItemWidth(float)"/> has already been applied
-/// (honouring any <c>[ControlWidth]</c> on the parameter, or <c>-1f</c> fill-to-right-edge by
-/// default), and the cursor is positioned at the shared column x for the owning scope.
+/// (honouring any <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth]</c>)
+/// on the parameter, or <c>-1f</c> fill-to-right-edge by default), and the cursor is positioned
+/// at the shared column x for the owning scope.
 /// The drawer should call its ImGui widget immediately without any additional layout setup.
 /// Use <c>$"##{parameter.Key}"</c> as the ImGui widget ID to avoid label collisions.
 /// </para>

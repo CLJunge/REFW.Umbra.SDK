@@ -5,8 +5,9 @@ namespace Umbra.Config.Attributes;
 /// <see cref="UI.Config.Drawers.ButtonDrawer"/>.
 /// </summary>
 /// <remarks>
-/// When both <c>[UmbraCustomButtonColors]</c> and <c>[UmbraButtonStyle]</c> are present on the
-/// same parameter, the explicit RGBA values from this attribute take precedence.
+/// When both <see cref="UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors]</c>) and
+/// <see cref="UmbraButtonStyleAttribute"/> (<c>[UmbraButtonStyle]</c>) are present on the same
+/// parameter, the explicit RGBA values from this attribute take precedence.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraCustomButtonColorsAttribute : Attribute

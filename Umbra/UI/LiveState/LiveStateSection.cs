@@ -26,8 +26,9 @@ namespace Umbra.UI.LiveState;
 /// can be used to let the section create and own the state object internally.
 /// </para>
 /// <para>
-/// When <c>treeNodeLabel</c> is supplied, the owning <see cref="PluginPanel"/>
-/// wraps this section's output inside a collapsible <c>ImGui.TreeNode</c> with that label.
+/// When a tree node label is supplied, the owning <see cref="PluginPanel"/>
+/// wraps this section's output inside a collapsible <see cref="ImGui.TreeNode(string)"/> with
+/// that label.
 /// </para>
 /// </remarks>
 /// <typeparam name="T">
@@ -55,18 +56,18 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
     /// <param name="idScope">
     /// Optional stable ImGui widget ID sub-scope for this section. When supplied, this value is
     /// used as both the <see cref="SectionId"/> and the string passed to
-    /// <c>ImGui.PushID</c> around the drawer's output each frame. When omitted,
-    /// <c>typeof(<typeparamref name="T"/>).FullName</c> (falling back to
-    /// <c>typeof(<typeparamref name="T"/>).Name</c> when <c>FullName</c> is
-    /// <see langword="null"/>) is used instead — a stable, namespace-qualified fallback that
-    /// keeps sections of identically named types in different namespaces distinct. Supply an
-    /// explicit value only when two live state sections of the same type exist in the same panel.
+    /// <see cref="ImGui.PushID(string)"/> around the drawer's output each frame. When omitted,
+    /// the runtime type's <see cref="Type.FullName"/> (falling back to <see cref="System.Reflection.MemberInfo.Name"/>
+    /// when <see cref="Type.FullName"/> is <see langword="null"/>) is used instead — a stable,
+    /// namespace-qualified fallback that keeps sections of identically named types in different
+    /// namespaces distinct. Supply an explicit value only when two live state sections of the
+    /// same type exist in the same panel.
     /// Must not be empty or whitespace when supplied.
     /// </param>
     /// <param name="treeNodeLabel">
-    /// Optional label for a collapsible <c>ImGui.TreeNode</c> that wraps this section's
-    /// output within the owning <see cref="PluginPanel"/>. Pass <see langword="null"/>
-    /// (the default) to render the section flat with no tree node.
+    /// Optional label for a collapsible <see cref="ImGui.TreeNode(string)"/> that wraps this
+    /// section's output within the owning <see cref="PluginPanel"/>. Pass
+    /// <see langword="null"/> (the default) to render the section flat with no tree node.
     /// </param>
     /// <param name="treeNodeDefaultOpen">
     /// Whether the section tree node starts expanded. Ignored when
@@ -101,15 +102,15 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Returns the explicit <c>idScope</c> when one was provided at construction, or
-    /// <c>typeof(<typeparamref name="T"/>).FullName</c> — falling back to
-    /// <c>typeof(<typeparamref name="T"/>).Name</c> when <c>FullName</c> is
-    /// <see langword="null"/> — as the stable, namespace-qualified fallback. Using
-    /// <c>FullName</c> ensures that two state types with the same short name but in different
-    /// namespaces produce distinct section IDs even without an explicit <c>idScope</c>. When
-    /// <see cref="IPanelSection.TreeNodeLabel"/> is set, the owning <see cref="PluginPanel"/>
-    /// embeds this value as a <c>##</c> suffix on the tree node label to keep its ImGui
-    /// identity distinct from other sections with the same display label.
+    /// Returns the explicit constructor-supplied ID scope when one was provided, or the runtime
+    /// type's <see cref="Type.FullName"/> — falling back to <see cref="System.Reflection.MemberInfo.Name"/> when
+    /// <see cref="Type.FullName"/> is <see langword="null"/> — as the stable,
+    /// namespace-qualified fallback. Using <see cref="Type.FullName"/> ensures that two state
+    /// types with the same short name but in different namespaces produce distinct section IDs
+    /// even without an explicit custom scope. When <see cref="IPanelSection.TreeNodeLabel"/> is
+    /// set, the owning <see cref="PluginPanel"/> embeds this value as a <c>##</c> suffix on the
+    /// tree node label to keep its ImGui identity distinct from other sections with the same
+    /// display label.
     /// </remarks>
     public string SectionId => _idScope ?? typeof(T).FullName ?? typeof(T).Name;
 

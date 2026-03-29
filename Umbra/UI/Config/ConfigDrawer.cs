@@ -34,7 +34,7 @@ namespace Umbra.UI.Config;
 /// scope derived from its structural settings path, so custom nested-group drawers can safely
 /// reuse local widget labels in different branches. Apply <see cref="UmbraConfigRootNodeAttribute"/>
 /// to the root config class to wrap the entire panel inside a single top-level
-/// <c>ImGui.TreeNode</c>.
+/// <see cref="ImGui.TreeNode(string)"/>.
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">
@@ -103,10 +103,11 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// </summary>
     /// <remarks>
     /// <para>
-    /// All widget IDs rendered during this call are bracketed by <c>ImGui.PushID(idScope)</c> /
-    /// <c>ImGui.PopID()</c>, making every <c>##key</c> label unique across plugins without any
-    /// changes to individual controls or custom drawers. The scope is always popped before this
-    /// method returns, even if a node throws while drawing.
+    /// All widget IDs rendered during this call are bracketed by
+    /// <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>, making every
+    /// <c>##key</c> label unique across plugins without any changes to individual controls or
+    /// custom drawers. The scope is always popped before this method returns, even if a node
+    /// throws while drawing.
     /// </para>
     /// <para>
     /// A no-op when the instance has been disposed; logs a warning rather than throwing so

@@ -12,18 +12,17 @@ namespace Umbra.UI.Config;
 /// When the config type carries <see cref="UmbraConfigRootNodeAttribute"/>, the section
 /// automatically exposes <see cref="IPanelSection.TreeNodeLabel"/> and
 /// <see cref="IPanelSection.TreeNodeDefaultOpen"/> so that the owning
-/// <see cref="PluginPanel"/> renders the tree node. An explicit <c>treeNodeLabel</c>
-/// constructor argument overrides the attribute value. Pass
-/// <c>suppressTreeNode = true</c> to opt out entirely even when the
-/// attribute is present.
+/// <see cref="PluginPanel"/> renders the tree node. An explicit constructor-supplied tree-node
+/// label overrides the attribute value. Pass <c>suppressTreeNode = true</c> to opt out entirely
+/// even when the attribute is present.
 /// </para>
 /// <para>
-/// The <c>idScope</c> defaults to <c>typeof(<typeparamref name="TConfig"/>).FullName</c>,
-/// falling back to <c>typeof(<typeparamref name="TConfig"/>).Name</c> when the full name is
-/// unavailable. <see cref="PluginPanel"/> pushes a top-level ImGui ID scope before calling
-/// <see cref="Draw"/>; this sub-scope nests inside it, preventing widget ID collisions when two
-/// config sections of the same type appear in the same panel. When an explicit <c>idScope</c> is
-/// supplied, it must not be empty or whitespace.
+/// The ID scope defaults to the runtime config type's <see cref="Type.FullName"/>, falling back
+/// to <see cref="System.Reflection.MemberInfo.Name"/> when the full name is unavailable.
+/// <see cref="PluginPanel"/> pushes a top-level ImGui ID scope before calling <see cref="Draw"/>;
+/// this sub-scope nests inside it, preventing widget ID collisions when two config sections of
+/// the same type appear in the same panel. When an explicit constructor-supplied ID scope is used,
+/// it must not be empty or whitespace.
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">

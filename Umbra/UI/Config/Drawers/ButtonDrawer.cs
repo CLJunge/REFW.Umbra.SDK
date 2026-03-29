@@ -19,29 +19,34 @@ namespace Umbra.UI.Config.Drawers;
 /// </para>
 /// <para>
 /// The button label is sourced from the parameter's <c>DisplayName</c> metadata (set via
-/// <c>[UmbraDisplayName("...")]</c>). An optional same-line <c>(?)</c> help marker is shown when
-/// <c>[UmbraDescription("...")]</c> is also present, consistent with other drawers in this namespace.
+/// <see cref="Umbra.Config.Attributes.UmbraDisplayNameAttribute"/> (<c>[UmbraDisplayName("...")]</c>)).
+/// An optional same-line <c>(?)</c> help marker is shown when
+/// <see cref="Umbra.Config.Attributes.UmbraDescriptionAttribute"/> (<c>[UmbraDescription("...")]</c>)
+/// is also present, consistent with other drawers in this namespace.
 /// </para>
 /// <para>
 /// Appearance is controlled by optional attributes on the parameter property:
 /// <list type="bullet">
 ///   <item>
-///     <term><c>[UmbraButtonStyle(ButtonStyle.Danger)]</c></term>
+///     <term><see cref="Umbra.Config.Attributes.UmbraButtonStyleAttribute"/> (<c>[UmbraButtonStyle(ButtonStyle.Danger)]</c>)</term>
 ///     <description>
 ///       Applies a preset color scheme. See <see cref="ButtonStyle"/> for all variants.
-///       Omit for the default ImGui theme colors. Ignored when <c>[UmbraCustomButtonColors]</c>
+///       Omit for the default ImGui theme colors. Ignored when
+///       <see cref="Umbra.Config.Attributes.UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors]</c>)
 ///       is also present.
 ///     </description>
 ///   </item>
 ///   <item>
-///     <term><c>[UmbraCustomButtonColors(r, g, b)]</c> or <c>[UmbraCustomButtonColors(…×12)]</c></term>
+///     <term><see cref="Umbra.Config.Attributes.UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors(r, g, b)]</c> or <c>[UmbraCustomButtonColors(…×12)]</c>)</term>
 ///     <description>
 ///       Applies fully custom RGBA colors for the normal, hovered, and active button states.
-///       Takes priority over <c>[UmbraButtonStyle]</c> when both are specified.
+///       Takes priority over
+///       <see cref="Umbra.Config.Attributes.UmbraButtonStyleAttribute"/> (<c>[UmbraButtonStyle]</c>)
+///       when both are specified.
 ///     </description>
 ///   </item>
 ///   <item>
-///     <term><c>[UmbraControlWidth(-1f)]</c></term>
+///     <term><see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(-1f)]</c>)</term>
 ///     <description>
 ///       <c>0f</c> (default) = auto-size to label, <c>-1f</c> = fill available width,
 ///       positive = fixed pixel width.
@@ -50,8 +55,9 @@ namespace Umbra.UI.Config.Drawers;
 /// </list>
 /// </para>
 /// <para>
-/// Using <see cref="ButtonStyle.Custom"/> without a <c>[UmbraCustomButtonColors]</c> attribute on
-/// the same property is a misconfiguration. The drawer logs a one-time warning and falls back
+/// Using <see cref="ButtonStyle.Custom"/> without
+/// <see cref="Umbra.Config.Attributes.UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors]</c>)
+/// on the same property is a misconfiguration. The drawer logs a one-time warning and falls back
 /// to <see cref="ButtonStyle.Default"/> rather than throwing, so the game process is never
 /// disrupted by a configuration error in a per-frame draw path.
 /// </para>

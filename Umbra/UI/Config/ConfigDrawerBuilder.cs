@@ -260,8 +260,10 @@ internal sealed class ConfigDrawerBuilder
     /// </summary>
     /// <remarks>
     /// Call this once after <see cref="Collect"/> has finished walking the entire config tree.
-    /// Nodes without an explicit <c>[ParameterOrder]</c> attribute receive an implicit key of
-    /// <see cref="int.MaxValue"/>, placing them after all explicitly ordered entries while
+    /// Nodes without an explicit
+    /// <see cref="Umbra.Config.Attributes.UmbraParameterOrderAttribute"/> (<c>[UmbraParameterOrder]</c>)
+    /// receive an implicit key of <see cref="int.MaxValue"/>, placing them after all explicitly
+    /// ordered entries while
     /// preserving original declaration order among equals. The root <see cref="Nodes"/> list and
     /// every local <see cref="CategoryNode.Children"/> list are sorted independently so ordering
     /// remains local to each group scope.
