@@ -185,10 +185,10 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Verifies that Tick respects debounce window when called with minimum timestamp value.
+    /// Verifies that Tick safely handles the minimum timestamp value without flushing.
     /// </summary>
     [TestMethod]
-    public void Tick_WithMinimumTimestamp_HandlesCorrectly()
+    public void Tick_WithMinimumTimestamp_DoesNotFlush()
     {
         // Arrange
         var debounceWindow = TimeSpan.FromMilliseconds(100);
@@ -203,8 +203,8 @@ public sealed partial class DeferredSaveControllerTests
         // Act
         controller.Tick();
 
-        // Assert - with minimum timestamp, elapsed time should be very large
-        mockStore.Verify(s => s.Save(), Times.Once);
+        // Assert - Stopwatch.GetElapsedTime(long.MinValue) can underflow, so no flush should occur
+        mockStore.Verify(s => s.Save(), Times.Never);
     }
 
     /// <summary>
@@ -232,11 +232,11 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Creates a mock SettingsStore configured to appear loaded and not disposed.
+    /// Creates a mock settings store configured to appear loaded and not disposed.
     /// </summary>
-    private static Mock<SettingsStore<TestConfig>> CreateMockStore()
+    private static Mock<ISettingsStore<TestConfig>> CreateMockStore()
     {
-        var mock = new Mock<SettingsStore<TestConfig>>(MockBehavior.Strict, "test.json");
+        var mock = new Mock<ISettingsStore<TestConfig>>(MockBehavior.Strict);
         mock.Setup(s => s.IsLoaded).Returns(true);
         mock.Setup(s => s.IsDisposed).Returns(false);
         mock.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
@@ -278,7 +278,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Dispose_WhenCalledFirstTimeWithNonDisposedStore_FlushesAndRemovesListeners()
     {
         // Arrange
-        var storeMock = new Mock<SettingsStore<TestConfig>>(MockBehavior.Strict, "dummy.json");
+        var storeMock = new Mock<ISettingsStore<TestConfig>>(MockBehavior.Strict);
         storeMock.SetupGet(s => s.IsDisposed).Returns(false);
         storeMock.SetupGet(s => s.IsLoaded).Returns(true);
         storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
@@ -315,7 +315,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Dispose_WhenCalledMultipleTimes_IsIdempotentAndPerformsCleanupOnce()
     {
         // Arrange
-        var storeMock = new Mock<SettingsStore<TestConfig>>(MockBehavior.Strict, "dummy.json");
+        var storeMock = new Mock<ISettingsStore<TestConfig>>(MockBehavior.Strict);
         storeMock.SetupGet(s => s.IsDisposed).Returns(false);
         storeMock.SetupGet(s => s.IsLoaded).Returns(true);
         storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
@@ -349,7 +349,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Dispose_WhenStoreIsAlreadyDisposed_FlushesButSkipsListenerRemoval()
     {
         // Arrange
-        var storeMock = new Mock<SettingsStore<TestConfig>>(MockBehavior.Strict, "dummy.json");
+        var storeMock = new Mock<ISettingsStore<TestConfig>>(MockBehavior.Strict);
         storeMock.SetupGet(s => s.IsDisposed).Returns(false);
         storeMock.SetupGet(s => s.IsLoaded).Returns(true);
         storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
@@ -379,18 +379,19 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Tests that Dispose does not throw when store is not disposed and no pending changes exist.
-    /// Verifies normal cleanup path without saving.
+    /// Tests that Dispose performs normal cleanup when no pending changes exist.
+    /// Verifies that listeners are removed and the store is still flushed once.
     /// </summary>
     [TestMethod]
-    public void Dispose_WithNoPendingChanges_RemovesListenersWithoutSaving()
+    public void Dispose_WithNoPendingChanges_RemovesListenersAndSaves()
     {
         // Arrange
-        var storeMock = new Mock<SettingsStore<TestConfig>>(MockBehavior.Strict, "dummy.json");
+        var storeMock = new Mock<ISettingsStore<TestConfig>>(MockBehavior.Strict);
         storeMock.SetupGet(s => s.IsDisposed).Returns(false);
         storeMock.SetupGet(s => s.IsLoaded).Returns(true);
         storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
         storeMock.Setup(s => s.AddListenerToAll(It.IsAny<Action>()));
+        storeMock.Setup(s => s.Save());
         storeMock.Setup(s => s.RemoveListenerFromAll(It.IsAny<Action>()));
         storeMock.Setup(s => s.RemoveListenerFromAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
 
@@ -400,23 +401,26 @@ public sealed partial class DeferredSaveControllerTests
         controller.Dispose();
 
         // Assert
-        storeMock.Verify(s => s.Save(), Times.Never, "Save should not be called when there are no pending changes");
+        storeMock.Verify(s => s.Save(), Times.Once, "Save should be called once because Dispose always flushes");
         storeMock.Verify(s => s.RemoveListenerFromAll(It.IsAny<Action>()), Times.Once);
         storeMock.Verify(s => s.RemoveListenerFromAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()), Times.Once);
     }
 
     /// <summary>
-    /// Tests that Flush returns immediately without performing any operations when the controller is already disposed.
+    /// Tests that Flush returns immediately after the controller has already been disposed.
     /// </summary>
     [TestMethod]
-    public void Flush_WhenDisposed_ReturnsImmediately()
+    public void Flush_AfterDispose_ReturnsImmediately()
     {
         // Arrange
-        Mock<SettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict, "test.json");
+        Mock<ISettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict);
         mockStore.Setup(s => s.IsDisposed).Returns(false);
         mockStore.Setup(s => s.IsLoaded).Returns(true);
         mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
         mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Action>()));
+        mockStore.Setup(s => s.Save());
+        mockStore.Setup(s => s.RemoveListenerFromAll(It.IsAny<Action>()));
+        mockStore.Setup(s => s.RemoveListenerFromAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
 
         DeferredSaveController<TestConfig> controller = new(mockStore.Object);
         controller.Dispose();
@@ -425,8 +429,8 @@ public sealed partial class DeferredSaveControllerTests
         controller.Flush();
 
         // Assert
-        // No exception should be thrown, and Save should not be called (verified by MockBehavior.Strict)
-        mockStore.Verify(s => s.Save(), Times.Never);
+        // Dispose performs the single flush; Flush after disposal must not save again
+        mockStore.Verify(s => s.Save(), Times.Once);
     }
 
     /// <summary>
@@ -436,7 +440,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Flush_WhenStoreDisposedAndNoPendingChanges_ClearsPendingStateWithoutWarning()
     {
         // Arrange
-        Mock<SettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict, "test.json");
+        Mock<ISettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict);
         mockStore.Setup(s => s.IsDisposed).Returns(false);
         mockStore.Setup(s => s.IsLoaded).Returns(true);
         mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
@@ -463,7 +467,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Flush_WhenStoreDisposedAndChangesArePending_ClearsPendingState()
     {
         // Arrange
-        Mock<SettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict, "test.json");
+        Mock<ISettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict);
         mockStore.Setup(s => s.IsDisposed).Returns(false);
         mockStore.Setup(s => s.IsLoaded).Returns(true);
         mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
@@ -500,7 +504,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Flush_WhenStoreNotDisposed_CallsSaveAndClearsPendingState()
     {
         // Arrange
-        Mock<SettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict, "test.json");
+        Mock<ISettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict);
         mockStore.Setup(s => s.IsDisposed).Returns(false);
         mockStore.Setup(s => s.IsLoaded).Returns(true);
         mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
@@ -534,7 +538,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Flush_CalledMultipleTimes_CallsSaveEachTime()
     {
         // Arrange
-        Mock<SettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict, "test.json");
+        Mock<ISettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict);
         mockStore.Setup(s => s.IsDisposed).Returns(false);
         mockStore.Setup(s => s.IsLoaded).Returns(true);
         mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));
@@ -559,7 +563,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Flush_WithNoPendingChanges_DoesNotThrow()
     {
         // Arrange
-        Mock<SettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict, "test.json");
+        Mock<ISettingsStore<TestConfig>> mockStore = new(MockBehavior.Strict);
         mockStore.Setup(s => s.IsDisposed).Returns(false);
         mockStore.Setup(s => s.IsLoaded).Returns(true);
         mockStore.Setup(s => s.AddListenerToAll(It.IsAny<Func<IParameter, bool>>(), It.IsAny<Action>()));

@@ -82,7 +82,7 @@ internal static class ParameterMetadataReader
     private static string FallbackFloatFormat(double? step)
     {
         if (step is null or 0) return "%.2f";
-        var s = step.Value.ToString("G");
+        var s = step.Value.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
         var dot = s.IndexOf('.');
         return dot < 0 ? "%.0f" : $"%.{s.Length - dot - 1}f";
     }

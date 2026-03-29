@@ -4,7 +4,7 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Drives automatic, change-triggered persistence for a <see cref="SettingsStore{TConfig}"/>.
+/// Drives automatic, change-triggered persistence for an <see cref="ISettingsStore{TConfig}"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -20,7 +20,7 @@ namespace Umbra.Config;
 /// <para>
 /// <strong>Ordering requirement</strong><br/>
 /// Construct <see cref="DeferredSaveController{TConfig}"/> <em>after</em> calling
-/// <see cref="SettingsStore{TConfig}.Load"/>. The constructor validates this requirement and
+/// <see cref="ISettingsStore{TConfig}.Load"/>. The constructor validates this requirement and
 /// throws <see cref="InvalidOperationException"/> when the supplied store is not yet loaded.
 /// </para>
 /// <para>
@@ -35,7 +35,7 @@ namespace Umbra.Config;
 /// listeners, so pending changes are not lost if the plugin unloads while a debounce is active.
 /// Call <see cref="Flush"/> explicitly only when you need the save to happen earlier in the
 /// unload sequence or before some other operation. The preferred order is still to dispose this
-/// instance <em>before</em> or <em>alongside</em> the owning <see cref="SettingsStore{TConfig}"/>
+/// instance <em>before</em> or <em>alongside</em> the owning <see cref="ISettingsStore{TConfig}"/>
 /// so any pending debounced write can still be persisted. If the store has already been
 /// disposed, controller disposal becomes a safe no-op cleanup path and skips listener removal
 /// because the store has already torn those subscriptions down.
@@ -61,7 +61,7 @@ namespace Umbra.Config;
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">
-/// The configuration class type, matching the wrapped <see cref="SettingsStore{TConfig}"/>.
+/// The configuration class type, matching the wrapped <see cref="ISettingsStore{TConfig}"/>.
 /// </typeparam>
 public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig : class, new()
 {
@@ -73,7 +73,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// </remarks>
     public TimeSpan DebounceWindow { get; }
 
-    private readonly SettingsStore<TConfig> _store;
+    private readonly ISettingsStore<TConfig> _store;
 
     // Stored as fields so the exact delegate instances can be passed to RemoveListenerFromAll.
     private readonly Action _onAnyChanged;
@@ -90,7 +90,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// </summary>
     /// <param name="store">
     /// The settings store to drive saves for. <strong>Must have already been loaded via
-    /// <see cref="SettingsStore{TConfig}.Load"/> before this constructor is called.</strong>
+    /// <see cref="ISettingsStore{TConfig}.Load"/> before this constructor is called.</strong>
     /// </param>
     /// <param name="debounceWindow">
     /// How long to wait after the last numeric parameter change before writing to disk.
@@ -101,14 +101,14 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when <paramref name="store"/> has already been disposed.</exception>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="store"/> has not yet been loaded via <see cref="SettingsStore{TConfig}.Load"/>.
+    /// Thrown when <paramref name="store"/> has not yet been loaded via <see cref="ISettingsStore{TConfig}.Load"/>.
     /// </exception>
-    public DeferredSaveController(SettingsStore<TConfig> store, TimeSpan? debounceWindow = null)
+    public DeferredSaveController(ISettingsStore<TConfig> store, TimeSpan? debounceWindow = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         if (store.IsDisposed)
             throw new ObjectDisposedException(nameof(store),
-                $"DeferredSaveController<{typeof(TConfig).Name}> cannot attach to a disposed SettingsStore.");
+                $"DeferredSaveController<{typeof(TConfig).Name}> cannot attach to a disposed settings store.");
         if (!store.IsLoaded)
             throw new InvalidOperationException(
                 $"DeferredSaveController<{typeof(TConfig).Name}> requires a SettingsStore that has already completed Load().");
@@ -175,7 +175,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// debounce window or the eventual <see cref="Dispose"/> call.
     /// </para>
     /// <para>
-    /// If the wrapped <see cref="SettingsStore{TConfig}"/> has already been disposed, any pending
+    /// If the wrapped <see cref="ISettingsStore{TConfig}"/> has already been disposed, any pending
     /// save is discarded because there is no live store left to persist through.
     /// </para>
     /// <para>
@@ -189,7 +189,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         {
             if (_anyPending)
                 Logger.Warning(
-                    $"DeferredSaveController<{typeof(TConfig).Name}>: dropping pending changes because the SettingsStore was already disposed.");
+                    $"DeferredSaveController<{typeof(TConfig).Name}>: dropping pending changes because the settings store was already disposed.");
             ClearPendingState();
             return;
         }
@@ -211,7 +211,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// </para>
     /// <para>
     /// The preferred unload order remains to dispose this instance before or alongside the owning
-    /// <see cref="SettingsStore{TConfig}"/> so pending debounced writes can still be flushed. If the
+    /// <see cref="ISettingsStore{TConfig}"/> so pending debounced writes can still be flushed. If the
     /// store has already been disposed, this method does not throw; it skips listener removal because
     /// the store has already removed all registered subscriptions during its own disposal.
     /// </para>

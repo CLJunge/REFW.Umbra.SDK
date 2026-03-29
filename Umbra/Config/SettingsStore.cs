@@ -10,7 +10,7 @@ namespace Umbra.Config;
 /// The configuration class type. Must have a public parameterless constructor.
 /// </typeparam>
 [DebuggerDisplay("SettingsStore for {typeof(TConfig).Name}, Parameters: {_parameters.Count}")]
-public class SettingsStore<TConfig> : IDisposable
+public class SettingsStore<TConfig> : ISettingsStore<TConfig>
     where TConfig : class, new()
 {
     private sealed class ListenerCleanupRegistration(
