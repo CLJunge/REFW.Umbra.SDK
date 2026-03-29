@@ -141,9 +141,9 @@ public class PluginPanelTreeNodeLabelsTests
     }
 
     /// <summary>
-    /// Tests that Sanitize preserves three consecutive hashes when they don't form a separator pair at the start.
+    /// Tests that Sanitize removes everything from the first ## separator onwards.
     /// Input: "Label###ID"
-    /// Expected: "Label#"
+    /// Expected: "Label"
     /// </summary>
     [TestMethod]
     public void Sanitize_ThreeConsecutiveHashes_RemovesFromFirstSeparator()
@@ -155,7 +155,7 @@ public class PluginPanelTreeNodeLabelsTests
         var result = PluginPanelTreeNodeLabels.Sanitize(input);
 
         // Assert
-        Assert.AreEqual("Label#", result);
+        Assert.AreEqual("Label", result);
     }
 
     /// <summary>
