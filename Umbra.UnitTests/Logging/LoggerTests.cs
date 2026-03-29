@@ -1,10 +1,4 @@
-﻿using System;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra.Logging;
 
 namespace Umbra.Logging.UnitTests;
 
@@ -16,6 +10,11 @@ namespace Umbra.Logging.UnitTests;
 public sealed class LoggerTests
 {
     /// <summary>
+    /// Gets or sets the test context which provides information about and functionality for the current test run.
+    /// </summary>
+    public TestContext? TestContext { get; set; }
+
+    /// <summary>
     /// Tests that Error with format and args returns immediately without throwing when logging is disabled via Enabled property.
     /// </summary>
     [TestMethod]
@@ -23,8 +22,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = false;
-        string format = "Test message {0}";
-        object[] args = new object[] { 42 };
+        var format = "Test message {0}";
+        var args = new object[] { 42 };
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -41,8 +40,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Test message {0}";
-        object[] args = new object[] { 42 };
+        var format = "Test message {0}";
+        var args = new object[] { 42 };
 
         // Act & Assert - should not throw
         using (Logger.Suppress())
@@ -80,8 +79,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Message: {0}, {1}";
-        object[] args = new object[] { null!, "test" };
+        var format = "Message: {0}, {1}";
+        var args = new object[] { null!, "test" };
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -95,8 +94,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Message: {0}";
-        object[] args = new object[] { "first", "second", "third" };
+        var format = "Message: {0}";
+        var args = new object[] { "first", "second", "third" };
 
         // Act & Assert - should not throw (extra args are ignored by string.Format)
         Logger.Error(format, args);
@@ -111,7 +110,7 @@ public sealed class LoggerTests
         // Arrange
         Logger.Enabled = true;
         string format = null!;
-        object[] args = new object[] { 42 };
+        var args = new object[] { 42 };
 
         // Act & Assert - should not throw (catches ArgumentNullException)
         Logger.Error(format, args);
@@ -145,7 +144,7 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Message: {0}";
+        var format = "Message: {0}";
         object[]? args = null;
 
         // Act & Assert - should not throw (catches exception from string.Format)
@@ -160,8 +159,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Message: {0}";
-        object[] args = Array.Empty<object>();
+        var format = "Message: {0}";
+        var args = Array.Empty<object>();
 
         // Act & Assert - should not throw (catches FormatException)
         Logger.Error(format, args);
@@ -175,8 +174,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = new string('x', 10000) + " {0}";
-        object[] args = new object[] { "test" };
+        var format = new string('x', 10000) + " {0}";
+        var args = new object[] { "test" };
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -190,8 +189,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Message: \n\r\t\0 {0}";
-        object[] args = new object[] { "test" };
+        var format = "Message: \n\r\t\0 {0}";
+        var args = new object[] { "test" };
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -205,8 +204,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Test message {0}";
-        object[] args = new object[] { 42 };
+        var format = "Test message {0}";
+        var args = new object[] { 42 };
 
         // Act & Assert - should not throw
         using (Logger.Suppress())
@@ -226,8 +225,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Test message {0}";
-        object[] args = new object[] { 42 };
+        var format = "Test message {0}";
+        var args = new object[] { 42 };
 
         using (Logger.Suppress())
         {
@@ -246,8 +245,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Message: {{escaped}} {0}";
-        object[] args = new object[] { "test" };
+        var format = "Message: {{escaped}} {0}";
+        var args = new object[] { "test" };
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -261,8 +260,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Message: {{escaped}}";
-        object[] args = Array.Empty<object>();
+        var format = "Message: {{escaped}}";
+        var args = Array.Empty<object>();
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -276,8 +275,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Int: {0}, Double: {1:F2}, Hex: {2:X}";
-        object[] args = new object[] { 42, 3.14159, 255 };
+        var format = "Int: {0}, Double: {1:F2}, Hex: {2:X}";
+        var args = new object[] { 42, 3.14159, 255 };
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -291,8 +290,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = string.Empty;
-        object[] args = Array.Empty<object>();
+        var format = string.Empty;
+        var args = Array.Empty<object>();
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -306,8 +305,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "   \t\n  ";
-        object[] args = Array.Empty<object>();
+        var format = "   \t\n  ";
+        var args = Array.Empty<object>();
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -321,8 +320,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "byte: {0}, short: {1}, int: {2}, long: {3}, float: {4}, double: {5}, bool: {6}, char: {7}";
-        object[] args = new object[] { (byte)255, (short)32767, int.MaxValue, long.MaxValue, float.MaxValue, double.MaxValue, true, 'A' };
+        var format = "byte: {0}, short: {1}, int: {2}, long: {3}, float: {4}, double: {5}, bool: {6}, char: {7}";
+        var args = new object[] { (byte)255, (short)32767, int.MaxValue, long.MaxValue, float.MaxValue, double.MaxValue, true, 'A' };
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -336,8 +335,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.Enabled = true;
-        string format = "Min: {0}, Max: {1}, Zero: {2}, NaN: {3}, PosInf: {4}, NegInf: {5}";
-        object[] args = new object[] { int.MinValue, int.MaxValue, 0, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
+        var format = "Min: {0}, Max: {1}, Zero: {2}, NaN: {3}, PosInf: {4}, NegInf: {5}";
+        var args = new object[] { int.MinValue, int.MaxValue, 0, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
 
         // Act & Assert - should not throw
         Logger.Error(format, args);
@@ -350,8 +349,8 @@ public sealed class LoggerTests
     public void Error_WhenEnabledToggledBeforeCall_RespectsCurrentState()
     {
         // Arrange
-        string format = "Test {0}";
-        object[] args = new object[] { 42 };
+        var format = "Test {0}";
+        var args = new object[] { 42 };
 
         // Act & Assert - disabled
         Logger.Enabled = false;
@@ -377,8 +376,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.DisableAll();
-        string format = "Test {0}";
-        object[] args = new object[] { "value" };
+        var format = "Test {0}";
+        var args = new object[] { "value" };
 
         // Act & Assert
         Logger.Info(format, args);
@@ -398,8 +397,8 @@ public sealed class LoggerTests
         // Arrange
         Logger.EnableAll();
         using var suppression = Logger.Suppress();
-        string format = "Test {0}";
-        object[] args = new object[] { "value" };
+        var format = "Test {0}";
+        var args = new object[] { "value" };
 
         // Act & Assert
         Logger.Info(format, args);
@@ -419,7 +418,7 @@ public sealed class LoggerTests
         // Arrange
         Logger.EnableAll();
         string? format = null;
-        object[] args = new object[] { "value" };
+        var args = new object[] { "value" };
 
         // Act & Assert
         Logger.Info(format!, args);
@@ -447,7 +446,7 @@ public sealed class LoggerTests
     [DataRow("{0}", new object[] { 123 }, "Numeric argument")]
     [DataRow("{0}", new object[] { 3.14 }, "Double argument")]
     [DataRow("{0}", new object[] { true }, "Boolean argument")]
-    [DataRow("{0}", new object[] { (object?)null }, "Null argument")]
+    [DataRow("{0}", new object[] { null! }, "Null argument")]
     [DataRow("Test {0}", new object[] { "a", "b" }, "More args than placeholders")]
     public void Info_WithVariousFormatAndArgs_DoesNotThrow(string format, object[] args, string description)
     {
@@ -501,7 +500,7 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string format = "Test {0}";
+        var format = "Test {0}";
         object[]? args = null;
 
         // Act & Assert
@@ -522,8 +521,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string format = "Test {0}";
-        object[] args = Array.Empty<object>();
+        var format = "Test {0}";
+        var args = Array.Empty<object>();
 
         // Act & Assert
         Logger.Info(format, args);
@@ -542,8 +541,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string format = "Test {0}, {1}, {2}";
-        object[] args = new object?[] { null, null, null };
+        var format = "Test {0}, {1}, {2}";
+        var args = new object?[] { null, null, null };
 
         // Act & Assert
         Logger.Info(format, args!);
@@ -562,8 +561,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string format = new string('A', 10000) + " {0}";
-        object[] args = new object[] { "value" };
+        var format = new string('A', 10000) + " {0}";
+        var args = new object[] { "value" };
 
         // Act & Assert
         Logger.Info(format, args);
@@ -607,8 +606,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string format = "Int: {0}, Double: {1}, Bool: {2}, String: {3}, DateTime: {4}, Guid: {5}, Enum: {6}";
-        object[] args = new object[]
+        var format = "Int: {0}, Double: {1}, Bool: {2}, String: {3}, DateTime: {4}, Guid: {5}, Enum: {6}";
+        var args = new object[]
         {
             42,
             3.14159,
@@ -642,8 +641,8 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        object[] args = new object[arraySize];
-        for (int i = 0; i < arraySize; i++)
+        var args = new object[arraySize];
+        for (var i = 0; i < arraySize; i++)
         {
             args[i] = $"arg{i}";
         }
@@ -666,8 +665,8 @@ public sealed class LoggerTests
         // Arrange
         Logger.DisableAll();
         using var suppression = Logger.Suppress();
-        string format = "Test {0}";
-        object[] args = new object[] { "value" };
+        var format = "Test {0}";
+        var args = new object[] { "value" };
 
         // Act & Assert
         Logger.Info(format, args);
@@ -687,8 +686,8 @@ public sealed class LoggerTests
         // Arrange
         Logger.DisableAll();
         Logger.EnableAll();
-        string format = "Test {0}";
-        object[] args = new object[] { "value" };
+        var format = "Test {0}";
+        var args = new object[] { "value" };
 
         // Act & Assert
         Logger.Info(format, args);
@@ -709,8 +708,8 @@ public sealed class LoggerTests
         Logger.EnableAll();
         var suppression = Logger.Suppress();
         suppression.Dispose();
-        string format = "Test {0}";
-        object[] args = new object[] { "value" };
+        var format = "Test {0}";
+        var args = new object[] { "value" };
 
         // Act & Assert
         Logger.Info(format, args);
@@ -729,7 +728,7 @@ public sealed class LoggerTests
         EnsureNoActiveSuppression();
 
         // Act
-        bool result = Logger.IsEnabled;
+        var result = Logger.IsEnabled;
 
         // Assert
         Assert.IsTrue(result);
@@ -751,7 +750,7 @@ public sealed class LoggerTests
         EnsureNoActiveSuppression();
 
         // Act
-        bool result = Logger.IsEnabled;
+        var result = Logger.IsEnabled;
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -770,10 +769,10 @@ public sealed class LoggerTests
         // Arrange
         Logger.Enabled = enabled;
         EnsureNoActiveSuppression();
-        using IDisposable suppression = Logger.Suppress();
+        using var suppression = Logger.Suppress();
 
         // Act
-        bool result = Logger.IsEnabled;
+        var result = Logger.IsEnabled;
 
         // Assert
         Assert.IsFalse(result);
@@ -789,11 +788,11 @@ public sealed class LoggerTests
         // Arrange
         Logger.Enabled = true;
         EnsureNoActiveSuppression();
-        IDisposable suppression = Logger.Suppress();
+        var suppression = Logger.Suppress();
 
         // Act
         suppression.Dispose();
-        bool result = Logger.IsEnabled;
+        var result = Logger.IsEnabled;
 
         // Assert
         Assert.IsTrue(result);
@@ -809,11 +808,11 @@ public sealed class LoggerTests
         // Arrange
         Logger.Enabled = false;
         EnsureNoActiveSuppression();
-        IDisposable suppression = Logger.Suppress();
+        var suppression = Logger.Suppress();
 
         // Act
         suppression.Dispose();
-        bool result = Logger.IsEnabled;
+        var result = Logger.IsEnabled;
 
         // Assert
         Assert.IsFalse(result);
@@ -829,12 +828,12 @@ public sealed class LoggerTests
         // Arrange
         Logger.Enabled = true;
         EnsureNoActiveSuppression();
-        using IDisposable suppression1 = Logger.Suppress();
-        using IDisposable suppression2 = Logger.Suppress();
-        using IDisposable suppression3 = Logger.Suppress();
+        using var suppression1 = Logger.Suppress();
+        using var suppression2 = Logger.Suppress();
+        using var suppression3 = Logger.Suppress();
 
         // Act
-        bool result = Logger.IsEnabled;
+        var result = Logger.IsEnabled;
 
         // Assert
         Assert.IsFalse(result);
@@ -850,9 +849,9 @@ public sealed class LoggerTests
         // Arrange
         Logger.Enabled = true;
         EnsureNoActiveSuppression();
-        IDisposable suppression1 = Logger.Suppress();
-        IDisposable suppression2 = Logger.Suppress();
-        IDisposable suppression3 = Logger.Suppress();
+        var suppression1 = Logger.Suppress();
+        var suppression2 = Logger.Suppress();
+        var suppression3 = Logger.Suppress();
 
         // Act & Assert - still suppressed after disposing one
         suppression3.Dispose();
@@ -900,7 +899,7 @@ public sealed class LoggerTests
         // Arrange
         Logger.Enabled = true;
         EnsureNoActiveSuppression();
-        using IDisposable suppression = Logger.Suppress();
+        using var suppression = Logger.Suppress();
 
         // Act & Assert - change Enabled while suppressed
         Logger.Enabled = false;
@@ -921,7 +920,7 @@ public sealed class LoggerTests
         // Arrange
         Logger.Enabled = true;
         EnsureNoActiveSuppression();
-        IDisposable suppression = Logger.Suppress();
+        var suppression = Logger.Suppress();
 
         // Act - toggle Enabled while suppressed, then dispose
         Logger.Enabled = false;
@@ -938,56 +937,6 @@ public sealed class LoggerTests
     }
 
     /// <summary>
-    /// Tests that disposing a suppression scope multiple times is idempotent and does not
-    /// incorrectly affect the suppression depth, ensuring <see cref="Logger.IsEnabled"/>
-    /// returns the correct value.
-    /// </summary>
-    [TestMethod]
-    public void IsEnabled_AfterMultipleDisposesOfSameScope_RemainsCorrect()
-    {
-        // Arrange
-        Logger.Enabled = true;
-        EnsureNoActiveSuppression();
-        IDisposable suppression = Logger.Suppress();
-
-        // Act - dispose multiple times
-        suppression.Dispose();
-        suppression.Dispose();
-        suppression.Dispose();
-
-        // Assert - should be true (only decremented once)
-        Assert.IsTrue(Logger.IsEnabled);
-    }
-
-    /// <summary>
-    /// Tests that <see cref="Logger.IsEnabled"/> correctly handles disposal of nested
-    /// suppression scopes in non-LIFO order.
-    /// </summary>
-    [TestMethod]
-    public void IsEnabled_WithNestedSuppressionsDisposedOutOfOrder_RemainsCorrect()
-    {
-        // Arrange
-        Logger.Enabled = true;
-        EnsureNoActiveSuppression();
-        IDisposable suppression1 = Logger.Suppress();
-        IDisposable suppression2 = Logger.Suppress();
-        IDisposable suppression3 = Logger.Suppress();
-
-        // Act - dispose in non-LIFO order
-        suppression1.Dispose(); // dispose first (outermost)
-        Assert.IsFalse(Logger.IsEnabled); // still 2 active
-
-        suppression3.Dispose(); // dispose third (innermost)
-        Assert.IsFalse(Logger.IsEnabled); // still 1 active
-
-        suppression2.Dispose(); // dispose second (middle)
-        bool result = Logger.IsEnabled;
-
-        // Assert - all disposed, should be true
-        Assert.IsTrue(result);
-    }
-
-    /// <summary>
     /// Tests that <see cref="Logger.IsEnabled"/> returns false when
     /// <see cref="Logger.DisableAll"/> is called.
     /// </summary>
@@ -999,7 +948,7 @@ public sealed class LoggerTests
 
         // Act
         Logger.DisableAll();
-        bool result = Logger.IsEnabled;
+        var result = Logger.IsEnabled;
 
         // Assert
         Assert.IsFalse(result);
@@ -1021,7 +970,7 @@ public sealed class LoggerTests
 
         // Act
         Logger.EnableAll();
-        bool result = Logger.IsEnabled;
+        var result = Logger.IsEnabled;
 
         // Assert
         Assert.IsTrue(result);
@@ -1036,8 +985,8 @@ public sealed class LoggerTests
         // Create and dispose suppressions until IsEnabled with Enabled=true returns true,
         // indicating suppression depth is back to 0
         Logger.Enabled = true;
-        int maxAttempts = 100;
-        int attempts = 0;
+        var maxAttempts = 100;
+        var attempts = 0;
 
         while (!Logger.IsEnabled && attempts < maxAttempts)
         {
@@ -1051,15 +1000,6 @@ public sealed class LoggerTests
         {
             Assert.Fail("Unable to reset Logger suppression state. Tests may have leaked suppression scopes.");
         }
-    }
-
-    /// <summary>
-    /// Ensures logger is enabled before each test to provide a clean state.
-    /// </summary>
-    [TestInitialize]
-    public void TestInitialize()
-    {
-        Logger.EnableAll();
     }
 
     /// <summary>
@@ -1305,7 +1245,7 @@ public sealed class LoggerTests
     /// Verifies that <see cref="Logger.Exception(Exception, string)"/> handles various exception
     /// types without throwing.
     /// </summary>
-    /// <param name="exceptionFactory">Factory function to create the exception.</param>
+    /// <param name="exceptionTypeName">Factory function to create the exception.</param>
     /// <param name="scenario">Description of the exception type scenario.</param>
     /// <remarks>
     /// Tests different exception types to ensure the logging bridge correctly formats the type
@@ -1322,9 +1262,9 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        Exception exception = exceptionTypeName switch
+        var exception = exceptionTypeName switch
         {
-            "ArgumentNullException" => new ArgumentNullException("param", "Parameter was null"),
+            "ArgumentNullException" => new ArgumentNullException(nameof(exceptionTypeName), "Parameter was null"),
             "InvalidOperationException" => new InvalidOperationException("Invalid operation"),
             "NotSupportedException" => new NotSupportedException("Not supported"),
             "DivideByZeroException" => new DivideByZeroException("Division by zero"),
@@ -1363,7 +1303,7 @@ public sealed class LoggerTests
     /// </summary>
     private sealed class CustomExceptionWithNullMessage : Exception
     {
-        public override string? Message => null;
+        public override string Message => null!;
     }
 
     /// <summary>
@@ -1373,11 +1313,11 @@ public sealed class LoggerTests
     public void Info_WhenEnabledWithNormalMessage_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
-            string message = "Test info message";
+            var message = "Test info message";
 
             // Act & Assert
             Logger.Info(message);
@@ -1395,11 +1335,11 @@ public sealed class LoggerTests
     public void Info_WhenDisabled_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = false;
-            string message = "Test message that should not be logged";
+            var message = "Test message that should not be logged";
 
             // Act & Assert
             Logger.Info(message);
@@ -1417,11 +1357,11 @@ public sealed class LoggerTests
     public void Info_WhenSuppressed_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
-            string message = "Test message during suppression";
+            var message = "Test message during suppression";
 
             // Act & Assert
             using (Logger.Suppress())
@@ -1442,11 +1382,11 @@ public sealed class LoggerTests
     public void Info_WhenDisabledAndSuppressed_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = false;
-            string message = "Test message with both disabled and suppressed";
+            var message = "Test message with both disabled and suppressed";
 
             // Act & Assert
             using (Logger.Suppress())
@@ -1467,7 +1407,7 @@ public sealed class LoggerTests
     public void Info_WhenEnabledWithNullMessage_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -1489,7 +1429,7 @@ public sealed class LoggerTests
     public void Info_WhenDisabledWithNullMessage_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = false;
@@ -1523,7 +1463,7 @@ public sealed class LoggerTests
     public void Info_WhenEnabledWithEdgeCaseMessages_DoesNotThrow(string message)
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
@@ -1556,7 +1496,7 @@ public sealed class LoggerTests
     public void Info_WhenDisabledWithEdgeCaseMessages_DoesNotThrow(string message)
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = false;
@@ -1577,16 +1517,16 @@ public sealed class LoggerTests
     public void Info_WhenEnabledWithVeryLongMessage_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
-            StringBuilder sb = new StringBuilder(10000);
-            for (int i = 0; i < 10000; i++)
+            var sb = new StringBuilder(10000);
+            for (var i = 0; i < 10000; i++)
             {
                 sb.Append('A');
             }
-            string message = sb.ToString();
+            var message = sb.ToString();
 
             // Act & Assert
             Logger.Info(message);
@@ -1604,16 +1544,16 @@ public sealed class LoggerTests
     public void Info_WhenDisabledWithVeryLongMessage_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = false;
-            StringBuilder sb = new StringBuilder(10000);
-            for (int i = 0; i < 10000; i++)
+            var sb = new StringBuilder(10000);
+            for (var i = 0; i < 10000; i++)
             {
                 sb.Append('A');
             }
-            string message = sb.ToString();
+            var message = sb.ToString();
 
             // Act & Assert
             Logger.Info(message);
@@ -1631,11 +1571,11 @@ public sealed class LoggerTests
     public void Info_WithNestedSuppressionScopes_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
-            string message = "Test message with nested suppressions";
+            var message = "Test message with nested suppressions";
 
             // Act & Assert
             using (Logger.Suppress())
@@ -1660,11 +1600,11 @@ public sealed class LoggerTests
     public void Info_AfterDisposingSuppressionScope_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
-            string message = "Test message after suppression";
+            var message = "Test message after suppression";
 
             // Act & Assert
             using (Logger.Suppress())
@@ -1686,11 +1626,11 @@ public sealed class LoggerTests
     public void Info_WhenEnabledWithMixedControlCharacters_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
-            string message = "Test\0with\rnull\nand\tcontrol\vcharacters";
+            var message = "Test\0with\rnull\nand\tcontrol\vcharacters";
 
             // Act & Assert
             Logger.Info(message);
@@ -1708,16 +1648,16 @@ public sealed class LoggerTests
     public void Info_WhenEnabledWithMaxLengthUnicodeString_DoesNotThrow()
     {
         // Arrange
-        bool originalEnabled = Logger.Enabled;
+        var originalEnabled = Logger.Enabled;
         try
         {
             Logger.Enabled = true;
-            StringBuilder sb = new StringBuilder(1000);
-            for (int i = 0; i < 100; i++)
+            var sb = new StringBuilder(1000);
+            for (var i = 0; i < 100; i++)
             {
                 sb.Append("日本語テスト");
             }
-            string message = sb.ToString();
+            var message = sb.ToString();
 
             // Act & Assert
             Logger.Info(message);
@@ -1791,7 +1731,7 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.DisableAll();
-        IDisposable suppression = Logger.Suppress();
+        var suppression = Logger.Suppress();
         Assert.IsFalse(Logger.Enabled, "Precondition: Enabled should be false before test");
         Assert.IsFalse(Logger.IsEnabled, "Precondition: IsEnabled should be false before test");
 
@@ -1858,7 +1798,7 @@ public sealed class LoggerTests
     {
         // Arrange & Act
         Logger.Enabled = setValue;
-        bool result = Logger.Enabled;
+        var result = Logger.Enabled;
 
         // Assert
         Assert.AreEqual(expectedValue, result);
@@ -1899,103 +1839,10 @@ public sealed class LoggerTests
         Logger.Enabled = setValue;
         Logger.Enabled = setValue;
         Logger.Enabled = setValue;
-        bool result = Logger.Enabled;
+        var result = Logger.Enabled;
 
         // Assert
         Assert.AreEqual(setValue, result);
-    }
-
-    /// <summary>
-    /// Tests that calling Dispose on a suppression scope decrements the suppression depth
-    /// and restores IsEnabled to true when no other suppressions are active.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_SingleScope_RestoresIsEnabled()
-    {
-        // Arrange
-        Logger.EnableAll();
-        var scope = Logger.Suppress();
-        Assert.IsFalse(Logger.IsEnabled, "IsEnabled should be false when a suppression scope is active.");
-
-        // Act
-        scope.Dispose();
-
-        // Assert
-        Assert.IsTrue(Logger.IsEnabled, "IsEnabled should be true after disposing the suppression scope.");
-    }
-
-    /// <summary>
-    /// Tests that calling Dispose multiple times on the same suppression scope instance
-    /// is idempotent and only decrements the suppression depth once.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_CalledMultipleTimes_IsIdempotent()
-    {
-        // Arrange
-        Logger.EnableAll();
-        var scope = Logger.Suppress();
-        Assert.IsFalse(Logger.IsEnabled, "IsEnabled should be false when a suppression scope is active.");
-
-        // Act
-        scope.Dispose();
-        scope.Dispose();
-        scope.Dispose();
-
-        // Assert
-        Assert.IsTrue(Logger.IsEnabled, "IsEnabled should be true after disposing the suppression scope, even when Dispose is called multiple times.");
-    }
-
-    /// <summary>
-    /// Tests that multiple suppression scopes each decrement the suppression depth
-    /// independently when disposed.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_MultipleScopes_EachDecrementsSeparately()
-    {
-        // Arrange
-        Logger.EnableAll();
-        var scope1 = Logger.Suppress();
-        var scope2 = Logger.Suppress();
-        Assert.IsFalse(Logger.IsEnabled, "IsEnabled should be false when multiple suppression scopes are active.");
-
-        // Act - Dispose first scope
-        scope1.Dispose();
-
-        // Assert - Still suppressed
-        Assert.IsFalse(Logger.IsEnabled, "IsEnabled should still be false after disposing only one of two suppression scopes.");
-
-        // Act - Dispose second scope
-        scope2.Dispose();
-
-        // Assert - No longer suppressed
-        Assert.IsTrue(Logger.IsEnabled, "IsEnabled should be true after disposing all suppression scopes.");
-    }
-
-    /// <summary>
-    /// Tests that suppression scopes can be disposed in any order (not necessarily LIFO)
-    /// and each correctly decrements the suppression depth once.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_NestedScopes_CanBeDisposedOutOfOrder()
-    {
-        // Arrange
-        Logger.EnableAll();
-        var scope1 = Logger.Suppress();
-        var scope2 = Logger.Suppress();
-        var scope3 = Logger.Suppress();
-        Assert.IsFalse(Logger.IsEnabled, "IsEnabled should be false when multiple suppression scopes are active.");
-
-        // Act - Dispose in non-LIFO order
-        scope2.Dispose();
-        Assert.IsFalse(Logger.IsEnabled, "IsEnabled should still be false after disposing one of three scopes.");
-
-        scope1.Dispose();
-        Assert.IsFalse(Logger.IsEnabled, "IsEnabled should still be false after disposing two of three scopes.");
-
-        scope3.Dispose();
-
-        // Assert
-        Assert.IsTrue(Logger.IsEnabled, "IsEnabled should be true after disposing all three scopes.");
     }
 
     /// <summary>
@@ -2032,11 +1879,11 @@ public sealed class LoggerTests
 
         // Act - Dispose from multiple threads concurrently
         var tasks = new Task[10];
-        for (int i = 0; i < tasks.Length; i++)
+        for (var i = 0; i < tasks.Length; i++)
         {
-            tasks[i] = Task.Run(() => scope.Dispose());
+            tasks[i] = Task.Run(() => scope.Dispose(), TestContext?.CancellationToken ?? default);
         }
-        Task.WaitAll(tasks);
+        Task.WaitAll(tasks, TestContext?.CancellationToken ?? default);
 
         // Assert
         Assert.IsTrue(Logger.IsEnabled, "IsEnabled should be true after disposing the suppression scope, even with concurrent Dispose calls.");
@@ -2058,13 +1905,13 @@ public sealed class LoggerTests
 
         // Act - Dispose each scope multiple times concurrently
         var tasks = new Task[30];
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
-            tasks[i] = Task.Run(() => scope1.Dispose());
-            tasks[i + 10] = Task.Run(() => scope2.Dispose());
-            tasks[i + 20] = Task.Run(() => scope3.Dispose());
+            tasks[i] = Task.Run(() => scope1.Dispose(), TestContext?.CancellationToken ?? default);
+            tasks[i + 10] = Task.Run(() => scope2.Dispose(), TestContext?.CancellationToken ?? default);
+            tasks[i + 20] = Task.Run(() => scope3.Dispose(), TestContext?.CancellationToken ?? default);
         }
-        Task.WaitAll(tasks);
+        Task.WaitAll(tasks, TestContext?.CancellationToken ?? default);
 
         // Assert
         Assert.IsTrue(Logger.IsEnabled, "IsEnabled should be true after disposing all suppression scopes, even with concurrent Dispose calls.");
@@ -2159,7 +2006,7 @@ public sealed class LoggerTests
     public void Suppress_WhenCalled_ReturnsNonNullDisposable()
     {
         // Act
-        IDisposable? scope = Logger.Suppress();
+        var scope = Logger.Suppress();
 
         // Assert
         Assert.IsNotNull(scope);
@@ -2175,11 +2022,11 @@ public sealed class LoggerTests
     public void Suppress_WhenCalled_SetsIsEnabledToFalse()
     {
         // Arrange
-        bool initialIsEnabled = Logger.IsEnabled;
+        var initialIsEnabled = Logger.IsEnabled;
 
         // Act
-        using IDisposable scope = Logger.Suppress();
-        bool isEnabledDuringSuppression = Logger.IsEnabled;
+        using var scope = Logger.Suppress();
+        var isEnabledDuringSuppression = Logger.IsEnabled;
 
         // Assert
         Assert.IsTrue(initialIsEnabled, "IsEnabled should be true before suppression.");
@@ -2193,11 +2040,11 @@ public sealed class LoggerTests
     public void Suppress_WhenDisposed_RestoresIsEnabledToTrue()
     {
         // Arrange
-        IDisposable scope = Logger.Suppress();
+        var scope = Logger.Suppress();
 
         // Act
         scope.Dispose();
-        bool isEnabledAfterDisposal = Logger.IsEnabled;
+        var isEnabledAfterDisposal = Logger.IsEnabled;
 
         // Assert
         Assert.IsTrue(isEnabledAfterDisposal, "IsEnabled should be restored to true after disposing the suppression scope.");
@@ -2211,17 +2058,17 @@ public sealed class LoggerTests
     public void Suppress_WithNestedScopes_MaintainsSuppressionUntilAllDisposed()
     {
         // Arrange & Act
-        IDisposable outerScope = Logger.Suppress();
-        bool isEnabledAfterFirst = Logger.IsEnabled;
+        var outerScope = Logger.Suppress();
+        var isEnabledAfterFirst = Logger.IsEnabled;
 
-        IDisposable innerScope = Logger.Suppress();
-        bool isEnabledAfterSecond = Logger.IsEnabled;
+        var innerScope = Logger.Suppress();
+        var isEnabledAfterSecond = Logger.IsEnabled;
 
         innerScope.Dispose();
-        bool isEnabledAfterInnerDisposal = Logger.IsEnabled;
+        var isEnabledAfterInnerDisposal = Logger.IsEnabled;
 
         outerScope.Dispose();
-        bool isEnabledAfterOuterDisposal = Logger.IsEnabled;
+        var isEnabledAfterOuterDisposal = Logger.IsEnabled;
 
         // Assert
         Assert.IsFalse(isEnabledAfterFirst, "IsEnabled should be false after first suppression.");
@@ -2242,17 +2089,17 @@ public sealed class LoggerTests
     public void Suppress_WithMultipleNestingLevels_MaintainsCorrectState(int nestingLevel)
     {
         // Arrange
-        IDisposable[] scopes = new IDisposable[nestingLevel];
+        var scopes = new IDisposable[nestingLevel];
 
         // Act - Create nested scopes
-        for (int i = 0; i < nestingLevel; i++)
+        for (var i = 0; i < nestingLevel; i++)
         {
             scopes[i] = Logger.Suppress();
             Assert.IsFalse(Logger.IsEnabled, $"IsEnabled should be false after creating scope {i + 1}.");
         }
 
         // Act - Dispose all but one scope
-        for (int i = 0; i < nestingLevel - 1; i++)
+        for (var i = 0; i < nestingLevel - 1; i++)
         {
             scopes[i].Dispose();
             Assert.IsFalse(Logger.IsEnabled, $"IsEnabled should remain false after disposing scope {i + 1} of {nestingLevel}.");
@@ -2272,17 +2119,17 @@ public sealed class LoggerTests
     public void Suppress_WhenDisposedMultipleTimes_IsIdempotent()
     {
         // Arrange
-        IDisposable scope = Logger.Suppress();
+        var scope = Logger.Suppress();
 
         // Act
         scope.Dispose();
-        bool isEnabledAfterFirstDispose = Logger.IsEnabled;
+        var isEnabledAfterFirstDispose = Logger.IsEnabled;
 
         scope.Dispose();
-        bool isEnabledAfterSecondDispose = Logger.IsEnabled;
+        var isEnabledAfterSecondDispose = Logger.IsEnabled;
 
         scope.Dispose();
-        bool isEnabledAfterThirdDispose = Logger.IsEnabled;
+        var isEnabledAfterThirdDispose = Logger.IsEnabled;
 
         // Assert
         Assert.IsTrue(isEnabledAfterFirstDispose, "IsEnabled should be true after first dispose.");
@@ -2297,19 +2144,19 @@ public sealed class LoggerTests
     public void Suppress_WithOutOfOrderDisposal_MaintainsCorrectState()
     {
         // Arrange
-        IDisposable scope1 = Logger.Suppress();
-        IDisposable scope2 = Logger.Suppress();
-        IDisposable scope3 = Logger.Suppress();
+        var scope1 = Logger.Suppress();
+        var scope2 = Logger.Suppress();
+        var scope3 = Logger.Suppress();
 
         // Act - Dispose in reverse order: 3, 1, 2
         scope3.Dispose();
-        bool isEnabledAfterScope3 = Logger.IsEnabled;
+        var isEnabledAfterScope3 = Logger.IsEnabled;
 
         scope1.Dispose();
-        bool isEnabledAfterScope1 = Logger.IsEnabled;
+        var isEnabledAfterScope1 = Logger.IsEnabled;
 
         scope2.Dispose();
-        bool isEnabledAfterScope2 = Logger.IsEnabled;
+        var isEnabledAfterScope2 = Logger.IsEnabled;
 
         // Assert
         Assert.IsFalse(isEnabledAfterScope3, "IsEnabled should be false after disposing scope3.");
@@ -2326,29 +2173,26 @@ public sealed class LoggerTests
         // Arrange
         const int threadCount = 10;
         const int operationsPerThread = 100;
-        IDisposable?[] allScopes = new IDisposable[threadCount * operationsPerThread];
-        int scopeIndex = 0;
+        var allScopes = new IDisposable[threadCount * operationsPerThread];
+        var scopeIndex = 0;
 
         // Act - Create suppressions concurrently
         Parallel.For(0, threadCount, threadIndex =>
         {
-            for (int i = 0; i < operationsPerThread; i++)
+            for (var i = 0; i < operationsPerThread; i++)
             {
-                IDisposable scope = Logger.Suppress();
-                int index = Interlocked.Increment(ref scopeIndex) - 1;
+                var scope = Logger.Suppress();
+                var index = Interlocked.Increment(ref scopeIndex) - 1;
                 allScopes[index] = scope;
             }
         });
 
-        bool isEnabledDuringSuppression = Logger.IsEnabled;
+        var isEnabledDuringSuppression = Logger.IsEnabled;
 
         // Act - Dispose all scopes concurrently
-        Parallel.For(0, allScopes.Length, i =>
-        {
-            allScopes[i]?.Dispose();
-        });
+        Parallel.For(0, allScopes.Length, i => allScopes[i]?.Dispose());
 
-        bool isEnabledAfterDisposal = Logger.IsEnabled;
+        var isEnabledAfterDisposal = Logger.IsEnabled;
 
         // Assert
         Assert.IsFalse(isEnabledDuringSuppression, "IsEnabled should be false when suppressions are active.");
@@ -2365,14 +2209,14 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.DisableAll();
-        bool isEnabledWhenDisabled = Logger.IsEnabled;
+        var isEnabledWhenDisabled = Logger.IsEnabled;
 
         // Act
-        using IDisposable scope = Logger.Suppress();
-        bool isEnabledDuringSuppression = Logger.IsEnabled;
+        using var scope = Logger.Suppress();
+        var isEnabledDuringSuppression = Logger.IsEnabled;
 
         scope.Dispose();
-        bool isEnabledAfterDisposal = Logger.IsEnabled;
+        var isEnabledAfterDisposal = Logger.IsEnabled;
 
         // Assert
         Assert.IsFalse(isEnabledWhenDisabled, "IsEnabled should be false when Enabled is false.");
@@ -2391,15 +2235,15 @@ public sealed class LoggerTests
     public void Suppress_WhenReenabledDuringSuppression_IsEnabledRemainsFalse()
     {
         // Arrange
-        using IDisposable scope = Logger.Suppress();
-        bool isEnabledDuringSuppression = Logger.IsEnabled;
+        using var scope = Logger.Suppress();
+        var isEnabledDuringSuppression = Logger.IsEnabled;
 
         // Act
         Logger.EnableAll();
-        bool isEnabledAfterReenabling = Logger.IsEnabled;
+        var isEnabledAfterReenabling = Logger.IsEnabled;
 
         scope.Dispose();
-        bool isEnabledAfterDisposal = Logger.IsEnabled;
+        var isEnabledAfterDisposal = Logger.IsEnabled;
 
         // Assert
         Assert.IsFalse(isEnabledDuringSuppression, "IsEnabled should be false during suppression.");
@@ -2414,8 +2258,8 @@ public sealed class LoggerTests
     public void Suppress_InUsingStatement_WorksCorrectly()
     {
         // Arrange
-        bool isEnabledBeforeSuppression = Logger.IsEnabled;
-        bool isEnabledDuringSuppression = false;
+        var isEnabledBeforeSuppression = Logger.IsEnabled;
+        var isEnabledDuringSuppression = false;
 
         // Act
         using (Logger.Suppress())
@@ -2423,7 +2267,7 @@ public sealed class LoggerTests
             isEnabledDuringSuppression = Logger.IsEnabled;
         }
 
-        bool isEnabledAfterSuppression = Logger.IsEnabled;
+        var isEnabledAfterSuppression = Logger.IsEnabled;
 
         // Assert
         Assert.IsTrue(isEnabledBeforeSuppression, "IsEnabled should be true before suppression.");
@@ -2438,10 +2282,10 @@ public sealed class LoggerTests
     public void Suppress_InNestedUsingStatements_WorksCorrectly()
     {
         // Arrange
-        bool isEnabledBeforeSuppression = Logger.IsEnabled;
-        bool isEnabledInOuterScope = false;
-        bool isEnabledInInnerScope = false;
-        bool isEnabledBetweenScopes = false;
+        var isEnabledBeforeSuppression = Logger.IsEnabled;
+        var isEnabledInOuterScope = false;
+        var isEnabledInInnerScope = false;
+        var isEnabledBetweenScopes = false;
 
         // Act
         using (Logger.Suppress())
@@ -2456,7 +2300,7 @@ public sealed class LoggerTests
             isEnabledBetweenScopes = Logger.IsEnabled;
         }
 
-        bool isEnabledAfterAllScopes = Logger.IsEnabled;
+        var isEnabledAfterAllScopes = Logger.IsEnabled;
 
         // Assert
         Assert.IsTrue(isEnabledBeforeSuppression, "IsEnabled should be true before any suppression.");
@@ -2477,15 +2321,15 @@ public sealed class LoggerTests
         const int threadCount = 20;
         const int iterations = 50;
         CountdownEvent startGate = new(threadCount);
-        int completedThreads = 0;
+        var completedThreads = 0;
 
         // Act
         Parallel.For(0, threadCount, threadIndex =>
         {
             startGate.Signal();
-            startGate.Wait();
+            startGate.Wait(TestContext?.CancellationToken ?? default);
 
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 using (Logger.Suppress())
                 {
@@ -2497,7 +2341,7 @@ public sealed class LoggerTests
             Interlocked.Increment(ref completedThreads);
         });
 
-        bool isEnabledAfterAllThreads = Logger.IsEnabled;
+        var isEnabledAfterAllThreads = Logger.IsEnabled;
 
         // Assert
         Assert.AreEqual(threadCount, completedThreads, "All threads should complete.");
@@ -2587,9 +2431,9 @@ public sealed class LoggerTests
 
         // Act
         Logger.DisableAll();
-        bool disabledState = Logger.Enabled;
+        var disabledState = Logger.Enabled;
         Logger.EnableAll();
-        bool enabledState = Logger.Enabled;
+        var enabledState = Logger.Enabled;
 
         // Assert
         Assert.IsFalse(disabledState, "Enabled should be false after DisableAll");
@@ -2627,56 +2471,20 @@ public sealed class LoggerTests
         var tasks = new Task[threadCount];
 
         // Act
-        for (int i = 0; i < threadCount; i++)
+        for (var i = 0; i < threadCount; i++)
         {
             tasks[i] = Task.Run(() =>
             {
-                for (int j = 0; j < iterationsPerThread; j++)
+                for (var j = 0; j < iterationsPerThread; j++)
                 {
                     Logger.DisableAll();
                 }
-            });
+            }, TestContext?.CancellationToken ?? default);
         }
-        Task.WaitAll(tasks);
+        Task.WaitAll(tasks, TestContext?.CancellationToken ?? default);
 
         // Assert
         Assert.IsFalse(Logger.Enabled, "Enabled should be false after concurrent DisableAll calls");
-    }
-
-    /// <summary>
-    /// Tests that DisableAll and EnableAll maintain consistency when called concurrently.
-    /// </summary>
-    [TestMethod]
-    public void DisableAll_WithConcurrentEnableAll_MaintainsConsistency()
-    {
-        // Arrange
-        const int iterations = 1000;
-        var disableTask = Task.Run(() =>
-        {
-            for (int i = 0; i < iterations; i++)
-            {
-                Logger.DisableAll();
-            }
-        });
-        var enableTask = Task.Run(() =>
-        {
-            for (int i = 0; i < iterations; i++)
-            {
-                Logger.EnableAll();
-            }
-        });
-
-        // Act
-        Task.WaitAll(disableTask, enableTask);
-
-        // Assert
-        // The final state should be deterministic (either true or false, never corrupted)
-        bool finalState = Logger.Enabled;
-        Assert.IsTrue(finalState == true || finalState == false, "Enabled should have a valid boolean state");
-
-        // Verify the state is stable
-        bool stableState = Logger.Enabled;
-        Assert.AreEqual(finalState, stableState, "Enabled state should be stable after concurrent operations");
     }
 
     /// <summary>
@@ -2690,9 +2498,9 @@ public sealed class LoggerTests
 
         // Act
         Logger.DisableAll();
-        bool firstRead = Logger.Enabled;
-        bool secondRead = Logger.Enabled;
-        bool thirdRead = Logger.Enabled;
+        var firstRead = Logger.Enabled;
+        var secondRead = Logger.Enabled;
+        var thirdRead = Logger.Enabled;
 
         // Assert
         Assert.IsFalse(firstRead, "First read should return false");
@@ -2725,19 +2533,13 @@ public sealed class LoggerTests
     /// with shared static state that must be reset between tests to prevent interference.
     /// </summary>
     [TestInitialize]
-    public void Initialize()
-    {
-        Logger.EnableAll();
-    }
+    public void Initialize() => Logger.EnableAll();
 
     /// <summary>
     /// Ensures logging is re-enabled after each test to restore default state.
     /// </summary>
     [TestCleanup]
-    public void Cleanup()
-    {
-        Logger.EnableAll();
-    }
+    public void Cleanup() => Logger.EnableAll();
 
     /// <summary>
     /// Verifies that <see cref="Logger.Warning(string)"/> does not throw an exception
@@ -2834,7 +2636,7 @@ public sealed class LoggerTests
     public void Warning_WhenLoggingEnabledWithVeryLongMessage_DoesNotThrowException()
     {
         // Arrange
-        string longMessage = new string('A', 10000);
+        var longMessage = new string('A', 10000);
 
         // Act & Assert
         Logger.Warning(longMessage);
@@ -2854,7 +2656,7 @@ public sealed class LoggerTests
         const string message = "Test warning";
 
         // Act & Assert
-        for (int i = 0; i < 100; i++)
+        for (var i = 0; i < 100; i++)
         {
             Logger.Warning(message);
         }
@@ -3083,7 +2885,7 @@ public sealed class LoggerTests
         var ex = new InvalidOperationException("Test exception");
 
         // Act & Assert
-        Logger.Exception(ex, "Error: {0} {1}", new object?[] { null, "valid" });
+        Logger.Exception(ex, "Error: {0} {1}", new object[] { null!, "valid" });
     }
 
     /// <summary>
@@ -3272,7 +3074,7 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.DisableAll();
-        string message = "Test error message";
+        var message = "Test error message";
 
         // Act & Assert
         Logger.Error(message);
@@ -3288,7 +3090,7 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string message = "Test error message";
+        var message = "Test error message";
 
         // Act & Assert
         Logger.Error(message);
@@ -3304,7 +3106,7 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string message = "Test error message";
+        var message = "Test error message";
 
         // Act & Assert
         using (Logger.Suppress())
@@ -3323,7 +3125,7 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string message = "Test error message";
+        var message = "Test error message";
 
         // Act & Assert
         using (Logger.Suppress())
@@ -3383,7 +3185,7 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string longMessage = new string('X', 100000); // 100K characters
+        var longMessage = new string('X', 100000); // 100K characters
 
         // Act & Assert
         Logger.Error(longMessage);
@@ -3398,7 +3200,7 @@ public sealed class LoggerTests
     public void Error_RespectsEnabledPropertyState_DoesNotThrow()
     {
         // Arrange
-        string message = "Test error message";
+        var message = "Test error message";
 
         // Act & Assert - Disabled
         Logger.Enabled = false;
@@ -3419,7 +3221,7 @@ public sealed class LoggerTests
     public void Error_AfterMultipleStateToggles_DoesNotThrow()
     {
         // Arrange
-        string message = "Test error message";
+        var message = "Test error message";
 
         // Act & Assert
         Logger.EnableAll();
@@ -3446,7 +3248,7 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        string message = "Test error message";
+        var message = "Test error message";
 
         // Act
         using (Logger.Suppress())
@@ -3457,221 +3259,5 @@ public sealed class LoggerTests
         // Assert
         Logger.Error(message); // Should log again (suppression removed)
         // No exception expected
-    }
-}
-
-
-/// <summary>
-/// Tests for the <see cref="Logger.LogBridge.Warning"/> method.
-/// </summary>
-/// <remarks>
-/// <para>
-/// The <see cref="Logger.LogBridge.Warning"/> method calls the static
-/// <c>REFrameworkNET.API.LogWarning</c> API, which cannot be mocked with Moq.
-/// These tests verify only that the method is exception-safe and completes
-/// without throwing for various inputs. They do not verify that the actual
-/// logging to REFramework occurs, as that requires the runtime host environment.
-/// </para>
-/// </remarks>
-[TestClass]
-public class LogBridgeWarningTests
-{
-}
-
-
-/// <summary>
-/// Tests for the <see cref="Logger.LogBridge.Info(string)"/> method.
-/// </summary>
-/// <remarks>
-/// <para>
-/// The LogBridge.Info method is a thin wrapper around REFrameworkNET.API.LogInfo, which is a static
-/// method. Standard mocking frameworks like Moq cannot mock static methods without advanced tooling
-/// such as Microsoft Fakes or Pose.
-/// </para>
-/// <para>
-/// These tests document the expected behavior and edge cases but are marked as Inconclusive because
-/// the static dependency prevents proper isolation and verification. To make this code fully testable:
-/// </para>
-/// <list type="bullet">
-/// <item>Introduce an abstraction layer (e.g., ILogAdapter) over REFrameworkNET.API.</item>
-/// <item>Inject the abstraction into Logger or LogBridge via dependency injection.</item>
-/// <item>Mock the abstraction in tests using Moq.</item>
-/// </list>
-/// <para>
-/// Without such refactoring, these tests serve as documentation of intended behavior and can be
-/// executed manually or via integration testing with the actual REFrameworkNET.API available.
-/// </para>
-/// </remarks>
-[TestClass]
-public class LogBridgeTests
-{
-    /// <summary>
-    /// Tests that Info does not throw when called with a null message.
-    /// </summary>
-    /// <remarks>
-    /// This test is marked Inconclusive because we cannot mock REFrameworkNET.API.LogInfo to verify
-    /// the call or simulate exceptions. The method has a catch-all exception handler, so it will not
-    /// throw regardless of whether API.LogInfo accepts null or throws.
-    /// </remarks>
-    [TestMethod]
-    public void Info_WithNullMessage_DoesNotThrow()
-    {
-        // Arrange
-        string? message = null;
-
-        // Act & Assert
-        // The method signature accepts string, and the catch block ensures no exception propagates.
-        // However, we cannot verify that API.LogInfo was called with null without mocking the static API.
-        Assert.Inconclusive(
-            "Cannot test LogBridge.Info without mocking REFrameworkNET.API.LogInfo. " +
-            "REFrameworkNET.API is a static class with static methods, which cannot be mocked with Moq. " +
-            "Consider introducing an ILogAdapter abstraction to enable proper unit testing.");
-    }
-
-    /// <summary>
-    /// Tests that Info does not throw when called with an empty string.
-    /// </summary>
-    /// <remarks>
-    /// This test is marked Inconclusive because we cannot mock REFrameworkNET.API.LogInfo to verify
-    /// the call or behavior.
-    /// </remarks>
-    [TestMethod]
-    public void Info_WithEmptyString_DoesNotThrow()
-    {
-        // Arrange
-        string message = string.Empty;
-
-        // Act & Assert
-        Assert.Inconclusive(
-            "Cannot test LogBridge.Info without mocking REFrameworkNET.API.LogInfo. " +
-            "REFrameworkNET.API is a static class with static methods, which cannot be mocked with Moq. " +
-            "Consider introducing an ILogAdapter abstraction to enable proper unit testing.");
-    }
-
-    /// <summary>
-    /// Tests that Info does not throw when called with a whitespace-only string.
-    /// </summary>
-    /// <remarks>
-    /// This test is marked Inconclusive because we cannot mock REFrameworkNET.API.LogInfo to verify
-    /// the call or behavior.
-    /// </remarks>
-    [TestMethod]
-    public void Info_WithWhitespaceString_DoesNotThrow()
-    {
-        // Arrange
-        string message = "   \t\n\r   ";
-
-        // Act & Assert
-        Assert.Inconclusive(
-            "Cannot test LogBridge.Info without mocking REFrameworkNET.API.LogInfo. " +
-            "REFrameworkNET.API is a static class with static methods, which cannot be mocked with Moq. " +
-            "Consider introducing an ILogAdapter abstraction to enable proper unit testing.");
-    }
-
-    /// <summary>
-    /// Tests that Info does not throw when called with a valid normal message.
-    /// </summary>
-    /// <remarks>
-    /// This test is marked Inconclusive because we cannot mock REFrameworkNET.API.LogInfo to verify
-    /// that the method was called with the correct message.
-    /// </remarks>
-    [TestMethod]
-    public void Info_WithValidMessage_DoesNotThrow()
-    {
-        // Arrange
-        string message = "Test log message";
-
-        // Act & Assert
-        Assert.Inconclusive(
-            "Cannot test LogBridge.Info without mocking REFrameworkNET.API.LogInfo. " +
-            "REFrameworkNET.API is a static class with static methods, which cannot be mocked with Moq. " +
-            "Consider introducing an ILogAdapter abstraction to enable proper unit testing.");
-    }
-
-    /// <summary>
-    /// Tests that Info does not throw when called with a very long string.
-    /// </summary>
-    /// <remarks>
-    /// This test verifies boundary behavior with extremely long strings. The test is marked Inconclusive
-    /// because we cannot mock REFrameworkNET.API.LogInfo to verify the call or simulate performance issues.
-    /// </remarks>
-    [TestMethod]
-    public void Info_WithVeryLongString_DoesNotThrow()
-    {
-        // Arrange
-        string message = new string('A', 100000);
-
-        // Act & Assert
-        Assert.Inconclusive(
-            "Cannot test LogBridge.Info without mocking REFrameworkNET.API.LogInfo. " +
-            "REFrameworkNET.API is a static class with static methods, which cannot be mocked with Moq. " +
-            "Consider introducing an ILogAdapter abstraction to enable proper unit testing.");
-    }
-
-    /// <summary>
-    /// Tests that Info does not throw when called with a string containing special characters.
-    /// </summary>
-    /// <remarks>
-    /// This test verifies edge cases with special, control, and Unicode characters. The test is marked
-    /// Inconclusive because we cannot mock REFrameworkNET.API.LogInfo.
-    /// </remarks>
-    [TestMethod]
-    public void Info_WithSpecialCharacters_DoesNotThrow()
-    {
-        // Arrange
-        string message = "Special: \0\a\b\f\n\r\t\v\u0001\u001F \"'\\<>&";
-
-        // Act & Assert
-        Assert.Inconclusive(
-            "Cannot test LogBridge.Info without mocking REFrameworkNET.API.LogInfo. " +
-            "REFrameworkNET.API is a static class with static methods, which cannot be mocked with Moq. " +
-            "Consider introducing an ILogAdapter abstraction to enable proper unit testing.");
-    }
-
-    /// <summary>
-    /// Tests that Info does not throw when called with a string containing Unicode characters.
-    /// </summary>
-    /// <remarks>
-    /// This test verifies behavior with various Unicode characters including emoji and non-Latin scripts.
-    /// The test is marked Inconclusive because we cannot mock REFrameworkNET.API.LogInfo.
-    /// </remarks>
-    [TestMethod]
-    public void Info_WithUnicodeCharacters_DoesNotThrow()
-    {
-        // Arrange
-        string message = "Unicode: 你好世界 🌍 Привет мир";
-
-        // Act & Assert
-        Assert.Inconclusive(
-            "Cannot test LogBridge.Info without mocking REFrameworkNET.API.LogInfo. " +
-            "REFrameworkNET.API is a static class with static methods, which cannot be mocked with Moq. " +
-            "Consider introducing an ILogAdapter abstraction to enable proper unit testing.");
-    }
-
-    /// <summary>
-    /// Tests that Info silently handles exceptions thrown by API.LogInfo without propagating them.
-    /// </summary>
-    /// <remarks>
-    /// The LogBridge.Info method has a catch-all exception handler (try { API.LogInfo(message); } catch { }).
-    /// This test would verify that any exception thrown by API.LogInfo is caught and suppressed. However,
-    /// without the ability to mock API.LogInfo and configure it to throw exceptions, this behavior cannot
-    /// be verified in isolation. The test is marked Inconclusive.
-    /// </remarks>
-    [TestMethod]
-    public void Info_WhenApiLogInfoThrows_SuppressesException()
-    {
-        // Arrange
-        string message = "Test message";
-
-        // Act & Assert
-        // To properly test this scenario, we would need to:
-        // 1. Mock REFrameworkNET.API.LogInfo to throw an exception
-        // 2. Call LogBridge.Info(message)
-        // 3. Assert that no exception is propagated
-        // Since static methods cannot be mocked with Moq, this test cannot be completed.
-        Assert.Inconclusive(
-            "Cannot test LogBridge.Info exception handling without mocking REFrameworkNET.API.LogInfo. " +
-            "REFrameworkNET.API is a static class with static methods, which cannot be mocked with Moq. " +
-            "To test exception suppression, introduce an ILogAdapter abstraction and inject it into LogBridge.");
     }
 }
