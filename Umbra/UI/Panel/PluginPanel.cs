@@ -48,6 +48,7 @@ public sealed class PluginPanel : IDisposable
     private readonly bool _rootNodeDefaultOpen;
     private readonly bool _drawSeparator;
     private readonly bool _scopeRegistered;
+    private readonly IPluginPanelRenderer _renderer;
     private readonly List<IPanelSection> _sections = [];
     private bool _disposed;
 
@@ -80,15 +81,56 @@ public sealed class PluginPanel : IDisposable
     /// Thrown when <paramref name="idScope"/> is <see langword="null"/> or whitespace.
     /// </exception>
     public PluginPanel(string idScope, string? rootNodeLabel = null, bool rootNodeDefaultOpen = false, bool drawSeparator = true)
+        : this(idScope, rootNodeLabel, rootNodeDefaultOpen, drawSeparator, new ImGuiPluginPanelRenderer())
+    {
+    }
+
+    /// <summary>
+    /// Initialises a new panel with the given top-level ImGui ID scope and low-level renderer.
+    /// </summary>
+    /// <param name="idScope">
+    /// A globally unique identifier string for this plugin (e.g. <c>nameof(MyPlugin)</c> or
+    /// <c>typeof(MyPlugin).FullName</c>). All managed plugins share one AppDomain and one ImGui
+    /// context; this is the only separator between this panel's widget IDs and every other panel
+    /// in the process. Duplicate-scope detection is handled by <see cref="PluginPanelScopeRegistry"/>,
+    /// which warns once per active conflicting scope.
+    /// Must be non-null and non-whitespace.
+    /// </param>
+    /// <param name="rootNodeLabel">
+    /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
+    /// <see cref="ImGui.TreeNode(string)"/> with this label. Pass <see langword="null"/>
+    /// to render sections flat with no root-level wrapping node.
+    /// </param>
+    /// <param name="rootNodeDefaultOpen">
+    /// When <see langword="true"/>, the root tree node starts in its expanded state.
+    /// Ignored when <paramref name="rootNodeLabel"/> is <see langword="null"/>.
+    /// </param>
+    /// <param name="drawSeparator">
+    /// When <see langword="true"/>, a horizontal separator is drawn after all sections.
+    /// </param>
+    /// <param name="renderer">
+    /// The low-level renderer used for ImGui ID-scope, tree-node, and separator operations.
+    /// Tests can replace this dependency to verify draw behavior without an active ImGui frame.
+    /// </param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="idScope"/> is <see langword="null"/> or whitespace.
+    /// </exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="renderer"/> is <see langword="null"/>.
+    /// </exception>
+    internal PluginPanel(string idScope, string? rootNodeLabel, bool rootNodeDefaultOpen, bool drawSeparator, IPluginPanelRenderer renderer)
     {
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null or whitespace.", nameof(idScope));
+
+        ArgumentNullException.ThrowIfNull(renderer);
 
         _idScope = idScope;
         _scopeRegistered = PluginPanelScopeRegistry.TryRegister(idScope);
         _rootNodeLabel = rootNodeLabel;
         _rootNodeDefaultOpen = rootNodeDefaultOpen;
         _drawSeparator = drawSeparator;
+        _renderer = renderer;
     }
 
     /// <summary>
@@ -159,31 +201,31 @@ public sealed class PluginPanel : IDisposable
     {
         if (_disposed) return;
 
-        ImGui.PushID(_idScope);
+        _renderer.PushId(_idScope);
         try
         {
             if (_rootNodeLabel is not null)
             {
                 var flags = _rootNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
-                if (ImGui.TreeNodeEx(_rootNodeLabel, flags))
+                if (_renderer.TreeNode(_rootNodeLabel, flags))
                 {
                     try
                     {
                         DrawSections();
-                        if (_drawSeparator) ImGui.Separator();
+                        if (_drawSeparator) _renderer.Separator();
                     }
-                    finally { ImGui.TreePop(); }
+                    finally { _renderer.TreePop(); }
                 }
             }
             else
             {
                 DrawSections();
-                if (_drawSeparator) ImGui.Separator();
+                if (_drawSeparator) _renderer.Separator();
             }
         }
         finally
         {
-            ImGui.PopID();
+            _renderer.PopId();
         }
     }
 
@@ -251,10 +293,10 @@ public sealed class PluginPanel : IDisposable
                 label = PluginPanelTreeNodeLabels.Sanitize(label);
 
                 var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
-                if (ImGui.TreeNodeEx($"{label}##{section.SectionId}", flags))
+                if (_renderer.TreeNode($"{label}##{section.SectionId}", flags))
                 {
                     try { section.Draw(); }
-                    finally { ImGui.TreePop(); }
+                    finally { _renderer.TreePop(); }
                 }
             }
             else

@@ -1,3 +1,4 @@
+using Hexa.NET.ImGui;
 using Moq;
 
 namespace Umbra.UI.Panel.UnitTests;
@@ -7,187 +8,195 @@ namespace Umbra.UI.Panel.UnitTests;
 /// Unit tests for the <see cref="PluginPanel.Draw"/> method.
 /// </summary>
 /// <remarks>
-/// <para>
-/// These tests are limited in scope due to the method's dependency on static ImGui methods
-/// that cannot be mocked with Moq. The tests verify that the method completes without
-/// throwing exceptions for various configurations, but cannot verify:
-/// </para>
-/// <list type="bullet">
-/// <item><description>That ImGui.PushID and ImGui.PopID are called and balanced.</description></item>
-/// <item><description>That ImGui.TreeNodeEx is called with the correct parameters.</description></item>
-/// <item><description>That conditional branches based on TreeNodeEx return value are executed.</description></item>
-/// <item><description>That ImGui.Separator is called when expected.</description></item>
-/// <item><description>That ImGui.TreePop is called when expected.</description></item>
-/// </list>
-/// <para>
-/// Full integration testing would require a working ImGui context and mocking framework
-/// that supports static method interception.
-/// </para>
+/// These tests inject a low-level panel renderer so <see cref="PluginPanel"/> draw behavior can
+/// be verified without an active ImGui frame. The seam allows the tests to assert ID-scope
+/// cleanup, tree-node behavior, separator placement, and section ordering directly.
 /// </remarks>
 [TestClass]
 public sealed class PluginPanelTests_Draw
 {
     /// <summary>
-    /// Tests that calling Draw on a disposed panel returns immediately without throwing exceptions.
+    /// Tests that calling <see cref="PluginPanel.Draw"/> on a disposed panel does not invoke any
+    /// renderer operations.
     /// </summary>
-    /// <remarks>
-    /// This verifies the early-return guard clause at line 151. The method should return before
-    /// any ImGui calls are made. Note: We cannot verify that ImGui methods are NOT called due to
-    /// the static method mocking limitation.
-    /// </remarks>
     [TestMethod]
-    public void Draw_WhenDisposed_ReturnsImmediatelyWithoutException()
+    public void Draw_WhenDisposed_DoesNotInvokeRenderer()
     {
         // Arrange
-        var panel = new PluginPanel("TestScope");
+        var renderer = new TestPluginPanelRenderer();
+        using var panel = new PluginPanel("DisposedScope", null, false, true, renderer);
         panel.Dispose();
-
-        // Act - should not throw
-        panel.Draw();
-
-        // Assert - implicit: no exception thrown
-    }
-
-    /// <summary>
-    /// Tests that Draw completes successfully when the panel has no root node label and no sections.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This exercises the simplest execution path through the method: disposed check passes,
-    /// ID scope is pushed, no root node path is taken (lines 169-173), DrawSections is called
-    /// on an empty section list, separator is drawn if enabled, and ID scope is popped.
-    /// </para>
-    /// <para>
-    /// Cannot verify: ImGui.PushID, ImGui.PopID, ImGui.Separator calls.
-    /// </para>
-    /// </remarks>
-    [TestMethod]
-    public void Draw_WithNoRootNodeAndNoSections_CompletesSuccessfully()
-    {
-        // Arrange
-        var panel = new PluginPanel("TestScope", rootNodeLabel: null, drawSeparator: true);
-
-        // Act - should not throw
-        panel.Draw();
-
-        // Assert - implicit: no exception thrown
-    }
-
-    /// <summary>
-    /// Tests that Draw completes successfully when a root node label is provided with default closed state.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This exercises the root node path (lines 156-168) with rootNodeDefaultOpen = false,
-    /// which should use ImGuiTreeNodeFlags.None. The actual tree node state (open/closed)
-    /// depends on ImGui.TreeNodeEx return value, which we cannot control.
-    /// </para>
-    /// <para>
-    /// Cannot verify: ImGui.TreeNodeEx called with correct label and flags, or conditional
-    /// execution based on its return value.
-    /// </para>
-    /// </remarks>
-    [TestMethod]
-    public void Draw_WithRootNodeDefaultClosed_CompletesSuccessfully()
-    {
-        // Arrange
-        var panel = new PluginPanel("TestScope", rootNodeLabel: "Settings", rootNodeDefaultOpen: false);
-
-        // Act - should not throw
-        panel.Draw();
-
-        // Assert - implicit: no exception thrown
-    }
-
-    /// <summary>
-    /// Tests that Draw calls the DrawSections private method by verifying that section Draw methods are invoked.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This test adds mock sections to the panel and verifies their Draw methods are called,
-    /// which indirectly proves DrawSections was executed. However, we cannot verify:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description>The exact number of times DrawSections is called.</description></item>
-    /// <item><description>Whether sections are drawn only when tree nodes are open.</description></item>
-    /// <item><description>The order in which ImGui state management methods are called.</description></item>
-    /// </list>
-    /// <para>
-    /// Note: Section Draw() methods may themselves call ImGui methods which would fail without
-    /// a valid ImGui context. For this test, we use mock sections that do nothing in Draw().
-    /// </para>
-    /// </remarks>
-    [TestMethod]
-    public void Draw_WithSections_CallsSectionDrawMethods()
-    {
-        // Arrange
-        var mockSection1 = new Mock<IPanelSection>();
-        mockSection1.SetupGet(s => s.SectionId).Returns("Section1");
-        mockSection1.SetupGet(s => s.Order).Returns(0);
-        mockSection1.SetupGet(s => s.TreeNodeLabel).Returns((string?)null);
-        mockSection1.SetupGet(s => s.TreeNodeDefaultOpen).Returns(false);
-        mockSection1.Setup(s => s.Draw()).Verifiable();
-
-        var mockSection2 = new Mock<IPanelSection>();
-        mockSection2.SetupGet(s => s.SectionId).Returns("Section2");
-        mockSection2.SetupGet(s => s.Order).Returns(1);
-        mockSection2.SetupGet(s => s.TreeNodeLabel).Returns((string?)null);
-        mockSection2.SetupGet(s => s.TreeNodeDefaultOpen).Returns(false);
-        mockSection2.Setup(s => s.Draw()).Verifiable();
-
-        var panel = new PluginPanel("TestScope", rootNodeLabel: null);
-        panel.Add(mockSection1.Object);
-        panel.Add(mockSection2.Object);
 
         // Act
         panel.Draw();
 
         // Assert
-        // Verify that Draw was called on each section, proving DrawSections executed
-        mockSection1.Verify(s => s.Draw(), Times.AtLeastOnce());
-        mockSection2.Verify(s => s.Draw(), Times.AtLeastOnce());
+        Assert.AreEqual(0, renderer.PushIds.Count);
+        Assert.AreEqual(0, renderer.PopIdCount);
+        Assert.AreEqual(0, renderer.TreeNodes.Count);
+        Assert.AreEqual(0, renderer.TreePopCount);
+        Assert.AreEqual(0, renderer.SeparatorCount);
     }
 
     /// <summary>
-    /// Tests that Draw can be called multiple times on the same panel without exceptions.
+    /// Tests that a flat panel pushes and pops its ID scope and draws the trailing separator.
     /// </summary>
-    /// <remarks>
-    /// Simulates the typical usage pattern where Draw is called every frame from an ImGui callback.
-    /// Cannot verify that ImGui state remains balanced across multiple calls.
-    /// </remarks>
     [TestMethod]
-    public void Draw_CalledMultipleTimes_CompletesSuccessfullyEachTime()
+    public void Draw_WithNoRootNodeAndNoSections_PushesScopeDrawsSeparatorAndPopsScope()
     {
         // Arrange
-        var panel = new PluginPanel("TestScope", rootNodeLabel: "Settings");
+        var renderer = new TestPluginPanelRenderer();
+        using var panel = new PluginPanel("FlatScope", rootNodeLabel: null, rootNodeDefaultOpen: false, drawSeparator: true, renderer);
 
-        // Act - should not throw on multiple calls
-        panel.Draw();
-        panel.Draw();
+        // Act
         panel.Draw();
 
-        // Assert - implicit: no exception thrown
+        // Assert
+        Assert.AreEqual(1, renderer.PushIds.Count);
+        Assert.AreEqual("FlatScope", renderer.PushIds[0]);
+        Assert.AreEqual(1, renderer.PopIdCount);
+        Assert.AreEqual(0, renderer.TreeNodes.Count);
+        Assert.AreEqual(0, renderer.TreePopCount);
+        Assert.AreEqual(1, renderer.SeparatorCount);
     }
 
     /// <summary>
-    /// Tests that disposing a panel after calling Draw multiple times works correctly.
+    /// Tests that a closed root tree node prevents section drawing and skips the separator.
     /// </summary>
-    /// <remarks>
-    /// Verifies the disposal flow after normal usage.
-    /// </remarks>
     [TestMethod]
-    public void Draw_CalledBeforeDisposal_AllowsSuccessfulDisposal()
+    public void Draw_WithClosedRootNode_SkipsSectionsAndSeparator()
     {
         // Arrange
-        var panel = new PluginPanel("TestScope");
-        panel.Draw();
+        var renderer = new TestPluginPanelRenderer();
+        renderer.TreeNodeResults.Enqueue(false);
+        var sectionDrawn = false;
+        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Settings", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
+        panel.Add(new CallbackPanelSection("SectionA", 0, null, false, () => sectionDrawn = true));
+
+        // Act
         panel.Draw();
 
-        // Act - should not throw
-        panel.Dispose();
+        // Assert
+        Assert.AreEqual(1, renderer.PushIds.Count);
+        Assert.AreEqual("RootScope", renderer.PushIds[0]);
+        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
+        Assert.IsFalse(sectionDrawn);
+        Assert.AreEqual(0, renderer.TreePopCount);
+        Assert.AreEqual(0, renderer.SeparatorCount);
+        Assert.AreEqual(1, renderer.PopIdCount);
+    }
 
-        // Assert - calling Draw after disposal should be a no-op
+    /// <summary>
+    /// Tests that an open root tree node draws sections in sorted order, draws the separator, and
+    /// pops the root node.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WithOpenRootNode_DrawsSectionsInOrderAndPopsRootNode()
+    {
+        // Arrange
+        var renderer = new TestPluginPanelRenderer();
+        renderer.TreeNodeResults.Enqueue(true);
+        var calls = new List<int>();
+        using var panel = new PluginPanel("OpenRootScope", rootNodeLabel: "Settings", rootNodeDefaultOpen: true, drawSeparator: true, renderer);
+        panel.Add(new CallbackPanelSection("Section2", 2, null, false, () => calls.Add(2)));
+        panel.Add(new CallbackPanelSection("Section1", 1, null, false, () => calls.Add(1)));
+
+        // Act
         panel.Draw();
+
+        // Assert
+        CollectionAssert.AreEqual(new[] { 1, 2 }, calls);
+        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
+        Assert.AreEqual(1, renderer.TreePopCount);
+        Assert.AreEqual(1, renderer.SeparatorCount);
+        Assert.AreEqual(1, renderer.PopIdCount);
+    }
+
+    /// <summary>
+    /// Tests that a section tree node uses the sanitized label and section ID suffix and skips the
+    /// section body when the tree is closed.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WithClosedSectionTreeNode_SanitizesLabelAndSkipsSectionBody()
+    {
+        // Arrange
+        var renderer = new TestPluginPanelRenderer();
+        renderer.TreeNodeResults.Enqueue(false);
+        var drawCount = 0;
+        using var panel = new PluginPanel("SectionTreeScope", rootNodeLabel: null, rootNodeDefaultOpen: false, drawSeparator: false, renderer);
+        panel.Add(new CallbackPanelSection("MySection", 0, "General##IgnoredSuffix", true, () => drawCount++));
+
+        // Act
+        panel.Draw();
+
+        // Assert
+        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.AreEqual(("General##MySection", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
+        Assert.AreEqual(0, drawCount);
+        Assert.AreEqual(0, renderer.TreePopCount);
+        Assert.AreEqual(0, renderer.SeparatorCount);
+        Assert.AreEqual(1, renderer.PopIdCount);
+    }
+
+    /// <summary>
+    /// Tests that tree and scope cleanup still occur when a section throws during drawing.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenSectionThrows_PopsTreeNodeAndScopeAndRethrows()
+    {
+        // Arrange
+        var renderer = new TestPluginPanelRenderer();
+        renderer.TreeNodeResults.Enqueue(true);
+        using var panel = new PluginPanel("ThrowScope", rootNodeLabel: null, rootNodeDefaultOpen: false, drawSeparator: false, renderer);
+        panel.Add(new CallbackPanelSection("ThrowingSection", 0, "Boom", false, () => throw new InvalidOperationException("boom")));
+
+        InvalidOperationException? exception = null;
+
+        // Act
+        try
+        {
+            panel.Draw();
+        }
+        catch (InvalidOperationException ex)
+        {
+            exception = ex;
+        }
+
+        // Assert
+        Assert.IsNotNull(exception);
+        Assert.AreEqual("boom", exception.Message);
+        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.AreEqual(("Boom##ThrowingSection", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
+        Assert.AreEqual(1, renderer.TreePopCount);
+        Assert.AreEqual(1, renderer.PopIdCount);
+        Assert.AreEqual(0, renderer.SeparatorCount);
+    }
+
+    /// <summary>
+    /// Minimal panel section used to observe <see cref="PluginPanel"/> draw behavior.
+    /// </summary>
+    private sealed class CallbackPanelSection(
+        string sectionId,
+        int order,
+        string? treeNodeLabel,
+        bool treeNodeDefaultOpen,
+        Action callback) : IPanelSection
+    {
+        public int Order => order;
+
+        public string? TreeNodeLabel => treeNodeLabel;
+
+        public bool TreeNodeDefaultOpen => treeNodeDefaultOpen;
+
+        public string SectionId => sectionId;
+
+        public void Draw() => callback();
+
+        public void Dispose()
+        {
+        }
     }
 }
 
