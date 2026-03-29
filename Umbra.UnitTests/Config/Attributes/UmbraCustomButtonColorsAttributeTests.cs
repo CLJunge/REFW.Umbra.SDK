@@ -1,8 +1,3 @@
-﻿using System;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra.Config.Attributes;
-
 namespace Umbra.Config.Attributes.UnitTests;
 
 
@@ -301,9 +296,9 @@ public sealed class UmbraCustomButtonColorsAttributeTests
     public void Constructor_WithTypicalValues_SetsAllPropertiesCorrectly()
     {
         // Arrange
-        float r = 0.5f;
-        float g = 0.5f;
-        float b = 0.5f;
+        var r = 0.5f;
+        var g = 0.5f;
+        var b = 0.5f;
 
         // Act
         var attribute = new UmbraCustomButtonColorsAttribute(r, g, b);
@@ -690,7 +685,7 @@ public sealed class UmbraCustomButtonColorsAttributeTests
     public void Constructor_WithEpsilonValues_HandlesSmallFloatsPrecisely()
     {
         // Arrange
-        float epsilon = float.Epsilon;
+        var epsilon = float.Epsilon;
 
         // Act
         var attribute = new UmbraCustomButtonColorsAttribute(epsilon, epsilon, epsilon);

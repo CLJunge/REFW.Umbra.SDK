@@ -1,8 +1,3 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using Umbra.Config.Attributes;
-
-
 namespace Umbra.Config.Attributes.UnitTests;
 
 /// <summary>
@@ -23,7 +18,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
         var attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
 
         // Act
-        Type result = attribute.DrawerType;
+        var result = attribute.DrawerType;
 
         // Assert
         Assert.IsNotNull(result);
@@ -42,7 +37,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
         var attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer2>();
 
         // Act
-        Type result = attribute.DrawerType;
+        var result = attribute.DrawerType;
 
         // Assert
         Assert.IsNotNull(result);
@@ -61,8 +56,8 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
         var attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
 
         // Act
-        Type result1 = attribute.DrawerType;
-        Type result2 = attribute.DrawerType;
+        var result1 = attribute.DrawerType;
+        var result2 = attribute.DrawerType;
 
         // Assert
         Assert.AreSame(result1, result2);
@@ -81,8 +76,8 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
         var attribute2 = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
 
         // Act
-        Type result1 = attribute1.DrawerType;
-        Type result2 = attribute2.DrawerType;
+        var result1 = attribute1.DrawerType;
+        var result2 = attribute2.DrawerType;
 
         // Assert
         Assert.AreEqual(result1, result2);
@@ -101,7 +96,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
         var attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
 
         // Act
-        Type result = attribute.DrawerType;
+        var result = attribute.DrawerType;
 
         // Assert
         Assert.IsTrue(result.IsClass);
@@ -119,7 +114,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
         var attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
 
         // Act
-        Type result = attribute.DrawerType;
+        var result = attribute.DrawerType;
 
         // Assert
         Assert.IsNotNull(result.FullName);

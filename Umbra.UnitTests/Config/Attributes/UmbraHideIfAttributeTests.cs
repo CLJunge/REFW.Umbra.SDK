@@ -1,8 +1,3 @@
-﻿using System;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra.Config.Attributes;
-
 namespace Umbra.Config.Attributes.UnitTests;
 
 
@@ -164,7 +159,7 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_WithVeryLongMemberName_AcceptsLongString()
     {
         // Arrange
-        string memberName = new string('a', 10000);
+        var memberName = new string('a', 10000);
         const int value = 100;
 
         // Act
@@ -394,7 +389,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(expectedValue, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(int));
+        Assert.IsInstanceOfType<int>(boxedValue);
     }
 
     /// <summary>
@@ -414,7 +409,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(expectedValue, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(string));
+        Assert.IsInstanceOfType<string>(boxedValue);
     }
 
     /// <summary>
@@ -424,7 +419,7 @@ public sealed class UmbraHideIfAttributeTests
     public void BoxedValue_WithNullStringValue_ReturnsNull()
     {
         // Arrange
-        var attribute = new UmbraHideIfAttribute<string>("memberName", null);
+        var attribute = new UmbraHideIfAttribute<string>("memberName", null!);
         var hideIfAttribute = (IHideIfAttribute)attribute;
 
         // Act
@@ -467,7 +462,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(0, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(int));
+        Assert.IsInstanceOfType<int>(boxedValue);
     }
 
     /// <summary>
@@ -489,7 +484,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(value, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(bool));
+        Assert.IsInstanceOfType<bool>(boxedValue);
     }
 
     /// <summary>
@@ -514,7 +509,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(value, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(int));
+        Assert.IsInstanceOfType<int>(boxedValue);
     }
 
     /// <summary>
@@ -549,7 +544,7 @@ public sealed class UmbraHideIfAttributeTests
         {
             Assert.AreEqual(value, boxedValue);
         }
-        Assert.IsInstanceOfType(boxedValue, typeof(double));
+        Assert.IsInstanceOfType<double>(boxedValue);
     }
 
     /// <summary>
@@ -623,7 +618,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(string.Empty, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(string));
+        Assert.IsInstanceOfType<string>(boxedValue);
     }
 
     /// <summary>
@@ -643,7 +638,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(value, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(string));
+        Assert.IsInstanceOfType<string>(boxedValue);
     }
 
     /// <summary>
@@ -663,7 +658,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(value, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(string));
+        Assert.IsInstanceOfType<string>(boxedValue);
     }
 
     /// <summary>
@@ -683,7 +678,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(value, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(string));
+        Assert.IsInstanceOfType<string>(boxedValue);
     }
 
     /// <summary>
@@ -703,7 +698,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(value, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(DayOfWeek));
+        Assert.IsInstanceOfType<DayOfWeek>(boxedValue);
     }
 
     /// <summary>
@@ -723,7 +718,7 @@ public sealed class UmbraHideIfAttributeTests
         // Assert
         Assert.IsNotNull(boxedValue);
         Assert.AreEqual(value, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(DayOfWeek));
+        Assert.IsInstanceOfType<DayOfWeek>(boxedValue);
     }
 
     /// <summary>
@@ -733,7 +728,7 @@ public sealed class UmbraHideIfAttributeTests
     public void BoxedValue_WithObjectNull_ReturnsNull()
     {
         // Arrange
-        var attribute = new UmbraHideIfAttribute<object>("memberName", null);
+        var attribute = new UmbraHideIfAttribute<object>("memberName", null!);
         var hideIfAttribute = (IHideIfAttribute)attribute;
 
         // Act
@@ -777,8 +772,8 @@ public sealed class UmbraHideIfAttributeTests
 
         // Assert
         Assert.IsNotNull(boxedValue);
-        Assert.AreEqual(false, boxedValue);
-        Assert.IsInstanceOfType(boxedValue, typeof(bool));
+        Assert.IsFalse((bool?)boxedValue);
+        Assert.IsInstanceOfType<bool>(boxedValue);
     }
 
     /// <summary>
@@ -816,7 +811,7 @@ public sealed class UmbraHideIfAttributeTests
 
         // Assert
         Assert.AreEqual(memberName, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -836,7 +831,7 @@ public sealed class UmbraHideIfAttributeTests
 
         // Assert
         Assert.AreEqual(memberName, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -849,7 +844,7 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_ValidMemberNameWithStringType_InitializesPropertiesCorrectly()
     {
         // Arrange
-        string memberName = "UserName";
+        var memberName = "UserName";
 
         // Act
         var attribute = new UmbraHideIfAttribute<string>(memberName);
@@ -869,14 +864,14 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_ValidMemberNameWithDoubleType_InitializesPropertiesCorrectly()
     {
         // Arrange
-        string memberName = "Temperature";
+        var memberName = "Temperature";
 
         // Act
         var attribute = new UmbraHideIfAttribute<double>(memberName);
 
         // Assert
         Assert.AreEqual(memberName, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -889,7 +884,7 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_ValidMemberNameWithNullableIntType_InitializesPropertiesCorrectly()
     {
         // Arrange
-        string memberName = "OptionalCount";
+        var memberName = "OptionalCount";
 
         // Act
         var attribute = new UmbraHideIfAttribute<int?>(memberName);
@@ -908,14 +903,14 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_EmptyStringMemberName_AcceptsAndInitializesProperties()
     {
         // Arrange
-        string memberName = string.Empty;
+        var memberName = string.Empty;
 
         // Act
         var attribute = new UmbraHideIfAttribute<bool>(memberName);
 
         // Assert
         Assert.AreEqual(string.Empty, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -935,7 +930,7 @@ public sealed class UmbraHideIfAttributeTests
 
         // Assert
         Assert.AreEqual(memberName, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -947,14 +942,14 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_VeryLongMemberName_AcceptsAndInitializesProperties()
     {
         // Arrange
-        string memberName = new string('A', 10000);
+        var memberName = new string('A', 10000);
 
         // Act
         var attribute = new UmbraHideIfAttribute<bool>(memberName);
 
         // Assert
         Assert.AreEqual(memberName, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -980,7 +975,7 @@ public sealed class UmbraHideIfAttributeTests
 
         // Assert
         Assert.AreEqual(memberName, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -999,7 +994,7 @@ public sealed class UmbraHideIfAttributeTests
 
         // Assert
         Assert.IsNull(attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -1011,14 +1006,14 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_ValidMemberNameWithEnumType_InitializesPropertiesCorrectly()
     {
         // Arrange
-        string memberName = "Status";
+        var memberName = "Status";
 
         // Act
         var attribute = new UmbraHideIfAttribute<DayOfWeek>(memberName);
 
         // Assert
         Assert.AreEqual(memberName, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -1030,7 +1025,7 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_ValidMemberNameWithObjectType_InitializesPropertiesCorrectly()
     {
         // Arrange
-        string memberName = "Data";
+        var memberName = "Data";
 
         // Act
         var attribute = new UmbraHideIfAttribute<object>(memberName);
@@ -1049,14 +1044,14 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_ValidMemberNameWithFloatType_InitializesPropertiesCorrectly()
     {
         // Arrange
-        string memberName = "Ratio";
+        var memberName = "Ratio";
 
         // Act
         var attribute = new UmbraHideIfAttribute<float>(memberName);
 
         // Assert
         Assert.AreEqual(memberName, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 
@@ -1068,7 +1063,7 @@ public sealed class UmbraHideIfAttributeTests
     public void Constructor_SingleParameter_BoxedValueReturnsNull()
     {
         // Arrange
-        string memberName = "TestMember";
+        var memberName = "TestMember";
 
         // Act
         var attribute = new UmbraHideIfAttribute<int>(memberName);
@@ -1093,7 +1088,7 @@ public sealed class UmbraHideIfAttributeTests
 
         // Assert
         Assert.AreEqual(memberName, attribute.MemberName);
-        Assert.IsNull(attribute.Value);
+        Assert.Fail();
         Assert.IsFalse(attribute.HasValue);
     }
 }
