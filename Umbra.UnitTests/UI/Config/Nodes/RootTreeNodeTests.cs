@@ -1,6 +1,3 @@
-using Moq;
-
-
 namespace Umbra.UI.Config.Nodes.UnitTests;
 
 /// <summary>
@@ -9,6 +6,9 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 [TestClass]
 public sealed class RootTreeNodeTests
 {
+    private static readonly int[] expectedOneElement = new[] { 1 };
+    private static readonly int[] expectedThreeElements = new[] { 1, 2, 3 };
+
     /// <summary>
     /// Tests that a closed root tree node does not draw children or pop the tree node.
     /// </summary>
@@ -53,7 +53,7 @@ public sealed class RootTreeNodeTests
         node.Draw();
 
         // Assert
-        CollectionAssert.AreEqual(new[] { 1, 2, 3 }, calls);
+        CollectionAssert.AreEqual(expectedThreeElements, calls);
         Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Parent Node", false), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
@@ -92,7 +92,7 @@ public sealed class RootTreeNodeTests
         // Assert
         Assert.IsNotNull(exception);
         Assert.AreEqual("boom", exception.Message);
-        CollectionAssert.AreEqual(new[] { 1 }, calls);
+        CollectionAssert.AreEqual(expectedOneElement, calls);
         Assert.AreEqual(1, renderer.TreePopCount);
     }
 

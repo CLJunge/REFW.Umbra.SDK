@@ -2,7 +2,6 @@ using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.Logging;
 using Umbra.Logging.UnitTests;
-using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config.UnitTests;
 
@@ -62,7 +61,7 @@ public sealed class ConfigDrawerTests
         Assert.AreEqual(0, scope.PopCount);
         Assert.AreEqual(0, node.DrawCount);
         Assert.HasCount(1, _logSink.WarningMessages);
-        Assert.AreEqual(true, _logSink.WarningMessages[0].Contains("disposed instance"));
+        Assert.Contains("disposed instance", _logSink.WarningMessages[0]);
     }
 
     /// <summary>

@@ -12,8 +12,6 @@ namespace Umbra.UI.Config.Nodes;
 /// live ImGui context. The pop operation is guaranteed to run even if a child node throws while
 /// drawing.
 /// </remarks>
-/// <param name="scopeId">The stable ImGui ID pushed before drawing the subtree.</param>
-/// <param name="children">The child nodes that should render inside the pushed ID scope.</param>
 internal sealed class IdScopeNode : IDrawNode
 {
     private readonly string _scopeId;

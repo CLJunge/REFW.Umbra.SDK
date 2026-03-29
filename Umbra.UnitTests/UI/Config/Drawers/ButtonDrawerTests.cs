@@ -134,7 +134,7 @@ public sealed class ButtonDrawerTests
         Assert.AreEqual(ButtonStyle.Default, _renderer.PushedStyles[0]);
         Assert.AreEqual(ButtonStyle.Default, _renderer.PushedStyles[1]);
         Assert.HasCount(1, _logSink.WarningMessages);
-        Assert.AreEqual(true, _logSink.WarningMessages[0].Contains("ButtonStyle.Custom"));
+        Assert.Contains("ButtonStyle.Custom", _logSink.WarningMessages[0]);
     }
 
     /// <summary>
