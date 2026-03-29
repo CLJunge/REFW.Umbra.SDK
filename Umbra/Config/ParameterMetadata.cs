@@ -134,7 +134,7 @@ public sealed class ParameterMetadata
     public int? MultilineLines { get; init; }
 
     /// <summary>
-    /// Gets the explicit display order for this parameter within its category context.
+    /// Gets the explicit display order for this parameter within its local rendered scope.
     /// Lower values appear first; parameters without an order value sort after all explicitly
     /// ordered entries (using <see cref="int.MaxValue"/> as an implicit sentinel), with
     /// original declaration order preserved among equals via stable sort.
@@ -143,14 +143,16 @@ public sealed class ParameterMetadata
     public int? Order { get; init; }
 
     /// <summary>
-    /// Gets the number of <c>ImGui.Spacing()</c> calls inserted <em>above</em> this parameter's control.
+    /// Gets the number of <see cref="Hexa.NET.ImGui.ImGui.Spacing()"/> calls inserted
+    /// <em>above</em> this parameter's control.
     /// Sourced from <see cref="UmbraSpacingBeforeAttribute"/>. Defaults to <c>0</c> (no extra spacing) when the
     /// attribute is absent.
     /// </summary>
     public int SpacingBefore { get; init; }
 
     /// <summary>
-    /// Gets the number of <c>ImGui.Spacing()</c> calls inserted <em>below</em> this parameter's control.
+    /// Gets the number of <see cref="Hexa.NET.ImGui.ImGui.Spacing()"/> calls inserted
+    /// <em>below</em> this parameter's control.
     /// Sourced from <see cref="UmbraSpacingAfterAttribute"/>. Defaults to <c>0</c> (no extra spacing) when the
     /// attribute is absent.
     /// </summary>
@@ -160,8 +162,9 @@ public sealed class ParameterMetadata
     /// Gets the indentation width in pixels to apply around this parameter's control, or
     /// <see langword="null"/> when no indentation is requested.
     /// Sourced from the property-level <see cref="UmbraIndentAttribute"/>.
-    /// <c>0f</c> means use ImGui's default indent spacing (<c>ImGui.GetStyle().IndentSpacing</c>);
-    /// a positive value specifies an explicit pixel width.
+    /// <c>0f</c> means use ImGui's default indent spacing
+    /// (<see cref="Hexa.NET.ImGui.ImGui.GetStyle()"/> <c>.IndentSpacing</c>); a positive value
+    /// specifies an explicit pixel width.
     /// <see langword="null"/> when the attribute is absent — the class-level <see cref="UmbraIndentAttribute"/>
     /// (if any) is used as fallback by <see cref="Umbra.UI.Config.ConfigDrawerBuilder"/>.
     /// </summary>
@@ -180,7 +183,7 @@ public sealed class ParameterMetadata
     /// <summary>
     /// Gets the concrete <see cref="Umbra.UI.Config.Drawers.ITwoColumnParameterDrawer"/> type
     /// used to render this parameter's editing widget, or <see langword="null"/> when no
-    /// <c>[TwoColumnCustomDrawer&lt;TDrawer&gt;]</c> attribute is present. When non-<see langword="null"/>,
+    /// <c>[UmbraTwoColumnCustomDrawer&lt;TDrawer&gt;]</c> attribute is present. When non-<see langword="null"/>,
     /// <see cref="Umbra.UI.Config.ControlFactory"/> instantiates this type and delegates widget rendering to it while retaining
     /// the standard two-column label layout.
     /// Sourced from <see cref="UmbraTwoColumnCustomDrawerAttribute{TDrawer}"/> via a single attribute scan in
@@ -198,9 +201,10 @@ public sealed class ParameterMetadata
 
     /// <summary>
     /// Gets the fully resolved printf format string used by float and double ImGui controls.
-    /// Equals <see cref="Format"/> when a <c>[Format(...)]</c> attribute is present; otherwise
-    /// the value inferred from the decimal-place count of <see cref="Step"/>, defaulting to
-    /// <c>"%.2f"</c>. Precomputed by <see cref="ParameterMetadataReader"/> during
+    /// Equals <see cref="Format"/> when an <see cref="UmbraFormatAttribute"/> (<c>[UmbraFormat(...)]</c>)
+    /// attribute is present; otherwise the value inferred from the decimal-place count of
+    /// <see cref="Step"/>, defaulting to <c>"%.2f"</c>. Precomputed by
+    /// <see cref="ParameterMetadataReader"/> during
     /// <see cref="SettingsStore{TConfig}.Load()"/> to eliminate <c>Number.FormatFloat</c> overhead at
     /// draw-tree construction time.
     /// </summary>

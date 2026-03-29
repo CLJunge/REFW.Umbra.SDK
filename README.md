@@ -13,12 +13,12 @@ A support library for building REFramework.NET mods and plugins for RE Engine ga
 - safe plugin logging
 - keyboard capture helpers
 
-The repository also includes `Umbra.SamplePlugin`, which demonstrates the current configuration and panel workflow.
+The repository also includes `Umbra.SamplePlugin`, which demonstrates the current configuration and panel workflow, and `Umbra.Tests`, which provides focused automated coverage for settings, lifecycle, and persistence behaviors.
 
 ## Features
 
 - Attribute-driven settings registration with `SettingsStore<TConfig>` and `Parameter<T>`
-- JSON persistence for `bool`, `int`, `float`, `double`, `string`, and `enum` parameters
+- JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable-enum parameters
 - Deferred auto-save with `DeferredSaveController<TConfig>`
 - Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
@@ -26,7 +26,26 @@ The repository also includes `Umbra.SamplePlugin`, which demonstrates the curren
 - Per-plugin logging with `PluginLogger`
 - Global SDK logging control with `Logger`
 - Keyboard capture utilities in `KeyboardInput`
-- Small runtime helper `ManagedObjectResolver` for resolving REFramework managed objects
+- Small runtime helper `ManagedObjectResolver` with `Resolve<T>` / `TryResolve<T>` for resolving REFramework managed objects
+
+### Default config drawers
+
+- `Parameter<Action>` → button via `ButtonDrawer`
+- `Parameter<bool>` → checkbox
+- `Parameter<int>` → slider when `[UmbraRange]` is present, otherwise drag input
+- `Parameter<float>` → slider when `[UmbraRange]` is present, otherwise drag input
+- `Parameter<double>` → slider when `[UmbraRange]` is present, otherwise drag input
+- `Parameter<string>` → single-line text input by default, multiline text input when `[UmbraMultiline]` is present
+- `Parameter<TEnum>` → enum combo box
+- `Parameter<TEnum?>` → enum combo box with a `<None>` option for `null`
+- Explicit `[UmbraCustomDrawer<TDrawer>]` and `[UmbraTwoColumnCustomDrawer<TDrawer>]` override the defaults
+
+### Custom drawers
+
+- `[UmbraCustomDrawer<TDrawer>]` uses an `IParameterDrawer` and gives the drawer full control over the entire parameter row
+- `[UmbraTwoColumnCustomDrawer<TDrawer>]` uses an `ITwoColumnParameterDrawer` and keeps the standard two-column label layout while the drawer renders only the editing widget
+- `[UmbraNestedGroupDrawer<TDrawer>]` uses an `INestedGroupDrawer<T>` and replaces the normal recursive rendering for an entire nested settings group
+- Use a custom parameter drawer when you need a completely custom control layout, a two-column drawer when you want a custom widget that still aligns with normal settings rows, and a nested-group drawer when one drawer should own a whole section
 
 ## Architecture Summary
 
@@ -59,8 +78,10 @@ REFW.Umbra
 │  │  └─ KeyboardInput
 │  └─ Runtime
 │     └─ ManagedObjectResolver
-└─ Umbra.SamplePlugin
-   └─ reference plugin showing settings, deferred save, nested groups, and custom drawers
+├─ Umbra.SamplePlugin
+│  └─ reference plugin showing settings, deferred save, nested groups, custom drawers, and broad control coverage
+└─ Umbra.Tests
+   └─ automated tests covering settings registration, persistence recovery, lifecycle guards, and listener bookkeeping
 ```
 
 ### Main flow
@@ -71,6 +92,19 @@ REFW.Umbra
 4. Render it with `ConfigDrawer<TConfig>` directly or through `ConfigSection<TConfig>` inside `PluginPanel`.
 5. For live read-only or hook-driven state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
 6. On unload, flush/dispose the save controller, save/dispose the store, then dispose the panel.
+
+- `DeferredSaveController<TConfig>` requires a store that has already completed `Load()` and throws immediately if constructed too early.
+- `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed` for explicit lifecycle checks.
+- Core APIs (`Save()`, listeners, `ResetAll()`, `CopyValuesTo(...)`) require the store to be loaded.
+- Listener registration/removal APIs on `SettingsStore<TConfig>` now validate `listener`/`predicate` arguments explicitly and throw `ArgumentNullException` for invalid inputs.
+- Preferred unload order: controller first, then store; controller cleanup remains safe after store disposal, but pending saves are lost.
+- On unreadable JSON, `Load()` attempts a timestamped `.invalid-*.json` backup and restores defaults; if backup fails, the file is left untouched, defaults are used for the session, and future `Save()` calls are suppressed.
+
+### Notes on persisted key names
+
+- Setting keys are built from `[UmbraSettingsPrefix("...")]` + parameter name (or `keyOverride`).
+- Changing the prefix effectively renames/regroups persisted keys.
+- Prefix changes do **not** migrate existing JSON automatically: values saved under the old key names will no longer be loaded until the file is updated to the new keys.
 
 ## Setup Instructions
 
@@ -89,7 +123,7 @@ From the repository root:
 .\scripts\setup_reframework_deps.ps1
 ```
 
-This prepares the REFramework API references used by both projects.
+This prepares the REFramework API references used by both projects and also sets up the deployment scripts that copy the output DLLs to the correct location under the game `reframework` directory.
 
 ### Build
 
@@ -97,11 +131,10 @@ This prepares the REFramework API references used by both projects.
 dotnet build REFW.Umbra.slnx
 ```
 
-You can also build individual projects:
+### Test
 
 ```bash
-dotnet build Umbra/Umbra.csproj
-dotnet build Umbra.SamplePlugin/Umbra.SamplePlugin.csproj
+dotnet test Umbra.Tests/Umbra.Tests.csproj
 ```
 
 In Debug builds, the repository uses the local deployment scripts configured in each project:
@@ -194,4 +227,4 @@ public static class MyPlugin
 }
 ```
 
-For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested groups, hotkey drawers, button drawers, custom nested-group drawers, and deferred saving.
+For a fuller reference, see `Umbra.SamplePlugin`, which now organizes the sample config into nested groups for booleans, numeric sliders and drags, strings, enums, custom drawers, nested-group drawers, and nested-type presentation tests alongside deferred saving.

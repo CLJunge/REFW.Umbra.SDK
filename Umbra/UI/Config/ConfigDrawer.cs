@@ -34,7 +34,7 @@ namespace Umbra.UI.Config;
 /// scope derived from its structural settings path, so custom nested-group drawers can safely
 /// reuse local widget labels in different branches. Apply <see cref="UmbraConfigRootNodeAttribute"/>
 /// to the root config class to wrap the entire panel inside a single top-level
-/// <c>ImGui.TreeNode</c>.
+/// <see cref="ImGui.TreeNode(string)"/>.
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">
@@ -71,10 +71,13 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// Pass <see langword="true"/> when the owning <see cref="ConfigSection{TConfig}"/>
     /// is responsible for the tree node so that the wrapping is not duplicated.
     /// </param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
     public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)
     {
+        ArgumentNullException.ThrowIfNull(config);
         if (string.IsNullOrWhiteSpace(idScope))
-            throw new ArgumentException("idScope cannot be null or whitespace when supplied.", nameof(idScope));
+            throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
         var builder = new ConfigDrawerBuilder();
@@ -100,10 +103,11 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// </summary>
     /// <remarks>
     /// <para>
-    /// All widget IDs rendered during this call are bracketed by <c>ImGui.PushID(idScope)</c> /
-    /// <c>ImGui.PopID()</c>, making every <c>##key</c> label unique across plugins without any
-    /// changes to individual controls or custom drawers. The scope is always popped before this
-    /// method returns, even if a node throws while drawing.
+    /// All widget IDs rendered during this call are bracketed by
+    /// <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>, making every
+    /// <c>##key</c> label unique across plugins without any changes to individual controls or
+    /// custom drawers. The scope is always popped before this method returns, even if a node
+    /// throws while drawing.
     /// </para>
     /// <para>
     /// A no-op when the instance has been disposed; logs a warning rather than throwing so

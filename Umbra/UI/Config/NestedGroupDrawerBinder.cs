@@ -37,6 +37,9 @@ internal static class NestedGroupDrawerBinder
     private sealed class NestedGroupDrawerFactory(bool isSupported, Action<object, object>? invoker)
     {
         internal bool IsSupported { get; } = isSupported;
+        private int _unsupportedLogged;
+
+        internal bool TryMarkUnsupportedLogged() => Interlocked.Exchange(ref _unsupportedLogged, 1) == 0;
 
         internal Action Bind(object drawerInstance, object nested)
         {
@@ -73,8 +76,12 @@ internal static class NestedGroupDrawerBinder
 
         if (!factory.IsSupported)
         {
-            Logger.Error(
-                $"ConfigDrawer: nested group drawer '{drawerType.Name}' does not support group type '{groupType.FullName}'.");
+            if (factory.TryMarkUnsupportedLogged())
+            {
+                Logger.Error(
+                    $"ConfigDrawer: nested group drawer '{drawerType.Name}' does not support group type '{groupType.FullName}'.");
+            }
+
             return null;
         }
 

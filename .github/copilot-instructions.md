@@ -86,11 +86,15 @@ internal static class FovHooks
   - `[HideIf<T>("MemberName", value)]` — hides the control while the named member equals `value`.
   - `[CustomDrawer<TDrawer>]` — renders the control using a custom `IParameterDrawer` implementation instead of the default; `TDrawer` must implement `IParameterDrawer` and have a public parameterless constructor.
   - `[TwoColumnCustomDrawer<TDrawer>]` — renders the control using an `ITwoColumnParameterDrawer` implementation that participates in the standard two-column label layout.
-- Supported `Parameter<T>` value types for JSON persistence: `bool`, `int`, `float`, `double`, `string`, and any `enum`.
+- Supported `Parameter<T>` value types for JSON persistence: `bool`, `int`, `float`, `double`, `string`, any `enum`, and nullable enum types.
+- Built-in enum UI rendering also supports nullable enum parameters via a combo box with an explicit `<None>` option.
 - `SettingsStore<TConfig>` additional API:
-  - `CopyValuesTo(target, setWithoutNotifying)` — mirrors all parameter values into another store instance.
+  - `CopyValuesTo(target, setWithoutNotifying)` — mirrors all parameter values into another store instance. The target store must already be loaded and not disposed.
   - `AddListenerToAll(Action)` / `AddListenerToAll<T>(Action<T?,T?>)` — subscribes to `ValueChanged` on all (or type-matched) parameters; listeners are auto-removed on `Dispose`.
   - `RemoveListenerFromAll(Action)` / `RemoveListenerFromAll<T>(Action<T?,T?>)` — manually unsubscribes listeners.
+  - `Save()`, listener registration/removal, `ResetAll()`, and `CopyValuesTo(...)` all require `Load()` to have completed first.
+  - Listener registration/removal APIs validate `listener` and `predicate` arguments explicitly and throw `ArgumentNullException` for null inputs.
+  - If `Load()` encounters an unreadable config file that cannot be backed up safely, the current session is reset back to true declared defaults and later `Save()` calls on that store instance are suppressed so the original file is preserved.
   - `IDisposable` — always dispose `SettingsStore` to clean up event subscriptions.
 - Persistence uses `System.Text.Json` with camelCase property naming and enums serialized as strings.
 - Do not introduce unrelated configuration frameworks.
@@ -184,22 +188,22 @@ internal class MyGroupDrawer : INestedGroupDrawer<MyGroup>
 `PluginPanel` (in `Umbra.UI.Panel`) is the recommended top-level UI type for plugins. It composes an ordered list of `IPanelSection` instances under a shared ImGui ID scope and owns their lifetimes. Use `ConfigDrawer<TConfig>` directly only when the plugin needs a settings panel with no live state.
 
 **Section types:**
-- `ConfigSection<TConfig>` — wraps `ConfigDrawer<TConfig>` as a panel section. Accepts an optional `idScope` that defaults to the config type name.
-- `LiveSection<T>` — renders live game state via an `ILiveSectionDrawer<T>` declared on the state type. Accepts an optional instance (for hook-written state the plugin owns) or constructs one internally.
+- `ConfigSection<TConfig>` — wraps `ConfigDrawer<TConfig>` as a panel section. Accepts an optional `idScope` that defaults to `typeof(TConfig).FullName` and falls back to the type name.
+- `LiveStateSection<T>` — renders live game state via an `ILiveStateSectionDrawer<T>` declared on the state type. Accepts an optional instance (for hook-written state the plugin owns) or constructs one internally.
 
 **Declaring a live state drawer:**
 
-Apply `[LiveSectionDrawer<TDrawer>]` to the state class, not the drawer. The state class is a plain mutable POCO whose fields are written by `[MethodHook]` callbacks and read by the drawer each frame. Use the swap-instance pattern for multi-field updates.
+Apply `[LiveStateSectionDrawer<TDrawer>]` to the state class, not the drawer. The state class is a plain mutable POCO whose fields are written by `[MethodHook]` callbacks and read by the drawer each frame. Use the swap-instance pattern for multi-field updates.
 
 ```csharp
-[LiveSectionDrawer<CameraStatusDrawer>]
+[LiveStateSectionDrawer<CameraStatusDrawer>]
 public sealed class CameraState
 {
     public float      Fov  { get; set; }
     public CameraMode Mode { get; set; }
 }
 
-internal sealed class CameraStatusDrawer : ILiveSectionDrawer<CameraState>
+internal sealed class CameraStatusDrawer : ILiveStateSectionDrawer<CameraState>
 {
     public void Draw(CameraState state)
     {
@@ -254,7 +258,7 @@ internal static class FovHooks
         FovHooks.Attach(_cameraState);
 
         _panel = new PluginPanel("MyPlugin")
-            .Add(new LiveSection<CameraState>(_cameraState))
+            .Add(new LiveStateSection<CameraState>(_cameraState))
             .Add(new ConfigSection<PluginConfig>(config));
     }
 

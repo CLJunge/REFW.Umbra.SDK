@@ -9,22 +9,25 @@ namespace Umbra.UI.Config;
 /// <remarks>
 /// Custom-drawer activation is delegated to <see cref="ParameterDrawerResolver"/>. Built-in
 /// numeric controls are delegated to <see cref="NumericControlBuilder"/>, text controls are
-/// delegated to <see cref="TextControlBuilder"/>, and enum controls are delegated to
-/// <see cref="EnumControlBuilder"/>. This type now focuses on dispatch and shared layout creation.
+/// delegated to <see cref="TextControlBuilder"/>, <see cref="Parameter{T}"/> values of type
+/// <see cref="Action"/> default to <see cref="Drawers.ButtonDrawer"/>, and enum or nullable-enum
+/// controls are delegated to <see cref="EnumControlBuilder"/>. This type now focuses on dispatch
+/// and shared layout creation.
 /// All controls use a two-column text-label layout unconditionally: the parameter label (and
 /// optional <c>(?)</c> help marker) is rendered on the left; the editing widget is placed on
 /// the right at the column x position determined by <see cref="LabelAlignmentGroup"/>. Labels
 /// are registered with the group at build time and measured once on the first draw frame via
 /// <see cref="LabelAlignmentGroup.EnsureSeeded"/>; no per-frame measurement occurs after that.
 /// The widget width defaults to fill-to-right-edge (<c>SetNextItemWidth(-1f)</c>) and can be
-/// fixed with <c>[ControlWidth(px)]</c>.
+/// fixed with <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(px)]</c>).
 /// </remarks>
 internal static class ControlFactory
 {
-    // One entry per supported primitive type. Enum and fallback are handled separately.
+    // One entry per supported built-in value type. Enum and fallback are handled separately.
     // Add or replace entries here to change the default control for any value type.
     private static readonly Dictionary<Type, Func<string, IParameter, LabelAlignmentGroup, Action>> _defaultBuilders = new()
     {
+        [typeof(Action)] = BuildActionDraw,
         [typeof(bool)] = BuildBoolDraw,
         [typeof(int)] = NumericControlBuilder.BuildInt,
         [typeof(float)] = NumericControlBuilder.BuildFloat,
@@ -35,7 +38,7 @@ internal static class ControlFactory
     /// <summary>
     /// Builds a per-frame draw <see cref="Action"/> for <paramref name="parameter"/>,
     /// dispatching first to <see cref="ParameterDrawerResolver"/> for any custom drawer recorded in
-    /// <see cref="ParameterMetadata"/>, then to the built-in primitive table, then to
+    /// <see cref="ParameterMetadata"/>, then to the built-in default-builder table, then to
     /// <see cref="EnumControlBuilder"/>, and finally to a read-only label.
     /// </summary>
     /// <remarks>
@@ -53,10 +56,32 @@ internal static class ControlFactory
         if (_defaultBuilders.TryGetValue(parameter.ValueType, out var builder))
             return (builder(label, parameter, alignGroup), null);
 
-        if (parameter.ValueType.IsEnum)
+        var enumType = Nullable.GetUnderlyingType(parameter.ValueType) ?? parameter.ValueType;
+        if (enumType.IsEnum)
             return (EnumControlBuilder.Build(label, parameter, alignGroup), null);
 
         return (() => ImGui.TextDisabled($"{label}: {parameter.GetValue()}"), null);
+    }
+
+    /// <summary>
+    /// Builds a per-frame draw action that renders a push-button for an
+    /// <see cref="Action"/>-typed parameter.
+    /// </summary>
+    /// <param name="label">The visible button label.</param>
+    /// <param name="parameter">The <see cref="Parameter{T}"/> of type <see cref="Action"/> to render.</param>
+    /// <param name="alignGroup">
+    /// The shared alignment group for the owning category or root scope.
+    /// Unused because <see cref="Drawers.ButtonDrawer"/> owns the full row layout.
+    /// </param>
+    /// <returns>
+    /// An <see cref="Action"/> that renders and invokes the button each frame using a drawer
+    /// instance created once for this parameter during draw-tree construction.
+    /// </returns>
+    private static Action BuildActionDraw(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
+    {
+        _ = alignGroup;
+        var drawer = new Drawers.ButtonDrawer();
+        return () => drawer.Draw(label, parameter);
     }
 
     /// <summary>Builds a per-frame draw action that renders a checkbox for a <see cref="bool"/> parameter.</summary>
@@ -96,21 +121,25 @@ internal static class ControlFactory
     ///       <see cref="LabelAlignmentGroup.Register"/>. On the first draw frame,
     ///       <see cref="ControlLayout.Pre"/> triggers <see cref="LabelAlignmentGroup.EnsureSeeded"/>,
     ///       which measures all registered labels in one <see cref="ImGui.CalcTextSize(string)"/>
-    ///       batch and commits the maximum. <c>ImGui.SetCursorPosX</c> then advances the cursor to
+    ///       batch and commits the maximum. <see cref="ImGui.SetCursorPosX(float)"/> then advances
+    ///       the cursor to
     ///       <c>startX + <see cref="LabelAlignmentGroup.LabelWidth"/> +
     ///       <see cref="LabelAlignmentGroup.Margin"/> + spacing</c> before the widget call.
     ///       The cursor is never moved backward: if a label is wider than the committed group
     ///       maximum (possible on frame 1), the control is placed immediately after the label
     ///       with no overlap. After seeding the committed maximum is frozen and never decreases,
-    ///       so hiding parameters via <c>[HideIf]</c> cannot narrow the column.
+    ///       so hiding parameters via
+    ///       <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>)
+    ///       cannot narrow the column.
     ///     </description>
     ///   </item>
     ///   <item>
     ///     <term>Widget width</term>
     ///     <description>
-    ///       <c>[ControlWidth(px)]</c> fixes the widget to the specified number of pixels via
-    ///       <c>SetNextItemWidth</c>. When no <c>[ControlWidth]</c> is present, <c>-1f</c> is
-    ///       used, which fills to the right content-region edge.
+    ///       <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(px)]</c>)
+    ///       fixes the widget to the specified number of pixels via <c>SetNextItemWidth</c>.
+    ///       When no <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth]</c>)
+    ///       is present, <c>-1f</c> is used, which fills to the right content-region edge.
     ///     </description>
     ///   </item>
     /// </list>

@@ -40,24 +40,57 @@ jobs:
             echo "value=0.0.0-dev" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Resolve REFramework csharp-api.zip asset
+        id: refw_api
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_TAG=$(gh api repos/praydog/REFramework-nightly/releases \
+            --jq '.[0].tag_name')
+
+          ASSET_ID=$(gh api repos/praydog/REFramework-nightly/releases \
+            --jq '.[0].assets[] | select(.name == "csharp-api.zip") | .id' \
+            | head -n 1)
+
+          ASSET_URL=$(gh api repos/praydog/REFramework-nightly/releases \
+            --jq '.[0].assets[] | select(.name == "csharp-api.zip") | .url' \
+            | head -n 1)
+
+          if [[ -z "$ASSET_ID" || -z "$ASSET_URL" ]]; then
+            echo "Could not resolve csharp-api.zip from praydog/REFramework-nightly."
+            exit 1
+          fi
+
+          echo "Latest nightly release: $RELEASE_TAG"
+          echo "Resolved asset id: $ASSET_ID"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "asset_id=$ASSET_ID" >> "$GITHUB_OUTPUT"
+          echo "asset_url=$ASSET_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached REFramework csharp-api.zip
+        id: refw_api_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/refw-api
+          key: refw-csharp-api-${{ steps.refw_api.outputs.asset_id }}
+
       - name: Download REFramework csharp-api.zip
+        if: steps.refw_api_cache.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p /tmp/refw-api
 
-          LATEST=$(gh release list \
-            --repo praydog/REFramework-nightly \
-            --limit 1 \
-            --json tagName \
-            -q '.[0].tagName')
+          gh api \
+            -H "Accept: application/octet-stream" \
+            "${{ steps.refw_api.outputs.asset_url }}" > /tmp/refw-api/csharp-api.zip
 
-          echo "Latest nightly release: $LATEST"
-
-          gh release download "$LATEST" \
-            --repo praydog/REFramework-nightly \
-            --pattern 'csharp-api.zip' \
-            --dir /tmp/refw-api
+      - name: Save REFramework csharp-api.zip cache
+        if: steps.refw_api_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/refw-api
+          key: refw-csharp-api-${{ steps.refw_api.outputs.asset_id }}
 
       - name: Extract and stage API dependencies
         run: |
@@ -92,6 +125,12 @@ jobs:
           -p:AssemblyVersion=${VERSION%%-*}.0
           -p:FileVersion=${VERSION%%-*}.0
           -p:InformationalVersion=${VERSION}
+
+      - name: Run tests
+        run: >
+          dotnet test Umbra.Tests/Umbra.Tests.csproj
+          --configuration Release
+          --verbosity minimal
 
       - name: Pack NuGet package
         env:

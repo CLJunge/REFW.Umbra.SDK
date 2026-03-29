@@ -10,7 +10,7 @@ namespace Umbra.UI.Config.Nodes;
 /// </param>
 /// <param name="draw">The per-frame ImGui draw action to invoke when the parameter is visible.</param>
 /// <param name="order">
-/// Sort key used to order this node within its category context during the build pass.
+/// Sort key used to order this node within its local rendered scope during the build pass.
 /// Lower values appear first; defaults to <see cref="int.MaxValue"/> so unordered nodes sort after
 /// all explicitly ordered ones while preserving original declaration order via stable sort.
 /// </param>
@@ -29,7 +29,7 @@ internal sealed class ParameterNode(
     int spacingBefore = 0,
     int spacingAfter = 0) : IDrawNode
 {
-    /// <summary>Gets the sort key for this node within its category context.</summary>
+    /// <summary>Gets the sort key for this node within its local rendered scope.</summary>
     internal int Order { get; } = order;
 
     /// <inheritdoc/>

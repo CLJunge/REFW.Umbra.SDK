@@ -8,9 +8,9 @@ namespace Umbra.UI.LiveState;
 /// <para>
 /// Implement this interface on a class also providing a public parameterless constructor,
 /// then declare the drawer on the live state type with
-/// <c>[LiveStateSectionDrawer&lt;TDrawer&gt;]</c>. <see cref="LiveStateSection{T}"/> discovers and
-/// instantiates the drawer at construction time; <see cref="Draw"/> is called each frame
-/// with the current state instance.
+/// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/> (<c>[LiveStateSectionDrawer&lt;TDrawer&gt;]</c>).
+/// <see cref="LiveStateSection{T}"/> discovers and instantiates the drawer at construction time;
+/// <see cref="Draw"/> is called each frame with the current state instance.
 /// </para>
 /// <para>
 /// The drawer has complete ImGui layout control. The state instance is guaranteed

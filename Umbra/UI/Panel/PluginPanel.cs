@@ -14,27 +14,31 @@ namespace Umbra.UI.Panel;
 /// may be used directly.
 /// </para>
 /// <para>
-/// The <c>idScope</c> string is the sole mechanism that separates this panel's ImGui widget
-/// IDs from every other panel rendered into the same REFramework window. All managed plugins
+/// The constructor-supplied ID scope string is the sole mechanism that separates this panel's
+/// ImGui widget IDs from every other panel rendered into the same REFramework window. All
+/// managed plugins
 /// share one AppDomain and one ImGui context; duplicate-scope detection and release are handled by
 /// <see cref="PluginPanelScopeRegistry"/>. Use a value that is guaranteed unique across all plugins,
 /// such as <c>nameof(MyPlugin)</c> or <c>typeof(MyPlugin).FullName</c>.
+/// The registry emits at most one detailed warning per still-active duplicate scope so accidental
+/// repeated panel construction does not flood the REFramework console.
 /// </para>
 /// <para>
-/// When <c>rootNodeLabel</c> is supplied, the entire section list is wrapped inside
-/// a single collapsible <c>ImGui.TreeNode</c> at the top of the panel. Individual sections may
-/// additionally declare their own tree node via <see cref="IPanelSection.TreeNodeLabel"/>;
+/// When a root node label is supplied, the entire section list is wrapped inside a single
+/// collapsible <see cref="ImGui.TreeNode(string)"/> at the top of the panel. Individual sections
+/// may additionally declare their own tree node via <see cref="IPanelSection.TreeNodeLabel"/>;
 /// these per-section nodes are rendered inside the root node when one is present.
 /// </para>
 /// <para>
 /// Sections are rendered in ascending <see cref="IPanelSection.Order"/>. The internal
 /// list is re-sorted on each call to <see cref="Add"/>, and equal-order sections preserve
 /// their insertion order because a stable sort is used. Tree-node label validation and sanitization
-/// are delegated to <see cref="PluginPanelTreeNodeLabelHelper"/>.
+/// are delegated to <see cref="PluginPanelTreeNodeLabels"/>.
 /// </para>
 /// <para>
-/// Always dispose the panel in the plugin's <c>[PluginExitPoint]</c> to release all
-/// section drawers and their captured state.
+/// Always dispose the panel in the plugin's
+/// <see cref="REFrameworkNET.Attributes.PluginExitPoint"/> (<c>[PluginExitPoint]</c>)
+/// to release all section drawers and their captured state.
 /// </para>
 /// </remarks>
 public sealed class PluginPanel : IDisposable
@@ -54,13 +58,14 @@ public sealed class PluginPanel : IDisposable
     /// A globally unique identifier string for this plugin (e.g. <c>nameof(MyPlugin)</c> or
     /// <c>typeof(MyPlugin).FullName</c>). All managed plugins share one AppDomain and one ImGui
     /// context; this is the only separator between this panel's widget IDs and every other panel
-    /// in the process. Duplicate-scope detection is handled by <see cref="PluginPanelScopeRegistry"/>.
+    /// in the process. Duplicate-scope detection is handled by <see cref="PluginPanelScopeRegistry"/>,
+    /// which warns once per active conflicting scope.
     /// Must be non-null and non-whitespace.
     /// </param>
     /// <param name="rootNodeLabel">
     /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
-    /// <c>ImGui.TreeNode</c> with this label. Pass <see langword="null"/> (the default) to
-    /// render sections flat with no root-level wrapping node.
+    /// <see cref="ImGui.TreeNode(string)"/> with this label. Pass <see langword="null"/>
+    /// (the default) to render sections flat with no root-level wrapping node.
     /// </param>
     /// <param name="rootNodeDefaultOpen">
     /// When <see langword="true"/>, the root tree node starts in its expanded state.
@@ -97,9 +102,10 @@ public sealed class PluginPanel : IDisposable
     /// <see cref="IPanelSection"/> implementation that overrides <see cref="IPanelSection.Order"/>.
     /// </para>
     /// <para>
-    /// Tree-node label validation is delegated to <see cref="PluginPanelTreeNodeLabelHelper"/>.
+    /// Tree-node label validation is delegated to <see cref="PluginPanelTreeNodeLabels"/>.
     /// At render time any caller-supplied <c>"##..."</c> suffix is stripped before the
-    /// panel appends its own <c>##{SectionId}</c> disambiguation suffix.
+    /// panel appends its own <c>##{SectionId}</c> disambiguation suffix. Invalid labels warn once
+    /// per section-id/label pair to avoid repeated stack-trace spam during panel rebuilds.
     /// </para>
     /// </remarks>
     /// <param name="section">The section to add. Must not be <see langword="null"/>.</param>
@@ -117,7 +123,7 @@ public sealed class PluginPanel : IDisposable
         if (_disposed)
             throw new ObjectDisposedException(nameof(PluginPanel), "Cannot add sections to a disposed panel.");
 
-        PluginPanelTreeNodeLabelHelper.WarnIfInvalid(section);
+        PluginPanelTreeNodeLabels.WarnIfInvalid(section);
 
         _sections.Add(section);
         _sections.SortBy(s => s.Order);
@@ -134,15 +140,15 @@ public sealed class PluginPanel : IDisposable
     /// even if a section throws while drawing.
     /// </para>
     /// <para>
-    /// When a <c>rootNodeLabel</c> was supplied at construction, all sections are rendered
-    /// inside a single collapsible <c>ImGui.TreeNode</c>; the tree pop is guarded with
+    /// When a root node label was supplied at construction, all sections are rendered inside a
+    /// single collapsible <see cref="ImGui.TreeNode(string)"/>; the tree pop is guarded with
     /// <c>try/finally</c> so ImGui state remains balanced even if a section throws.
     /// Each section that declares a non-<see langword="null"/>
     /// <see cref="IPanelSection.TreeNodeLabel"/> is additionally wrapped in its own nested
     /// tree node rendered inside the root node (or at the top level when no root node is set).
     /// </para>
     /// <para>
-    /// When enabled via the <c>drawSeparator</c> constructor parameter (default
+    /// When separator drawing was enabled via the constructor parameter (default
     /// <see langword="true"/>), a horizontal separator is drawn after all sections.
     /// When a root tree node is present the separator is rendered inside the open node
     /// (before the tree pop) and is only visible while the node is expanded. When no
@@ -182,12 +188,14 @@ public sealed class PluginPanel : IDisposable
     }
 
     /// <summary>
-    /// Disposes all sections, clears the section list, and releases this panel's
-    /// <c>idScope</c> through <see cref="PluginPanelScopeRegistry"/> so a reloaded plugin can
-    /// register the same scope without a spurious duplicate warning.
+    /// Disposes all sections, clears the section list, and releases this panel's ID scope
+    /// through <see cref="PluginPanelScopeRegistry"/> so a reloaded plugin can register the same
+    /// scope without a spurious duplicate warning.
     /// </summary>
     /// <remarks>
-    /// Call this in the plugin's <c>[PluginExitPoint]</c> before nulling the panel reference.
+    /// Call this in the plugin's
+    /// <see cref="REFrameworkNET.Attributes.PluginExitPoint"/> (<c>[PluginExitPoint]</c>)
+    /// before nulling the panel reference.
     /// After disposal, calls to <see cref="Draw"/> are silent no-ops.
     /// </remarks>
     public void Dispose()
@@ -206,7 +214,7 @@ public sealed class PluginPanel : IDisposable
 
     /// <summary>
     /// Iterates over all sections and renders each one, optionally wrapping it inside a
-    /// per-section <c>ImGui.TreeNode</c> when the section declares a
+    /// per-section <see cref="ImGui.TreeNode(string)"/> when the section declares a
     /// <see cref="IPanelSection.TreeNodeLabel"/>.
     /// </summary>
     /// <remarks>
@@ -214,8 +222,9 @@ public sealed class PluginPanel : IDisposable
     /// For sections that declare a tree node, <see cref="IPanelSection.SectionId"/> is
     /// embedded as a <c>##</c> disambiguation suffix in the tree node label — for example
     /// <c>"General Settings##PluginConfig"</c>. This gives the tree node a unique ImGui
-    /// hash without pushing an additional <c>PushID</c> scope level before it, avoiding a
-    /// redundant double-push with the <c>PushID</c> the section itself issues internally.
+    /// hash without pushing an additional <see cref="ImGui.PushID(string)"/> scope level before
+    /// it, avoiding a redundant double-push with the <see cref="ImGui.PushID(string)"/> the
+    /// section itself issues internally.
     /// The resulting widget ID chains for both paths are structurally equivalent:
     /// <list type="bullet">
     /// <item><description>Flat: <c>panelScope | SectionId | widget</c></description></item>
@@ -223,7 +232,7 @@ public sealed class PluginPanel : IDisposable
     /// </list>
     /// </para>
     /// <para>
-    /// Caller-supplied labels are sanitized through <see cref="PluginPanelTreeNodeLabelHelper"/>
+    /// Caller-supplied labels are sanitized through <see cref="PluginPanelTreeNodeLabels"/>
     /// before the panel appends its own <c>##{SectionId}</c> suffix, ensuring that the suffix is
     /// not ignored by ImGui.
     /// </para>
@@ -239,7 +248,7 @@ public sealed class PluginPanel : IDisposable
             var label = section.TreeNodeLabel;
             if (label is not null)
             {
-                label = PluginPanelTreeNodeLabelHelper.Sanitize(label);
+                label = PluginPanelTreeNodeLabels.Sanitize(label);
 
                 var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
                 if (ImGui.TreeNodeEx($"{label}##{section.SectionId}", flags))

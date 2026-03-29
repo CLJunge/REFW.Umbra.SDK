@@ -14,6 +14,7 @@ namespace Umbra.UI.Config;
 internal static class VisibilityPredicateResolver
 {
     private static readonly ConcurrentDictionary<HideIfAccessorCacheKey, HideIfAccessorBinding> s_accessorCache = new();
+    private static readonly ConcurrentDictionary<HideIfAccessorCacheKey, byte> s_invalidAccessorWarnings = new();
 
     /// <summary>
     /// Cache key for one owner-type/member-name HideIf accessor shape.
@@ -52,7 +53,14 @@ internal static class VisibilityPredicateResolver
     /// When an explicit comparison value is present, equality is evaluated with
     /// <see cref="object.Equals(object?, object?)"/> against the boxed runtime value returned by
     /// the accessor. This keeps the comparison path simple and works for the primitive, string,
-    /// enum, and nullable values typically used by config-backed <c>[HideIf]</c> conditions.
+    /// enum, and nullable values typically used by config-backed
+    /// <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>) conditions.
+    /// </para>
+    /// <para>
+    /// Invalid <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>)
+    /// bindings are warned only once per owner-type/member-name pair.
+    /// This avoids repeating the same warning every time a panel or drawer is rebuilt while still
+    /// surfacing the configuration issue to the developer.
     /// </para>
     /// </remarks>
     /// <param name="hideIf">
@@ -79,7 +87,7 @@ internal static class VisibilityPredicateResolver
 
         if (!accessor.IsValid)
         {
-            Logger.Warning($"ConfigDrawer: HideIf member '{memberName}' not found on {ownerType.Name}; condition ignored.");
+            WarnInvalidAccessorOnce(new HideIfAccessorCacheKey(ownerType, memberName));
             return static () => true;
         }
 
@@ -110,6 +118,19 @@ internal static class VisibilityPredicateResolver
             return new HideIfAccessorBinding(true, owner => (getRaw(owner) as IParameter)?.GetValue());
 
         return new HideIfAccessorBinding(true, getRaw);
+    }
+
+    /// <summary>
+    /// Logs a warning once for an invalid HideIf accessor binding.
+    /// </summary>
+    /// <param name="key">The cached owner-type/member-name binding that failed resolution.</param>
+    private static void WarnInvalidAccessorOnce(HideIfAccessorCacheKey key)
+    {
+        if (!s_invalidAccessorWarnings.TryAdd(key, 0))
+            return;
+
+        Logger.Warning(
+            $"ConfigDrawer: HideIf member '{key.MemberName}' not found on {key.OwnerType.Name}; condition ignored.");
     }
 
     /// <summary>

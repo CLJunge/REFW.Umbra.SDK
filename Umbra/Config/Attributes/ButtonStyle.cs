@@ -18,10 +18,10 @@ public enum ButtonStyle
     Danger,
     /// <summary>
     /// Signals that a fully custom color set supplied via
-    /// <c>[CustomButtonColors(...)]</c> should be used.
+    /// <see cref="UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors(...)]</c>) should be used.
     /// <para>
-    /// When this value is set but no <c>[CustomButtonColors]</c> attribute is present on the
-    /// same property, <see cref="UI.Config.Drawers.ButtonDrawer"/> logs a
+    /// When this value is set but no <see cref="UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors]</c>)
+    /// is present on the same property, <see cref="UI.Config.Drawers.ButtonDrawer"/> logs a
     /// one-time warning and falls back to <see cref="Default"/> rather than throwing, so the
     /// game process is never disrupted by a configuration error in a per-frame draw path.
     /// </para>

@@ -44,10 +44,12 @@ internal sealed class LabelAlignmentGroup
 
     /// <summary>
     /// Extra pixels inserted between the end of the label column and the start of the
-    /// editing control, on top of the standard <c>ImGui.GetStyle().ItemSpacing.X</c> gap.
+    /// editing control, on top of the standard <see cref="ImGui.GetStyle()"/> <c>.ItemSpacing.X</c>
+    /// gap.
     /// Defaults to <c>0f</c> (no additional margin). Configured at draw-tree build time by
-    /// <see cref="ConfigDrawerBuilder"/> from a <c>[LabelMargin]</c> attribute; never written
-    /// at draw time.
+    /// <see cref="ConfigDrawerBuilder"/> from
+    /// <see cref="Umbra.Config.Attributes.UmbraLabelMarginAttribute"/> (<c>[UmbraLabelMargin]</c>);
+    /// never written at draw time.
     /// </summary>
     internal float Margin { get; set; } = 0f;
 
@@ -63,9 +65,10 @@ internal sealed class LabelAlignmentGroup
     /// </remarks>
     /// <param name="label">The visible label text for the parameter row.</param>
     /// <param name="hasDescription">
-    /// <see langword="true"/> when the parameter carries a <c>[Description]</c> and a
-    /// <c>(?)</c> help marker will be drawn inline. The marker width plus item spacing
-    /// is included in the width measurement so the column accounts for the marker.
+    /// <see langword="true"/> when the parameter carries
+    /// <see cref="Umbra.Config.Attributes.UmbraDescriptionAttribute"/> (<c>[UmbraDescription]</c>) and
+    /// a <c>(?)</c> help marker will be drawn inline. The marker width plus item spacing is
+    /// included in the width measurement so the column accounts for the marker.
     /// </param>
     internal void Register(string label, bool hasDescription)
     {

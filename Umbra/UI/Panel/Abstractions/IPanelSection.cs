@@ -78,13 +78,14 @@ public interface IPanelSection : IDisposable
     /// <para>
     /// The value must be stable for the lifetime of the panel — changing it between frames
     /// resets ImGui's persisted open/closed state for the tree node. The default implementation
-    /// returns <c>GetType().FullName</c>, falling back to <c>GetType().Name</c> when
-    /// <c>FullName</c> is <see langword="null"/>. The namespace-qualified name prevents two
-    /// custom section types with the same short name in different namespaces from sharing the
-    /// same ImGui hash. Override when two sections of the same concrete type are added to the
-    /// same panel. <see cref="ConfigSection{TConfig}"/> and <see cref="LiveStateSection{T}"/> apply
-    /// the same <c>FullName ?? Name</c> resolution on their respective type parameters (or use
-    /// the explicit <c>idScope</c> when one was provided).
+    /// returns the runtime type's <see cref="Type.FullName"/>, falling back to
+    /// <see cref="System.Reflection.MemberInfo.Name"/> when <see cref="Type.FullName"/> is <see langword="null"/>.
+    /// The namespace-qualified name prevents two custom section types with the same short name in
+    /// different namespaces from sharing the same ImGui hash. Override when two sections of the
+    /// same concrete type are added to the same panel. <see cref="ConfigSection{TConfig}"/> and
+    /// <see cref="LiveStateSection{T}"/> apply the same runtime-type fallback resolution on their
+    /// respective type parameters (or use an explicit constructor-supplied ID scope when one was
+    /// provided).
     /// </para>
     /// </remarks>
     string SectionId => GetType().FullName ?? GetType().Name;
