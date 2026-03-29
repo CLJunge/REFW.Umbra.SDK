@@ -210,6 +210,9 @@ public partial class PluginPanelScopeRegistryTests
         // Assert
         Assert.IsTrue(firstResult, "First registration of empty string should return true.");
         Assert.IsFalse(secondResult, "Duplicate registration of empty string should return false.");
+
+        // Cleanup
+        PluginPanelScopeRegistry.Release(emptyScope);
     }
 
     /// <summary>
@@ -229,6 +232,9 @@ public partial class PluginPanelScopeRegistryTests
         // Assert
         // HashSet<string> can store null, so first call should return true
         Assert.IsTrue(result, "First registration of null should return true.");
+
+        // Cleanup
+        PluginPanelScopeRegistry.Release(nullScope!);
     }
 
     /// <summary>
@@ -249,6 +255,9 @@ public partial class PluginPanelScopeRegistryTests
         // Assert
         Assert.IsTrue(firstResult, "First registration of null should return true.");
         Assert.IsFalse(secondResult, "Duplicate registration of null should return false.");
+
+        // Cleanup
+        PluginPanelScopeRegistry.Release(nullScope!);
     }
 
     /// <summary>
