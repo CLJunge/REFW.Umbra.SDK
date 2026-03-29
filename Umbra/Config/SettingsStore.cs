@@ -180,7 +180,14 @@ public class SettingsStore<TConfig> : IDisposable
         }
 
         var loadResult = SettingsPersistence.Load(_filePath, _parameters);
-        if (loadResult == SettingsPersistence.LoadResult.RecoveredToDefaults)
+        if (loadResult == SettingsPersistence.LoadResult.MissingFile)
+        {
+            // File disappeared between our File.Exists check and the actual read (TOCTOU race).
+            // Treat identically to the no-file-at-all case: save defaults now.
+            Logger.Info($"SettingsStore<{typeof(TConfig).Name}>: settings file '{_filePath}' vanished before it could be read; saving defaults.");
+            Save();
+        }
+        else if (loadResult == SettingsPersistence.LoadResult.RecoveredToDefaults)
         {
             Logger.Warning(
                 $"SettingsStore<{typeof(TConfig).Name}>: existing config was unreadable; rewriting defaults to '{_filePath}'.");

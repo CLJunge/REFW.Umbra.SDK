@@ -18,6 +18,13 @@ internal static class SettingsPersistence
         Success,
 
         /// <summary>
+        /// The settings file was not present at read time (including TOCTOU races where the file
+        /// disappears between an existence check and the actual read). The caller should treat
+        /// this identically to <see cref="Success"/> with no persisted values and save fresh defaults.
+        /// </summary>
+        MissingFile,
+
+        /// <summary>
         /// The settings file could not be read, but the unreadable file was moved aside to a
         /// backup path so defaults can be written safely.
         /// </summary>
@@ -88,14 +95,14 @@ internal static class SettingsPersistence
     /// <see cref="IParameter.ValueChanged"/> events are raised during load, and metadata-based
     /// validation is intentionally bypassed while restoring persisted values.
     /// If the file does not exist (including a TOCTOU race where it is deleted between the caller's
-    /// existence check and this read), <see cref="LoadResult.Success"/> is returned so callers write
-    /// fresh defaults without suppressing future saves.
+    /// existence check and this read), <see cref="LoadResult.MissingFile"/> is returned so callers
+    /// can write fresh defaults without suppressing future saves.
     /// If the file exists but cannot be deserialized, Umbra attempts to move it aside to a timestamped
     /// <c>.invalid-*.json</c> backup in the same directory so callers can safely rewrite defaults.
     /// </remarks>
     /// <returns>
-    /// <see cref="LoadResult.Success"/> when the file was read successfully, or when the file was not
-    /// found (treated as "no saved settings");
+    /// <see cref="LoadResult.Success"/> when the file was read successfully;
+    /// <see cref="LoadResult.MissingFile"/> when the file was not found (treat as "no saved settings");
     /// <see cref="LoadResult.RecoveredToDefaults"/> when the unreadable file was backed up and the
     /// caller can rewrite defaults safely; otherwise <see cref="LoadResult.Failed"/>.
     /// </returns>
@@ -120,12 +127,12 @@ internal static class SettingsPersistence
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
         {
-            // Treat a missing file as "no saved settings" — return Success so the caller writes
-            // fresh defaults rather than suppressing saves for the rest of the session.  This
-            // handles TOCTOU races where the file is deleted between the File.Exists guard in
-            // SettingsStore.Load() and the ReadAllText call above.
+            // Treat a missing file as "no saved settings" — return MissingFile so the caller
+            // writes fresh defaults rather than suppressing saves for the rest of the session.
+            // This handles TOCTOU races where the file is deleted between the File.Exists guard
+            // in SettingsStore.Load() and the ReadAllText call above.
             Logger.Info($"SettingsPersistence: settings file '{filePath}' not found (race condition or external deletion); using defaults.");
-            return LoadResult.Success;
+            return LoadResult.MissingFile;
         }
         catch (Exception ex)
         {
