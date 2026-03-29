@@ -134,7 +134,7 @@ public sealed class ParameterMetadata
     public int? MultilineLines { get; init; }
 
     /// <summary>
-    /// Gets the explicit display order for this parameter within its category context.
+    /// Gets the explicit display order for this parameter within its local rendered scope.
     /// Lower values appear first; parameters without an order value sort after all explicitly
     /// ordered entries (using <see cref="int.MaxValue"/> as an implicit sentinel), with
     /// original declaration order preserved among equals via stable sort.

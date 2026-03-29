@@ -201,6 +201,9 @@ internal sealed class ConfigDrawerBuilder
 
             CollectInto(childScope, nested, propType);
 
+            if (nestedLocalCategory is null)
+                SortNodesInPlace(childScope.Nodes);
+
             if (nestedLocalCategory is not null)
             {
                 var childContainer = childScope.CreateContainerNode(nestedLocalCategory);
@@ -255,24 +258,30 @@ internal sealed class ConfigDrawerBuilder
     private void RegisterCategoryNode(CategoryNode node) => _allCategoryNodes.Add(node);
 
     /// <summary>
-    /// Applies a stable sort to parameter nodes within every category context, ordering them
+    /// Applies a stable sort to parameter nodes within each tracked rendered scope, ordering them
     /// by their <see cref="ParameterNode.Order"/> value ascending.
     /// </summary>
     /// <remarks>
     /// Call this once after <see cref="Collect"/> has finished walking the entire config tree.
-    /// Nodes without an explicit <c>[ParameterOrder]</c> attribute receive an implicit key of
+    /// Nodes without an explicit <see cref="UmbraParameterOrderAttribute"/> (<c>[UmbraParameterOrder]</c>) attribute receive an implicit key of
     /// <see cref="int.MaxValue"/>, placing them after all explicitly ordered entries while
     /// preserving original declaration order among equals. The root <see cref="Nodes"/> list and
-    /// every local <see cref="CategoryNode.Children"/> list are sorted independently so ordering
-    /// remains local to each group scope.
+    /// every local <see cref="CategoryNode.Children"/> list are sorted independently. Uncategorized
+    /// nested-group scope roots are sorted during collection before they are wrapped in an
+    /// <see cref="IdScopeNode"/>, so ordering remains local to each rendered scope.
     /// </remarks>
     internal void SortAll()
     {
-        static int NodeOrder(IDrawNode n) => n is ParameterNode p ? p.Order : int.MaxValue;
-
         foreach (var cat in _allCategoryNodes)
-            cat.Children.SortBy(NodeOrder);
+            SortNodesInPlace(cat.Children);
 
-        Nodes.SortBy(NodeOrder);
+        SortNodesInPlace(Nodes);
     }
+
+    /// <summary>
+    /// Applies the local stable parameter-order sort to one rendered node list.
+    /// </summary>
+    /// <param name="nodes">The node list to sort in place.</param>
+    private static void SortNodesInPlace(List<IDrawNode> nodes)
+        => nodes.SortBy(static n => n is ParameterNode p ? p.Order : int.MaxValue);
 }
