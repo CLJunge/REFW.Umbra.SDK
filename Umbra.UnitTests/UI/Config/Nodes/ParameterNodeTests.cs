@@ -1,103 +1,111 @@
 namespace Umbra.UI.Config.Nodes.UnitTests;
 
 /// <summary>
-/// Unit tests for <see cref="ParameterNode"/> class.
+/// Unit tests for <see cref="ParameterNode"/>.
 /// </summary>
 [TestClass]
 public sealed class ParameterNodeTests
 {
     /// <summary>
-    /// Verifies that when <c>isVisible</c> returns <see langword="false"/>, the <c>Draw</c> method
-    /// returns immediately without invoking the draw action or spacing calls.
+    /// Verifies that when <c>isVisible</c> returns <see langword="false"/>, the <see cref="ParameterNode.Draw"/>
+    /// method returns immediately without invoking the draw action or spacing calls.
     /// </summary>
     [TestMethod]
-    public void Draw_IsVisibleReturnsFalse_DoesNotCallDrawAction()
+    public void Draw_IsVisibleReturnsFalse_DoesNotCallDrawActionOrSpacing()
     {
         // Arrange
+        var renderer = new TestParameterNodeRenderer();
         var drawCalled = false;
         bool isVisible() => false;
         void draw() => drawCalled = true;
-        var node = new ParameterNode(isVisible, draw);
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 2, 3, renderer);
 
         // Act
         node.Draw();
 
         // Assert
-        Assert.IsFalse(drawCalled, "Draw action should not be called when isVisible returns false.");
+        Assert.IsFalse(drawCalled);
+        Assert.AreEqual(0, renderer.SpacingCount);
     }
 
     /// <summary>
-    /// Verifies that when <c>isVisible</c> returns <see langword="true"/> and spacing values are zero,
-    /// the <c>Draw</c> method invokes the draw action exactly once.
+    /// Verifies that when <c>isVisible</c> returns <see langword="true"/> and spacing values are
+    /// zero, the draw action is invoked exactly once with no spacing operations.
     /// </summary>
     [TestMethod]
     public void Draw_IsVisibleReturnsTrueWithZeroSpacing_CallsDrawActionOnce()
     {
         // Arrange
+        var renderer = new TestParameterNodeRenderer();
         var drawCallCount = 0;
         bool isVisible() => true;
         void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw, spacingBefore: 0, spacingAfter: 0);
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 0, 0, renderer);
 
         // Act
         node.Draw();
 
         // Assert
-        Assert.AreEqual(1, drawCallCount, "Draw action should be called exactly once when visible.");
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(0, renderer.SpacingCount);
     }
 
     /// <summary>
-    /// Verifies that when <c>isVisible</c> returns <see langword="true"/> with positive spacing values,
-    /// the draw action is invoked.
-    /// Note: ImGui.Spacing() calls cannot be verified as the method is static and non-mockable.
+    /// Verifies that when <c>isVisible</c> returns <see langword="true"/> with positive spacing
+    /// values, the configured number of spacing calls are emitted around the draw action.
     /// </summary>
     [TestMethod]
-    public void Draw_IsVisibleReturnsTrueWithPositiveSpacing_CallsDrawAction()
+    public void Draw_IsVisibleReturnsTrueWithPositiveSpacing_EmitsSpacingAroundDrawAction()
     {
         // Arrange
+        var renderer = new TestParameterNodeRenderer();
         var drawCallCount = 0;
         bool isVisible() => true;
         void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw, spacingBefore: 2, spacingAfter: 3);
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 2, 3, renderer);
 
         // Act
         node.Draw();
 
         // Assert
-        Assert.AreEqual(1, drawCallCount, "Draw action should be called exactly once when visible with spacing.");
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(5, renderer.SpacingCount);
     }
 
     /// <summary>
-    /// Verifies that when both <c>spacingBefore</c> and <c>spacingAfter</c> are negative,
-    /// the draw action is still invoked.
+    /// Verifies that negative spacing values do not emit any spacing operations and still invoke the
+    /// draw action.
     /// </summary>
     [TestMethod]
-    public void Draw_BothSpacingValuesNegative_StillCallsDrawAction()
+    public void Draw_BothSpacingValuesNegative_StillCallsDrawActionWithoutSpacing()
     {
         // Arrange
+        var renderer = new TestParameterNodeRenderer();
         var drawCallCount = 0;
         bool isVisible() => true;
         void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw, spacingBefore: -1, spacingAfter: -1);
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, -1, -1, renderer);
 
         // Act
         node.Draw();
 
         // Assert
-        Assert.AreEqual(1, drawCallCount, "Draw action should be called even with both spacing values negative.");
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(0, renderer.SpacingCount);
     }
 
     /// <summary>
-    /// Verifies that the <c>Draw</c> method can be called multiple times in sequence.
+    /// Verifies that the <see cref="ParameterNode.Draw"/> method can be called multiple times in sequence.
     /// </summary>
     [TestMethod]
     public void Draw_CalledMultipleTimes_InvokesDrawActionEachTime()
     {
         // Arrange
+        var renderer = new TestParameterNodeRenderer();
         var drawCallCount = 0;
         bool isVisible() => true;
         void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw);
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 1, 1, renderer);
 
         // Act
         node.Draw();
@@ -105,38 +113,43 @@ public sealed class ParameterNodeTests
         node.Draw();
 
         // Assert
-        Assert.AreEqual(3, drawCallCount, "Draw action should be called once per Draw() invocation.");
+        Assert.AreEqual(3, drawCallCount);
+        Assert.AreEqual(6, renderer.SpacingCount);
     }
 
     /// <summary>
-    /// Verifies behavior when <c>isVisible</c> alternates between <see langword="true"/> and <see langword="false"/>
-    /// across multiple draw calls.
+    /// Verifies behavior when <c>isVisible</c> alternates between <see langword="true"/> and
+    /// <see langword="false"/> across multiple draw calls.
     /// </summary>
     [TestMethod]
     public void Draw_IsVisibleAlternates_CallsDrawActionOnlyWhenVisible()
     {
         // Arrange
+        var renderer = new TestParameterNodeRenderer();
         var drawCallCount = 0;
         var visible = true;
         bool isVisible() => visible;
         void draw() => drawCallCount++;
-        var node = new ParameterNode(isVisible, draw);
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 1, 0, renderer);
 
         // Act & Assert
         node.Draw();
-        Assert.AreEqual(1, drawCallCount, "First call: draw should be invoked when visible.");
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(1, renderer.SpacingCount);
 
         visible = false;
         node.Draw();
-        Assert.AreEqual(1, drawCallCount, "Second call: draw should not be invoked when not visible.");
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(1, renderer.SpacingCount);
 
         visible = true;
         node.Draw();
-        Assert.AreEqual(2, drawCallCount, "Third call: draw should be invoked again when visible.");
+        Assert.AreEqual(2, drawCallCount);
+        Assert.AreEqual(2, renderer.SpacingCount);
     }
 
     /// <summary>
-    /// Verifies that the <c>Order</c> property returns the value provided during construction.
+    /// Verifies that the <see cref="ParameterNode.Order"/> property returns the value provided during construction.
     /// </summary>
     [TestMethod]
     public void Order_ReturnsConstructorValue()
@@ -145,17 +158,17 @@ public sealed class ParameterNodeTests
         const int expectedOrder = 42;
         static bool isVisible() => true;
         static void draw() { }
-        var node = new ParameterNode(isVisible, draw, order: expectedOrder);
+        var node = new ParameterNode(isVisible, draw, expectedOrder);
 
         // Act
         var actualOrder = node.Order;
 
         // Assert
-        Assert.AreEqual(expectedOrder, actualOrder, "Order property should return the value provided during construction.");
+        Assert.AreEqual(expectedOrder, actualOrder);
     }
 
     /// <summary>
-    /// Verifies that the <c>Order</c> property defaults to <see cref="int.MaxValue"/> when not specified.
+    /// Verifies that the <see cref="ParameterNode.Order"/> property defaults to <see cref="int.MaxValue"/> when not specified.
     /// </summary>
     [TestMethod]
     public void Order_DefaultsToIntMaxValue()
@@ -169,7 +182,6 @@ public sealed class ParameterNodeTests
         var actualOrder = node.Order;
 
         // Assert
-        Assert.AreEqual(int.MaxValue, actualOrder, "Order property should default to int.MaxValue.");
+        Assert.AreEqual(int.MaxValue, actualOrder);
     }
-
 }
