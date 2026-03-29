@@ -488,13 +488,12 @@ public class SettingsPersistenceTests
         try
         {
             var mockDelegateParam = new Mock<IParameter>();
-            mockDelegateParam.Setup(p => p.Key).Returns("delegateKey");
-            mockDelegateParam.Setup(p => p.ValueType).Returns(typeof(Action));
-            mockDelegateParam.Setup(p => p.GetValue()).Returns(new Action(() => { }));
+            mockDelegateParam.SetupGet(p => p.Key).Returns("delegateKey");
+            mockDelegateParam.SetupGet(p => p.ValueType).Returns(typeof(Action));
 
             var mockNormalParam = new Mock<IParameter>();
-            mockNormalParam.Setup(p => p.Key).Returns("normalKey");
-            mockNormalParam.Setup(p => p.ValueType).Returns(typeof(string));
+            mockNormalParam.SetupGet(p => p.Key).Returns("normalKey");
+            mockNormalParam.SetupGet(p => p.ValueType).Returns(typeof(string));
             mockNormalParam.Setup(p => p.GetValue()).Returns("value");
 
             var parameters = new Dictionary<string, IParameter>
@@ -514,6 +513,7 @@ public class SettingsPersistenceTests
             Assert.HasCount(1, deserialized, "Only non-delegate parameter should be saved");
             Assert.IsFalse(deserialized.ContainsKey("delegateKey"), "Delegate parameter should be filtered");
             Assert.IsTrue(deserialized.ContainsKey("normalKey"), "Normal parameter should be saved");
+            mockDelegateParam.Verify(p => p.GetValue(), Times.Never, "Delegate parameter value should not be read");
         }
         finally
         {
