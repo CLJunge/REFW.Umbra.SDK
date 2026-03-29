@@ -1,8 +1,5 @@
-﻿using System;
 using System.Text.Json;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Umbra.Config;
 
 
 namespace Umbra.Config.UnitTests;
@@ -716,7 +713,7 @@ public partial class ParameterJsonReaderTests
         ParameterJsonReader.Apply(mockParam.Object, element);
 
         // Assert
-        mockParam.Verify(p => p.SetValueWithoutNotify((uint)4294967295), Times.Once);
+        mockParam.Verify(p => p.SetValueWithoutNotify(4294967295), Times.Once);
     }
 
     /// <summary>

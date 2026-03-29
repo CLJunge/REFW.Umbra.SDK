@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Umbra.Config;
 
 namespace Umbra.Config.UnitTests;
 
@@ -238,8 +232,8 @@ public class SettingsPersistenceTests
 
         // Assert
         Assert.IsTrue(
-            result == SettingsPersistence.LoadResult.RecoveredToDefaults ||
-            result == SettingsPersistence.LoadResult.Failed,
+            result is SettingsPersistence.LoadResult.RecoveredToDefaults or
+            SettingsPersistence.LoadResult.Failed,
             "Expected RecoveredToDefaults or Failed for malformed JSON");
     }
 
@@ -260,8 +254,8 @@ public class SettingsPersistenceTests
 
         // Assert
         Assert.IsTrue(
-            result == SettingsPersistence.LoadResult.RecoveredToDefaults ||
-            result == SettingsPersistence.LoadResult.Failed,
+            result is SettingsPersistence.LoadResult.RecoveredToDefaults or
+            SettingsPersistence.LoadResult.Failed,
             "Expected RecoveredToDefaults or Failed for empty file");
     }
 
@@ -282,8 +276,8 @@ public class SettingsPersistenceTests
 
         // Assert
         Assert.IsTrue(
-            result == SettingsPersistence.LoadResult.RecoveredToDefaults ||
-            result == SettingsPersistence.LoadResult.Failed,
+            result is SettingsPersistence.LoadResult.RecoveredToDefaults or
+            SettingsPersistence.LoadResult.Failed,
             "Expected RecoveredToDefaults or Failed for whitespace-only file");
     }
 
@@ -443,7 +437,7 @@ public class SettingsPersistenceTests
         var jsonBuilder = new System.Text.StringBuilder("{");
         var parameters = new Dictionary<string, IParameter>();
 
-        for (int i = 0; i < 1000; i++)
+        for (var i = 0; i < 1000; i++)
         {
             if (i > 0) jsonBuilder.Append(',');
             jsonBuilder.Append($"\"key{i}\": {i}");
@@ -524,6 +518,7 @@ public class SettingsPersistenceTests
         // Arrange
         var longPath = Path.Combine(_testDirectory, new string('a', 200), "settings.json");
 
+        var pathTooLongExceptionThrown = false;
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(longPath)!);
@@ -545,6 +540,11 @@ public class SettingsPersistenceTests
         catch (PathTooLongException)
         {
             // Some file systems may not support very long paths; test is inconclusive in that case
+            pathTooLongExceptionThrown = true;
+        }
+
+        if (pathTooLongExceptionThrown)
+        {
             Assert.Inconclusive("File system does not support long paths");
         }
     }
@@ -785,8 +785,10 @@ public class SettingsPersistenceTests
         var json = @"{""key"": ""value""}";
         File.WriteAllText(filePath, json);
 
-        var fileInfo = new FileInfo(filePath);
-        fileInfo.IsReadOnly = true;
+        var fileInfo = new FileInfo(filePath)
+        {
+            IsReadOnly = true
+        };
 
         try
         {
@@ -869,7 +871,7 @@ public class SettingsPersistenceTests
     public void Save_SingleParameter_WritesJsonFile()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
         try
         {
             var mockParam = new Mock<IParameter>();
@@ -887,10 +889,10 @@ public class SettingsPersistenceTests
 
             // Assert
             Assert.IsTrue(File.Exists(tempPath), "Settings file should be created");
-            string jsonContent = File.ReadAllText(tempPath);
+            var jsonContent = File.ReadAllText(tempPath);
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
             Assert.IsNotNull(deserialized);
-            Assert.AreEqual(1, deserialized.Count);
+            Assert.HasCount(1, deserialized);
             Assert.IsTrue(deserialized.ContainsKey("testKey"));
             Assert.AreEqual(42, deserialized["testKey"].GetInt32());
         }
@@ -907,7 +909,7 @@ public class SettingsPersistenceTests
     public void Save_DelegateParameter_IsFilteredOut()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
         try
         {
             var mockDelegateParam = new Mock<IParameter>();
@@ -931,10 +933,10 @@ public class SettingsPersistenceTests
 
             // Assert
             Assert.IsTrue(File.Exists(tempPath));
-            string jsonContent = File.ReadAllText(tempPath);
+            var jsonContent = File.ReadAllText(tempPath);
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
             Assert.IsNotNull(deserialized);
-            Assert.AreEqual(1, deserialized.Count, "Only non-delegate parameter should be saved");
+            Assert.HasCount(1, deserialized, "Only non-delegate parameter should be saved");
             Assert.IsFalse(deserialized.ContainsKey("delegateKey"), "Delegate parameter should be filtered");
             Assert.IsTrue(deserialized.ContainsKey("normalKey"), "Normal parameter should be saved");
         }
@@ -951,7 +953,7 @@ public class SettingsPersistenceTests
     public void Save_MultipleParameters_AllWrittenToFile()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
         try
         {
             var mockIntParam = new Mock<IParameter>();
@@ -981,13 +983,13 @@ public class SettingsPersistenceTests
 
             // Assert
             Assert.IsTrue(File.Exists(tempPath));
-            string jsonContent = File.ReadAllText(tempPath);
+            var jsonContent = File.ReadAllText(tempPath);
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
             Assert.IsNotNull(deserialized);
-            Assert.AreEqual(3, deserialized.Count);
+            Assert.HasCount(3, deserialized);
             Assert.AreEqual(100, deserialized["intKey"].GetInt32());
             Assert.AreEqual("test", deserialized["stringKey"].GetString());
-            Assert.AreEqual(true, deserialized["boolKey"].GetBoolean());
+            Assert.IsTrue(deserialized["boolKey"].GetBoolean());
         }
         finally
         {
@@ -1002,7 +1004,7 @@ public class SettingsPersistenceTests
     public void Save_EmptyParameters_CreatesEmptyJsonObject()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
         try
         {
             var parameters = new Dictionary<string, IParameter>();
@@ -1012,10 +1014,10 @@ public class SettingsPersistenceTests
 
             // Assert
             Assert.IsTrue(File.Exists(tempPath));
-            string jsonContent = File.ReadAllText(tempPath);
+            var jsonContent = File.ReadAllText(tempPath);
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
             Assert.IsNotNull(deserialized);
-            Assert.AreEqual(0, deserialized.Count);
+            Assert.IsEmpty(deserialized);
         }
         finally
         {
@@ -1030,7 +1032,7 @@ public class SettingsPersistenceTests
     public void Save_ParameterWithNullValue_WritesNullToJson()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
         try
         {
             var mockParam = new Mock<IParameter>();
@@ -1048,10 +1050,10 @@ public class SettingsPersistenceTests
 
             // Assert
             Assert.IsTrue(File.Exists(tempPath));
-            string jsonContent = File.ReadAllText(tempPath);
+            var jsonContent = File.ReadAllText(tempPath);
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
             Assert.IsNotNull(deserialized);
-            Assert.AreEqual(1, deserialized.Count);
+            Assert.HasCount(1, deserialized);
             Assert.AreEqual(JsonValueKind.Null, deserialized["nullKey"].ValueKind);
         }
         finally
@@ -1067,8 +1069,8 @@ public class SettingsPersistenceTests
     public void Save_NonExistentDirectory_CreatesDirectory()
     {
         // Arrange
-        string tempDir = Path.Combine(Path.GetTempPath(), $"umbra_test_dir_{Guid.NewGuid()}");
-        string tempPath = Path.Combine(tempDir, "settings.json");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"umbra_test_dir_{Guid.NewGuid()}");
+        var tempPath = Path.Combine(tempDir, "settings.json");
         try
         {
             Assert.IsFalse(Directory.Exists(tempDir), "Directory should not exist initially");
@@ -1107,7 +1109,7 @@ public class SettingsPersistenceTests
     public void Save_VariousDelegateTypes_AllFilteredOut(Type delegateType)
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
         try
         {
             var mockDelegateParam = new Mock<IParameter>();
@@ -1129,10 +1131,10 @@ public class SettingsPersistenceTests
             SettingsPersistence.Save(tempPath, parameters);
 
             // Assert
-            string jsonContent = File.ReadAllText(tempPath);
+            var jsonContent = File.ReadAllText(tempPath);
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
             Assert.IsNotNull(deserialized);
-            Assert.AreEqual(1, deserialized.Count);
+            Assert.HasCount(1, deserialized);
             Assert.IsFalse(deserialized.ContainsKey("delegateKey"));
             Assert.IsTrue(deserialized.ContainsKey("normalKey"));
         }
@@ -1149,7 +1151,7 @@ public class SettingsPersistenceTests
     public void Save_ExistingFile_OverwritesContent()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
         try
         {
             File.WriteAllText(tempPath, "{\"oldKey\": \"oldValue\"}");
@@ -1168,10 +1170,10 @@ public class SettingsPersistenceTests
             SettingsPersistence.Save(tempPath, parameters);
 
             // Assert
-            string jsonContent = File.ReadAllText(tempPath);
+            var jsonContent = File.ReadAllText(tempPath);
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
             Assert.IsNotNull(deserialized);
-            Assert.AreEqual(1, deserialized.Count);
+            Assert.HasCount(1, deserialized);
             Assert.IsFalse(deserialized.ContainsKey("oldKey"));
             Assert.IsTrue(deserialized.ContainsKey("newKey"));
         }
@@ -1194,7 +1196,7 @@ public class SettingsPersistenceTests
     public void Save_InvalidPath_DoesNotThrow()
     {
         // Arrange
-        string invalidPath = new string(Path.GetInvalidPathChars()[0], 5);
+        var invalidPath = new string(Path.GetInvalidPathChars()[0], 5);
         var mockParam = new Mock<IParameter>();
         mockParam.Setup(p => p.Key).Returns("key");
         mockParam.Setup(p => p.ValueType).Returns(typeof(int));
@@ -1217,7 +1219,7 @@ public class SettingsPersistenceTests
     public void Save_ParameterKeysWithSpecialCharacters_SavedCorrectly()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
         try
         {
             var mockParam1 = new Mock<IParameter>();
@@ -1246,10 +1248,10 @@ public class SettingsPersistenceTests
             SettingsPersistence.Save(tempPath, parameters);
 
             // Assert
-            string jsonContent = File.ReadAllText(tempPath);
+            var jsonContent = File.ReadAllText(tempPath);
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
             Assert.IsNotNull(deserialized);
-            Assert.AreEqual(3, deserialized.Count);
+            Assert.HasCount(3, deserialized);
             Assert.IsTrue(deserialized.ContainsKey("key.with.dots"));
             Assert.IsTrue(deserialized.ContainsKey("key-with-dashes"));
             Assert.IsTrue(deserialized.ContainsKey("key_with_underscores"));
@@ -1267,7 +1269,7 @@ public class SettingsPersistenceTests
     public void Save_ComplexObjectParameter_SerializedCorrectly()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
         try
         {
             var complexObject = new { Name = "Test", Value = 42, Nested = new { Flag = true } };
@@ -1287,10 +1289,10 @@ public class SettingsPersistenceTests
 
             // Assert
             Assert.IsTrue(File.Exists(tempPath));
-            string jsonContent = File.ReadAllText(tempPath);
-            Assert.IsTrue(jsonContent.Contains("\"name\""), "JSON should contain property names in camelCase");
-            Assert.IsTrue(jsonContent.Contains("\"value\""));
-            Assert.IsTrue(jsonContent.Contains("\"nested\""));
+            var jsonContent = File.ReadAllText(tempPath);
+            Assert.Contains("\"name\"", jsonContent, "JSON should contain property names in camelCase");
+            Assert.Contains("\"value\"", jsonContent);
+            Assert.Contains("\"nested\"", jsonContent);
         }
         finally
         {

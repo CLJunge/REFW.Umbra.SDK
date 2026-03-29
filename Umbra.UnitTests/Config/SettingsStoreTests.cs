@@ -1,11 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.Config.UnitTests;
 
 namespace Umbra.Config.UnitTests;
 /// <summary>
@@ -88,7 +81,7 @@ public partial class SettingsStoreTests
     public void Dispose_FirstCall_SetsIsDisposedTrue()
     {
         // Arrange
-        string tempPath = Path.GetTempFileName();
+        var tempPath = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempPath);
@@ -111,7 +104,7 @@ public partial class SettingsStoreTests
     public void Dispose_CalledMultipleTimes_IsIdempotent()
     {
         // Arrange
-        string tempPath = Path.GetTempFileName();
+        var tempPath = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempPath);
@@ -136,7 +129,7 @@ public partial class SettingsStoreTests
     public void Dispose_WithNoCleanupRegistrations_CompletesSuccessfully()
     {
         // Arrange
-        string tempPath = Path.GetTempFileName();
+        var tempPath = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempPath);
@@ -159,7 +152,7 @@ public partial class SettingsStoreTests
     public void Dispose_AfterLoadWithNoFile_CompletesSuccessfully()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".json");
+        var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".json");
         try
         {
             var store = new SettingsStore<TestConfig>(tempPath);
@@ -183,7 +176,7 @@ public partial class SettingsStoreTests
     public void Dispose_BeforeLoad_CompletesSuccessfully()
     {
         // Arrange
-        string tempPath = Path.GetTempFileName();
+        var tempPath = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempPath);
@@ -206,10 +199,10 @@ public partial class SettingsStoreTests
     public void Load_ReturnsNonNullInstance()
     {
         // Arrange
-        string filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        var filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(filePath);
         // Act
-        TestConfig result = store.Load();
+        var result = store.Load();
         // Assert
         Assert.IsNotNull(result);
         // Cleanup
@@ -227,7 +220,7 @@ public partial class SettingsStoreTests
     public void Load_SetsIsLoadedToTrue()
     {
         // Arrange
-        string filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        var filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(filePath);
         Assert.IsFalse(store.IsLoaded, "IsLoaded should be false before Load is called");
         // Act
@@ -250,7 +243,7 @@ public partial class SettingsStoreTests
     public void Load_WhenNoFileExists_CreatesDefaultFile()
     {
         // Arrange
-        string filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        var filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         if (File.Exists(filePath))
         {
             File.Delete(filePath);
@@ -258,7 +251,7 @@ public partial class SettingsStoreTests
 
         var store = new SettingsStore<TestConfig>(filePath);
         // Act
-        TestConfig result = store.Load();
+        var result = store.Load();
         // Assert
         Assert.IsNotNull(result, "Load should return a non-null instance");
         Assert.IsTrue(File.Exists(filePath), "Load should create a default config file when none exists");
@@ -279,7 +272,7 @@ public partial class SettingsStoreTests
     public void Load_WhenFileVanishes_SavesDefaults()
     {
         // Arrange
-        string filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        var filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         if (File.Exists(filePath))
         {
             File.Delete(filePath);
@@ -287,7 +280,7 @@ public partial class SettingsStoreTests
 
         var store = new SettingsStore<TestConfig>(filePath);
         // Act
-        TestConfig result = store.Load();
+        var result = store.Load();
         // Assert
         Assert.IsNotNull(result, "Load should return a non-null instance");
         Assert.IsTrue(File.Exists(filePath), "Load should save defaults when file is missing");
@@ -307,12 +300,12 @@ public partial class SettingsStoreTests
     public void Load_DoesNotThrowOnFreshInstantiation()
     {
         // Arrange
-        string filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        var filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(filePath);
         // Act & Assert
         try
         {
-            TestConfig result = store.Load();
+            var result = store.Load();
             Assert.IsNotNull(result);
         }
         finally
@@ -334,13 +327,13 @@ public partial class SettingsStoreTests
     public void Load_TransitionsStateCorrectly()
     {
         // Arrange
-        string filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        var filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(filePath);
         // Assert initial state
         Assert.IsFalse(store.IsLoaded, "Store should start in unloaded state");
         Assert.IsFalse(store.IsDisposed, "Store should not be disposed initially");
         // Act
-        TestConfig result = store.Load();
+        var result = store.Load();
         // Assert final state
         Assert.IsTrue(store.IsLoaded, "Store should be in loaded state after Load completes");
         Assert.IsFalse(store.IsDisposed, "Store should still not be disposed");
@@ -356,7 +349,7 @@ public partial class SettingsStoreTests
     /// <summary>
     /// Creates a SettingsStore instance and uses reflection to set internal state for testing.
     /// </summary>
-    private SettingsStore<TestConfig> CreateSettingsStoreWithState(bool isLoaded, bool isDisposed, Dictionary<string, IParameter>? parameters = null)
+    private static SettingsStore<TestConfig> CreateSettingsStoreWithState(bool isLoaded, bool isDisposed, Dictionary<string, IParameter>? parameters = null)
     {
         var store = new SettingsStore<TestConfig>("test.json");
         var loadedField = typeof(SettingsStore<TestConfig>).GetField("_loaded", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -380,10 +373,12 @@ public partial class SettingsStoreTests
     /// <summary>
     /// Helper method to create a Parameter{T} instance for testing.
     /// </summary>
-    private Parameter<T> CreateParameter<T>(string key, T defaultValue)
+    private static Parameter<T> CreateParameter<T>(string key, T defaultValue)
     {
-        var parameter = new Parameter<T>(defaultValue);
-        parameter.Key = key;
+        var parameter = new Parameter<T>(defaultValue)
+        {
+            Key = key
+        };
         return parameter;
     }
 
@@ -397,12 +392,9 @@ public partial class SettingsStoreTests
         var parameters = new Dictionary<string, IParameter>();
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var listenerCalled = false;
-        Action<int, int> listener = (oldVal, newVal) =>
-        {
-            listenerCalled = true;
-        };
+        void listener(int oldVal, int newVal) => listenerCalled = true;
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<int, int>)listener);
         // Assert - No exception thrown, listener was not called
         Assert.IsFalse(listenerCalled);
     }
@@ -434,12 +426,9 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var intListenerCallCount = 0;
-        Action<int, int> intListener = (oldVal, newVal) =>
-        {
-            intListenerCallCount++;
-        };
+        void intListener(int oldVal, int newVal) => intListenerCallCount++;
         // Act
-        store.AddListenerToAll(intListener);
+        store.AddListenerToAll((Action<int, int>)intListener);
         intParam.Set(100);
         stringParam.Set("changed");
         boolParam.Set(false);
@@ -474,12 +463,9 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var callCount = 0;
-        Action<int, int> listener = (oldVal, newVal) =>
-        {
-            callCount++;
-        };
+        void listener(int oldVal, int newVal) => callCount++;
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<int, int>)listener);
         intParam1.Set(10);
         intParam2.Set(20);
         intParam3.Set(30);
@@ -505,13 +491,13 @@ public partial class SettingsStoreTests
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         int? capturedOldValue = null;
         int? capturedNewValue = null;
-        Action<int, int> listener = (oldVal, newVal) =>
+        void listener(int oldVal, int newVal)
         {
             capturedOldValue = oldVal;
             capturedNewValue = newVal;
-        };
+        }
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<int, int>)listener);
         parameter.Set(100);
         // Assert
         Assert.AreEqual(42, capturedOldValue, "Old value should be the original value");
@@ -536,13 +522,13 @@ public partial class SettingsStoreTests
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         string? capturedOldValue = null;
         string? capturedNewValue = null;
-        Action<string?, string?> listener = (oldVal, newVal) =>
+        void listener(string? oldVal, string? newVal)
         {
             capturedOldValue = oldVal;
             capturedNewValue = newVal;
-        };
+        }
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<string?, string?>)listener);
         parameter.Set("updated");
         // Assert
         Assert.AreEqual("initial", capturedOldValue);
@@ -568,19 +554,19 @@ public partial class SettingsStoreTests
         var listenerCalled = false;
         bool? capturedOldValue = null;
         bool? capturedNewValue = null;
-        Action<bool, bool> listener = (oldVal, newVal) =>
+        void listener(bool oldVal, bool newVal)
         {
             listenerCalled = true;
             capturedOldValue = oldVal;
             capturedNewValue = newVal;
-        };
+        }
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<bool, bool>)listener);
         parameter.Set(false);
         // Assert
         Assert.IsTrue(listenerCalled);
-        Assert.AreEqual(true, capturedOldValue);
-        Assert.AreEqual(false, capturedNewValue);
+        Assert.IsTrue(capturedOldValue);
+        Assert.IsFalse(capturedNewValue);
     }
 
     /// <summary>
@@ -601,13 +587,10 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var callCount = 0;
-        Action<int, int> listener = (oldVal, newVal) =>
-        {
-            callCount++;
-        };
+        void listener(int oldVal, int newVal) => callCount++;
         // Act
-        store.AddListenerToAll(listener);
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<int, int>)listener);
+        store.AddListenerToAll((Action<int, int>)listener);
         parameter.Set(20);
         // Assert
         Assert.AreEqual(2, callCount, "Listener should be called twice since it was added twice");
@@ -630,12 +613,9 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         double? capturedNewValue = null;
-        Action<double, double> listener = (oldVal, newVal) =>
-        {
-            capturedNewValue = newVal;
-        };
+        void listener(double oldVal, double newVal) => capturedNewValue = newVal;
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<double, double>)listener);
         parameter.Set(2.71);
         // Assert
         Assert.AreEqual(2.71, capturedNewValue);
@@ -664,12 +644,9 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var intListenerCallCount = 0;
-        Action<int, int> intListener = (oldVal, newVal) =>
-        {
-            intListenerCallCount++;
-        };
+        void intListener(int oldVal, int newVal) => intListenerCallCount++;
         // Act
-        store.AddListenerToAll(intListener);
+        store.AddListenerToAll((Action<int, int>)intListener);
         stringParam.Set("changed");
         boolParam.Set(false);
         // Assert
@@ -694,13 +671,13 @@ public partial class SettingsStoreTests
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         float? capturedOldValue = null;
         float? capturedNewValue = null;
-        Action<float, float> listener = (oldVal, newVal) =>
+        void listener(float oldVal, float newVal)
         {
             capturedOldValue = oldVal;
             capturedNewValue = newVal;
-        };
+        }
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<float, float>)listener);
         parameter.Set(2.5f);
         // Assert
         Assert.AreEqual(1.5f, capturedOldValue);
@@ -730,17 +707,11 @@ public partial class SettingsStoreTests
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var intCallCount = 0;
         var stringCallCount = 0;
-        Action<int, int> intListener = (oldVal, newVal) =>
-        {
-            intCallCount++;
-        };
-        Action<string?, string?> stringListener = (oldVal, newVal) =>
-        {
-            stringCallCount++;
-        };
+        void intListener(int oldVal, int newVal) => intCallCount++;
+        void stringListener(string? oldVal, string? newVal) => stringCallCount++;
         // Act
-        store.AddListenerToAll(intListener);
-        store.AddListenerToAll(stringListener);
+        store.AddListenerToAll((Action<int, int>)intListener);
+        store.AddListenerToAll((Action<string?, string?>)stringListener);
         intParam.Set(100);
         stringParam.Set("updated");
         // Assert
@@ -765,12 +736,9 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var callCount = 0;
-        Action<int, int> listener = (oldVal, newVal) =>
-        {
-            callCount++;
-        };
+        void listener(int oldVal, int newVal) => callCount++;
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<int, int>)listener);
         parameter.SetWithoutNotify(20);
         // Assert
         Assert.AreEqual(0, callCount, "Listener should not be called when SetWithoutNotify is used");
@@ -793,12 +761,9 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         int? capturedNewValue = null;
-        Action<int, int> listener = (oldVal, newVal) =>
-        {
-            capturedNewValue = newVal;
-        };
+        void listener(int oldVal, int newVal) => capturedNewValue = newVal;
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<int, int>)listener);
         parameter.Set(int.MaxValue);
         // Assert
         Assert.AreEqual(int.MaxValue, capturedNewValue);
@@ -821,12 +786,9 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         int? capturedNewValue = null;
-        Action<int, int> listener = (oldVal, newVal) =>
-        {
-            capturedNewValue = newVal;
-        };
+        void listener(int oldVal, int newVal) => capturedNewValue = newVal;
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<int, int>)listener);
         parameter.Set(int.MinValue);
         // Assert
         Assert.AreEqual(int.MinValue, capturedNewValue);
@@ -849,12 +811,9 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         string? capturedNewValue = null;
-        Action<string?, string?> listener = (oldVal, newVal) =>
-        {
-            capturedNewValue = newVal;
-        };
+        void listener(string? oldVal, string? newVal) => capturedNewValue = newVal;
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<string?, string?>)listener);
         parameter.Set(string.Empty);
         // Assert
         Assert.AreEqual(string.Empty, capturedNewValue);
@@ -877,12 +836,9 @@ public partial class SettingsStoreTests
         };
         var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
         string? capturedNewValue = null;
-        Action<string?, string?> listener = (oldVal, newVal) =>
-        {
-            capturedNewValue = newVal;
-        };
+        void listener(string? oldVal, string? newVal) => capturedNewValue = newVal;
         // Act
-        store.AddListenerToAll(listener);
+        store.AddListenerToAll((Action<string?, string?>)listener);
         var specialString = "test\n\r\t\"'\\";
         parameter.Set(specialString);
         // Assert
@@ -901,8 +857,7 @@ public partial class SettingsStoreTests
     /// </summary>
     [TestMethod]
     [Ignore("Requires Load() to be called, which involves file I/O and complex setup")]
-    public void RemoveListenerFromAll_PredicateMatchesAllParameters_RemovesListenerFromMatchingParameters()
-    {
+    public void RemoveListenerFromAll_PredicateMatchesAllParameters_RemovesListenerFromMatchingParameters() =>
         // Arrange
         // TODO: Set up a loaded SettingsStore instance with parameters
         // var store = SetupLoadedStore();
@@ -915,7 +870,6 @@ public partial class SettingsStoreTests
         // Assert
         // TODO: Verify listener was removed from all parameters' ValueChanged events
         Assert.Inconclusive("Test requires loaded SettingsStore with accessible parameters collection");
-    }
 
     /// <summary>
     /// Tests RemoveListenerFromAll with a predicate that matches no parameters.
@@ -924,8 +878,7 @@ public partial class SettingsStoreTests
     /// </summary>
     [TestMethod]
     [Ignore("Requires Load() to be called, which involves file I/O and complex setup")]
-    public void RemoveListenerFromAll_PredicateMatchesNoParameters_NoRemoval()
-    {
+    public void RemoveListenerFromAll_PredicateMatchesNoParameters_NoRemoval() =>
         // Arrange
         // TODO: Set up a loaded SettingsStore instance with parameters
         // var store = SetupLoadedStore();
@@ -936,7 +889,6 @@ public partial class SettingsStoreTests
         // Assert
         // TODO: Verify listener was not removed from any parameters (or no error occurred)
         Assert.Inconclusive("Test requires loaded SettingsStore with accessible parameters collection");
-    }
 
     /// <summary>
     /// Tests RemoveListenerFromAll when a tracked cleanup registration exists for the listener.
@@ -945,8 +897,7 @@ public partial class SettingsStoreTests
     /// </summary>
     [TestMethod]
     [Ignore("Requires Load() to be called and AddListenerToAll setup")]
-    public void RemoveListenerFromAll_TrackedCleanupExists_RemovesTrackedCleanupAndReturnsEarly()
-    {
+    public void RemoveListenerFromAll_TrackedCleanupExists_RemovesTrackedCleanupAndReturnsEarly() =>
         // Arrange
         // TODO: Set up a loaded SettingsStore
         // var store = SetupLoadedStore();
@@ -961,7 +912,6 @@ public partial class SettingsStoreTests
         // TODO: Verify that the cleanup was executed
         // TODO: Verify that parameter iteration did not occur (e.g., predicate was not invoked)
         Assert.Inconclusive("Test requires loaded SettingsStore and tracked cleanup registration");
-    }
 
     /// <summary>
     /// Tests that AddListenerToAll successfully subscribes the listener to all parameters and the listener is invoked when parameter values change.
@@ -970,11 +920,11 @@ public partial class SettingsStoreTests
     public void AddListenerToAll_ValidListener_SubscribesToAllParameters()
     {
         // Arrange
-        string tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
+        var tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(tempFilePath);
         var config = store.Load();
-        int callCount = 0;
-        Action listener = () => callCount++;
+        var callCount = 0;
+        void listener() => callCount++;
         // Act
         store.AddListenerToAll(listener);
         config.Value1.Set(100);
@@ -999,11 +949,11 @@ public partial class SettingsStoreTests
     public void AddListenerToAll_SameListenerAddedTwice_TracksIndependently()
     {
         // Arrange
-        string tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
+        var tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(tempFilePath);
         var config = store.Load();
-        int callCount = 0;
-        Action listener = () => callCount++;
+        var callCount = 0;
+        void listener() => callCount++;
         // Act
         store.AddListenerToAll(listener);
         store.AddListenerToAll(listener);
@@ -1029,11 +979,11 @@ public partial class SettingsStoreTests
     public void AddListenerToAll_MultipleParameters_InvokesListenerForEach()
     {
         // Arrange
-        string tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
+        var tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(tempFilePath);
         var config = store.Load();
-        int callCount = 0;
-        Action listener = () => callCount++;
+        var callCount = 0;
+        void listener() => callCount++;
         // Act
         store.AddListenerToAll(listener);
         config.Value1.Set(300);
@@ -1059,11 +1009,11 @@ public partial class SettingsStoreTests
     public void AddListenerToAll_Dispose_UnsubscribesListener()
     {
         // Arrange
-        string tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
+        var tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(tempFilePath);
         var config = store.Load();
-        int callCount = 0;
-        Action listener = () => callCount++;
+        var callCount = 0;
+        void listener() => callCount++;
         store.AddListenerToAll(listener);
         // Act
         store.Dispose();
@@ -1081,7 +1031,7 @@ public partial class SettingsStoreTests
         }
     }
 
-#region Test Configuration Classes
+    #region Test Configuration Classes
     public partial record TestConfig
     {
         [UmbraSettingsParameter]
@@ -1091,7 +1041,7 @@ public partial class SettingsStoreTests
         public Parameter<string> Value2 { get; set; } = new("default");
     }
 
-#endregion
+    #endregion
     /// <summary>
     /// Verifies that <see cref = "SettingsStore{TConfig}.IsDisposed"/> returns <see langword="false"/>
     /// immediately after construction before any disposal has occurred.
@@ -1181,7 +1131,7 @@ public partial class SettingsStoreTests
     public void Save_WhenCalledMultipleTimes_SucceedsWithoutError()
     {
         // Arrange
-        string tempPath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
         try
         {
             var store = new SettingsStore<TestConfig>(tempPath);
@@ -1319,7 +1269,7 @@ public partial class SettingsStoreTests
         var store = new SettingsStore<TestConfig>(tempPath);
         _ = store.Load();
         // Act & Assert - verify multiple reads return the same value
-        for (int i = 0; i < 100; i++)
+        for (var i = 0; i < 100; i++)
         {
             Assert.IsTrue(store.IsLoaded);
         }
@@ -1362,7 +1312,7 @@ public partial class SettingsStoreTests
     public void Constructor_ValidFilePath_CreatesInstance(string filePath, string testCase)
     {
         // Act
-        SettingsStore<TestConfig> store = new SettingsStore<TestConfig>(filePath);
+        var store = new SettingsStore<TestConfig>(filePath);
         // Assert
         Assert.IsNotNull(store, $"Failed for test case: {testCase}");
         Assert.IsFalse(store.IsLoaded, $"Store should not be loaded immediately after construction. Failed for test case: {testCase}");
@@ -1376,9 +1326,9 @@ public partial class SettingsStoreTests
     public void Constructor_VeryLongFilePath_CreatesInstance()
     {
         // Arrange
-        string filePath = new string ('a', 1000) + ".json";
+        var filePath = new string('a', 1000) + ".json";
         // Act
-        SettingsStore<TestConfig> store = new SettingsStore<TestConfig>(filePath);
+        var store = new SettingsStore<TestConfig>(filePath);
         // Assert
         Assert.IsNotNull(store);
         Assert.IsFalse(store.IsLoaded);
@@ -1392,9 +1342,9 @@ public partial class SettingsStoreTests
     public void Constructor_UnicodeFilePath_CreatesInstance()
     {
         // Arrange
-        string filePath = "配置文件.json";
+        var filePath = "配置文件.json";
         // Act
-        SettingsStore<TestConfig> store = new SettingsStore<TestConfig>(filePath);
+        var store = new SettingsStore<TestConfig>(filePath);
         // Assert
         Assert.IsNotNull(store);
         Assert.IsFalse(store.IsLoaded);
@@ -1408,9 +1358,9 @@ public partial class SettingsStoreTests
     public void Constructor_ValidFilePath_InitializesIsLoadedToFalse()
     {
         // Arrange
-        string filePath = "config.json";
+        var filePath = "config.json";
         // Act
-        SettingsStore<TestConfig> store = new SettingsStore<TestConfig>(filePath);
+        var store = new SettingsStore<TestConfig>(filePath);
         // Assert
         Assert.IsFalse(store.IsLoaded);
     }
@@ -1422,9 +1372,9 @@ public partial class SettingsStoreTests
     public void Constructor_ValidFilePath_InitializesIsDisposedToFalse()
     {
         // Arrange
-        string filePath = "config.json";
+        var filePath = "config.json";
         // Act
-        SettingsStore<TestConfig> store = new SettingsStore<TestConfig>(filePath);
+        var store = new SettingsStore<TestConfig>(filePath);
         // Assert
         Assert.IsFalse(store.IsDisposed);
     }
@@ -1436,10 +1386,10 @@ public partial class SettingsStoreTests
     public void Constructor_DifferentGenericTypes_CreatesInstances()
     {
         // Arrange
-        string filePath = "config.json";
+        var filePath = "config.json";
         // Act
-        SettingsStore<TestConfig> store1 = new SettingsStore<TestConfig>(filePath);
-        SettingsStore<AnotherTestConfig> store2 = new SettingsStore<AnotherTestConfig>(filePath);
+        var store1 = new SettingsStore<TestConfig>(filePath);
+        var store2 = new SettingsStore<AnotherTestConfig>(filePath);
         // Assert
         Assert.IsNotNull(store1);
         Assert.IsNotNull(store2);
@@ -1507,7 +1457,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         var store = new SettingsStore<TestConfig>(tempPath);
         var config = store.Load();
         var callCount = 0;
-        Action listener = () => callCount++;
+        void listener() => callCount++;
         try
         {
             store.AddListenerToAll(listener);
@@ -1539,7 +1489,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         var store = new SettingsStore<TestConfig>(tempPath);
         var config = store.Load();
         var callCount = 0;
-        Action listener = () => callCount++;
+        void listener() => callCount++;
         try
         {
             store.AddListenerToAll(listener);
@@ -1571,15 +1521,13 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(tempPath);
         store.Load();
-        Action listener = () =>
+        static void listener()
         {
-        };
+        }
         try
         {
             // Act - Remove a listener that was never added
             store.RemoveListenerFromAll(listener);
-            // Assert - Should complete without exception
-            Assert.IsTrue(true, "RemoveListenerFromAll should complete without error.");
         }
         finally
         {
@@ -1600,16 +1548,14 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         var store = new SettingsStore<EmptyConfig>(tempPath);
         store.Load();
-        Action listener = () =>
+        static void listener()
         {
-        };
+        }
         try
         {
             store.AddListenerToAll(listener);
             // Act
             store.RemoveListenerFromAll(listener);
-            // Assert - Should complete without exception
-            Assert.IsTrue(true, "RemoveListenerFromAll should handle empty parameter sets.");
         }
         finally
         {
@@ -1632,7 +1578,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         var store = new SettingsStore<MultiParameterConfig>(tempPath);
         var config = store.Load();
         var callCount = 0;
-        Action listener = () => callCount++;
+        void listener() => callCount++;
         try
         {
             store.AddListenerToAll(listener);
@@ -1665,17 +1611,15 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(tempPath);
         var config = store.Load();
-        Action listener = () =>
+        static void listener()
         {
-        };
+        }
         try
         {
             store.AddListenerToAll(listener);
             // Act - Remove the same listener multiple times
             store.RemoveListenerFromAll(listener);
             store.RemoveListenerFromAll(listener);
-            // Assert - Should complete without exception
-            Assert.IsTrue(true, "Multiple RemoveListenerFromAll calls should not throw.");
         }
         finally
         {
@@ -1699,8 +1643,8 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         var config = store.Load();
         var callCount1 = 0;
         var callCount2 = 0;
-        Action listener1 = () => callCount1++;
-        Action listener2 = () => callCount2++;
+        void listener1() => callCount1++;
+        void listener2() => callCount2++;
         try
         {
             store.AddListenerToAll(listener1);
@@ -1729,14 +1673,14 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     public void RemoveListenerFromAll_NoMatchingParameters_CompletesWithoutError()
     {
         // Arrange
-        string configPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        var configPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         var store = new SettingsStore<TestConfig>(configPath);
         var config = store.Load();
-        Action<double, double> listener = (oldVal, newVal) =>
+        static void listener(double oldVal, double newVal)
         {
-        };
+        }
         // Act & Assert (should not throw)
-        store.RemoveListenerFromAll(listener);
+        store.RemoveListenerFromAll((Action<double, double>)listener);
         // Cleanup
         store.Dispose();
         if (System.IO.File.Exists(configPath))

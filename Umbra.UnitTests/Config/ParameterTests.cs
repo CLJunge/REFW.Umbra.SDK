@@ -1,9 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra.Config;
-
 namespace Umbra.Config.UnitTests;
 
 
@@ -123,10 +117,11 @@ public class ParameterTests
     public void IsModified_AfterValuePropertySet_ReturnsTrue()
     {
         // Arrange
-        var parameter = new Parameter<int>(10);
-
-        // Act
-        parameter.Value = 20;
+        var parameter = new Parameter<int>(10)
+        {
+            // Act
+            Value = 20
+        };
 
         // Assert
         Assert.IsTrue(parameter.IsModified, "IsModified should be true after setting Value property to a different value");
@@ -629,8 +624,8 @@ public class ParameterTests
         var parameter = new Parameter<bool>();
 
         // Assert
-        Assert.AreEqual(false, parameter.DefaultValue);
-        Assert.AreEqual(false, parameter.Value);
+        Assert.IsFalse(parameter.DefaultValue);
+        Assert.IsFalse(parameter.Value);
         Assert.IsFalse(parameter.IsModified);
         Assert.AreEqual(typeof(bool), parameter.ValueType);
     }
@@ -1193,7 +1188,7 @@ public class ParameterTests
     public void Constructor_WithEmptyString_InitializesCorrectly()
     {
         // Arrange
-        string expectedValue = string.Empty;
+        var expectedValue = string.Empty;
 
         // Act
         var parameter = new Parameter<string>(expectedValue);
@@ -1247,7 +1242,7 @@ public class ParameterTests
     public void Constructor_WithVeryLongString_InitializesCorrectly()
     {
         // Arrange
-        string expectedValue = new string('x', 10000);
+        var expectedValue = new string('x', 10000);
 
         // Act
         var parameter = new Parameter<string>(expectedValue);
@@ -1437,10 +1432,10 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(10) { Value = 20 };
-        int typedOldValue = 0;
-        int typedNewValue = 0;
-        int typedEventCallCount = 0;
-        int untypedEventCallCount = 0;
+        var typedOldValue = 0;
+        var typedNewValue = 0;
+        var typedEventCallCount = 0;
+        var untypedEventCallCount = 0;
 
         parameter.ValueChanged += (oldVal, newVal) =>
         {
@@ -1472,8 +1467,8 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(10) { Value = 10 };
-        int typedEventCallCount = 0;
-        int untypedEventCallCount = 0;
+        var typedEventCallCount = 0;
+        var untypedEventCallCount = 0;
 
         parameter.ValueChanged += (_, _) => typedEventCallCount++;
         ((IParameter)parameter).ValueChanged += () => untypedEventCallCount++;
@@ -1496,8 +1491,8 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(10) { Value = 20 };
-        int typedEventCallCount = 0;
-        int untypedEventCallCount = 0;
+        var typedEventCallCount = 0;
+        var untypedEventCallCount = 0;
 
         parameter.ValueChanged += (_, _) => typedEventCallCount++;
         ((IParameter)parameter).ValueChanged += () => untypedEventCallCount++;
@@ -1754,7 +1749,7 @@ public class ParameterTests
     public void Reset_WithLongStringDefaultValue_ResetsToLongString()
     {
         // Arrange
-        string longString = new string('a', 10000);
+        var longString = new string('a', 10000);
         var parameter = new Parameter<string>(longString) { Value = "short" };
 
         // Act
@@ -1839,7 +1834,7 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(10) { Value = 20 };
-        int eventCallCount = 0;
+        var eventCallCount = 0;
 
         parameter.ValueChanged += (_, _) => eventCallCount++;
 
@@ -1887,7 +1882,7 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(10) { Value = 20 };
-        int eventCallCount = 0;
+        var eventCallCount = 0;
 
         parameter.ValueChanged += (_, _) => eventCallCount++;
 
@@ -1945,7 +1940,7 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(10) { Value = 10 };
-        int eventCallCount = 0;
+        var eventCallCount = 0;
 
         parameter.ValueChanged += (_, _) => eventCallCount++;
 
@@ -1991,9 +1986,9 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(10) { Value = 20 };
-        int callOrder = 0;
-        int typedCallOrder = 0;
-        int untypedCallOrder = 0;
+        var callOrder = 0;
+        var typedCallOrder = 0;
+        var untypedCallOrder = 0;
 
         parameter.ValueChanged += (_, _) => typedCallOrder = ++callOrder;
         ((IParameter)parameter).ValueChanged += () => untypedCallOrder = ++callOrder;
@@ -2016,8 +2011,8 @@ public class ParameterTests
         var parameter = new Parameter<int>(10);
         var typedEventRaised = false;
         var untypedEventRaised = false;
-        int oldValueFromEvent = 0;
-        int newValueFromEvent = 0;
+        var oldValueFromEvent = 0;
+        var newValueFromEvent = 0;
 
         parameter.ValueChanged += (oldVal, newVal) =>
         {
@@ -2026,10 +2021,7 @@ public class ParameterTests
             newValueFromEvent = newVal;
         };
 
-        ((IParameter)parameter).ValueChanged += () =>
-        {
-            untypedEventRaised = true;
-        };
+        ((IParameter)parameter).ValueChanged += () => untypedEventRaised = true;
 
         // Act
         parameter.Set(20);
@@ -2240,7 +2232,7 @@ public class ParameterTests
         parameter.Set(true);
 
         // Assert
-        Assert.AreEqual(true, parameter.Value);
+        Assert.IsTrue(parameter.Value);
         Assert.IsTrue(eventRaised, "ValueChanged event should be raised");
     }
 
@@ -2299,7 +2291,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2327,7 +2319,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2350,7 +2342,7 @@ public class ParameterTests
         parameter.Value = newValue;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2369,7 +2361,7 @@ public class ParameterTests
         parameter.SetWithoutNotify(999);
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2399,7 +2391,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2417,7 +2409,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2435,7 +2427,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2454,7 +2446,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2480,7 +2472,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2502,7 +2494,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNull(result);
@@ -2526,7 +2518,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2546,7 +2538,7 @@ public class ParameterTests
         parameter.SetWithoutNotify(null);
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNull(result);
@@ -2567,7 +2559,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNull(result);
@@ -2585,7 +2577,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2613,7 +2605,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2632,7 +2624,7 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2652,7 +2644,7 @@ public class ParameterTests
         parameter.Value = null;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNull(result);
@@ -2674,11 +2666,11 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsInstanceOfType(result, typeof(int));
+        Assert.IsInstanceOfType<int>(result);
         Assert.AreEqual(42, (int)result);
     }
 
@@ -2695,8 +2687,8 @@ public class ParameterTests
         IParameter iParameter = parameter;
 
         // Act
-        object? result1 = iParameter.GetValue();
-        object? result2 = iParameter.GetValue();
+        var result1 = iParameter.GetValue();
+        var result2 = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result1);
@@ -2722,7 +2714,7 @@ public class ParameterTests
         parameter.Reset(raiseEvent: false);
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNotNull(result);
@@ -2743,7 +2735,7 @@ public class ParameterTests
         parameter.Reset(raiseEvent: false);
 
         // Act
-        object? result = iParameter.GetValue();
+        var result = iParameter.GetValue();
 
         // Assert
         Assert.IsNull(result);
@@ -3257,7 +3249,7 @@ public class ParameterTests
         iParameter.SetValue(true);
 
         // Assert
-        Assert.AreEqual(true, parameter.Value);
+        Assert.IsTrue(parameter.Value);
     }
 
     /// <summary>
@@ -3285,7 +3277,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<int>(10);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3304,7 +3296,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<string?>("default");
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3323,7 +3315,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<int?>(10);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3380,7 +3372,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<int>(10);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3399,7 +3391,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<int>(0);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3418,7 +3410,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<int>(0);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3437,7 +3429,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<double>(0.0);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3456,7 +3448,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<double>(0.0);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3475,7 +3467,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<double>(0.0);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3494,7 +3486,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<string>("default");
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3513,7 +3505,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<string>("default");
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3532,9 +3524,9 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<string>("default");
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
-        string longString = new string('x', 10000);
+        var longString = new string('x', 10000);
 
         // Act
         parameter.SetValueWithoutNotify(longString);
@@ -3552,9 +3544,9 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<string>("default");
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
-        string specialString = "Hello\nWorld\t\r\0\u0001";
+        var specialString = "Hello\nWorld\t\r\0\u0001";
 
         // Act
         parameter.SetValueWithoutNotify(specialString);
@@ -3572,14 +3564,14 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<bool>(false);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
         parameter.SetValueWithoutNotify(true);
 
         // Assert
-        Assert.AreEqual(true, parameter.GetValue());
+        Assert.IsTrue((bool?)parameter.GetValue());
         Assert.IsFalse(eventRaised, "ValueChanged event should not be raised");
     }
 
@@ -3591,7 +3583,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<int>(42);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3610,7 +3602,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<float>(0.0f);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3629,7 +3621,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<float>(0.0f);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -3648,9 +3640,9 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<DateTime>(DateTime.MinValue);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
-        DateTime expectedDate = new DateTime(2024, 1, 1);
+        var expectedDate = new DateTime(2024, 1, 1);
 
         // Act
         parameter.SetValueWithoutNotify(expectedDate);
@@ -3670,7 +3662,7 @@ public class ParameterTests
         var parameter = new Parameter<string?>(null);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.IsNull(result);
@@ -3686,7 +3678,7 @@ public class ParameterTests
         var parameter = new Parameter<int?>(null);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.IsNull(result);
@@ -3709,7 +3701,7 @@ public class ParameterTests
         var parameter = new Parameter<int>(value);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -3729,7 +3721,7 @@ public class ParameterTests
         var parameter = new Parameter<bool>(value);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -3750,7 +3742,7 @@ public class ParameterTests
         var parameter = new Parameter<double>(value);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -3766,7 +3758,7 @@ public class ParameterTests
         var parameter = new Parameter<double>(double.NaN);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual("NaN", result);
@@ -3782,7 +3774,7 @@ public class ParameterTests
         var parameter = new Parameter<double>(double.PositiveInfinity);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual("Infinity", result);
@@ -3798,7 +3790,7 @@ public class ParameterTests
         var parameter = new Parameter<double>(double.NegativeInfinity);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual("-Infinity", result);
@@ -3821,7 +3813,7 @@ public class ParameterTests
         var parameter = new Parameter<string>(value);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual(value, result);
@@ -3837,7 +3829,7 @@ public class ParameterTests
         var parameter = new Parameter<int?>(123);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual("123", result);
@@ -3851,10 +3843,10 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<string?>(null);
-        string? expected = parameter.Value?.ToString();
+        var expected = parameter.Value?.ToString();
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -3868,11 +3860,13 @@ public class ParameterTests
     public void ToString_AfterValueChange_ReturnsNewStringRepresentation()
     {
         // Arrange
-        var parameter = new Parameter<int>(10);
-        parameter.Value = 20;
+        var parameter = new Parameter<int>(10)
+        {
+            Value = 20
+        };
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual("20", result);
@@ -3893,7 +3887,7 @@ public class ParameterTests
         var parameter = new Parameter<long>(value);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.AreEqual(expected, result);
@@ -3913,7 +3907,7 @@ public class ParameterTests
         var parameter = new Parameter<double>(value);
 
         // Act
-        string? result = parameter.ToString();
+        var result = parameter.ToString();
 
         // Assert
         Assert.IsNotNull(result);
@@ -4497,10 +4491,11 @@ public class ParameterTests
     public void Value_SetDifferentValue_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<int>(10);
-
-        // Act
-        parameter.Value = 20;
+        var parameter = new Parameter<int>(10)
+        {
+            // Act
+            Value = 20
+        };
 
         // Assert
         Assert.AreEqual(20, parameter.Value);
@@ -4513,10 +4508,11 @@ public class ParameterTests
     public void Value_SetSameValue_DoesNotChangeValue()
     {
         // Arrange
-        var parameter = new Parameter<int>(42);
-
-        // Act
-        parameter.Value = 42;
+        var parameter = new Parameter<int>(42)
+        {
+            // Act
+            Value = 42
+        };
 
         // Assert
         Assert.AreEqual(42, parameter.Value);
@@ -4554,7 +4550,7 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(42);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += (old, newVal) => eventRaised = true;
 
         // Act
@@ -4572,7 +4568,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<int>(10);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -4590,7 +4586,7 @@ public class ParameterTests
     {
         // Arrange
         IParameter parameter = new Parameter<int>(42);
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += () => eventRaised = true;
 
         // Act
@@ -4609,11 +4605,10 @@ public class ParameterTests
         // Arrange
         var parameter = new Parameter<int>(50)
         {
-            Metadata = new ParameterMetadata { Min = 10 }
+            Metadata = new ParameterMetadata { Min = 10 },
+            // Act
+            Value = 5
         };
-
-        // Act
-        parameter.Value = 5;
 
         // Assert
         Assert.AreEqual(50, parameter.Value);
@@ -4628,11 +4623,10 @@ public class ParameterTests
         // Arrange
         var parameter = new Parameter<int>(50)
         {
-            Metadata = new ParameterMetadata { Max = 100 }
+            Metadata = new ParameterMetadata { Max = 100 },
+            // Act
+            Value = 150
         };
-
-        // Act
-        parameter.Value = 150;
 
         // Assert
         Assert.AreEqual(50, parameter.Value);
@@ -4647,11 +4641,10 @@ public class ParameterTests
         // Arrange
         var parameter = new Parameter<int>(50)
         {
-            Metadata = new ParameterMetadata { Min = 10 }
+            Metadata = new ParameterMetadata { Min = 10 },
+            // Act
+            Value = 10
         };
-
-        // Act
-        parameter.Value = 10;
 
         // Assert
         Assert.AreEqual(10, parameter.Value);
@@ -4666,11 +4659,10 @@ public class ParameterTests
         // Arrange
         var parameter = new Parameter<int>(50)
         {
-            Metadata = new ParameterMetadata { Max = 100 }
+            Metadata = new ParameterMetadata { Max = 100 },
+            // Act
+            Value = 100
         };
-
-        // Act
-        parameter.Value = 100;
 
         // Assert
         Assert.AreEqual(100, parameter.Value);
@@ -4685,11 +4677,10 @@ public class ParameterTests
         // Arrange
         var parameter = new Parameter<int>(50)
         {
-            Metadata = new ParameterMetadata { Min = 10, Max = 100 }
+            Metadata = new ParameterMetadata { Min = 10, Max = 100 },
+            // Act
+            Value = 75
         };
-
-        // Act
-        parameter.Value = 75;
 
         // Assert
         Assert.AreEqual(75, parameter.Value);
@@ -4706,7 +4697,7 @@ public class ParameterTests
         {
             Metadata = new ParameterMetadata { Min = 10, Max = 100 }
         };
-        bool eventRaised = false;
+        var eventRaised = false;
         parameter.ValueChanged += (old, newVal) => eventRaised = true;
 
         // Act
@@ -4723,10 +4714,11 @@ public class ParameterTests
     public void Value_SetIntMinValue_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<int>(0);
-
-        // Act
-        parameter.Value = int.MinValue;
+        var parameter = new Parameter<int>(0)
+        {
+            // Act
+            Value = int.MinValue
+        };
 
         // Assert
         Assert.AreEqual(int.MinValue, parameter.Value);
@@ -4739,10 +4731,11 @@ public class ParameterTests
     public void Value_SetIntMaxValue_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<int>(0);
-
-        // Act
-        parameter.Value = int.MaxValue;
+        var parameter = new Parameter<int>(0)
+        {
+            // Act
+            Value = int.MaxValue
+        };
 
         // Assert
         Assert.AreEqual(int.MaxValue, parameter.Value);
@@ -4755,10 +4748,11 @@ public class ParameterTests
     public void Value_SetZero_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<int>(10);
-
-        // Act
-        parameter.Value = 0;
+        var parameter = new Parameter<int>(10)
+        {
+            // Act
+            Value = 0
+        };
 
         // Assert
         Assert.AreEqual(0, parameter.Value);
@@ -4771,10 +4765,11 @@ public class ParameterTests
     public void Value_SetDoubleNaN_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<double>(0.0);
-
-        // Act
-        parameter.Value = double.NaN;
+        var parameter = new Parameter<double>(0.0)
+        {
+            // Act
+            Value = double.NaN
+        };
 
         // Assert
         Assert.IsTrue(double.IsNaN(parameter.Value));
@@ -4787,10 +4782,11 @@ public class ParameterTests
     public void Value_SetDoublePositiveInfinity_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<double>(0.0);
-
-        // Act
-        parameter.Value = double.PositiveInfinity;
+        var parameter = new Parameter<double>(0.0)
+        {
+            // Act
+            Value = double.PositiveInfinity
+        };
 
         // Assert
         Assert.AreEqual(double.PositiveInfinity, parameter.Value);
@@ -4803,10 +4799,11 @@ public class ParameterTests
     public void Value_SetDoubleNegativeInfinity_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<double>(0.0);
-
-        // Act
-        parameter.Value = double.NegativeInfinity;
+        var parameter = new Parameter<double>(0.0)
+        {
+            // Act
+            Value = double.NegativeInfinity
+        };
 
         // Assert
         Assert.AreEqual(double.NegativeInfinity, parameter.Value);
@@ -4819,10 +4816,11 @@ public class ParameterTests
     public void Value_SetNullForNullableInt_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<int?>(42);
-
-        // Act
-        parameter.Value = null;
+        var parameter = new Parameter<int?>(42)
+        {
+            // Act
+            Value = null
+        };
 
         // Assert
         Assert.IsNull(parameter.Value);
@@ -4835,10 +4833,11 @@ public class ParameterTests
     public void Value_SetNullForNullableString_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<string?>("test");
-
-        // Act
-        parameter.Value = null;
+        var parameter = new Parameter<string?>("test")
+        {
+            // Act
+            Value = null
+        };
 
         // Assert
         Assert.IsNull(parameter.Value);
@@ -4851,10 +4850,11 @@ public class ParameterTests
     public void Value_SetEmptyString_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<string>("test");
-
-        // Act
-        parameter.Value = "";
+        var parameter = new Parameter<string>("test")
+        {
+            // Act
+            Value = ""
+        };
 
         // Assert
         Assert.AreEqual("", parameter.Value);
@@ -4867,10 +4867,11 @@ public class ParameterTests
     public void Value_SetWhitespaceString_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<string>("test");
-
-        // Act
-        parameter.Value = "   ";
+        var parameter = new Parameter<string>("test")
+        {
+            // Act
+            Value = "   "
+        };
 
         // Assert
         Assert.AreEqual("   ", parameter.Value);
@@ -4919,11 +4920,10 @@ public class ParameterTests
         // Arrange
         var parameter = new Parameter<int?>(50)
         {
-            Metadata = new ParameterMetadata { Min = 10, Max = 100 }
+            Metadata = new ParameterMetadata { Min = 10, Max = 100 },
+            // Act
+            Value = null
         };
-
-        // Act
-        parameter.Value = null;
 
         // Assert
         Assert.IsNull(parameter.Value);
@@ -4936,10 +4936,11 @@ public class ParameterTests
     public void Value_SetNegativeInteger_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<int>(10);
-
-        // Act
-        parameter.Value = -100;
+        var parameter = new Parameter<int>(10)
+        {
+            // Act
+            Value = -100
+        };
 
         // Assert
         Assert.AreEqual(-100, parameter.Value);
@@ -4953,8 +4954,8 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(10);
-        int subscriber1Calls = 0;
-        int subscriber2Calls = 0;
+        var subscriber1Calls = 0;
+        var subscriber2Calls = 0;
         parameter.ValueChanged += (old, newVal) => subscriber1Calls++;
         parameter.ValueChanged += (old, newVal) => subscriber2Calls++;
 
@@ -4973,10 +4974,11 @@ public class ParameterTests
     public void Value_SetDifferentValueFromDefault_UpdatesIsModified()
     {
         // Arrange
-        var parameter = new Parameter<int>(10);
-
-        // Act
-        parameter.Value = 20;
+        var parameter = new Parameter<int>(10)
+        {
+            // Act
+            Value = 20
+        };
 
         // Assert
         Assert.IsTrue(parameter.IsModified);
@@ -4989,8 +4991,10 @@ public class ParameterTests
     public void Value_SetBackToDefaultValue_UpdatesIsModifiedToFalse()
     {
         // Arrange
-        var parameter = new Parameter<int>(10);
-        parameter.Value = 20;
+        var parameter = new Parameter<int>(10)
+        {
+            Value = 20
+        };
 
         // Act
         parameter.Value = 10;
@@ -5006,10 +5010,11 @@ public class ParameterTests
     public void Value_SetFloatNaN_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<float>(0.0f);
-
-        // Act
-        parameter.Value = float.NaN;
+        var parameter = new Parameter<float>(0.0f)
+        {
+            // Act
+            Value = float.NaN
+        };
 
         // Assert
         Assert.IsTrue(float.IsNaN(parameter.Value));
@@ -5022,10 +5027,11 @@ public class ParameterTests
     public void Value_SetFloatPositiveInfinity_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<float>(0.0f);
-
-        // Act
-        parameter.Value = float.PositiveInfinity;
+        var parameter = new Parameter<float>(0.0f)
+        {
+            // Act
+            Value = float.PositiveInfinity
+        };
 
         // Assert
         Assert.AreEqual(float.PositiveInfinity, parameter.Value);
@@ -5038,10 +5044,11 @@ public class ParameterTests
     public void Value_SetFloatNegativeInfinity_UpdatesValue()
     {
         // Arrange
-        var parameter = new Parameter<float>(0.0f);
-
-        // Act
-        parameter.Value = float.NegativeInfinity;
+        var parameter = new Parameter<float>(0.0f)
+        {
+            // Act
+            Value = float.NegativeInfinity
+        };
 
         // Assert
         Assert.AreEqual(float.NegativeInfinity, parameter.Value);
@@ -5108,10 +5115,11 @@ public class ParameterTests
     public void Value_SetMultipleTimes_UpdatesValueCorrectly()
     {
         // Arrange
-        var parameter = new Parameter<int>(0);
-
-        // Act
-        parameter.Value = 10;
+        var parameter = new Parameter<int>(0)
+        {
+            // Act
+            Value = 10
+        };
         parameter.Value = 20;
         parameter.Value = 30;
 
@@ -5127,7 +5135,7 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(0);
-        int eventCount = 0;
+        var eventCount = 0;
         parameter.ValueChanged += (old, newVal) => eventCount++;
 
         // Act
@@ -5328,6 +5336,7 @@ public class ParameterTests
     /// the value actually changes.
     /// </summary>
     [TestMethod]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
     public void IParameterValueChanged_ResetWithRaiseEventTrue_EventRaised()
     {
         // Arrange
@@ -5351,6 +5360,7 @@ public class ParameterTests
     /// <see cref="IParameter.Reset"/> is called with <c>raiseEvent = false</c>.
     /// </summary>
     [TestMethod]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
     public void IParameterValueChanged_ResetWithRaiseEventFalse_EventNotRaised()
     {
         // Arrange
@@ -5374,6 +5384,7 @@ public class ParameterTests
     /// <see cref="IParameter.Reset"/> is called but the value does not actually change.
     /// </summary>
     [TestMethod]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
     public void IParameterValueChanged_ResetWithNoChange_EventNotRaised()
     {
         // Arrange
@@ -5544,7 +5555,7 @@ public class ParameterTests
         var parameter = new Parameter<int>(10);
         IParameter iParameter = parameter;
         var eventRaised = false;
-        Action handler = () => eventRaised = true;
+        void handler() => eventRaised = true;
 
         iParameter.ValueChanged += handler;
         iParameter.ValueChanged -= handler;
@@ -5567,7 +5578,7 @@ public class ParameterTests
         var parameter = new Parameter<int>(10);
         IParameter iParameter = parameter;
         var callCount = 0;
-        Action handler = () => callCount++;
+        void handler() => callCount++;
 
         iParameter.ValueChanged += handler;
         iParameter.ValueChanged += handler;
@@ -5591,8 +5602,8 @@ public class ParameterTests
         var parameter = new Parameter<int>(10);
         IParameter iParameter = parameter;
         var eventRaised = false;
-        Action handler = () => eventRaised = true;
-        Action neverSubscribedHandler = () => { };
+        void handler() => eventRaised = true;
+        void neverSubscribedHandler() { }
 
         iParameter.ValueChanged += handler;
 

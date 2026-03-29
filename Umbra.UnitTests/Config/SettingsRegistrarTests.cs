@@ -1,7 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra.Config;
 using Umbra.Config.Attributes;
 
 
@@ -28,7 +24,7 @@ public partial class SettingsRegistrarTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.AreEqual(0, result.Count);
+        Assert.IsEmpty(result);
     }
 
     /// <summary>
@@ -46,7 +42,7 @@ public partial class SettingsRegistrarTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.AreEqual(0, result.Count);
+        Assert.IsEmpty(result);
     }
 
     /// <summary>
@@ -62,7 +58,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("enabled"));
         Assert.AreSame(config.Enabled, result["enabled"]);
         Assert.AreEqual("enabled", config.Enabled.Key);
@@ -81,7 +77,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(2, result.Count);
+        Assert.HasCount(2, result);
         Assert.IsTrue(result.ContainsKey("myPrefix.enabled"));
         Assert.IsTrue(result.ContainsKey("myPrefix.value"));
         Assert.AreSame(config.Enabled, result["myPrefix.enabled"]);
@@ -101,7 +97,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("enabled"));
         Assert.IsNotNull(config.Enabled.Metadata);
         Assert.AreEqual("TestCategory", config.Enabled.Metadata.Category);
@@ -120,7 +116,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("pre.enabled"));
         Assert.IsNotNull(config.Enabled.Metadata);
         Assert.AreEqual("Cat", config.Enabled.Metadata.Category);
@@ -139,7 +135,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("customKey"));
         Assert.AreSame(config.Enabled, result["customKey"]);
     }
@@ -158,7 +154,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(3, result.Count);
+        Assert.HasCount(3, result);
         Assert.IsTrue(result.ContainsKey("enabled"));
         Assert.IsTrue(result.ContainsKey("count"));
         Assert.IsTrue(result.ContainsKey("name"));
@@ -181,7 +177,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(2, result.Count);
+        Assert.HasCount(2, result);
         Assert.IsTrue(result.ContainsKey("topLevel"));
         Assert.IsTrue(result.ContainsKey("nested.nestedValue"));
         Assert.AreSame(config.TopLevel, result["topLevel"]);
@@ -201,7 +197,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("customPrefix.nestedValue"));
         Assert.AreSame(config.Nested.NestedValue, result["customPrefix.nestedValue"]);
     }
@@ -220,7 +216,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("root.level1.level2.deepValue"));
         Assert.AreSame(config.Level1.Level2.DeepValue, result["root.level1.level2.deepValue"]);
     }
@@ -241,7 +237,7 @@ public partial class SettingsRegistrarTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.AreEqual(2, result.Count);
+        Assert.HasCount(2, result);
         Assert.IsTrue(result.ContainsKey("value1"));
         Assert.IsTrue(result.ContainsKey("other.value2"));
     }
@@ -262,7 +258,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("topLevel"));
     }
 
@@ -279,7 +275,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("enabled"));
     }
 
@@ -314,7 +310,7 @@ public partial class SettingsRegistrarTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.AreEqual(0, result.Count);
+        Assert.IsEmpty(result);
     }
 
     /// <summary>
@@ -330,7 +326,7 @@ public partial class SettingsRegistrarTests
         var result = SettingsRegistrar.Register(config);
 
         // Assert
-        Assert.AreEqual(1, result.Count);
+        Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("publicParameter"));
     }
 

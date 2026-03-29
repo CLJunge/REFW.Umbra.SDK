@@ -1,14 +1,7 @@
-﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Umbra;
-using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.Logging;
 
 namespace Umbra.Config.UnitTests;
 
@@ -41,8 +34,6 @@ public sealed partial class DeferredSaveControllerTests
 
         SetPrivateField(controller, "_anyPending", true);
         SetPrivateField(controller, "_disposed", true);
-
-        int flushCallCount = 0;
         var originalFlush = typeof(DeferredSaveController<TestConfig>).GetMethod("Flush", BindingFlags.Instance | BindingFlags.Public);
 
         // Act
@@ -124,7 +115,7 @@ public sealed partial class DeferredSaveControllerTests
         var mockStore = CreateMockStore();
         var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
 
-        long timestamp = Stopwatch.GetTimestamp();
+        var timestamp = Stopwatch.GetTimestamp();
         SetPrivateField(controller, "_anyPending", true);
         SetPrivateField(controller, "_sliderPending", true);
         SetPrivateField(controller, "_sliderChangedAt", timestamp);
@@ -148,7 +139,7 @@ public sealed partial class DeferredSaveControllerTests
         var mockStore = CreateMockStore();
         var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
 
-        long oldTimestamp = Stopwatch.GetTimestamp() - Stopwatch.Frequency;
+        var oldTimestamp = Stopwatch.GetTimestamp() - Stopwatch.Frequency;
         SetPrivateField(controller, "_anyPending", true);
         SetPrivateField(controller, "_sliderPending", true);
         SetPrivateField(controller, "_sliderChangedAt", oldTimestamp);
@@ -172,9 +163,9 @@ public sealed partial class DeferredSaveControllerTests
         var mockStore = CreateMockStore();
         var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
 
-        long frequency = Stopwatch.Frequency;
-        long ticksForDebounce = (long)(debounceWindow.TotalSeconds * frequency);
-        long oldTimestamp = Stopwatch.GetTimestamp() - ticksForDebounce;
+        var frequency = Stopwatch.Frequency;
+        var ticksForDebounce = (long)(debounceWindow.TotalSeconds * frequency);
+        var oldTimestamp = Stopwatch.GetTimestamp() - ticksForDebounce;
 
         SetPrivateField(controller, "_anyPending", true);
         SetPrivateField(controller, "_sliderPending", true);
@@ -199,7 +190,7 @@ public sealed partial class DeferredSaveControllerTests
         var mockStore = CreateMockStore();
         var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
 
-        long timestamp = Stopwatch.GetTimestamp();
+        var timestamp = Stopwatch.GetTimestamp();
         SetPrivateField(controller, "_anyPending", true);
         SetPrivateField(controller, "_sliderPending", true);
         SetPrivateField(controller, "_sliderChangedAt", timestamp);
@@ -225,7 +216,7 @@ public sealed partial class DeferredSaveControllerTests
         var mockStore = CreateMockStore();
         var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
 
-        long veryOldTimestamp = Stopwatch.GetTimestamp() - (Stopwatch.Frequency * 3600);
+        var veryOldTimestamp = Stopwatch.GetTimestamp() - (Stopwatch.Frequency * 3600);
         SetPrivateField(controller, "_anyPending", true);
         SetPrivateField(controller, "_sliderPending", true);
         SetPrivateField(controller, "_sliderChangedAt", veryOldTimestamp);
@@ -274,7 +265,7 @@ public sealed partial class DeferredSaveControllerTests
         var mockStore = CreateMockStore();
         var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
 
-        long timestamp = Stopwatch.GetTimestamp();
+        var timestamp = Stopwatch.GetTimestamp();
         SetPrivateField(controller, "_anyPending", true);
         SetPrivateField(controller, "_sliderPending", true);
         SetPrivateField(controller, "_sliderChangedAt", timestamp);
@@ -305,8 +296,8 @@ public sealed partial class DeferredSaveControllerTests
         controller.Tick();
 
         // Assert - verify pending state was cleared
-        bool anyPending = GetPrivateField<bool>(controller, "_anyPending");
-        bool sliderPending = GetPrivateField<bool>(controller, "_sliderPending");
+        var anyPending = GetPrivateField<bool>(controller, "_anyPending");
+        var sliderPending = GetPrivateField<bool>(controller, "_sliderPending");
 
         Assert.IsFalse(anyPending);
         Assert.IsFalse(sliderPending);
@@ -323,7 +314,7 @@ public sealed partial class DeferredSaveControllerTests
         var mockStore = CreateMockStore();
         var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
 
-        long oldTimestamp = Stopwatch.GetTimestamp() - Stopwatch.Frequency;
+        var oldTimestamp = Stopwatch.GetTimestamp() - Stopwatch.Frequency;
         SetPrivateField(controller, "_anyPending", true);
         SetPrivateField(controller, "_sliderPending", true);
         SetPrivateField(controller, "_sliderChangedAt", oldTimestamp);
@@ -333,8 +324,8 @@ public sealed partial class DeferredSaveControllerTests
         controller.Tick();
 
         // Assert - verify pending state was cleared
-        bool anyPending = GetPrivateField<bool>(controller, "_anyPending");
-        bool sliderPending = GetPrivateField<bool>(controller, "_sliderPending");
+        var anyPending = GetPrivateField<bool>(controller, "_anyPending");
+        var sliderPending = GetPrivateField<bool>(controller, "_sliderPending");
 
         Assert.IsFalse(anyPending);
         Assert.IsFalse(sliderPending);
@@ -398,7 +389,7 @@ public sealed partial class DeferredSaveControllerTests
         var mockStore = CreateMockStore();
         var controller = new DeferredSaveController<TestConfig>(mockStore.Object, debounceWindow);
 
-        long oldTimestamp = Stopwatch.GetTimestamp() - 100;
+        var oldTimestamp = Stopwatch.GetTimestamp() - 100;
         SetPrivateField(controller, "_anyPending", true);
         SetPrivateField(controller, "_sliderPending", true);
         SetPrivateField(controller, "_sliderChangedAt", oldTimestamp);
@@ -587,10 +578,10 @@ public sealed partial class DeferredSaveControllerTests
         controller.Dispose();
 
         // Assert
-        Assert.AreEqual(3, callSequence.Count, "All three methods should be called");
+        Assert.HasCount(3, callSequence, "All three methods should be called");
         Assert.AreEqual("Save", callSequence[0], "Save should be called first (as part of Flush)");
-        Assert.IsTrue(callSequence.Contains("RemoveAny"), "RemoveListenerFromAll(Action) should be called after Save");
-        Assert.IsTrue(callSequence.Contains("RemoveNumeric"), "RemoveListenerFromAll(predicate, Action) should be called after Save");
+        Assert.Contains("RemoveAny", callSequence, "RemoveListenerFromAll(Action) should be called after Save");
+        Assert.Contains("RemoveNumeric", callSequence, "RemoveListenerFromAll(predicate, Action) should be called after Save");
     }
 
     /// <summary>
@@ -765,7 +756,7 @@ public sealed partial class DeferredSaveControllerTests
         DeferredSaveController<TestConfig> controller = new(mockStore.Object);
 
         // Set _anyPending to true using reflection
-        FieldInfo? anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
+        var anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.IsNotNull(anyPendingField, "_anyPending field not found");
         anyPendingField.SetValue(controller, true);
 
@@ -782,7 +773,7 @@ public sealed partial class DeferredSaveControllerTests
         // The warning should contain "dropping pending changes because the SettingsStore was already disposed"
 
         // Verify _anyPending was cleared
-        bool anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
+        var anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
         Assert.IsFalse(anyPendingAfter, "_anyPending should be cleared after Flush");
     }
 
@@ -803,7 +794,7 @@ public sealed partial class DeferredSaveControllerTests
         DeferredSaveController<TestConfig> controller = new(mockStore.Object);
 
         // Set _anyPending to true using reflection to simulate pending changes
-        FieldInfo? anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
+        var anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.IsNotNull(anyPendingField, "_anyPending field not found");
         anyPendingField.SetValue(controller, true);
 
@@ -816,7 +807,7 @@ public sealed partial class DeferredSaveControllerTests
         // The info message should contain "flushing pending changes to disk"
 
         // Verify _anyPending was cleared
-        bool anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
+        var anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
         Assert.IsFalse(anyPendingAfter, "_anyPending should be cleared after Flush");
     }
 
@@ -862,8 +853,8 @@ public sealed partial class DeferredSaveControllerTests
         DeferredSaveController<TestConfig> controller = new(mockStore.Object);
 
         // Set both pending flags using reflection
-        FieldInfo? anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
-        FieldInfo? sliderPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_sliderPending", BindingFlags.NonPublic | BindingFlags.Instance);
+        var anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
+        var sliderPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_sliderPending", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.IsNotNull(anyPendingField, "_anyPending field not found");
         Assert.IsNotNull(sliderPendingField, "_sliderPending field not found");
 
@@ -874,8 +865,8 @@ public sealed partial class DeferredSaveControllerTests
         controller.Flush();
 
         // Assert
-        bool anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
-        bool sliderPendingAfter = (bool)sliderPendingField.GetValue(controller)!;
+        var anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
+        var sliderPendingAfter = (bool)sliderPendingField.GetValue(controller)!;
 
         Assert.IsFalse(anyPendingAfter, "_anyPending should be cleared");
         Assert.IsFalse(sliderPendingAfter, "_sliderPending should be cleared");
@@ -919,19 +910,19 @@ public sealed partial class DeferredSaveControllerTests
         DeferredSaveController<TestConfig> controller = new(mockStore.Object);
 
         // Set pending state using reflection
-        FieldInfo? anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
+        var anyPendingField = typeof(DeferredSaveController<TestConfig>).GetField("_anyPending", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.IsNotNull(anyPendingField);
         anyPendingField.SetValue(controller, true);
 
         // Verify state before flush
-        bool anyPendingBefore = (bool)anyPendingField.GetValue(controller)!;
+        var anyPendingBefore = (bool)anyPendingField.GetValue(controller)!;
         Assert.IsTrue(anyPendingBefore, "Should start with pending state");
 
         // Act
         controller.Flush();
 
         // Assert
-        bool anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
+        var anyPendingAfter = (bool)anyPendingField.GetValue(controller)!;
         Assert.IsFalse(anyPendingAfter, "Should have cleared pending state");
         mockStore.Verify(s => s.Save(), Times.Once);
     }
@@ -944,7 +935,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Constructor_ValidStoreWithNullDebounceWindow_SetsDefaultOneSecond()
     {
         // Arrange
-        string tempFile = Path.GetTempFileName();
+        var tempFile = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempFile);
@@ -978,7 +969,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Constructor_ValidStoreWithSpecificDebounceWindow_SetsProvidedValue(int hours, int minutes, int seconds, int milliseconds)
     {
         // Arrange
-        string tempFile = Path.GetTempFileName();
+        var tempFile = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempFile);
@@ -1009,7 +1000,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Constructor_ValidStoreWithZeroDebounceWindow_SetsZeroValue()
     {
         // Arrange
-        string tempFile = Path.GetTempFileName();
+        var tempFile = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempFile);
@@ -1040,7 +1031,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Constructor_ValidStoreWithNegativeDebounceWindow_SetsNegativeValue()
     {
         // Arrange
-        string tempFile = Path.GetTempFileName();
+        var tempFile = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempFile);
@@ -1071,7 +1062,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Constructor_ValidStoreWithMaxTimeSpan_SetsMaxValue()
     {
         // Arrange
-        string tempFile = Path.GetTempFileName();
+        var tempFile = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempFile);
@@ -1101,7 +1092,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Constructor_ValidStoreWithMinTimeSpan_SetsMinValue()
     {
         // Arrange
-        string tempFile = Path.GetTempFileName();
+        var tempFile = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempFile);
@@ -1131,7 +1122,7 @@ public sealed partial class DeferredSaveControllerTests
     public void Constructor_ValidStore_InitializesSuccessfully()
     {
         // Arrange
-        string tempFile = Path.GetTempFileName();
+        var tempFile = Path.GetTempFileName();
         try
         {
             var store = new SettingsStore<TestConfig>(tempFile);
