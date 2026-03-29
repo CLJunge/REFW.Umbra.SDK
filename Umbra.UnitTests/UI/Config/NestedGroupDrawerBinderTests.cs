@@ -152,10 +152,12 @@ public sealed class NestedGroupDrawerBinderTests
     {
         public void Draw(TestGroup group)
         {
+            // No-op for testing
         }
 
         public void Dispose()
         {
+            // No-op for testing
         }
     }
 
@@ -173,6 +175,7 @@ public sealed class NestedGroupDrawerBinderTests
     {
         public void Draw(OtherGroup group)
         {
+            // No-op for testing
         }
     }
 

@@ -144,10 +144,12 @@ public partial class ControlFactoryTests
     {
         public void Draw(string label, IParameter parameter)
         {
+            // No-op for testing
         }
 
         public void Dispose()
         {
+            // No-op for testing
         }
     }
 
@@ -155,10 +157,12 @@ public partial class ControlFactoryTests
     {
         public void Draw(IParameter parameter)
         {
+            // No-op for testing
         }
 
         public void Dispose()
         {
+            // No-op for testing
         }
     }
 

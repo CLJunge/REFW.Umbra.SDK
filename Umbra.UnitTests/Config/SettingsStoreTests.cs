@@ -951,6 +951,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         store.Load();
         static void listener()
         {
+            // No-op for testing
         }
         try
         {
@@ -978,6 +979,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         store.Load();
         static void listener()
         {
+            // No-op for testing
         }
         try
         {
@@ -1041,6 +1043,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         var config = store.Load();
         static void listener()
         {
+            // No-op for testing
         }
         try
         {
@@ -1106,6 +1109,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
         var config = store.Load();
         static void listener(double oldVal, double newVal)
         {
+            // No-op for testing
         }
         // Act & Assert (should not throw)
         store.RemoveListenerFromAll((Action<double, double>)listener);

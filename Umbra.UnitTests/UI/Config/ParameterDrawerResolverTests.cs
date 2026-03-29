@@ -355,14 +355,17 @@ public class ParameterDrawerResolverTests
     {
         public DrawerWithNoParameterlessConstructor(int dummy)
         {
+            // No-op for testing
         }
 
         public void Draw(string label, IParameter parameter)
         {
+            // No-op for testing
         }
 
         public void Dispose()
         {
+            // No-op for testing
         }
     }
 
