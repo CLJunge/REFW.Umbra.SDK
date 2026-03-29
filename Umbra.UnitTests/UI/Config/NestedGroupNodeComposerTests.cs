@@ -416,13 +416,15 @@ public class NestedGroupNodeComposerTests
     /// </summary>
     private sealed class DisposableTestNestedGroupDrawer : INestedGroupDrawer<TestNestedGroup>, IDisposable
     {
-        private bool _disposed;
         public void Draw(TestNestedGroup groupInstance)
         {
             // No-op for testing
         }
 
-        public void Dispose() => _disposed = true;
+        public void Dispose()
+        {
+            // No-op for testing
+        }
     }
 
     /// <summary>

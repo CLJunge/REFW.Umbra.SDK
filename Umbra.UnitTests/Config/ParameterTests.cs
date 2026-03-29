@@ -589,8 +589,8 @@ public class ParameterTests
     /// </summary>
     private struct TestStruct
     {
-        public readonly int Value;
-        public readonly string? Name;
+        public int Value { get; init; }
+        public string? Name { get; init; }
     }
 
     /// <summary>
