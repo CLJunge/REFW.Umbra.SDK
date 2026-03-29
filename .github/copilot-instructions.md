@@ -71,6 +71,7 @@ internal static class FovHooks
 - `SettingsStore<TConfig>` requires `TConfig : class, new()`. `record` types satisfy this constraint and are the preferred style for config classes.
 - Key derivation: dot-separated; the prefix from `[SettingsPrefix]` is prepended to each property name (camelCased), unless a `keyOverride` is provided on `[SettingsParameter]`.
 - For nested settings groups, place `[SettingsPrefix("...")]` on the **parent property** that exposes the nested group — this is the preferred approach. Placing `[SettingsPrefix]` on the nested type itself is supported for backwards compatibility but is no longer recommended for new code. `SettingsRegistrar` resolves the prefix property-first: the property attribute wins; the type attribute is the fallback. Do not repeat the full parent prefix on the nested type.
+- **Empty configuration identifier segments should never be allowed.** Empty nested-group scope segments, empty settings prefixes used as path segments, and empty key overrides should fail rather than collapsing to a parent path.
 - Metadata attributes available from `Umbra.Config.Attributes`:
   - `[DisplayName("...")]` — human-readable UI label.
   - `[Description("...")]` — tooltip or help text shown via a `(?)` help marker.
@@ -135,6 +136,7 @@ public partial record NestedConfigGroup
     [UmbraSettingsParameter, UmbraDisplayName("MaxItems"), UmbraDescription("Maximum number of items."), UmbraRange(1, 100), UmbraStep(1)]
     public Parameter<int> MaxItems { get; set; } = new(10);
 }
+````````
 
 ## Settings UI — ConfigDrawer
 - `ConfigDrawer<TConfig>` (in `Umbra.UI.Config`) renders a full ImGui settings panel from a config instance.
