@@ -1,8 +1,4 @@
-﻿using System;
-
 using Hexa.NET.ImGui;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbra.Input;
 
 namespace Umbra.Input.UnitTests;
 
@@ -29,24 +25,31 @@ public class KeyboardInputTests
     {
         // Arrange
         // No ImGui context available in unit test environment
+        Exception? caughtException = null;
+        var result = false;
+        var capturedKey = -1;
 
-        // Act & Assert
-        // Method should handle the absence of ImGui gracefully or throw a predictable exception
+        // Act
         try
         {
-            bool result = KeyboardInput.TryCaptureKeyboardKey(out int capturedKey);
-
-            // If the method completes, verify the out parameter is set to some value
-            Assert.IsTrue(capturedKey == -1 || capturedKey > 0, "Out parameter should be set to -1 or a valid key code.");
+            result = KeyboardInput.TryCaptureKeyboardKey(out capturedKey);
         }
         catch (Exception ex)
         {
-            // Document any exception that occurs due to missing ImGui context
-            Assert.Inconclusive(
-                $"TryCaptureKeyboardKey threw {ex.GetType().Name} when ImGui context is not initialized. " +
-                "This behavior should be validated in an integration test with proper ImGui setup. " +
-                $"Exception message: {ex.Message}");
+            caughtException = ex;
         }
+
+        // Assert
+        if (caughtException != null)
+        {
+            Assert.Inconclusive(
+                $"TryCaptureKeyboardKey threw {caughtException.GetType().Name} when ImGui context is not initialized. " +
+                "This behavior should be validated in an integration test with proper ImGui setup. " +
+                $"Exception message: {caughtException.Message}");
+        }
+
+        // If the method completes, verify the out parameter is set to some value
+        Assert.IsTrue(capturedKey is -1 or > 0, "Out parameter should be set to -1 or a valid key code.");
     }
 
     /// <summary>
@@ -57,25 +60,31 @@ public class KeyboardInputTests
     public void TryCaptureKeyboardKey_AlwaysInitializesOutParameter()
     {
         // Arrange
-        int capturedKey = int.MaxValue; // Set to a sentinel value
+        var capturedKey = int.MaxValue; // Set to a sentinel value
+        Exception? caughtException = null;
 
         // Act
         try
         {
             KeyboardInput.TryCaptureKeyboardKey(out capturedKey);
-
-            // Assert
-            // The out parameter must have been written to (either -1 or a valid key code)
-            // It should not remain at the sentinel value
-            Assert.AreNotEqual(int.MaxValue, capturedKey,
-                "The out parameter should be initialized by the method.");
         }
         catch (Exception ex)
         {
+            caughtException = ex;
+        }
+
+        // Assert
+        if (caughtException != null)
+        {
             Assert.Inconclusive(
-                $"Method threw {ex.GetType().Name} before initializing out parameter. " +
+                $"Method threw {caughtException.GetType().Name} before initializing out parameter. " +
                 "This may be due to missing ImGui context. Validate in integration test.");
         }
+
+        // The out parameter must have been written to (either -1 or a valid key code)
+        // It should not remain at the sentinel value
+        Assert.AreNotEqual(int.MaxValue, capturedKey,
+            "The out parameter should be initialized by the method.");
     }
 
     /// <summary>
@@ -89,28 +98,38 @@ public class KeyboardInputTests
     [TestMethod]
     public void TryCaptureKeyboardKey_ReturnsValidKeyCodeRange()
     {
-        // Arrange & Act
+        // Arrange
+        Exception? caughtException = null;
+        var result = false;
+        var capturedKey = -1;
+
+        // Act
         try
         {
-            bool result = KeyboardInput.TryCaptureKeyboardKey(out int capturedKey);
-
-            // Assert
-            if (result)
-            {
-                Assert.IsTrue(capturedKey > (int)ImGuiKey.None,
-                    $"When method returns true, capturedKey should be greater than ImGuiKey.None. Got: {capturedKey}");
-            }
-            else
-            {
-                Assert.AreEqual(-1, capturedKey,
-                    "When method returns false, capturedKey should be -1.");
-            }
+            result = KeyboardInput.TryCaptureKeyboardKey(out capturedKey);
         }
         catch (Exception ex)
         {
+            caughtException = ex;
+        }
+
+        // Assert
+        if (caughtException != null)
+        {
             Assert.Inconclusive(
-                $"Method threw {ex.GetType().Name}. Expected behavior validation requires integration test. " +
-                $"Exception: {ex.Message}");
+                $"Method threw {caughtException.GetType().Name}. Expected behavior validation requires integration test. " +
+                $"Exception: {caughtException.Message}");
+        }
+
+        if (result)
+        {
+            Assert.IsGreaterThan((int)ImGuiKey.None, capturedKey,
+                $"When method returns true, capturedKey should be greater than ImGuiKey.None. Got: {capturedKey}");
+        }
+        else
+        {
+            Assert.AreEqual(-1, capturedKey,
+                "When method returns false, capturedKey should be -1.");
         }
     }
 
@@ -122,28 +141,38 @@ public class KeyboardInputTests
     [TestMethod]
     public void TryCaptureKeyboardKey_ReturnValueMatchesOutParameter()
     {
-        // Arrange & Act
+        // Arrange
+        Exception? caughtException = null;
+        var result = false;
+        var capturedKey = -1;
+
+        // Act
         try
         {
-            bool result = KeyboardInput.TryCaptureKeyboardKey(out int capturedKey);
-
-            // Assert
-            if (result)
-            {
-                Assert.IsTrue(capturedKey > 0,
-                    $"Return value is true, but capturedKey is not positive. Got: {capturedKey}");
-            }
-            else
-            {
-                Assert.AreEqual(-1, capturedKey,
-                    $"Return value is false, but capturedKey is not -1. Got: {capturedKey}");
-            }
+            result = KeyboardInput.TryCaptureKeyboardKey(out capturedKey);
         }
         catch (Exception ex)
         {
+            caughtException = ex;
+        }
+
+        // Assert
+        if (caughtException != null)
+        {
             Assert.Inconclusive(
-                $"Contract validation failed due to exception: {ex.GetType().Name}. " +
+                $"Contract validation failed due to exception: {caughtException.GetType().Name}. " +
                 "Validate the return-value-to-out-parameter contract in an integration test with ImGui context.");
+        }
+
+        if (result)
+        {
+            Assert.IsGreaterThan(0, capturedKey,
+                $"Return value is true, but capturedKey is not positive. Got: {capturedKey}");
+        }
+        else
+        {
+            Assert.AreEqual(-1, capturedKey,
+                $"Return value is false, but capturedKey is not -1. Got: {capturedKey}");
         }
     }
 
@@ -161,7 +190,7 @@ public class KeyboardInputTests
     public void IsValidKey_NegativeKeyValue_ReturnsFalse(int key)
     {
         // Act
-        bool result = KeyboardInput.IsValidKey(key);
+        var result = KeyboardInput.IsValidKey(key);
 
         // Assert
         Assert.IsFalse(result, $"Expected IsValidKey to return false for negative key value {key}");
@@ -175,10 +204,10 @@ public class KeyboardInputTests
     public void IsValidKey_ZeroKeyValue_ReturnsFalse()
     {
         // Arrange
-        int key = 0;
+        var key = 0;
 
         // Act
-        bool result = KeyboardInput.IsValidKey(key);
+        var result = KeyboardInput.IsValidKey(key);
 
         // Assert
         Assert.IsFalse(result, "Expected IsValidKey to return false for key value 0 (ImGuiKey.None)");
@@ -199,7 +228,7 @@ public class KeyboardInputTests
     public void IsValidKey_PositiveKeyValue_ReturnsTrue(int key)
     {
         // Act
-        bool result = KeyboardInput.IsValidKey(key);
+        var result = KeyboardInput.IsValidKey(key);
 
         // Assert
         Assert.IsTrue(result, $"Expected IsValidKey to return true for positive key value {key}");
@@ -220,7 +249,7 @@ public class KeyboardInputTests
     public void IsValidKey_BoundaryValues_ReturnsExpectedResult(int key, bool expectedResult)
     {
         // Act
-        bool result = KeyboardInput.IsValidKey(key);
+        var result = KeyboardInput.IsValidKey(key);
 
         // Assert
         Assert.AreEqual(expectedResult, result,
@@ -243,7 +272,7 @@ public class KeyboardInputTests
     public void GetKeyName_InvalidEnumValue_ReturnsFormattedFallback(int key, string expectedName)
     {
         // Act
-        string result = KeyboardInput.GetKeyName(key);
+        var result = KeyboardInput.GetKeyName(key);
 
         // Assert
         Assert.AreEqual(expectedName, result);
@@ -267,7 +296,7 @@ public class KeyboardInputTests
     public void GetKeyName_AnyIntValue_ReturnsNonNullNonEmptyString(int key)
     {
         // Act
-        string result = KeyboardInput.GetKeyName(key);
+        var result = KeyboardInput.GetKeyName(key);
 
         // Assert
         Assert.IsNotNull(result);
@@ -282,10 +311,10 @@ public class KeyboardInputTests
     public void GetKeyName_LargeNegativeValue_ReturnsCorrectlyFormattedString()
     {
         // Arrange
-        int key = -999999;
+        var key = -999999;
 
         // Act
-        string result = KeyboardInput.GetKeyName(key);
+        var result = KeyboardInput.GetKeyName(key);
 
         // Assert
         Assert.AreEqual("Key(-999999)", result);
@@ -299,10 +328,10 @@ public class KeyboardInputTests
     public void GetKeyName_LargePositiveValue_ReturnsCorrectlyFormattedString()
     {
         // Arrange
-        int key = 999999999;
+        var key = 999999999;
 
         // Act
-        string result = KeyboardInput.GetKeyName(key);
+        var result = KeyboardInput.GetKeyName(key);
 
         // Assert
         Assert.AreEqual("Key(999999999)", result);
@@ -316,14 +345,14 @@ public class KeyboardInputTests
     public void GetKeyName_ZeroValue_ReturnsValidString()
     {
         // Arrange
-        int key = 0;
+        var key = 0;
 
         // Act
-        string result = KeyboardInput.GetKeyName(key);
+        var result = KeyboardInput.GetKeyName(key);
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsTrue(result == "None" || result == "Key(0)",
+        Assert.IsTrue(result is "None" or "Key(0)",
             $"Expected 'None' or 'Key(0)' but got '{result}'");
     }
 
@@ -338,12 +367,12 @@ public class KeyboardInputTests
     public void GetKeyName_BoundaryValues_ReturnsValidFormat(int key)
     {
         // Act
-        string result = KeyboardInput.GetKeyName(key);
+        var result = KeyboardInput.GetKeyName(key);
 
         // Assert
         Assert.IsNotNull(result);
         Assert.IsTrue(
-            result.StartsWith("Key(") || !result.Contains("("),
+            result.StartsWith("Key(") || !result.Contains('('),
             $"Result '{result}' should either be an enum name or match 'Key(n)' pattern");
     }
 
@@ -363,8 +392,7 @@ public class KeyboardInputTests
     /// </remarks>
     [TestMethod]
     [Ignore("Cannot mock static ImGui.IsKeyDown method without creating prohibited fakes or using unsupported mocking libraries.")]
-    public void IsShiftHeld_WhenLeftShiftIsPressed_ReturnsTrue()
-    {
+    public void IsShiftHeld_WhenLeftShiftIsPressed_ReturnsTrue() =>
         // ARRANGE
         // Unable to arrange: ImGui.IsKeyDown is a static method that cannot be mocked.
 
@@ -373,7 +401,6 @@ public class KeyboardInputTests
 
         // ASSERT
         Assert.Inconclusive("This test requires an abstraction layer over ImGui static methods or integration testing with a real ImGui context.");
-    }
 
     /// <summary>
     /// Tests that <see cref="KeyboardInput.IsShiftHeld"/> returns the correct value
@@ -391,8 +418,7 @@ public class KeyboardInputTests
     /// </remarks>
     [TestMethod]
     [Ignore("Cannot mock static ImGui.IsKeyDown method without creating prohibited fakes or using unsupported mocking libraries.")]
-    public void IsShiftHeld_WhenRightShiftIsPressed_ReturnsTrue()
-    {
+    public void IsShiftHeld_WhenRightShiftIsPressed_ReturnsTrue() =>
         // ARRANGE
         // Unable to arrange: ImGui.IsKeyDown is a static method that cannot be mocked.
 
@@ -401,7 +427,6 @@ public class KeyboardInputTests
 
         // ASSERT
         Assert.Inconclusive("This test requires an abstraction layer over ImGui static methods or integration testing with a real ImGui context.");
-    }
 
     /// <summary>
     /// Tests that <see cref="KeyboardInput.IsShiftHeld"/> returns the correct value
@@ -419,8 +444,7 @@ public class KeyboardInputTests
     /// </remarks>
     [TestMethod]
     [Ignore("Cannot mock static ImGui.IsKeyDown method without creating prohibited fakes or using unsupported mocking libraries.")]
-    public void IsShiftHeld_WhenBothShiftKeysArePressed_ReturnsTrue()
-    {
+    public void IsShiftHeld_WhenBothShiftKeysArePressed_ReturnsTrue() =>
         // ARRANGE
         // Unable to arrange: ImGui.IsKeyDown is a static method that cannot be mocked.
 
@@ -429,7 +453,6 @@ public class KeyboardInputTests
 
         // ASSERT
         Assert.Inconclusive("This test requires an abstraction layer over ImGui static methods or integration testing with a real ImGui context.");
-    }
 
     /// <summary>
     /// Tests that <see cref="KeyboardInput.IsShiftHeld"/> returns false when neither Shift key is pressed.
@@ -446,8 +469,7 @@ public class KeyboardInputTests
     /// </remarks>
     [TestMethod]
     [Ignore("Cannot mock static ImGui.IsKeyDown method without creating prohibited fakes or using unsupported mocking libraries.")]
-    public void IsShiftHeld_WhenNoShiftKeyIsPressed_ReturnsFalse()
-    {
+    public void IsShiftHeld_WhenNoShiftKeyIsPressed_ReturnsFalse() =>
         // ARRANGE
         // Unable to arrange: ImGui.IsKeyDown is a static method that cannot be mocked.
 
@@ -456,7 +478,6 @@ public class KeyboardInputTests
 
         // ASSERT
         Assert.Inconclusive("This test requires an abstraction layer over ImGui static methods or integration testing with a real ImGui context.");
-    }
 
     /// <summary>
     /// Tests that IsCtrlHeld returns false when neither left nor right Ctrl key is down.
@@ -547,8 +568,7 @@ public class KeyboardInputTests
     /// </remarks>
     [TestMethod]
     [Ignore("Cannot mock static ImGui.IsKeyDown method from external library. Requires integration test.")]
-    public void IsAltHeld_WhenNeitherAltKeyPressed_ReturnsFalse()
-    {
+    public void IsAltHeld_WhenNeitherAltKeyPressed_ReturnsFalse() =>
         // Arrange
         // Cannot arrange - ImGui.IsKeyDown is a non-mockable static method
 
@@ -559,7 +579,6 @@ public class KeyboardInputTests
         // Assert.IsFalse(result);
 
         Assert.Inconclusive("This test requires an integration test environment with ImGui initialized.");
-    }
 
     /// <summary>
     /// Tests that <see cref="KeyboardInput.IsAltHeld"/> returns true when the left Alt key is pressed.
@@ -578,8 +597,7 @@ public class KeyboardInputTests
     /// </remarks>
     [TestMethod]
     [Ignore("Cannot mock static ImGui.IsKeyDown method from external library. Requires integration test.")]
-    public void IsAltHeld_WhenLeftAltKeyPressed_ReturnsTrue()
-    {
+    public void IsAltHeld_WhenLeftAltKeyPressed_ReturnsTrue() =>
         // Arrange
         // Cannot arrange - ImGui.IsKeyDown is a non-mockable static method
 
@@ -590,7 +608,6 @@ public class KeyboardInputTests
         // Assert.IsTrue(result);
 
         Assert.Inconclusive("This test requires an integration test environment with ImGui initialized and left Alt key pressed.");
-    }
 
     /// <summary>
     /// Tests that <see cref="KeyboardInput.IsAltHeld"/> returns true when the right Alt key is pressed.
@@ -609,8 +626,7 @@ public class KeyboardInputTests
     /// </remarks>
     [TestMethod]
     [Ignore("Cannot mock static ImGui.IsKeyDown method from external library. Requires integration test.")]
-    public void IsAltHeld_WhenRightAltKeyPressed_ReturnsTrue()
-    {
+    public void IsAltHeld_WhenRightAltKeyPressed_ReturnsTrue() =>
         // Arrange
         // Cannot arrange - ImGui.IsKeyDown is a non-mockable static method
 
@@ -621,7 +637,6 @@ public class KeyboardInputTests
         // Assert.IsTrue(result);
 
         Assert.Inconclusive("This test requires an integration test environment with ImGui initialized and right Alt key pressed.");
-    }
 
     /// <summary>
     /// Tests that <see cref="KeyboardInput.IsAltHeld"/> returns true when both Alt keys are pressed simultaneously.
@@ -640,8 +655,7 @@ public class KeyboardInputTests
     /// </remarks>
     [TestMethod]
     [Ignore("Cannot mock static ImGui.IsKeyDown method from external library. Requires integration test.")]
-    public void IsAltHeld_WhenBothAltKeysPressed_ReturnsTrue()
-    {
+    public void IsAltHeld_WhenBothAltKeysPressed_ReturnsTrue() =>
         // Arrange
         // Cannot arrange - ImGui.IsKeyDown is a non-mockable static method
 
@@ -652,5 +666,4 @@ public class KeyboardInputTests
         // Assert.IsTrue(result);
 
         Assert.Inconclusive("This test requires an integration test environment with ImGui initialized and both Alt keys pressed.");
-    }
 }
