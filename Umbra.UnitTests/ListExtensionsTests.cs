@@ -93,7 +93,7 @@ public sealed class ListExtensionsTests
                     continue;
 
                 if (previousIndex >= 0)
-                    Assert.IsLessThan(previousIndex, list[i].OriginalIndex);
+                    Assert.IsLessThan(list[i].OriginalIndex, previousIndex);
 
                 previousIndex = list[i].OriginalIndex;
             }
