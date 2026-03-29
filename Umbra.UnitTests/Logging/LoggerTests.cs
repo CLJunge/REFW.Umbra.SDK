@@ -977,28 +977,40 @@ public sealed class LoggerTests
     }
 
     /// <summary>
-    /// Helper method to ensure no suppressions are active by resetting the Logger state.
-    /// This is necessary because Logger uses static fields that persist across tests.
+    /// Ensures no suppression scopes remain active without changing the caller's intended
+    /// <see cref="Logger.Enabled"/> state.
+    /// This is necessary because <see cref="Logger"/> uses static fields that persist across tests.
     /// </summary>
     private static void EnsureNoActiveSuppression()
     {
-        // Create and dispose suppressions until IsEnabled with Enabled=true returns true,
-        // indicating suppression depth is back to 0
-        Logger.Enabled = true;
-        var maxAttempts = 100;
-        var attempts = 0;
+        var originalEnabled = Logger.Enabled;
 
-        while (!Logger.IsEnabled && attempts < maxAttempts)
+        try
         {
-            // If IsEnabled is false with Enabled=true, there must be active suppressions
-            // We can't decrement directly, so we just ensure tests clean up properly
-            attempts++;
-            Thread.Sleep(1); // Brief delay for thread safety
+            // Temporarily enable logging so IsEnabled reflects only suppression state while we
+            // verify that prior tests did not leak suppression scopes.
+            Logger.Enabled = true;
+
+            var maxAttempts = 100;
+            var attempts = 0;
+
+            while (!Logger.IsEnabled && attempts < maxAttempts)
+            {
+                // If IsEnabled is false with Enabled=true, there must be active suppressions.
+                // We cannot decrement directly, so we wait briefly and fail if a prior test
+                // leaked a suppression scope.
+                attempts++;
+                Thread.Sleep(1);
+            }
+
+            if (attempts >= maxAttempts)
+            {
+                Assert.Fail("Unable to reset Logger suppression state. Tests may have leaked suppression scopes.");
+            }
         }
-
-        if (attempts >= maxAttempts)
+        finally
         {
-            Assert.Fail("Unable to reset Logger suppression state. Tests may have leaked suppression scopes.");
+            Logger.Enabled = originalEnabled;
         }
     }
 
@@ -2528,18 +2540,27 @@ public sealed class LoggerTests
     }
 
     /// <summary>
-    /// Ensures each test starts with logging enabled and no active suppressions.
+    /// Ensures each test starts with logging enabled, a host-independent sink installed, and no
+    /// active suppressions.
     /// This is explicitly necessary because <see cref="Logger"/> is a static class
     /// with shared static state that must be reset between tests to prevent interference.
     /// </summary>
     [TestInitialize]
-    public void Initialize() => Logger.EnableAll();
+    public void Initialize()
+    {
+        Logger.SetLogSink(new TestLogSink());
+        Logger.EnableAll();
+    }
 
     /// <summary>
-    /// Ensures logging is re-enabled after each test to restore default state.
+    /// Ensures logging is re-enabled and the default sink is restored after each test.
     /// </summary>
     [TestCleanup]
-    public void Cleanup() => Logger.EnableAll();
+    public void Cleanup()
+    {
+        Logger.EnableAll();
+        Logger.ResetLogSink();
+    }
 
     /// <summary>
     /// Verifies that <see cref="Logger.Warning(string)"/> does not throw an exception

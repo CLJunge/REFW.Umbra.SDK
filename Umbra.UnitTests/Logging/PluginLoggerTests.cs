@@ -1811,6 +1811,7 @@ public sealed class PluginLoggerTests
     public void TestInitialize()
     {
         _originalLoggerEnabled = Logger.Enabled;
+        Logger.SetLogSink(new TestLogSink());
         Logger.Enabled = true;
     }
 
@@ -1818,7 +1819,11 @@ public sealed class PluginLoggerTests
     /// Restores the Logger.Enabled state after each test.
     /// </summary>
     [TestCleanup]
-    public void TestCleanup() => Logger.Enabled = _originalLoggerEnabled;
+    public void TestCleanup()
+    {
+        Logger.ResetLogSink();
+        Logger.Enabled = _originalLoggerEnabled;
+    }
 
     /// <summary>
     /// Tests that Error with format and args returns early without throwing
