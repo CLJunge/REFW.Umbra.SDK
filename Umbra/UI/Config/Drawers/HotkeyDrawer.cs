@@ -1,4 +1,5 @@
 using Umbra.Config;
+using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config.Drawers;
 
@@ -14,7 +15,7 @@ namespace Umbra.UI.Config.Drawers;
 /// in the same assembly. <see cref="Dispose"/> must be called (via the owning
 /// <see cref="Config.ConfigDrawer{TConfig}"/>) on plugin unload so that any in-progress capture
 /// does not permanently block future captures.
-/// The default constructor renders through ImGui and captures keys through
+/// The default constructor renders through the shared ImGui context and captures keys through
 /// <see cref="Umbra.Input.KeyboardInput"/>. Unit tests can replace those dependencies through the
 /// internal constructor so the state machine can be verified without a live runtime host.
 /// </remarks>
@@ -26,11 +27,11 @@ public sealed class HotkeyDrawer : IParameterDrawer
     private readonly IHotkeyInputSource _inputSource;
 
     /// <summary>
-    /// Initializes a new <see cref="HotkeyDrawer"/> that renders through the active ImGui frame and
+    /// Initializes a new <see cref="HotkeyDrawer"/> that renders through the shared active ImGui context and
     /// captures keys through <see cref="Umbra.Input.KeyboardInput"/>.
     /// </summary>
     public HotkeyDrawer()
-        : this(new ImGuiHotkeyDrawerRenderer(), new KeyboardHotkeyInputSource())
+        : this(ImGuiConfigRenderContext.Instance, new KeyboardHotkeyInputSource())
     {
     }
 

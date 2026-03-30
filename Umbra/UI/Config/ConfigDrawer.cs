@@ -2,6 +2,7 @@ using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
 using Umbra.Logging;
 using Umbra.UI.Config.Nodes;
+using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config;
 
@@ -75,7 +76,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, n
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
     public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)
-        : this(config, idScope, new ImGuiConfigDrawerScope(), suppressRootNode)
+        : this(config, idScope, ImGuiConfigRenderContext.Instance, suppressRootNode)
     {
     }
 

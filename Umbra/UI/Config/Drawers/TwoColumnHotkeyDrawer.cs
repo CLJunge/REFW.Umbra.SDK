@@ -1,4 +1,5 @@
 using Umbra.Config;
+using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config.Drawers;
 
@@ -18,7 +19,7 @@ namespace Umbra.UI.Config.Drawers;
 /// drawer (of either type) may be in capture mode per frame. <see cref="Dispose"/> must be
 /// called (via the owning <see cref="ConfigDrawer{TConfig}"/>) on plugin unload so that
 /// any in-progress capture does not permanently block future captures.
-/// The default constructor renders through ImGui and captures keys through
+/// The default constructor renders through the shared ImGui context and captures keys through
 /// <see cref="Umbra.Input.KeyboardInput"/>. Unit tests can replace those dependencies through the
 /// internal constructor so the state machine can be verified without a live runtime host.
 /// </para>
@@ -31,11 +32,11 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
     private readonly IHotkeyInputSource _inputSource;
 
     /// <summary>
-    /// Initializes a new <see cref="TwoColumnHotkeyDrawer"/> that renders through the active ImGui
+    /// Initializes a new <see cref="TwoColumnHotkeyDrawer"/> that renders through the shared active ImGui
     /// frame and captures keys through <see cref="Umbra.Input.KeyboardInput"/>.
     /// </summary>
     public TwoColumnHotkeyDrawer()
-        : this(new ImGuiHotkeyDrawerRenderer(), new KeyboardHotkeyInputSource())
+        : this(ImGuiConfigRenderContext.Instance, new KeyboardHotkeyInputSource())
     {
     }
 
