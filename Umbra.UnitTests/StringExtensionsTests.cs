@@ -218,7 +218,7 @@ public class StringExtensionsTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsGreaterThanOrEqualTo(input.Length, result.Length);
+        Assert.IsGreaterThanOrEqualTo(result.Length, input.Length);
         Assert.StartsWith("Field Of View", result);
     }
 

@@ -82,7 +82,7 @@ public sealed class ListExtensionsTests
 
         Assert.HasCount(50, list);
         for (var i = 1; i < list.Count; i++)
-            Assert.IsGreaterThanOrEqualTo(list[i - 1].Key, list[i].Key);
+            Assert.IsLessThanOrEqualTo(list[i - 1].Key, list[i].Key);
 
         for (var key = 0; key < 5; key++)
         {
@@ -93,7 +93,7 @@ public sealed class ListExtensionsTests
                     continue;
 
                 if (previousIndex >= 0)
-                    Assert.IsLessThan(list[i].OriginalIndex, previousIndex);
+                    Assert.IsGreaterThan(list[i].OriginalIndex, previousIndex);
 
                 previousIndex = list[i].OriginalIndex;
             }
