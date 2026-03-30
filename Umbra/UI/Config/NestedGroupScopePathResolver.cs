@@ -7,7 +7,8 @@ namespace Umbra.UI.Config;
 /// </summary>
 /// <remarks>
 /// This type isolates nested-group path derivation from <see cref="ConfigDrawerBuilder"/> so the
-/// builder remains focused on tree traversal and node composition.
+/// builder remains focused on tree traversal and node composition. Empty scope segments are rejected
+/// so each nested group always contributes a distinct structural identifier.
 /// </remarks>
 internal static class NestedGroupScopePathResolver
 {
@@ -15,22 +16,33 @@ internal static class NestedGroupScopePathResolver
     /// Resolves the stable structural ImGui ID path for a nested-group property.
     /// Property-level <see cref="UmbraSettingsPrefixAttribute"/> wins, followed by the nested type's
     /// type-level prefix, then <see cref="UmbraSettingsParameterAttribute.KeyOverride"/>, and finally
-    /// the camel-cased property name.
+    /// the camel-cased property name. The selected segment must be non-empty.
     /// </summary>
     /// <param name="parentPath">The dot-separated structural path of the parent group.</param>
     /// <param name="propMeta">The cached metadata for the nested-group property being inspected.</param>
     /// <param name="propTypeMeta">The cached metadata for the nested-group type exposed by the property.</param>
     /// <returns>The fully combined dot-separated path used for the nested group's ImGui ID scope.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the highest-priority configured segment resolves to an empty string.
+    /// </exception>
     internal static string Resolve(
         string parentPath,
         TypeDrawMetadata.PropertyDrawMetadata propMeta,
         TypeDrawMetadata propTypeMeta)
     {
-        var segment = propMeta.SettingsPrefix
-            ?? propTypeMeta.SettingsPrefix
-            ?? propMeta.SettingsParameterKeyOverride
-            ?? propMeta.Property.Name.ToCamelCase()
-            ?? propMeta.Property.Name;
+        var segment = propMeta.SettingsPrefix;
+        if (segment is null)
+            segment = propTypeMeta.SettingsPrefix;
+        if (segment is null)
+            segment = propMeta.SettingsParameterKeyOverride;
+        if (segment is null)
+            segment = propMeta.Property.Name.ToCamelCase() ?? propMeta.Property.Name;
+
+        if (string.IsNullOrEmpty(segment))
+        {
+            throw new InvalidOperationException(
+                $"Nested group property '{propMeta.Property.DeclaringType?.FullName ?? propMeta.Property.ReflectedType?.FullName ?? "<unknown>"}.{propMeta.Property.Name}' resolves to an empty scope segment. Nested group identifiers must be non-empty.");
+        }
 
         return Combine(parentPath, segment);
     }

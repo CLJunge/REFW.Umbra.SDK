@@ -1,5 +1,3 @@
-using REFrameworkNET;
-
 namespace Umbra.Logging;
 
 /// <summary>
@@ -75,17 +73,17 @@ public sealed class PluginLogger
     }
 
     /// <summary>
-    /// Logs an informational message via <see cref="API.LogInfo"/>.
+    /// Logs an informational message.
     /// </summary>
     /// <param name="message">The message to log.</param>
     public void Info(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Info) return;
-        try { API.LogInfo(FormatMessage(message)); } catch { }
+        try { Logger.GetLogSink().Info(FormatMessage(message)); } catch { }
     }
 
     /// <summary>
-    /// Logs a formatted informational message via <see cref="API.LogInfo"/>.
+    /// Logs a formatted informational message via <see cref="REFrameworkNET.API.LogInfo"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out info logs, or if
@@ -103,17 +101,17 @@ public sealed class PluginLogger
     }
 
     /// <summary>
-    /// Logs a warning message via <see cref="API.LogWarning"/>.
+    /// Logs a warning message.
     /// </summary>
     /// <param name="message">The message to log.</param>
     public void Warning(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Warning) return;
-        try { API.LogWarning(FormatMessage(message)); } catch { }
+        try { Logger.GetLogSink().Warning(FormatMessage(message)); } catch { }
     }
 
     /// <summary>
-    /// Logs a formatted warning message via <see cref="API.LogWarning"/>.
+    /// Logs a formatted warning message via <see cref="REFrameworkNET.API.LogWarning"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out warning logs, or if
@@ -131,17 +129,17 @@ public sealed class PluginLogger
     }
 
     /// <summary>
-    /// Logs an error message via <see cref="API.LogError"/>.
+    /// Logs an error message.
     /// </summary>
     /// <param name="message">The message to log.</param>
     public void Error(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
-        try { API.LogError(FormatMessage(message)); } catch { }
+        try { Logger.GetLogSink().Error(FormatMessage(message)); } catch { }
     }
 
     /// <summary>
-    /// Logs a formatted error message via <see cref="API.LogError"/>.
+    /// Logs a formatted error message via <see cref="REFrameworkNET.API.LogError"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out error logs, or if
@@ -160,7 +158,7 @@ public sealed class PluginLogger
 
     /// <summary>
     /// Logs an error message accompanied by exception details — the exception type, message,
-    /// and stack trace — via <see cref="API.LogError"/>.
+    /// and stack trace.
     /// </summary>
     /// <param name="ex">The exception to log.</param>
     /// <param name="message">A descriptive message providing context for the exception.</param>
@@ -170,14 +168,14 @@ public sealed class PluginLogger
         try
         {
             var logMessage = $"{FormatMessage(message)}\nException: {ex.GetType().Name}: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
-            API.LogError(logMessage);
+            Logger.GetLogSink().Error(logMessage);
         }
         catch { }
     }
 
     /// <summary>
     /// Logs a formatted error message accompanied by exception details — the exception type,
-    /// message, and stack trace — via <see cref="API.LogError"/>.
+    /// message, and stack trace — via <see cref="REFrameworkNET.API.LogError"/>.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out error logs or if

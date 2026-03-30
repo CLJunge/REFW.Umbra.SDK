@@ -1,13 +1,11 @@
-using Hexa.NET.ImGui;
 using Umbra.Config;
-using Umbra.Input;
 
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// An <see cref="ITwoColumnParameterDrawer"/> implementation that renders a hotkey-capture
 /// control for a <see cref="Parameter{T}"/> of type <see cref="int"/> in the two-column layout,
-/// where the value represents an <see cref="ImGuiKey"/> cast to <see cref="int"/>.
+/// where the value represents an <see cref="Hexa.NET.ImGui.ImGuiKey"/> cast to <see cref="int"/>.
 /// </summary>
 /// <remarks>
 /// The framework renders the parameter label in the left column before calling
@@ -20,12 +18,43 @@ namespace Umbra.UI.Config.Drawers;
 /// drawer (of either type) may be in capture mode per frame. <see cref="Dispose"/> must be
 /// called (via the owning <see cref="ConfigDrawer{TConfig}"/>) on plugin unload so that
 /// any in-progress capture does not permanently block future captures.
+/// The default constructor renders through ImGui and captures keys through
+/// <see cref="Umbra.Input.KeyboardInput"/>. Unit tests can replace those dependencies through the
+/// internal constructor so the state machine can be verified without a live runtime host.
 /// </para>
 /// </remarks>
 public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
 {
     private bool _waiting;
     private bool _disposed;
+    private readonly IHotkeyDrawerRenderer _renderer;
+    private readonly IHotkeyInputSource _inputSource;
+
+    /// <summary>
+    /// Initializes a new <see cref="TwoColumnHotkeyDrawer"/> that renders through the active ImGui
+    /// frame and captures keys through <see cref="Umbra.Input.KeyboardInput"/>.
+    /// </summary>
+    public TwoColumnHotkeyDrawer()
+        : this(new ImGuiHotkeyDrawerRenderer(), new KeyboardHotkeyInputSource())
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new <see cref="TwoColumnHotkeyDrawer"/> with the specified renderer and
+    /// keyboard input source.
+    /// </summary>
+    /// <param name="renderer">The renderer used for hotkey-drawer UI operations.</param>
+    /// <param name="inputSource">The source used for key capture and key naming.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="renderer"/> or <paramref name="inputSource"/> is <see langword="null"/>.
+    /// </exception>
+    internal TwoColumnHotkeyDrawer(IHotkeyDrawerRenderer renderer, IHotkeyInputSource inputSource)
+    {
+        ArgumentNullException.ThrowIfNull(renderer);
+        ArgumentNullException.ThrowIfNull(inputSource);
+        _renderer = renderer;
+        _inputSource = inputSource;
+    }
 
     /// <inheritdoc/>
     public void Draw(IParameter parameter)
@@ -34,7 +63,7 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
 
         if (parameter is not Parameter<int> p)
         {
-            ImGui.TextDisabled("(TwoColumnHotkeyDrawer requires Parameter<int>)");
+            _renderer.TextDisabled("(TwoColumnHotkeyDrawer requires Parameter<int>)");
             return;
         }
 
@@ -48,11 +77,11 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
 
         if (_waiting)
         {
-            ImGui.Text("Press any key...");
-            ImGui.SameLine();
-            if (ImGui.Button($"Cancel##{p.Key}"))
+            _renderer.Text("Press any key...");
+            _renderer.SameLine();
+            if (_renderer.Button($"Cancel##{p.Key}"))
                 _waiting = false;
-            else if (KeyboardInput.TryCaptureKeyboardKey(out var captured))
+            else if (_inputSource.TryCaptureKeyboardKey(out var captured))
             {
                 v = captured;
                 _waiting = false;
@@ -61,9 +90,9 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
         else
         {
             // Right-column widget: key name only, no label prefix.
-            ImGui.Text(KeyboardInput.GetKeyName(v));
-            ImGui.SameLine();
-            if (ImGui.Button($"Change##{p.Key}") && !otherWaiting)
+            _renderer.Text(_inputSource.GetKeyName(v));
+            _renderer.SameLine();
+            if (_renderer.Button($"Change##{p.Key}") && !otherWaiting)
                 _waiting = true;
         }
 

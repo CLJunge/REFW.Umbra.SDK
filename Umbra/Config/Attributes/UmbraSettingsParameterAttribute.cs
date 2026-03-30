@@ -5,7 +5,8 @@ namespace Umbra.Config.Attributes;
 /// <see cref="SettingsStore{TConfig}.Load()"/> discovers and registers it during initialization.
 /// </summary>
 /// <param name="keyOverride">
-/// An optional explicit key used to store and retrieve this parameter.
+/// An optional explicit key used to store and retrieve this parameter. When supplied, the override
+/// must be non-empty.
 /// </param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraSettingsParameterAttribute(string? keyOverride = null) : Attribute

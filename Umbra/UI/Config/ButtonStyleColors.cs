@@ -31,6 +31,42 @@ internal static class ButtonStyleColors
                 new Vector4(0.86f, 0.25f, 0.25f, 1f),
                 new Vector4(0.60f, 0.10f, 0.10f, 1f)),
         };
+    private static IButtonStyleColorSink? _colorSink;
+
+    /// <summary>
+    /// Replaces the low-level sink used for button style-color push/pop operations.
+    /// </summary>
+    /// <remarks>
+    /// This exists primarily for unit tests that need to validate button-style selection logic
+    /// without touching native ImGui entry points.
+    /// </remarks>
+    /// <param name="colorSink">The sink that should receive future push/pop operations.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="colorSink"/> is <see langword="null"/>.</exception>
+    internal static void SetColorSink(IButtonStyleColorSink colorSink)
+    {
+        ArgumentNullException.ThrowIfNull(colorSink);
+        Interlocked.Exchange(ref _colorSink, colorSink);
+    }
+
+    /// <summary>
+    /// Restores the default ImGui-backed color sink.
+    /// </summary>
+    internal static void ResetColorSink() => Interlocked.Exchange(ref _colorSink, null);
+
+    /// <summary>
+    /// Returns the currently active color sink, creating the default ImGui-backed sink on first use.
+    /// </summary>
+    /// <returns>The sink used for subsequent push/pop operations.</returns>
+    internal static IButtonStyleColorSink GetColorSink()
+    {
+        var colorSink = Volatile.Read(ref _colorSink);
+        if (colorSink != null)
+            return colorSink;
+
+        colorSink = new ImGuiButtonStyleColorSink();
+        var existing = Interlocked.CompareExchange(ref _colorSink, colorSink, null);
+        return existing ?? colorSink;
+    }
 
     /// <summary>
     /// Pushes the three button color slots (<see cref="ImGuiCol.Button"/>,
@@ -46,9 +82,10 @@ internal static class ButtonStyleColors
     internal static bool Push(ButtonStyle style)
     {
         if (!_colors.TryGetValue(style, out var c)) return false;
-        ImGui.PushStyleColor(ImGuiCol.Button, c.Normal);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, c.Hovered);
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive, c.Active);
+        var colorSink = GetColorSink();
+        colorSink.PushStyleColor(ImGuiCol.Button, c.Normal);
+        colorSink.PushStyleColor(ImGuiCol.ButtonHovered, c.Hovered);
+        colorSink.PushStyleColor(ImGuiCol.ButtonActive, c.Active);
         return true;
     }
 
@@ -65,9 +102,10 @@ internal static class ButtonStyleColors
     /// <returns>Always <see langword="true"/>.</returns>
     internal static bool Push(Vector4 normal, Vector4 hovered, Vector4 active)
     {
-        ImGui.PushStyleColor(ImGuiCol.Button, normal);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, hovered);
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive, active);
+        var colorSink = GetColorSink();
+        colorSink.PushStyleColor(ImGuiCol.Button, normal);
+        colorSink.PushStyleColor(ImGuiCol.ButtonHovered, hovered);
+        colorSink.PushStyleColor(ImGuiCol.ButtonActive, active);
         return true;
     }
 
@@ -75,5 +113,5 @@ internal static class ButtonStyleColors
     /// Pops the three color slots pushed by <see cref="Push(ButtonStyle)"/> or <see cref="Push(Vector4, Vector4, Vector4)"/>.
     /// Must only be called when <see cref="Push(ButtonStyle)"/> or <see cref="Push(Vector4, Vector4, Vector4)"/> returned <see langword="true"/>.
     /// </summary>
-    internal static void Pop() => ImGui.PopStyleColor(3);
+    internal static void Pop() => GetColorSink().PopStyleColor(3);
 }

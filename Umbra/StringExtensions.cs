@@ -32,7 +32,8 @@ public static class StringExtensions
 
     /// <summary>
     /// Converts a PascalCase or camelCase identifier into a space-separated display name
-    /// by inserting a space before each uppercase letter that follows a lowercase letter.
+    /// by inserting a space before each uppercase letter that follows a non-uppercase letter,
+    /// excluding certain word separator characters.
     /// </summary>
     /// <param name="name">The raw identifier to convert (e.g. <c>"FieldOfView"</c>).</param>
     /// <returns>The human-readable display name (e.g. <c>"Field Of View"</c>).</returns>
@@ -41,10 +42,18 @@ public static class StringExtensions
         var sb = new StringBuilder(name.Length + 4);
         for (var i = 0; i < name.Length; i++)
         {
-            if (i > 0 && char.IsUpper(name[i]) && !char.IsUpper(name[i - 1]))
-                sb.Append(' ');
-            sb.Append(name[i]);
+            var current = name[i];
+            if (i > 0 && char.IsUpper(current))
+            {
+                var prev = name[i - 1];
+                // Insert space unless previous is uppercase or a word separator
+                if (!char.IsUpper(prev) && !IsWordSeparator(prev))
+                    sb.Append(' ');
+            }
+            sb.Append(current);
         }
         return sb.ToString();
     }
+
+    private static bool IsWordSeparator(char c) => c is '_' or '-' or '.' or '@';
 }

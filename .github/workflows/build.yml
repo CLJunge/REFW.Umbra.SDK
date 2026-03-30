@@ -171,7 +171,7 @@ jobs:
 
       - name: Run tests
         run: >
-          dotnet test Umbra.Tests/Umbra.Tests.csproj
+          dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj
           --configuration Release
           --verbosity minimal
 
