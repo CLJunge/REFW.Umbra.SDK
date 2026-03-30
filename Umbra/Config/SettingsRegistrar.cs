@@ -7,6 +7,11 @@ namespace Umbra.Config;
 /// Discovers and registers all <see cref="IParameter"/> instances declared on a configuration
 /// object by walking its public instance property tree and respecting the Umbra settings attributes.
 /// </summary>
+/// <remarks>
+/// Explicit key segments supplied by <see cref="UmbraSettingsPrefixAttribute"/> on nested groups and
+/// <see cref="UmbraSettingsParameterAttribute.KeyOverride"/> on parameters must be non-empty so the
+/// resulting persisted keys remain structurally unambiguous.
+/// </remarks>
 internal static class SettingsRegistrar
 {
     /// <summary>
@@ -66,16 +71,51 @@ internal static class SettingsRegistrar
 
             if (value is IParameter parameter)
             {
-                var key = Combine(currentPrefix, paramAttr.KeyOverride ?? prop.Name.ToCamelCase()!);
+                var key = Combine(currentPrefix, GetParameterKeySegment(prop, paramAttr));
                 RegisterParameter(parameters, parameterOrigins, parameter, key, prop, currentCategory);
             }
             else
             {
-                var nestedPrefix = Combine(currentPrefix, GetSettingsPrefix(prop) ?? GetSettingsPrefix(value.GetType()) ?? "");
+                var nestedPrefix = Combine(currentPrefix, GetNestedPrefixSegment(prop, value.GetType()));
                 var nestedCategory = GetCategory(prop) ?? GetCategory(value.GetType()) ?? currentCategory;
                 RegisterRecursive(value, nestedPrefix, nestedCategory, parameters, parameterOrigins, visited);
             }
         }
+    }
+
+    /// <summary>
+    /// Resolves the persisted key segment for a parameter property.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <see cref="UmbraSettingsParameterAttribute.KeyOverride"/> is explicitly set to an
+    /// empty string.
+    /// </exception>
+    private static string GetParameterKeySegment(PropertyInfo property, UmbraSettingsParameterAttribute parameterAttribute)
+    {
+        if (parameterAttribute.KeyOverride is not null)
+            return RequireNonEmptySegment(parameterAttribute.KeyOverride, property, "[UmbraSettingsParameter] key override");
+
+        return property.Name.ToCamelCase() ?? property.Name;
+    }
+
+    /// <summary>
+    /// Resolves the nested-group prefix segment contributed by a property or nested type.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when a nested-group <see cref="UmbraSettingsPrefixAttribute"/> is explicitly set to an
+    /// empty string.
+    /// </exception>
+    private static string GetNestedPrefixSegment(PropertyInfo property, Type nestedType)
+    {
+        var propertyPrefix = GetSettingsPrefix(property);
+        if (propertyPrefix is not null)
+            return RequireNonEmptySegment(propertyPrefix, property, "[UmbraSettingsPrefix] on the nested-group property");
+
+        var typePrefix = GetSettingsPrefix(nestedType);
+        if (typePrefix is not null)
+            return RequireNonEmptySegment(typePrefix, nestedType, "[UmbraSettingsPrefix] on the nested-group type");
+
+        return "";
     }
 
     /// <summary>
@@ -127,6 +167,31 @@ internal static class SettingsRegistrar
     /// </summary>
     private static string? GetCategory(MemberInfo member)
         => member.GetCustomAttribute<UmbraCategoryAttribute>()?.Name;
+
+    /// <summary>
+    /// Verifies that an explicitly configured path segment is non-empty.
+    /// </summary>
+    /// <param name="segment">The configured segment value.</param>
+    /// <param name="member">The member that supplied the segment.</param>
+    /// <param name="source">The attribute source used in the error message.</param>
+    /// <returns><paramref name="segment"/> when it is non-empty.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="segment"/> is an empty string.
+    /// </exception>
+    private static string RequireNonEmptySegment(string segment, MemberInfo member, string source)
+    {
+        if (!string.IsNullOrEmpty(segment))
+            return segment;
+
+        var memberName = member.DeclaringType is not null
+            ? $"{member.DeclaringType.FullName}.{member.Name}"
+            : member is Type type
+                ? type.FullName ?? type.Name
+                : member.Name;
+
+        throw new InvalidOperationException(
+            $"Member '{memberName}' declares {source} as an empty string. Settings identifier segments must be non-empty.");
+    }
 
     /// <summary>
     /// Combines two dot-separated key segments into a single key, omitting the separator

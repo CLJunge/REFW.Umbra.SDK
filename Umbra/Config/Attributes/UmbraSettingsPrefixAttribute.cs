@@ -9,10 +9,12 @@ namespace Umbra.Config.Attributes;
 /// Changing the prefix changes the fully-qualified persisted keys produced for every parameter in
 /// that scope. This is a supported way to rename or regroup settings keys, but it does not migrate
 /// existing JSON automatically: previously saved values under the old prefix will no longer match
-/// during load unless the file is updated to the new key names.
+/// during load unless the file is updated to the new key names. When the attribute contributes a
+/// nested path segment, the prefix must be non-empty.
 /// </remarks>
 /// <param name="prefix">
-/// The prefix string to prepend to each parameter key.
+/// The prefix string to prepend to each parameter key. Use a non-empty value when the prefix is meant
+/// to contribute a persisted path segment.
 /// </param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class UmbraSettingsPrefixAttribute(string prefix) : Attribute

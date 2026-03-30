@@ -15,25 +15,20 @@ on:
       - reopened
 
 jobs:
-  build:
-    name: Build Umbra
+  prepare:
+    name: Prepare build inputs
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      packages: write
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.value }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
       - name: Resolve version
         id: version
         run: |
+          set -euo pipefail
+
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           else
@@ -45,6 +40,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+
           RELEASE_TAG=$(gh api repos/praydog/REFramework-nightly/releases \
             --jq '.[0].tag_name')
 
@@ -79,6 +76,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+
           mkdir -p /tmp/refw-api
 
           gh api \
@@ -92,31 +91,75 @@ jobs:
           path: /tmp/refw-api
           key: refw-csharp-api-${{ steps.refw_api.outputs.asset_id }}
 
-      - name: Extract and stage API dependencies
+      - name: Extract and stage API dependencies artifact
         run: |
+          set -euo pipefail
+
           EXTRACT=/tmp/refw-extracted
+          STAGE=${RUNNER_TEMP}/refw-api-deps
+
           mkdir -p "$EXTRACT"
+          mkdir -p "$STAGE"
+
           unzip -q /tmp/refw-api/csharp-api.zip -d "$EXTRACT"
 
-          mkdir -p dependencies/reframework/api
-
           cp "$EXTRACT/reframework/plugins/REFramework.NET.dll" \
-             dependencies/reframework/api/
+             "$STAGE/"
 
           # Copy only the two managed dependencies directly referenced by the SDK and
           # plugin projects. AssemblyGenerator, REFCoreDeps, and Microsoft.CodeAnalysis.*
           # are REFramework host internals; they are not referenced by any project code.
           cp "$EXTRACT/reframework/plugins/managed/dependencies/Hexa.NET.ImGui.dll" \
-             dependencies/reframework/api/
+             "$STAGE/"
           cp "$EXTRACT/reframework/plugins/managed/dependencies/HexaGen.Runtime.dll" \
-             dependencies/reframework/api/
+             "$STAGE/"
 
           echo "Staged API DLLs:"
+          ls -1 "$STAGE"
+
+      - name: Upload REFramework API dependencies artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reframework-api-deps
+          path: |
+            ${{ runner.temp }}/refw-api-deps/REFramework.NET.dll
+            ${{ runner.temp }}/refw-api-deps/Hexa.NET.ImGui.dll
+            ${{ runner.temp }}/refw-api-deps/HexaGen.Runtime.dll
+          retention-days: 7
+          if-no-files-found: error
+
+  build_test_package:
+    name: Build, test, and package
+    runs-on: ubuntu-latest
+    needs: prepare
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download REFramework API dependencies
+        uses: actions/download-artifact@v4
+        with:
+          name: reframework-api-deps
+          path: dependencies/reframework/api
+
+      - name: Verify staged API dependencies
+        run: |
+          set -euo pipefail
+
+          echo "Using API DLLs:"
           ls -1 dependencies/reframework/api/
 
       - name: Build
         env:
-          VERSION: ${{ steps.version.outputs.value }}
+          VERSION: ${{ needs.prepare.outputs.version }}
         run: >
           dotnet build Umbra/Umbra.csproj
           --configuration Release
@@ -128,13 +171,13 @@ jobs:
 
       - name: Run tests
         run: >
-          dotnet test Umbra.Tests/Umbra.Tests.csproj
+          dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj
           --configuration Release
           --verbosity minimal
 
       - name: Pack NuGet package
         env:
-          VERSION: ${{ steps.version.outputs.value }}
+          VERSION: ${{ needs.prepare.outputs.version }}
         run: >
           dotnet pack Umbra/Umbra.csproj
           --configuration Release
@@ -147,34 +190,63 @@ jobs:
 
       - name: Stage ZIP contents
         run: |
+          set -euo pipefail
+
           mkdir -p staging/reframework/plugins/managed/dependencies
           cp Umbra/bin/Release/net10.0/REFW.Umbra.dll \
              staging/reframework/plugins/managed/dependencies/
 
       - name: Create REFW.Umbra.zip
-        run: cd staging && zip -r ../REFW.Umbra.zip reframework/
+        run: |
+          set -euo pipefail
+          cd staging
+          zip -r ../REFW.Umbra.zip reframework/
 
-      - name: Upload artifact
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: REFW.Umbra
           path: |
-            staging/
-            artifacts/nuget/
+            REFW.Umbra.zip
+            artifacts/nuget/*.nupkg
+            artifacts/nuget/*.snupkg
           retention-days: 30
           if-no-files-found: error
 
+  publish_release:
+    name: Publish packages and release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - prepare
+      - build_test_package
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download packaged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: REFW.Umbra
+          path: release-assets
+
       - name: Publish NuGet package
-        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-          VERSION: ${{ steps.version.outputs.value }}
+          VERSION: ${{ needs.prepare.outputs.version }}
           GITHUB_OWNER: ${{ github.repository_owner }}
         run: |
+          set -euo pipefail
           shopt -s nullglob
 
-          nupkg=(artifacts/nuget/REFW.Umbra.${VERSION}.nupkg)
+          nupkg=(release-assets/artifacts/nuget/REFW.Umbra.${VERSION}.nupkg)
 
           if (( ${#nupkg[@]} == 0 )); then
             echo "No .nupkg file was produced."
@@ -198,16 +270,15 @@ jobs:
           fi
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            REFW.Umbra.zip
-            artifacts/nuget/*.nupkg
-            artifacts/nuget/*.snupkg
+            release-assets/REFW.Umbra.zip
+            release-assets/artifacts/nuget/*.nupkg
+            release-assets/artifacts/nuget/*.snupkg
           generate_release_notes: true
           body: |
-            ## REFW.Umbra `v${{ steps.version.outputs.value }}`
+            ## REFW.Umbra `v${{ needs.prepare.outputs.version }}`
 
             > A support library for [REFramework](https://github.com/praydog/REFramework) mod and plugin development targeting RE Engine titles.
 

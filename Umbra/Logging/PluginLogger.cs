@@ -1,5 +1,3 @@
-using REFrameworkNET;
-
 namespace Umbra.Logging;
 
 /// <summary>
@@ -75,22 +73,23 @@ public sealed class PluginLogger
     }
 
     /// <summary>
-    /// Logs an informational message via <see cref="API.LogInfo"/>.
+    /// Logs an informational message.
     /// </summary>
     /// <param name="message">The message to log.</param>
     public void Info(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Info) return;
-        try { API.LogInfo(FormatMessage(message)); } catch { }
+        try { Logger.GetLogSink().Info(FormatMessage(message)); } catch { }
     }
 
     /// <summary>
-    /// Logs a formatted informational message via <see cref="API.LogInfo"/>.
+    /// Logs a formatted informational message through the active log sink.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out info logs, or if
     /// <see cref="string.Format(string, object[])"/> throws during formatting, the exception is
-    /// silently suppressed and no log is emitted.
+    /// silently suppressed and no log is emitted. The default sink forwards to
+    /// <c>REFrameworkNET.API.LogInfo</c>; tests may replace it via <see cref="Logger.SetLogSink"/>.
     /// </remarks>
     /// <param name="format">A composite format string.</param>
     /// <param name="args">An array of objects to format.</param>
@@ -103,22 +102,23 @@ public sealed class PluginLogger
     }
 
     /// <summary>
-    /// Logs a warning message via <see cref="API.LogWarning"/>.
+    /// Logs a warning message.
     /// </summary>
     /// <param name="message">The message to log.</param>
     public void Warning(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Warning) return;
-        try { API.LogWarning(FormatMessage(message)); } catch { }
+        try { Logger.GetLogSink().Warning(FormatMessage(message)); } catch { }
     }
 
     /// <summary>
-    /// Logs a formatted warning message via <see cref="API.LogWarning"/>.
+    /// Logs a formatted warning message through the active log sink.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out warning logs, or if
     /// <see cref="string.Format(string, object[])"/> throws during formatting, the exception is
-    /// silently suppressed and no log is emitted.
+    /// silently suppressed and no log is emitted. The default sink forwards to
+    /// <c>REFrameworkNET.API.LogWarning</c>; tests may replace it via <see cref="Logger.SetLogSink"/>.
     /// </remarks>
     /// <param name="format">A composite format string.</param>
     /// <param name="args">An array of objects to format.</param>
@@ -131,22 +131,23 @@ public sealed class PluginLogger
     }
 
     /// <summary>
-    /// Logs an error message via <see cref="API.LogError"/>.
+    /// Logs an error message.
     /// </summary>
     /// <param name="message">The message to log.</param>
     public void Error(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
-        try { API.LogError(FormatMessage(message)); } catch { }
+        try { Logger.GetLogSink().Error(FormatMessage(message)); } catch { }
     }
 
     /// <summary>
-    /// Logs a formatted error message via <see cref="API.LogError"/>.
+    /// Logs a formatted error message through the active log sink.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out error logs, or if
     /// <see cref="string.Format(string, object[])"/> throws during formatting, the exception is
-    /// silently suppressed and no log is emitted.
+    /// silently suppressed and no log is emitted. The default sink forwards to
+    /// <c>REFrameworkNET.API.LogError</c>; tests may replace it via <see cref="Logger.SetLogSink"/>.
     /// </remarks>
     /// <param name="format">A composite format string.</param>
     /// <param name="args">An array of objects to format.</param>
@@ -160,7 +161,7 @@ public sealed class PluginLogger
 
     /// <summary>
     /// Logs an error message accompanied by exception details — the exception type, message,
-    /// and stack trace — via <see cref="API.LogError"/>.
+    /// and stack trace.
     /// </summary>
     /// <param name="ex">The exception to log.</param>
     /// <param name="message">A descriptive message providing context for the exception.</param>
@@ -170,19 +171,20 @@ public sealed class PluginLogger
         try
         {
             var logMessage = $"{FormatMessage(message)}\nException: {ex.GetType().Name}: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
-            API.LogError(logMessage);
+            Logger.GetLogSink().Error(logMessage);
         }
         catch { }
     }
 
     /// <summary>
     /// Logs a formatted error message accompanied by exception details — the exception type,
-    /// message, and stack trace — via <see cref="API.LogError"/>.
+    /// message, and stack trace — through the active log sink.
     /// </summary>
     /// <remarks>
     /// This overload is exception-safe: if <see cref="MinLevel"/> filters out error logs or if
     /// <see cref="string.Format(string, object[])"/> throws during formatting, the exception is
-    /// silently suppressed and no log is emitted.
+    /// silently suppressed and no log is emitted. The default sink forwards to
+    /// <c>REFrameworkNET.API.LogError</c>; tests may replace it via <see cref="Logger.SetLogSink"/>.
     /// </remarks>
     /// <param name="ex">The exception to log.</param>
     /// <param name="format">A composite format string providing context for the exception.</param>
