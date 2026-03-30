@@ -54,7 +54,7 @@ internal static class ButtonStyleColors
     internal static void ResetColorSink() => Interlocked.Exchange(ref _colorSink, null);
 
     /// <summary>
-    /// Returns the currently active color sink, creating the default ImGui-backed sink on first use.
+    /// Returns the currently active color sink, creating the shared ImGui-backed sink on first use.
     /// </summary>
     /// <returns>The sink used for subsequent push/pop operations.</returns>
     internal static IButtonStyleColorSink GetColorSink()
@@ -63,7 +63,7 @@ internal static class ButtonStyleColors
         if (colorSink != null)
             return colorSink;
 
-        colorSink = new ImGuiButtonStyleColorSink();
+        colorSink = Rendering.ImGuiConfigRenderContext.Instance;
         var existing = Interlocked.CompareExchange(ref _colorSink, colorSink, null);
         return existing ?? colorSink;
     }

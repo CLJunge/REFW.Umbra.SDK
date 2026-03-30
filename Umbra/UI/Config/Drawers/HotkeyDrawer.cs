@@ -1,4 +1,5 @@
 using Umbra.Config;
+using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config.Drawers;
 
@@ -9,28 +10,28 @@ namespace Umbra.UI.Config.Drawers;
 /// </summary>
 /// <remarks>
 /// At most one hotkey-capture drawer may be in capture mode at any given frame.
-/// A shared static counter in <see cref="HotkeyCaptureState"/> enforces mutual exclusion
-/// across all <see cref="HotkeyDrawer"/> and <see cref="TwoColumnHotkeyDrawer"/> instances
-/// in the same assembly. <see cref="Dispose"/> must be called (via the owning
+/// A shared <see cref="HotkeyCaptureController"/> instance per drawer coordinates capture-mode UI
+/// and keeps the static counter in <see cref="HotkeyCaptureState"/> accurate across all
+/// <see cref="HotkeyDrawer"/> and <see cref="TwoColumnHotkeyDrawer"/> instances in the same
+/// assembly. <see cref="Dispose"/> must be called (via the owning
 /// <see cref="Config.ConfigDrawer{TConfig}"/>) on plugin unload so that any in-progress capture
 /// does not permanently block future captures.
-/// The default constructor renders through ImGui and captures keys through
+/// The default constructor renders through the shared ImGui context and captures keys through
 /// <see cref="Umbra.Input.KeyboardInput"/>. Unit tests can replace those dependencies through the
 /// internal constructor so the state machine can be verified without a live runtime host.
 /// </remarks>
 public sealed class HotkeyDrawer : IParameterDrawer
 {
-    private bool _waiting;
-    private bool _disposed;
     private readonly IHotkeyDrawerRenderer _renderer;
     private readonly IHotkeyInputSource _inputSource;
+    private readonly HotkeyCaptureController _captureController;
 
     /// <summary>
-    /// Initializes a new <see cref="HotkeyDrawer"/> that renders through the active ImGui frame and
+    /// Initializes a new <see cref="HotkeyDrawer"/> that renders through the shared active ImGui context and
     /// captures keys through <see cref="Umbra.Input.KeyboardInput"/>.
     /// </summary>
     public HotkeyDrawer()
-        : this(new ImGuiHotkeyDrawerRenderer(), new KeyboardHotkeyInputSource())
+        : this(ImGuiConfigRenderContext.Instance, new KeyboardHotkeyInputSource())
     {
     }
 
@@ -48,12 +49,13 @@ public sealed class HotkeyDrawer : IParameterDrawer
         ArgumentNullException.ThrowIfNull(inputSource);
         _renderer = renderer;
         _inputSource = inputSource;
+        _captureController = new HotkeyCaptureController(renderer, inputSource);
     }
 
     /// <inheritdoc/>
     public void Draw(string label, IParameter parameter)
     {
-        if (_disposed) return;
+        if (_captureController.IsDisposed) return;
 
         if (parameter is not Parameter<int> p)
         {
@@ -61,41 +63,10 @@ public sealed class HotkeyDrawer : IParameterDrawer
             return;
         }
 
-        var v = p.Value;
-        var prev = v;
-        var wasWaiting = _waiting;
-
-        // Prevent multiple drawers from capturing input simultaneously.
-        // HotkeyCaptureState.WaitingCount is shared with TwoColumnHotkeyDrawer.
-        var otherWaiting = HotkeyCaptureState.WaitingCount > (wasWaiting ? 1 : 0);
-
-        // Use the parameter key as the stable unique button ID so two parameters with the
-        // same display label do not share an ImGui button ID within the same window.
-        if (_waiting)
-        {
-            _renderer.Text($"{label}: Press any key...");
-            _renderer.SameLine();
-            if (_renderer.Button($"Cancel##{p.Key}"))
-                _waiting = false;
-            else if (_inputSource.TryCaptureKeyboardKey(out var captured))
-            {
-                v = captured;
-                _waiting = false;
-            }
-        }
-        else
-        {
-            _renderer.Text($"{label}: {_inputSource.GetKeyName(v)}");
-            _renderer.SameLine();
-            if (_renderer.Button($"Change##{p.Key}") && !otherWaiting)
-                _waiting = true;
-        }
-
-        // Keep the shared counter in sync when this drawer's capture state changes.
-        if (_waiting != wasWaiting)
-            HotkeyCaptureState.WaitingCount += _waiting ? 1 : -1;
-
-        if (v != prev) p.Value = v;
+        _captureController.Draw(
+            p,
+            $"{label}: {_inputSource.GetKeyName(p.Value)}",
+            $"{label}: Press any key...");
 
         var metadata = parameter.Metadata;
         if (metadata.Description is not null)
@@ -113,15 +84,7 @@ public sealed class HotkeyDrawer : IParameterDrawer
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-
-        if (_waiting)
-        {
-            HotkeyCaptureState.WaitingCount--;
-            _waiting = false;
-        }
-
+        _captureController.Dispose();
         GC.SuppressFinalize(this);
     }
 

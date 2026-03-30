@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Umbra.Config.Attributes;
+using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config.Nodes;
 
@@ -8,8 +9,8 @@ namespace Umbra.UI.Config.Nodes;
 /// or as a collapsible tree scope, depending on whether collapse metadata is supplied.
 /// </summary>
 /// <remarks>
-/// The default constructor renders through the active ImGui frame. Unit tests can replace the
-/// low-level renderer through the internal constructor so header/tree behavior can be verified
+/// The default constructor renders through the shared active ImGui context. Unit tests can replace
+/// the low-level renderer through the internal constructor so header/tree behavior can be verified
 /// without requiring an active ImGui frame.
 /// </remarks>
 [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
@@ -21,7 +22,7 @@ internal sealed class CategoryNode : IDrawNode
     private readonly ICategoryNodeRenderer _renderer;
 
     /// <summary>
-    /// Initializes a new <see cref="CategoryNode"/> that renders through the active ImGui frame.
+    /// Initializes a new <see cref="CategoryNode"/> that renders through the shared active ImGui context.
     /// </summary>
     /// <param name="label">The category section label displayed in the header or tree node.</param>
     /// <param name="collapseAttr">
@@ -35,7 +36,7 @@ internal sealed class CategoryNode : IDrawNode
         string label,
         UmbraCollapseAsTreeAttribute? collapseAttr = null,
         UmbraIndentAttribute? indentAttr = null)
-        : this(label, collapseAttr, indentAttr, new ImGuiCategoryNodeRenderer())
+        : this(label, collapseAttr, indentAttr, ImGuiConfigRenderContext.Instance)
     {
     }
 

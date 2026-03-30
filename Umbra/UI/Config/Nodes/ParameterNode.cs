@@ -1,12 +1,14 @@
+using Umbra.UI.Config.Rendering;
+
 namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
 /// Draw node that conditionally invokes a per-frame draw action based on a visibility predicate.
 /// </summary>
 /// <remarks>
-/// The default constructor renders spacing through the active ImGui frame. Unit tests can replace
-/// the low-level renderer through the internal constructor so visibility and spacing behavior can be
-/// verified without requiring an active ImGui frame.
+/// The default constructor renders spacing through the shared active ImGui context. Unit tests can
+/// replace the low-level renderer through the internal constructor so visibility and spacing
+/// behavior can be verified without requiring an active ImGui frame.
 /// </remarks>
 internal sealed class ParameterNode : IDrawNode
 {
@@ -17,7 +19,7 @@ internal sealed class ParameterNode : IDrawNode
     private readonly IParameterNodeRenderer _renderer;
 
     /// <summary>
-    /// Initializes a new <see cref="ParameterNode"/> that renders spacing through the active ImGui frame.
+    /// Initializes a new <see cref="ParameterNode"/> that renders spacing through the shared active ImGui context.
     /// </summary>
     internal ParameterNode(
         Func<bool> isVisible,
@@ -25,7 +27,7 @@ internal sealed class ParameterNode : IDrawNode
         int order = int.MaxValue,
         int spacingBefore = 0,
         int spacingAfter = 0)
-        : this(isVisible, draw, order, spacingBefore, spacingAfter, new ImGuiParameterNodeRenderer())
+        : this(isVisible, draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance)
     {
     }
 

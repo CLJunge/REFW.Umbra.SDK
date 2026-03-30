@@ -1,3 +1,5 @@
+using Umbra.UI.Config.Rendering;
+
 namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
@@ -7,8 +9,8 @@ namespace Umbra.UI.Config.Nodes;
 /// config class; the entire settings panel lives inside this one node.
 /// </summary>
 /// <remarks>
-/// The default constructor renders through the active ImGui frame. Unit tests can replace the
-/// low-level renderer through the internal constructor so tree-open behavior and cleanup can be
+/// The default constructor renders through the shared active ImGui context. Unit tests can replace
+/// the low-level renderer through the internal constructor so tree-open behavior and cleanup can be
 /// verified without requiring an active ImGui frame.
 /// </remarks>
 internal sealed class RootTreeNode : IDrawNode
@@ -19,13 +21,13 @@ internal sealed class RootTreeNode : IDrawNode
     private readonly IRootTreeNodeRenderer _renderer;
 
     /// <summary>
-    /// Initializes a new <see cref="RootTreeNode"/> that renders through the active ImGui frame.
+    /// Initializes a new <see cref="RootTreeNode"/> that renders through the shared active ImGui context.
     /// </summary>
     /// <param name="label">The label displayed on the tree node header.</param>
     /// <param name="defaultOpen">When <see langword="true"/>, the tree node starts expanded on first render.</param>
     /// <param name="children">The ordered list of child draw nodes to render when the node is open.</param>
     internal RootTreeNode(string label, bool defaultOpen, List<IDrawNode> children)
-        : this(label, defaultOpen, children, new ImGuiRootTreeNodeRenderer())
+        : this(label, defaultOpen, children, ImGuiConfigRenderContext.Instance)
     {
     }
 

@@ -2,6 +2,7 @@ using System.Numerics;
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.Logging;
+using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config.Drawers;
 
@@ -71,10 +72,10 @@ public sealed class ButtonDrawer : IParameterDrawer
     private readonly IButtonDrawerRenderer _renderer;
 
     /// <summary>
-    /// Initialises a new <see cref="ButtonDrawer"/> that renders through the active ImGui frame.
+    /// Initialises a new <see cref="ButtonDrawer"/> that renders through the shared active ImGui context.
     /// </summary>
     public ButtonDrawer()
-        : this(new ImGuiButtonDrawerRenderer())
+        : this(ImGuiConfigRenderContext.Instance)
     {
     }
 
