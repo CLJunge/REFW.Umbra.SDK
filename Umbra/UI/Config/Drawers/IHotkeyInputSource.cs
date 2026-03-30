@@ -1,11 +1,13 @@
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
-/// Provides the keyboard operations required by <see cref="HotkeyDrawer"/>.
+/// Provides the keyboard operations required by hotkey capture drawers.
 /// </summary>
 /// <remarks>
 /// The production implementation delegates to <see cref="Umbra.Input.KeyboardInput"/>, while unit
-/// tests can inject deterministic key names and captured keys without depending on the runtime host.
+/// tests can inject deterministic key names and captured keys without depending on the runtime
+/// host. <see cref="HotkeyCaptureController"/> consumes this abstraction for both
+/// <see cref="HotkeyDrawer"/> and <see cref="TwoColumnHotkeyDrawer"/>.
 /// </remarks>
 internal interface IHotkeyInputSource
 {

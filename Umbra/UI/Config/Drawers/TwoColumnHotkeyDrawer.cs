@@ -15,8 +15,9 @@ namespace Umbra.UI.Config.Drawers;
 /// to avoid duplicating what is already shown in the left column.
 /// <para>
 /// Mutual exclusion with <see cref="HotkeyDrawer"/> is enforced through the shared
-/// <see cref="HotkeyCaptureState.WaitingCount"/> counter: at most one hotkey-capture
-/// drawer (of either type) may be in capture mode per frame. <see cref="Dispose"/> must be
+/// <see cref="HotkeyCaptureController"/> workflow and the shared
+/// <see cref="HotkeyCaptureState.WaitingCount"/> counter: at most one hotkey-capture drawer (of
+/// either type) may be in capture mode per frame. <see cref="Dispose"/> must be
 /// called (via the owning <see cref="ConfigDrawer{TConfig}"/>) on plugin unload so that
 /// any in-progress capture does not permanently block future captures.
 /// The default constructor renders through the shared ImGui context and captures keys through
@@ -26,10 +27,9 @@ namespace Umbra.UI.Config.Drawers;
 /// </remarks>
 public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
 {
-    private bool _waiting;
-    private bool _disposed;
     private readonly IHotkeyDrawerRenderer _renderer;
     private readonly IHotkeyInputSource _inputSource;
+    private readonly HotkeyCaptureController _captureController;
 
     /// <summary>
     /// Initializes a new <see cref="TwoColumnHotkeyDrawer"/> that renders through the shared active ImGui
@@ -55,12 +55,13 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
         ArgumentNullException.ThrowIfNull(inputSource);
         _renderer = renderer;
         _inputSource = inputSource;
+        _captureController = new HotkeyCaptureController(renderer, inputSource);
     }
 
     /// <inheritdoc/>
     public void Draw(IParameter parameter)
     {
-        if (_disposed) return;
+        if (_captureController.IsDisposed) return;
 
         if (parameter is not Parameter<int> p)
         {
@@ -68,40 +69,10 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
             return;
         }
 
-        var v = p.Value;
-        var prev = v;
-        var wasWaiting = _waiting;
-
-        // Prevent multiple drawers from capturing input simultaneously.
-        // HotkeyCaptureState.WaitingCount is shared with HotkeyDrawer.
-        var otherWaiting = HotkeyCaptureState.WaitingCount > (wasWaiting ? 1 : 0);
-
-        if (_waiting)
-        {
-            _renderer.Text("Press any key...");
-            _renderer.SameLine();
-            if (_renderer.Button($"Cancel##{p.Key}"))
-                _waiting = false;
-            else if (_inputSource.TryCaptureKeyboardKey(out var captured))
-            {
-                v = captured;
-                _waiting = false;
-            }
-        }
-        else
-        {
-            // Right-column widget: key name only, no label prefix.
-            _renderer.Text(_inputSource.GetKeyName(v));
-            _renderer.SameLine();
-            if (_renderer.Button($"Change##{p.Key}") && !otherWaiting)
-                _waiting = true;
-        }
-
-        // Keep the shared counter in sync when this drawer's capture state changes.
-        if (_waiting != wasWaiting)
-            HotkeyCaptureState.WaitingCount += _waiting ? 1 : -1;
-
-        if (v != prev) p.Value = v;
+        _captureController.Draw(
+            p,
+            _inputSource.GetKeyName(p.Value),
+            "Press any key...");
     }
 
     /// <summary>
@@ -112,15 +83,7 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-
-        if (_waiting)
-        {
-            HotkeyCaptureState.WaitingCount--;
-            _waiting = false;
-        }
-
+        _captureController.Dispose();
         GC.SuppressFinalize(this);
     }
 }
