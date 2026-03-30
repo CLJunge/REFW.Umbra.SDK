@@ -44,4 +44,5 @@ internal sealed class TestButtonDrawerRenderer : IButtonDrawerRenderer
     public void SameLine() => SameLineCount++;
 
     public void DrawHelpMarker(string description) => HelpMarkers.Add(description);
+    public void Text(string text) => throw new NotImplementedException();
 }

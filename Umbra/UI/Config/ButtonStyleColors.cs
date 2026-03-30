@@ -1,7 +1,6 @@
 using System.Numerics;
 using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
-using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config;
 
