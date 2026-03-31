@@ -114,6 +114,23 @@ public sealed class VisibilityPredicateResolverTests
     }
 
     /// <summary>
+    /// Verifies that explicit comparison also works for private fields and reevaluates after the field changes.
+    /// </summary>
+    [TestMethod]
+    public void Build_WithPrivateFieldAndExplicitComparison_ReevaluatesCurrentValue()
+    {
+        var owner = new TestOwner();
+        owner.SetPrivateField(false);
+        var predicate = VisibilityPredicateResolver.Build(new UmbraHideIfAttribute<bool>("_privateField", false), owner);
+
+        Assert.IsFalse(predicate());
+
+        owner.SetPrivateField(true);
+
+        Assert.IsTrue(predicate());
+    }
+
+    /// <summary>
     /// Verifies that invalid member names are ignored and leave the control visible.
     /// </summary>
     [TestMethod]
