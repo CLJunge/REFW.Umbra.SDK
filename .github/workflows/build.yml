@@ -134,6 +134,8 @@ jobs:
     needs: prepare
     permissions:
       contents: read
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
 
     steps:
       - name: Checkout
@@ -158,15 +160,11 @@ jobs:
           ls -1 dependencies/reframework/api/
 
       - name: Build
-        env:
-          VERSION: ${{ needs.prepare.outputs.version }}
         run: >
-          dotnet build Umbra/Umbra.csproj
+          dotnet build Umbra.UnitTests/Umbra.UnitTests.csproj
           --configuration Release
           --verbosity minimal
           -p:Version=${VERSION}
-          -p:AssemblyVersion=${VERSION%%-*}.0
-          -p:FileVersion=${VERSION%%-*}.0
           -p:InformationalVersion=${VERSION}
 
       - name: Run tests
@@ -174,18 +172,15 @@ jobs:
           dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj
           --configuration Release
           --verbosity minimal
+          --no-build
 
       - name: Pack NuGet package
-        env:
-          VERSION: ${{ needs.prepare.outputs.version }}
         run: >
           dotnet pack Umbra/Umbra.csproj
           --configuration Release
           --no-build
           --output artifacts/nuget
           -p:Version=${VERSION}
-          -p:AssemblyVersion=${VERSION%%-*}.0
-          -p:FileVersion=${VERSION%%-*}.0
           -p:InformationalVersion=${VERSION}
 
       - name: Stage ZIP contents

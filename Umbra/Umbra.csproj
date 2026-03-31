@@ -15,7 +15,12 @@
 
         <IsPackable>true</IsPackable>
         <PackageId>REFW.Umbra</PackageId>
-        <Version>0.0.0-dev</Version>
+        <Version Condition="'$(Version)' == ''">0.0.0-dev</Version>
+        <VersionCore>$([System.String]::Copy('$(Version)').Split('-')[0])</VersionCore>
+        <AssemblyVersion>$(VersionCore).0</AssemblyVersion>
+        <FileVersion>$(VersionCore).0</FileVersion>
+        <InformationalVersion>$(Version)</InformationalVersion>
+        <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <Authors>CLJunge</Authors>
         <Company>CLJunge</Company>
         <Description>A support library for REFramework mod and plugin development.</Description>
