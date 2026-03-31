@@ -47,7 +47,7 @@ public sealed partial class DeferredSaveControllerTests
     [TestMethod]
     public void Constructor_WhenStoreIsNull_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new DeferredSaveController<TestConfig>(null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new DeferredSaveController<TestConfig>(null!));
 
         Assert.AreEqual("store", exception.ParamName);
     }
@@ -61,7 +61,7 @@ public sealed partial class DeferredSaveControllerTests
         var storeMock = new Mock<ISettingsStore<TestConfig>>(MockBehavior.Strict);
         storeMock.SetupGet(s => s.IsDisposed).Returns(true);
 
-        AssertThrows<ObjectDisposedException>(() => new DeferredSaveController<TestConfig>(storeMock.Object));
+        AssertThrows<ObjectDisposedException>(() => _ = new DeferredSaveController<TestConfig>(storeMock.Object));
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public sealed partial class DeferredSaveControllerTests
         storeMock.SetupGet(s => s.IsDisposed).Returns(false);
         storeMock.SetupGet(s => s.IsLoaded).Returns(false);
 
-        AssertThrows<InvalidOperationException>(() => new DeferredSaveController<TestConfig>(storeMock.Object));
+        AssertThrows<InvalidOperationException>(() => _ = new DeferredSaveController<TestConfig>(storeMock.Object));
     }
 
     /// <summary>
