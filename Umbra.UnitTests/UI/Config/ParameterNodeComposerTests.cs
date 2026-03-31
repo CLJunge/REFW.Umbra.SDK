@@ -189,4 +189,48 @@ public class ParameterNodeComposerTests
         Assert.AreEqual(order, node.Order);
     }
 
+    /// <summary>
+    /// Tests that Create returns a null resource for built-in parameter types with no custom drawer.
+    /// </summary>
+    [TestMethod]
+    public void Create_BuiltInParameterType_ReturnsNullResource()
+    {
+        var metadata = new ParameterMetadata
+        {
+            ResolvedLabel = "TestLabel",
+            Order = 1,
+            SpacingBefore = 0,
+            SpacingAfter = 0,
+            CustomDrawerType = null,
+            TwoColumnCustomDrawerType = null
+        };
+        var parameter = new Parameter<int>(42) { Metadata = metadata };
+        var alignmentGroup = new LabelAlignmentGroup();
+
+        var (_, resource) = ParameterNodeComposer.Create(parameter, new object(), alignmentGroup, null, null);
+
+        Assert.IsNull(resource);
+    }
+
+    /// <summary>
+    /// Tests that a class label margin assignment overwrites an earlier alignment-group margin.
+    /// </summary>
+    [TestMethod]
+    public void Create_ClassLabelMarginPixelsOverwritesExistingMargin()
+    {
+        var metadata = new ParameterMetadata
+        {
+            ResolvedLabel = "TestLabel",
+            Order = 0,
+            SpacingBefore = 0,
+            SpacingAfter = 0
+        };
+        var parameter = new Parameter<int>(0) { Metadata = metadata };
+        var alignmentGroup = new LabelAlignmentGroup { Margin = 3f };
+
+        _ = ParameterNodeComposer.Create(parameter, new object(), alignmentGroup, null, 9f);
+
+        Assert.AreEqual(9f, alignmentGroup.Margin);
+    }
+
 }

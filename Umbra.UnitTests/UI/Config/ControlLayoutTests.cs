@@ -68,6 +68,32 @@ public class ControlLayoutTests
     }
 
     /// <summary>
+    /// Verifies that the constructor accepts a positive-infinity control width.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_PositiveInfinityControlWidth_DoesNotThrow()
+    {
+        var alignGroup = new LabelAlignmentGroup();
+
+        var layout = new ControlLayout("Label", null, alignGroup, float.PositiveInfinity, "##hidden");
+
+        Assert.AreEqual("##hidden", layout.HiddenLabel);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor accepts a NaN control width.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NaNControlWidth_DoesNotThrow()
+    {
+        var alignGroup = new LabelAlignmentGroup();
+
+        var layout = new ControlLayout("Label", null, alignGroup, float.NaN, "##hidden");
+
+        Assert.AreEqual("##hidden", layout.HiddenLabel);
+    }
+
+    /// <summary>
     /// Verifies that the constructor accepts a negative control width.
     /// </summary>
     [TestMethod]
@@ -221,5 +247,18 @@ public class ControlLayoutTests
         // Since we cannot directly verify the call without mocking and LabelAlignmentGroup is sealed,
         // we verify that the constructor completes successfully, which implies Register was called.
         Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
+    }
+
+    /// <summary>
+    /// Verifies that an empty description string is treated as a present description value.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_EmptyDescription_DoesNotThrow()
+    {
+        var alignGroup = new LabelAlignmentGroup();
+
+        var layout = new ControlLayout("Label", string.Empty, alignGroup, 100f, "##hidden");
+
+        Assert.AreEqual("##hidden", layout.HiddenLabel);
     }
 }

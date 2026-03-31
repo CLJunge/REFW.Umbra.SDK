@@ -7,6 +7,25 @@ namespace Umbra.UI.LiveState.UnitTests;
 public partial class LiveStateSectionDrawerResolverTests
 {
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Verifies that <see cref="LiveStateSectionDrawerResolver.Resolve"/> successfully
     /// returns a compiled <see cref="Action"/> when provided with a valid state type
     /// and drawer.
@@ -69,6 +88,42 @@ public partial class LiveStateSectionDrawerResolverTests
         var drawer = (BaseStateDrawer)disposable;
         Assert.IsTrue(drawer.DrawCalled);
         Assert.AreEqual(100, drawer.LastDrawnValue);
+    }
+
+    /// <summary>
+    /// Verifies that resolution fails when the state type does not declare a drawer attribute.
+    /// </summary>
+    [TestMethod]
+    public void Resolve_StateWithoutDrawerAttribute_ThrowsInvalidOperationException()
+    {
+        var exception = AssertThrows<InvalidOperationException>(
+            () => LiveStateSectionDrawerResolver.Resolve(typeof(StateWithoutDrawerAttribute), new StateWithoutDrawerAttribute(), out _));
+
+        Assert.Contains("is not decorated", exception.Message);
+    }
+
+    /// <summary>
+    /// Verifies that resolution fails when the declared drawer type is incompatible with the state type.
+    /// </summary>
+    [TestMethod]
+    public void Resolve_IncompatibleDrawerType_ThrowsInvalidOperationException()
+    {
+        var exception = AssertThrows<InvalidOperationException>(
+            () => LiveStateSectionDrawerResolver.Resolve(typeof(StateWithIncompatibleDrawer), new StateWithIncompatibleDrawer(), out _));
+
+        Assert.Contains("does not implement ILiveStateSectionDrawer<T>", exception.Message);
+    }
+
+    /// <summary>
+    /// Verifies that resolution fails when the declared drawer cannot be instantiated.
+    /// </summary>
+    [TestMethod]
+    public void Resolve_DrawerWithoutPublicParameterlessConstructor_ThrowsInvalidOperationException()
+    {
+        var exception = AssertThrows<InvalidOperationException>(
+            () => LiveStateSectionDrawerResolver.Resolve(typeof(StateWithDrawerWithoutDefaultConstructor), new StateWithDrawerWithoutDefaultConstructor(), out _));
+
+        Assert.Contains("public parameterless constructor", exception.Message);
     }
 
     #region Test Helper Types
@@ -139,6 +194,38 @@ public partial class LiveStateSectionDrawerResolverTests
         {
             DrawCalled = true;
             LastDrawnValue = state.Value;
+        }
+    }
+
+    private sealed class StateWithoutDrawerAttribute
+    {
+    }
+
+    [TestDrawer(typeof(IncompatibleDrawer))]
+    private sealed class StateWithIncompatibleDrawer
+    {
+    }
+
+    [TestDrawer(typeof(DrawerWithoutDefaultConstructor))]
+    private sealed class StateWithDrawerWithoutDefaultConstructor
+    {
+    }
+
+    private sealed class IncompatibleDrawer : ILiveStateSectionDrawer<ValidState>
+    {
+        public void Draw(ValidState state)
+        {
+        }
+    }
+
+    private sealed class DrawerWithoutDefaultConstructor : ILiveStateSectionDrawer<StateWithDrawerWithoutDefaultConstructor>
+    {
+        public DrawerWithoutDefaultConstructor(string value)
+        {
+        }
+
+        public void Draw(StateWithDrawerWithoutDefaultConstructor state)
+        {
         }
     }
 

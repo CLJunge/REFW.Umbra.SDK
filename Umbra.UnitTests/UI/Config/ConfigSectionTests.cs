@@ -11,6 +11,25 @@ namespace Umbra.UI.Config.UnitTests;
 public sealed class ConfigSectionTests
 {
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Test configuration class used for testing <see cref="ConfigSection{TConfig}"/>.
     /// </summary>
     [UmbraAutoRegisterSettings]
@@ -226,6 +245,40 @@ public sealed class ConfigSectionTests
 
         // Assert
         Assert.IsNull(result);
+    }
+
+    /// <summary>
+    /// Tests that the constructor rejects a null config instance.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullConfig_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigSection<TestConfig>(null!));
+
+        Assert.AreEqual("config", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the constructor rejects whitespace-only id scopes.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
+    {
+        var exception = AssertThrows<ArgumentException>(() => _ = new ConfigSection<TestConfig>(new TestConfig(), idScope: "   "));
+
+        Assert.AreEqual("idScope", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that an explicit tree-node label also controls the default-open flag.
+    /// </summary>
+    [TestMethod]
+    public void TreeNodeDefaultOpen_ExplicitLabelProvided_UsesExplicitFlag()
+    {
+        var config = new ConfigWithRootNodeAttribute();
+        var section = new ConfigSection<ConfigWithRootNodeAttribute>(config, treeNodeLabel: "Explicit", treeNodeDefaultOpen: false);
+
+        Assert.IsFalse(section.TreeNodeDefaultOpen);
     }
 
     /// <summary>

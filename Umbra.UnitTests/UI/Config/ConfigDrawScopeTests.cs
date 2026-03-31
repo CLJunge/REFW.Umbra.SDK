@@ -203,6 +203,41 @@ public sealed partial class ConfigDrawScopeTests
     }
 
     /// <summary>
+    /// Tests that AddNode with a null category appends directly to the root node list.
+    /// </summary>
+    [TestMethod]
+    public void AddNode_NullCategory_AppendsToRootNodes()
+    {
+        var scope = CreateScope();
+        var mockNode = new Mock<IDrawNode>();
+
+        scope.AddNode(null, mockNode.Object);
+
+        Assert.HasCount(1, scope.Nodes);
+        Assert.AreSame(mockNode.Object, scope.Nodes[0]);
+    }
+
+    /// <summary>
+    /// Tests that AddNode reuses the same category container for repeated category names.
+    /// </summary>
+    [TestMethod]
+    public void AddNode_SameCategory_ReusesSingleCategoryNode()
+    {
+        var scope = CreateScope();
+        var firstNode = new Mock<IDrawNode>();
+        var secondNode = new Mock<IDrawNode>();
+
+        scope.AddNode("Category", firstNode.Object);
+        scope.AddNode("Category", secondNode.Object);
+
+        Assert.HasCount(1, scope.Nodes);
+        var categoryNode = (CategoryNode)scope.Nodes[0];
+        Assert.HasCount(2, categoryNode.Children);
+        Assert.AreSame(firstNode.Object, categoryNode.Children[0]);
+        Assert.AreSame(secondNode.Object, categoryNode.Children[1]);
+    }
+
+    /// <summary>
     /// Helper method to create a ConfigDrawScope instance for testing.
     /// </summary>
     private static ConfigDrawScope CreateScope(
@@ -401,6 +436,21 @@ public sealed partial class ConfigDrawScopeTests
         Assert.IsNotNull(capturedNode);
         registerCategoryMock.Verify(x => x(It.IsAny<CategoryNode>()), Times.Once);
         Assert.AreSame(capturedNode.AlignmentGroup, result);
+    }
+
+    /// <summary>
+    /// Tests that GetAlignmentGroup returns the same scope alignment group after categories have been created when category is null.
+    /// </summary>
+    [TestMethod]
+    public void GetAlignmentGroup_NullCategoryAfterCategoryCreation_ReturnsScopeAlignmentGroup()
+    {
+        var scopeAlignmentGroup = new LabelAlignmentGroup();
+        var scope = CreateScope(alignmentGroup: scopeAlignmentGroup);
+
+        _ = scope.GetAlignmentGroup("Category");
+        var result = scope.GetAlignmentGroup(null);
+
+        Assert.AreSame(scopeAlignmentGroup, result);
     }
 
 }

@@ -97,4 +97,29 @@ public sealed class UmbraHideIfAttributeTests
         Assert.AreEqual(0, attribute.BoxedValue);
         Assert.IsInstanceOfType<int>(attribute.BoxedValue);
     }
+
+    /// <summary>
+    /// Verifies that an explicit null nullable value is still treated as an explicit comparison value.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WithExplicitNullNullableValue_SetsHasValueTrueAndBoxedValueNull()
+    {
+        IHideIfAttribute attribute = new UmbraHideIfAttribute<int?>("TestMember", null);
+
+        Assert.AreEqual("TestMember", attribute.MemberName);
+        Assert.IsTrue(attribute.HasValue);
+        Assert.IsNull(attribute.BoxedValue);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor preserves empty member names without modification.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WithEmptyMemberName_PreservesMemberName()
+    {
+        var attribute = new UmbraHideIfAttribute<bool>(string.Empty);
+
+        Assert.AreEqual(string.Empty, attribute.MemberName);
+        Assert.IsFalse(attribute.HasValue);
+    }
 }

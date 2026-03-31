@@ -12,6 +12,12 @@ public class SettingsPersistenceTests
 {
     private string _testDirectory = string.Empty;
 
+    private enum TestEnum
+    {
+        First,
+        Second
+    }
+
     [TestInitialize]
     public void TestInitialize()
     {
@@ -154,6 +160,28 @@ public class SettingsPersistenceTests
 
         // Assert
         Assert.AreEqual(SettingsPersistence.LoadResult.MissingFile, result);
+    }
+
+    /// <summary>
+    /// Tests that Load returns Success for an empty JSON object and applies no values.
+    /// </summary>
+    [TestMethod]
+    public void Load_EmptyJsonObject_ReturnsSuccess()
+    {
+        var filePath = Path.Combine(_testDirectory, "settings.json");
+        File.WriteAllText(filePath, "{}");
+
+        var parameterMock = new Mock<IParameter>();
+        parameterMock.SetupGet(p => p.ValueType).Returns(typeof(string));
+        var parameters = new Dictionary<string, IParameter>
+        {
+            ["key"] = parameterMock.Object
+        };
+
+        var result = SettingsPersistence.Load(filePath, parameters);
+
+        Assert.AreEqual(SettingsPersistence.LoadResult.Success, result);
+        parameterMock.Verify(p => p.SetValueWithoutNotify(It.IsAny<object?>()), Times.Never);
     }
 
     /// <summary>
@@ -440,6 +468,30 @@ public class SettingsPersistenceTests
     }
 
     /// <summary>
+    /// Tests that Load treats parameter-application failures as unreadable content and attempts recovery.
+    /// </summary>
+    [TestMethod]
+    public void Load_WhenParameterAssignmentThrows_ReturnsRecoveredToDefaultsOrFailed()
+    {
+        var filePath = Path.Combine(_testDirectory, "settings.json");
+        File.WriteAllText(filePath, @"{""key"": 42}");
+
+        var parameterMock = new Mock<IParameter>();
+        parameterMock.SetupGet(p => p.ValueType).Returns(typeof(int));
+        parameterMock.Setup(p => p.SetValueWithoutNotify(It.IsAny<object?>())).Throws(new InvalidOperationException("apply failed"));
+        var parameters = new Dictionary<string, IParameter>
+        {
+            ["key"] = parameterMock.Object
+        };
+
+        var result = SettingsPersistence.Load(filePath, parameters);
+
+        Assert.IsTrue(
+            result is SettingsPersistence.LoadResult.RecoveredToDefaults or SettingsPersistence.LoadResult.Failed,
+            "Expected recovery or failure when parameter assignment throws.");
+    }
+
+    /// <summary>
     /// Tests that Save successfully writes a single non-delegate parameter to disk.
     /// </summary>
     [TestMethod]
@@ -514,6 +566,38 @@ public class SettingsPersistenceTests
             Assert.IsFalse(deserialized.ContainsKey("delegateKey"), "Delegate parameter should be filtered");
             Assert.IsTrue(deserialized.ContainsKey("normalKey"), "Normal parameter should be saved");
             mockDelegateParam.Verify(p => p.GetValue(), Times.Never, "Delegate parameter value should not be read");
+        }
+        finally
+        {
+            if (File.Exists(tempPath)) File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Save serializes enum values as strings.
+    /// </summary>
+    [TestMethod]
+    public void Save_EnumParameter_WritesEnumNameAsString()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        try
+        {
+            var mockParam = new Mock<IParameter>();
+            mockParam.Setup(p => p.Key).Returns("enumKey");
+            mockParam.Setup(p => p.ValueType).Returns(typeof(TestEnum));
+            mockParam.Setup(p => p.GetValue()).Returns(TestEnum.Second);
+
+            var parameters = new Dictionary<string, IParameter>
+            {
+                ["enumKey"] = mockParam.Object
+            };
+
+            SettingsPersistence.Save(tempPath, parameters);
+
+            var jsonContent = File.ReadAllText(tempPath);
+            var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual("Second", deserialized["enumKey"].GetString());
         }
         finally
         {
@@ -773,6 +857,33 @@ public class SettingsPersistenceTests
             Assert.Contains("\"name\"", jsonContent, "JSON should contain property names in camelCase");
             Assert.Contains("\"value\"", jsonContent);
             Assert.Contains("\"nested\"", jsonContent);
+        }
+        finally
+        {
+            if (File.Exists(tempPath)) File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Save swallows exceptions thrown while reading parameter values.
+    /// </summary>
+    [TestMethod]
+    public void Save_WhenParameterGetValueThrows_DoesNotThrow()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        try
+        {
+            var mockParam = new Mock<IParameter>();
+            mockParam.Setup(p => p.Key).Returns("key");
+            mockParam.Setup(p => p.ValueType).Returns(typeof(int));
+            mockParam.Setup(p => p.GetValue()).Throws(new InvalidOperationException("boom"));
+
+            var parameters = new Dictionary<string, IParameter>
+            {
+                ["key"] = mockParam.Object
+            };
+
+            SettingsPersistence.Save(tempPath, parameters);
         }
         finally
         {

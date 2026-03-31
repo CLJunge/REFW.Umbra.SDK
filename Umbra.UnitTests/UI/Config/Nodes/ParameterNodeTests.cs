@@ -7,6 +7,25 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 public sealed class ParameterNodeTests
 {
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Verifies that when <c>isVisible</c> returns <see langword="false"/>, the <see cref="ParameterNode.Draw"/>
     /// method returns immediately without invoking the draw action or spacing calls.
     /// </summary>
@@ -48,6 +67,27 @@ public sealed class ParameterNodeTests
         // Assert
         Assert.AreEqual(1, drawCallCount);
         Assert.AreEqual(0, renderer.SpacingCount);
+    }
+
+    /// <summary>
+    /// Verifies that mixed spacing values emit only the positive side's spacing calls.
+    /// </summary>
+    [TestMethod]
+    public void Draw_MixedSpacingValues_EmitsOnlyPositiveSpacing()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, -2, 3, renderer);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(3, renderer.SpacingCount);
     }
 
     /// <summary>
@@ -183,5 +223,42 @@ public sealed class ParameterNodeTests
 
         // Assert
         Assert.AreEqual(int.MaxValue, actualOrder);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a null visibility predicate.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullVisibilityPredicate_ThrowsArgumentNullException()
+    {
+        var renderer = new TestParameterNodeRenderer();
+
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(null!, static () => { }, int.MaxValue, 0, 0, renderer));
+
+        Assert.AreEqual("isVisible", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a null draw action.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullDrawAction_ThrowsArgumentNullException()
+    {
+        var renderer = new TestParameterNodeRenderer();
+
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, null!, int.MaxValue, 0, 0, renderer));
+
+        Assert.AreEqual("draw", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a null renderer.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullRenderer_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, static () => { }, int.MaxValue, 0, 0, null!));
+
+        Assert.AreEqual("renderer", exception.ParamName);
     }
 }

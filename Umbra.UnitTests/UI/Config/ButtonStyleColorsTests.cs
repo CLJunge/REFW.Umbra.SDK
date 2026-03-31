@@ -13,6 +13,25 @@ public sealed class ButtonStyleColorsTests
     private TestButtonStyleColorSink _colorSink = null!;
 
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Installs a recording color sink before each test.
     /// </summary>
     [TestInitialize]
@@ -103,6 +122,21 @@ public sealed class ButtonStyleColorsTests
     }
 
     /// <summary>
+    /// Tests that a non-default preset style pushes three preset colors.
+    /// </summary>
+    [TestMethod]
+    [DataRow(ButtonStyle.Success)]
+    [DataRow(ButtonStyle.Warning)]
+    [DataRow(ButtonStyle.Danger)]
+    public void Push_PresetStyles_ReturnTrueAndPushThreeColors(ButtonStyle style)
+    {
+        var result = ButtonStyleColors.Push(style);
+
+        Assert.IsTrue(result);
+        Assert.HasCount(3, _colorSink.PushedColors);
+    }
+
+    /// <summary>
     /// Tests that <see cref="ButtonStyleColors.Push(ButtonStyle)"/> returns <see langword="false"/>
     /// for <see cref="ButtonStyle.Default"/> and does not push any colors.
     /// </summary>
@@ -160,5 +194,16 @@ public sealed class ButtonStyleColorsTests
         // Assert
         Assert.IsFalse(result);
         Assert.IsEmpty(_colorSink.PushedColors);
+    }
+
+    /// <summary>
+    /// Tests that setting a null color sink is rejected.
+    /// </summary>
+    [TestMethod]
+    public void SetColorSink_Null_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => ButtonStyleColors.SetColorSink(null!));
+
+        Assert.AreEqual("colorSink", exception.ParamName);
     }
 }

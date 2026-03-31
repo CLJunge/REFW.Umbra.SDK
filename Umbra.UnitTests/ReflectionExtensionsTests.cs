@@ -123,6 +123,19 @@ public sealed class ReflectionExtensionsTests
         Assert.IsNull(result);
     }
 
+    /// <summary>
+    /// Verifies that generic-attribute lookup returns <see langword="null"/> when no matching open generic attribute is present.
+    /// </summary>
+    [TestMethod]
+    public void GetCustomGenericAttribute_MemberWithoutMatchingGenericAttribute_ReturnsNull()
+    {
+        var member = typeof(GenericAttributeContainer).GetMethod(nameof(GenericAttributeContainer.WithOnlyNonMatchingGenericAttribute))!;
+
+        var result = member.GetCustomGenericAttribute(typeof(TestGenericAttribute<>));
+
+        Assert.IsNull(result);
+    }
+
     private sealed class PropertyAttributeContainer
     {
         [Test("Property")]
@@ -167,6 +180,12 @@ public sealed class ReflectionExtensionsTests
         [OtherGeneric<int>]
         [TestGeneric<string>]
         public void WithMixedAttributes()
+        {
+            // No-op for testing
+        }
+
+        [OtherGeneric<int>]
+        public void WithOnlyNonMatchingGenericAttribute()
         {
             // No-op for testing
         }

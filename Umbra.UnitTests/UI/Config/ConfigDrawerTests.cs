@@ -15,6 +15,25 @@ public sealed class ConfigDrawerTests
     private bool _originalLoggingEnabled;
 
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Installs a recording log sink before each test.
     /// </summary>
     [TestInitialize]
@@ -414,6 +433,50 @@ public sealed class ConfigDrawerTests
         // Assert
         Assert.AreEqual(1, disposable1.DisposeCount);
         Assert.AreEqual(1, disposable2.DisposeCount);
+    }
+
+    /// <summary>
+    /// Tests that the public constructor rejects a null config instance.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullConfig_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleConfig>(null!, "TestScope"));
+
+        Assert.AreEqual("config", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the public constructor rejects whitespace-only id scopes.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
+    {
+        var exception = AssertThrows<ArgumentException>(() => _ = new ConfigDrawer<SimpleConfig>(new SimpleConfig(), "   "));
+
+        Assert.AreEqual("idScope", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the internal constructor rejects a null node list.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_InternalNullNodes_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", null!, [], new TestConfigDrawerScope()));
+
+        Assert.AreEqual("nodes", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the internal constructor rejects a null disposable list.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_InternalNullDisposables_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", [], null!, new TestConfigDrawerScope()));
+
+        Assert.AreEqual("disposables", exception.ParamName);
     }
 
     #region Test Config Classes

@@ -34,6 +34,19 @@ public class INestedGroupDrawerTests
     }
 
     /// <summary>
+    /// Tests that the interface implementation is also exposed as <see cref="IDisposable"/>.
+    /// </summary>
+    [TestMethod]
+    public void Dispose_CastToIDisposable_CompletesWithoutException()
+    {
+        // Arrange
+        IDisposable drawer = new TestNestedGroupDrawer<object>();
+
+        // Act & Assert
+        drawer.Dispose();
+    }
+
+    /// <summary>
     /// Minimal helper implementation of <see cref="INestedGroupDrawer{T}"/> for testing the default Dispose method.
     /// </summary>
     /// <typeparam name="T">The nested configuration group type.</typeparam>

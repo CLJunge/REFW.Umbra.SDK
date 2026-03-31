@@ -3,9 +3,6 @@
 		<File Path=".editorconfig" />
 	</Folder>
     <Project Path="Umbra.SamplePlugin/Umbra.SamplePlugin.csproj" Id="55bc0663-13f1-46d8-8c80-99de8b445bfa" />
-    <Project Path="Umbra.UnitTests/Umbra.UnitTests.csproj" Id="6e769b3b-8de8-4ac0-9efe-be92578f6f16">
-        <Build Solution="Debug|*" Project="false" />
-    </Project>
+    <Project Path="Umbra.UnitTests/Umbra.UnitTests.csproj" Id="6e769b3b-8de8-4ac0-9efe-be92578f6f16" />
     <Project Path="Umbra/Umbra.csproj" />
 </Solution>
-
