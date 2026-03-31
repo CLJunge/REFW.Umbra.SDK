@@ -307,3 +307,6 @@ internal static class FovHooks
 - Favor examples that integrate with REFramework.NET and ImGui.
 - Prefer safe, practical code that can run in-process with the game.
 - Avoid suggestions that assume a normal app entry point, service host, or external UI process unless the request explicitly asks for one.
+
+## Batch Processing
+- If a batch was only partially processed, continue by processing the skipped files from that batch before moving on to any new batch, while still building after each file change and running the test validation layer at the end.
