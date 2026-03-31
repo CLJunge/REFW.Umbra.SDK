@@ -31,9 +31,9 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        Assert.AreEqual(0, renderer.PushIds.Count);
+        Assert.IsEmpty(renderer.PushIds);
         Assert.AreEqual(0, renderer.PopIdCount);
-        Assert.AreEqual(0, renderer.TreeNodes.Count);
+        Assert.IsEmpty(0, renderer.TreeNodes);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(0, renderer.SeparatorCount);
     }
@@ -52,10 +52,10 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        Assert.AreEqual(1, renderer.PushIds.Count);
+        Assert.HasCount(1, renderer.PushIds);
         Assert.AreEqual("FlatScope", renderer.PushIds[0]);
         Assert.AreEqual(1, renderer.PopIdCount);
-        Assert.AreEqual(0, renderer.TreeNodes.Count);
+        Assert.IsEmpty(renderer.TreeNodes);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.SeparatorCount);
     }
@@ -77,15 +77,17 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        Assert.AreEqual(1, renderer.PushIds.Count);
+        Assert.HasCount(1, renderer.PushIds);
         Assert.AreEqual("RootScope", renderer.PushIds[0]);
-        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
         Assert.IsFalse(sectionDrawn);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(0, renderer.SeparatorCount);
         Assert.AreEqual(1, renderer.PopIdCount);
     }
+
+    private static readonly int[] expectedCalls = [1, 2];
 
     /// <summary>
     /// Tests that an open root tree node draws sections in sorted order, draws the separator, and
@@ -106,8 +108,8 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        CollectionAssert.AreEqual(new[] { 1, 2 }, calls);
-        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        CollectionAssert.AreEqual(expectedCalls, calls);
+        Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.SeparatorCount);
@@ -132,7 +134,7 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("General##MySection", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
         Assert.AreEqual(0, drawCount);
         Assert.AreEqual(0, renderer.TreePopCount);
@@ -167,7 +169,7 @@ public sealed class PluginPanelTests_Draw
         // Assert
         Assert.IsNotNull(exception);
         Assert.AreEqual("boom", exception.Message);
-        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Boom##ThrowingSection", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.PopIdCount);

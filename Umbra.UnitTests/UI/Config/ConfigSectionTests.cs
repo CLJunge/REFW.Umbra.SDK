@@ -253,7 +253,7 @@ public sealed class ConfigSectionTests
     [TestMethod]
     public void Constructor_NullConfig_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new ConfigSection<TestConfig>(null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigSection<TestConfig>(null!));
 
         Assert.AreEqual("config", exception.ParamName);
     }
@@ -264,7 +264,7 @@ public sealed class ConfigSectionTests
     [TestMethod]
     public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
     {
-        var exception = AssertThrows<ArgumentException>(() => new ConfigSection<TestConfig>(new TestConfig(), idScope: "   "));
+        var exception = AssertThrows<ArgumentException>(() => _ = new ConfigSection<TestConfig>(new TestConfig(), idScope: "   "));
 
         Assert.AreEqual("idScope", exception.ParamName);
     }
