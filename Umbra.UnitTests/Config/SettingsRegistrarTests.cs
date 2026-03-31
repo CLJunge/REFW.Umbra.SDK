@@ -431,6 +431,34 @@ public partial class SettingsRegistrarTests
         Assert.IsEmpty(result);
     }
 
+    /// <summary>
+    /// Tests that a nested type-level category is used when the parent property declares no category.
+    /// </summary>
+    [TestMethod]
+    public void Register_NestedTypeCategoryWithoutPropertyCategory_UsesNestedTypeCategory()
+    {
+        var config = new ConfigWithNestedTypeCategoryOnly();
+
+        var result = SettingsRegistrar.Register(config);
+
+        Assert.HasCount(1, result);
+        Assert.AreEqual("NestedTypeCategory", config.Nested.NestedValue.Metadata.Category);
+    }
+
+    /// <summary>
+    /// Tests that a nested type-level prefix is used when the parent property declares no prefix.
+    /// </summary>
+    [TestMethod]
+    public void Register_NestedTypePrefixWithoutPropertyPrefix_UsesNestedTypePrefix()
+    {
+        var config = new ConfigWithNestedTypePrefixOnly();
+
+        var result = SettingsRegistrar.Register(config);
+
+        Assert.HasCount(1, result);
+        Assert.IsTrue(result.ContainsKey("typeOnlyPrefix.nestedValue"));
+    }
+
     // Test helper classes
     [UmbraAutoRegisterSettings]
     internal class SimpleConfig
@@ -678,6 +706,36 @@ public partial class SettingsRegistrarTests
     {
         [UmbraSettingsParameter]
         public NonAutoRegisterNestedObject Nested { get; set; } = new();
+    }
+
+    [UmbraAutoRegisterSettings]
+    internal class ConfigWithNestedTypeCategoryOnly
+    {
+        [UmbraSettingsParameter]
+        public NestedGroupWithStandaloneCategory Nested { get; set; } = new();
+    }
+
+    [UmbraAutoRegisterSettings]
+    [UmbraCategory("NestedTypeCategory")]
+    internal class NestedGroupWithStandaloneCategory
+    {
+        [UmbraSettingsParameter]
+        public Parameter<int> NestedValue { get; set; } = new(13);
+    }
+
+    [UmbraAutoRegisterSettings]
+    internal class ConfigWithNestedTypePrefixOnly
+    {
+        [UmbraSettingsParameter]
+        public NestedGroupWithStandalonePrefix Nested { get; set; } = new();
+    }
+
+    [UmbraAutoRegisterSettings]
+    [UmbraSettingsPrefix("typeOnlyPrefix")]
+    internal class NestedGroupWithStandalonePrefix
+    {
+        [UmbraSettingsParameter]
+        public Parameter<int> NestedValue { get; set; } = new(17);
     }
 
     internal class NonAutoRegisterNestedObject

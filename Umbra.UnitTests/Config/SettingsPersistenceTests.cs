@@ -574,6 +574,38 @@ public class SettingsPersistenceTests
     }
 
     /// <summary>
+    /// Tests that Save serializes enum values as strings.
+    /// </summary>
+    [TestMethod]
+    public void Save_EnumParameter_WritesEnumNameAsString()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"umbra_test_{Guid.NewGuid()}.json");
+        try
+        {
+            var mockParam = new Mock<IParameter>();
+            mockParam.Setup(p => p.Key).Returns("enumKey");
+            mockParam.Setup(p => p.ValueType).Returns(typeof(TestEnum));
+            mockParam.Setup(p => p.GetValue()).Returns(TestEnum.Second);
+
+            var parameters = new Dictionary<string, IParameter>
+            {
+                ["enumKey"] = mockParam.Object
+            };
+
+            SettingsPersistence.Save(tempPath, parameters);
+
+            var jsonContent = File.ReadAllText(tempPath);
+            var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual("Second", deserialized["enumKey"].GetString());
+        }
+        finally
+        {
+            if (File.Exists(tempPath)) File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
     /// Tests that Save successfully persists multiple parameters with various types.
     /// </summary>
     [TestMethod]

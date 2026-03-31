@@ -182,6 +182,25 @@ public partial class ParameterJsonReaderTests
     }
 
     /// <summary>
+    /// Tests that Apply correctly applies a nullable boolean false value from a JSON false element.
+    /// </summary>
+    [TestMethod]
+    public void Apply_ValidNullableBooleanFalse_CallsSetValueWithoutNotifyWithFalse()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(bool?));
+        using var doc = JsonDocument.Parse("false");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(false), Times.Once);
+    }
+
+    /// <summary>
     /// Tests that Apply correctly applies a boolean false value from a JSON false element.
     /// </summary>
     [TestMethod]
@@ -312,6 +331,25 @@ public partial class ParameterJsonReaderTests
 
         // Assert
         mockParam.Verify(p => p.SetValueWithoutNotify(StringComparison.OrdinalIgnoreCase), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply forwards the raw string value for non-enum object targets.
+    /// </summary>
+    [TestMethod]
+    public void Apply_StringJsonElementForObjectTarget_ForwardsRawStringValue()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(object));
+        using var doc = JsonDocument.Parse("\"payload\"");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify("payload"), Times.Once);
     }
 
     /// <summary>

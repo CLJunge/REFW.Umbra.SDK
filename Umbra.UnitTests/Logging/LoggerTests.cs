@@ -98,6 +98,23 @@ public sealed class LoggerTests
     }
 
     /// <summary>
+    /// Tests that Warning writes the message to the active warning sink when logging is enabled.
+    /// </summary>
+    [TestMethod]
+    public void Warning_WhenEnabled_WritesMessageToSink()
+    {
+        // Arrange
+        Logger.Enabled = true;
+
+        // Act
+        Logger.Warning("Warned");
+
+        // Assert
+        Assert.HasCount(1, CurrentSink.WarningMessages);
+        Assert.AreEqual("Warned", CurrentSink.WarningMessages[0]);
+    }
+
+    /// <summary>
     /// Tests that <see cref="Logger.Exception(Exception, string)"/> writes the context message and
     /// exception details to the active error sink.
     /// </summary>

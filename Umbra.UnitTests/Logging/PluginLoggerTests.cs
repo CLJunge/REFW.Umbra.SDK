@@ -8,6 +8,31 @@ namespace Umbra.Logging.UnitTests;
 public sealed class PluginLoggerTests
 {
     /// <summary>
+    /// Tests that the constructor stores the provided prefix format and minimum level independently across instances.
+    /// </summary>
+    [TestMethod]
+    public void InstanceProperties_MultipleLoggers_RemainIndependent()
+    {
+        var first = new PluginLogger("First")
+        {
+            PrefixFormat = "<{0}>",
+            MinLevel = LogLevel.Warning
+        };
+        var second = new PluginLogger("Second")
+        {
+            PrefixFormat = "[{0}]",
+            MinLevel = LogLevel.Error
+        };
+
+        Assert.AreEqual("First", first.Prefix);
+        Assert.AreEqual("<{0}>", first.PrefixFormat);
+        Assert.AreEqual(LogLevel.Warning, first.MinLevel);
+        Assert.AreEqual("Second", second.Prefix);
+        Assert.AreEqual("[{0}]", second.PrefixFormat);
+        Assert.AreEqual(LogLevel.Error, second.MinLevel);
+    }
+
+    /// <summary>
     /// Tests that the constructor correctly handles various string values including empty and whitespace.
     /// Input: Various string edge cases (empty, whitespace, long strings, special characters).
     /// Expected: The Prefix property is set to the exact value provided.
@@ -430,6 +455,26 @@ public sealed class PluginLoggerTests
 
             // Act & Assert
             logger.Info("Test message");
+        }
+        finally
+        {
+            Logger.Enabled = originalEnabled;
+        }
+    }
+
+    /// <summary>
+    /// Tests that Warning returns early when the minimum level filters warning messages out.
+    /// </summary>
+    [TestMethod]
+    public void Warning_MinLevelNone_DoesNotThrow()
+    {
+        var originalEnabled = Logger.Enabled;
+        try
+        {
+            Logger.Enabled = true;
+            PluginLogger logger = new("TestPlugin") { MinLevel = LogLevel.None };
+
+            logger.Warning("Suppressed warning");
         }
         finally
         {
