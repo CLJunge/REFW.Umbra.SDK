@@ -135,7 +135,6 @@ public partial record NestedConfigGroup
 
     [UmbraSettingsParameter, UmbraDisplayName("MaxItems"), UmbraDescription("Maximum number of items."), UmbraRange(1, 100), UmbraStep(1)]
     public Parameter<int> MaxItems { get; set; } = new(10);
-}
 ````````
 
 ## Settings UI — ConfigDrawer
@@ -309,4 +308,4 @@ internal static class FovHooks
 - Avoid suggestions that assume a normal app entry point, service host, or external UI process unless the request explicitly asks for one.
 
 ## Batch Processing
-- If a batch was only partially processed, continue by processing the skipped files from that batch before moving on to any new batch, while still building after each file change and running the test validation layer at the end.
+- Process all files in a batch and then wait for the next explicit continue, while still building after each file change and running the test validation layer at the end of the batch.
