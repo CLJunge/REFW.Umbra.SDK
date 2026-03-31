@@ -837,7 +837,7 @@ public partial class SettingsStoreTests
     [TestMethod]
     public void Constructor_WhitespaceFilePath_ThrowsArgumentException()
     {
-        var exception = AssertThrows<ArgumentException>(() => new SettingsStore<TestConfig>("   "));
+        var exception = AssertThrows<ArgumentException>(() => _ = new SettingsStore<TestConfig>("   "));
 
         Assert.AreEqual("filePath", exception.ParamName);
     }

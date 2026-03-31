@@ -327,7 +327,7 @@ public sealed class HotkeyDrawerTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new HotkeyDrawer(null!, new TestHotkeyInputSource()));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new HotkeyDrawer(null!, new TestHotkeyInputSource()));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }
@@ -338,7 +338,7 @@ public sealed class HotkeyDrawerTests
     [TestMethod]
     public void Constructor_NullInputSource_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new HotkeyDrawer(new TestHotkeyDrawerRenderer(), null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new HotkeyDrawer(new TestHotkeyDrawerRenderer(), null!));
 
         Assert.AreEqual("inputSource", exception.ParamName);
     }

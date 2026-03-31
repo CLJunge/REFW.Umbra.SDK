@@ -344,7 +344,7 @@ public sealed class ButtonDrawerTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new ButtonDrawer(null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ButtonDrawer(null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

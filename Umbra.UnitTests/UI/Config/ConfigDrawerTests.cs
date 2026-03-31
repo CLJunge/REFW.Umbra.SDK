@@ -441,7 +441,7 @@ public sealed class ConfigDrawerTests
     [TestMethod]
     public void Constructor_NullConfig_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new ConfigDrawer<SimpleConfig>(null!, "TestScope"));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleConfig>(null!, "TestScope"));
 
         Assert.AreEqual("config", exception.ParamName);
     }
@@ -452,7 +452,7 @@ public sealed class ConfigDrawerTests
     [TestMethod]
     public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
     {
-        var exception = AssertThrows<ArgumentException>(() => new ConfigDrawer<SimpleConfig>(new SimpleConfig(), "   "));
+        var exception = AssertThrows<ArgumentException>(() => _ = new ConfigDrawer<SimpleConfig>(new SimpleConfig(), "   "));
 
         Assert.AreEqual("idScope", exception.ParamName);
     }
@@ -463,7 +463,7 @@ public sealed class ConfigDrawerTests
     [TestMethod]
     public void Constructor_InternalNullNodes_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new ConfigDrawer<SimpleTestConfig>("TestScope", null!, [], new TestConfigDrawerScope()));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", null!, [], new TestConfigDrawerScope()));
 
         Assert.AreEqual("nodes", exception.ParamName);
     }
@@ -474,7 +474,7 @@ public sealed class ConfigDrawerTests
     [TestMethod]
     public void Constructor_InternalNullDisposables_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new ConfigDrawer<SimpleTestConfig>("TestScope", [], null!, new TestConfigDrawerScope()));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", [], null!, new TestConfigDrawerScope()));
 
         Assert.AreEqual("disposables", exception.ParamName);
     }
