@@ -69,6 +69,23 @@ public sealed class ListExtensionsTests
     }
 
     /// <summary>
+    /// Verifies that a list exactly at the insertion-sort threshold is sorted correctly.
+    /// </summary>
+    [TestMethod]
+    public void SortBy_ListAtThreshold_SortsAscending()
+    {
+        var list = new List<TestItem>();
+        for (var i = 32; i > 0; i--)
+            list.Add(new TestItem(i, 32 - i));
+
+        list.SortBy(item => item.Key);
+
+        Assert.HasCount(32, list);
+        for (var i = 0; i < list.Count; i++)
+            Assert.AreEqual(i + 1, list[i].Key);
+    }
+
+    /// <summary>
     /// Verifies that sorting remains stable when duplicate keys are present.
     /// </summary>
     [TestMethod]

@@ -78,6 +78,19 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
+    /// Verifies that omitting the debounce window uses the documented one-second default.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhenDebounceWindowIsOmitted_UsesOneSecondDefault()
+    {
+        var storeMock = CreateMockStore();
+
+        var controller = new DeferredSaveController<TestConfig>(storeMock.Object);
+
+        Assert.AreEqual(TimeSpan.FromSeconds(1), controller.DebounceWindow);
+    }
+
+    /// <summary>
     /// Verifies that Tick returns immediately without calling Flush when the controller is disposed.
     /// </summary>
     [TestMethod]

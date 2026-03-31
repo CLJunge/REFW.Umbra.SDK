@@ -139,6 +139,7 @@ public class KeyboardInputTests
     [DataRow(ImGuiKey.A, "A")]
     [DataRow(ImGuiKey.Enter, "Enter")]
     [DataRow(ImGuiKey.LeftCtrl, "LeftCtrl")]
+    [DataRow(ImGuiKey.F12, "F12")]
     public void GetKeyName_KnownImGuiKey_ReturnsEnumMemberName(ImGuiKey key, string expectedName)
     {
         var result = KeyboardInput.GetKeyName((int)key);

@@ -226,6 +226,29 @@ public sealed class ManagedObjectResolverTests
     }
 
     /// <summary>
+    /// Verifies that bridge results are type-specific even when the same address is queried for different target types.
+    /// </summary>
+    [TestMethod]
+    public void TryResolve_SameAddressDifferentTargetType_UsesTypeSpecificLookup()
+    {
+        // Arrange
+        const ulong address = 0x7100;
+        var expectedString = "resolved";
+        _bridge.SetResult(address, expectedString);
+
+        // Act
+        var stringResult = ManagedObjectResolver.TryResolve<string>(address, out var stringValue);
+        var objectResult = ManagedObjectResolver.TryResolve<object>(address, out var objectValue);
+
+        // Assert
+        Assert.IsTrue(stringResult);
+        Assert.AreEqual(expectedString, stringValue);
+        Assert.IsFalse(objectResult);
+        Assert.IsNull(objectValue);
+        Assert.AreEqual(2, _bridge.InvocationCount);
+    }
+
+    /// <summary>
     /// Verifies that <see cref="ManagedObjectResolver.SetBridge(IManagedObjectBridge)"/> rejects a null bridge.
     /// </summary>
     [TestMethod]

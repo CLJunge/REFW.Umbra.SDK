@@ -122,6 +122,26 @@ public class NestedGroupScopePathResolverTests
     }
 
     /// <summary>
+    /// Verifies that when the parent path is empty and a key override is selected, the result contains only the key override without a leading dot.
+    /// </summary>
+    [TestMethod]
+    public void Resolve_WhenParentPathIsEmptyAndKeyOverrideIsUsed_ReturnsOnlyKeyOverride()
+    {
+        // Arrange
+        var propMeta = CreatePropertyMetadata(
+            settingsPrefix: null,
+            settingsParameterKeyOverride: "overrideKey",
+            propertyName: "Property");
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+
+        // Act
+        var result = NestedGroupScopePathResolver.Resolve(string.Empty, propMeta, propTypeMeta);
+
+        // Assert
+        Assert.AreEqual("overrideKey", result);
+    }
+
+    /// <summary>
     /// Verifies that when all metadata is null and the property name is already camelCase, it is preserved.
     /// </summary>
     [TestMethod]
