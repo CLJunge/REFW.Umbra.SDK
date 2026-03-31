@@ -68,6 +68,22 @@ public class ParameterMetadataReaderTests
     }
 
     /// <summary>
+    /// Tests that an explicit category attribute overrides an inherited category.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithCategory_OverridesInheritedCategory()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithCategory))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member, inheritedCategory: "Inherited");
+
+        // Assert
+        Assert.AreEqual("Test Category", result.Category);
+    }
+
+    /// <summary>
     /// Tests that ReadFrom returns a ParameterMetadata with Format set from UmbraFormatAttribute.
     /// Input: MemberInfo with UmbraFormatAttribute("%.3f").
     /// Expected: Format = "%.3f", InferredFloatFormat = "%.3f".
@@ -160,6 +176,22 @@ public class ParameterMetadataReaderTests
 
         // Assert
         Assert.IsNull(result.HiddenLabel);
+    }
+
+    /// <summary>
+    /// Tests that ReadFrom still prefixes an empty parameter key with the hidden-label marker.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_EmptyParameterKey_ReturnsDoubleHashHiddenLabel()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.NoAttributes))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member, parameterKey: string.Empty);
+
+        // Assert
+        Assert.AreEqual("##", result.HiddenLabel);
     }
 
     /// <summary>
@@ -305,6 +337,22 @@ public class ParameterMetadataReaderTests
         Assert.AreEqual("%.3f", result.InferredFloatFormat);
     }
 
+    /// <summary>
+    /// Tests that negative step values still infer precision from their decimal places.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_NegativeStep_ReturnsPrecisionFromDecimalPlaces()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithNegativeStepThreeDecimals))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member);
+
+        // Assert
+        Assert.AreEqual("%.3f", result.InferredFloatFormat);
+    }
+
     // Test helper classes with various attribute combinations
     private class TestClass
     {
@@ -387,6 +435,9 @@ public class ParameterMetadataReaderTests
 
         [UmbraStep(0.001)]
         public double WithStepThreeDecimals { get; set; }
+
+        [UmbraStep(-0.125)]
+        public double WithNegativeStepThreeDecimals { get; set; }
     }
 
     // Helper attribute classes for testing interface-based detection
