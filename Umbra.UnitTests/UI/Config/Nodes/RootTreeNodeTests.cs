@@ -10,6 +10,25 @@ public sealed class RootTreeNodeTests
     private static readonly int[] expectedThreeElements = new[] { 1, 2, 3 };
 
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Tests that a closed root tree node does not draw children or pop the tree node.
     /// </summary>
     [TestMethod]
@@ -56,6 +75,25 @@ public sealed class RootTreeNodeTests
         CollectionAssert.AreEqual(expectedThreeElements, calls);
         Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Parent Node", false), renderer.TreeNodes[0]);
+        Assert.AreEqual(1, renderer.TreePopCount);
+    }
+
+    /// <summary>
+    /// Tests that an open root tree node with no children still pops the tree node exactly once.
+    /// </summary>
+    [TestMethod]
+    public void Draw_OpenTreeWithNoChildren_PopsTreeNode()
+    {
+        // Arrange
+        var renderer = new TestRootTreeNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(true);
+        var node = new RootTreeNode("Parent Node", defaultOpen: false, [], renderer);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(1, renderer.TreePopCount);
     }
 
@@ -123,6 +161,30 @@ public sealed class RootTreeNodeTests
         Assert.AreEqual(3, drawCount);
         Assert.HasCount(3, renderer.TreeNodes);
         Assert.AreEqual(3, renderer.TreePopCount);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a null child list.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullChildren_ThrowsArgumentNullException()
+    {
+        var renderer = new TestRootTreeNodeRenderer();
+
+        var exception = AssertThrows<ArgumentNullException>(() => new RootTreeNode("Label", true, null!, renderer));
+
+        Assert.AreEqual("children", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a null renderer.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullRenderer_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => new RootTreeNode("Label", true, [], null!));
+
+        Assert.AreEqual("renderer", exception.ParamName);
     }
 
     /// <summary>

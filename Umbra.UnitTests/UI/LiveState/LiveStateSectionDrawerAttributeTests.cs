@@ -95,4 +95,39 @@ public sealed class LiveStateSectionDrawerAttributeTests
         Assert.AreEqual(typeof(List<string>), stringType);
     }
 
+    /// <summary>
+    /// Tests that the attribute also exposes the drawer type through the interface contract.
+    /// </summary>
+    [TestMethod]
+    public void DrawerType_ThroughInterface_ReturnsSameType()
+    {
+        // Arrange
+        ILiveStateSectionDrawerAttribute attribute = new LiveStateSectionDrawerAttribute<SimpleDrawer>();
+
+        // Act
+        var result = attribute.DrawerType;
+
+        // Assert
+        Assert.AreEqual(typeof(SimpleDrawer), result);
+    }
+
+    /// <summary>
+    /// Tests that separate attribute instances for the same drawer type report equal drawer types.
+    /// </summary>
+    [TestMethod]
+    public void DrawerType_MultipleInstancesSameDrawerType_ReturnSameReportedType()
+    {
+        // Arrange
+        var first = new LiveStateSectionDrawerAttribute<SimpleDrawer>();
+        var second = new LiveStateSectionDrawerAttribute<SimpleDrawer>();
+
+        // Act
+        var firstType = first.DrawerType;
+        var secondType = second.DrawerType;
+
+        // Assert
+        Assert.AreEqual(firstType, secondType);
+        Assert.AreSame(firstType, secondType);
+    }
+
 }

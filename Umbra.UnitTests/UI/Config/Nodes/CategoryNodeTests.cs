@@ -9,6 +9,25 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 public sealed class CategoryNodeTests
 {
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Tests that drawing a flat category without indentation renders a separator and draws all
     /// children once.
     /// </summary>
@@ -115,6 +134,31 @@ public sealed class CategoryNodeTests
     }
 
     /// <summary>
+    /// Tests that a closed tree category still balances indentation when indentation metadata is present.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WithIndentAndClosedTree_IndentsAndUnindentsWithoutDrawingChildren()
+    {
+        // Arrange
+        var renderer = new TestCategoryNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(false);
+        var indentAttr = new UmbraIndentAttribute(10f);
+        var collapseAttr = new UmbraCollapseAsTreeAttribute(defaultOpen: false);
+        var childDrawCount = 0;
+        var node = new CategoryNode("Test Category", collapseAttr, indentAttr, renderer);
+        node.Children.Add(new CallbackNode(() => childDrawCount++));
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.HasCount(1, renderer.Indents);
+        Assert.HasCount(1, renderer.Unindents);
+        Assert.AreEqual(0, childDrawCount);
+        Assert.AreEqual(0, renderer.TreePopCount);
+    }
+
+    /// <summary>
     /// Tests that drawing an open tree category pops the tree node even when a child throws.
     /// </summary>
     [TestMethod]
@@ -166,6 +210,17 @@ public sealed class CategoryNodeTests
         // Assert
         Assert.HasCount(3, renderer.TreeNodes);
         Assert.AreEqual(3, renderer.TreePopCount);
+    }
+
+    /// <summary>
+    /// Tests that the constructor rejects a null renderer.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullRenderer_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => new CategoryNode("Label", null, null, null!));
+
+        Assert.AreEqual("renderer", exception.ParamName);
     }
 
     /// <summary>
