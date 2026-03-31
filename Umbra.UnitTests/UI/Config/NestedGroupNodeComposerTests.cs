@@ -256,6 +256,49 @@ public class NestedGroupNodeComposerTests
     }
 
     /// <summary>
+    /// Tests that CreateWrappedNode ignores an invalid HideIf member name and keeps the node visible.
+    /// </summary>
+    [TestMethod]
+    public void CreateWrappedNode_WithInvalidHideIfMember_ShowsNode()
+    {
+        // Arrange
+        var mockNode = new Mock<IDrawNode>();
+        var nodes = new List<IDrawNode>
+        {
+            mockNode.Object
+        };
+        var owner = new TestOwner();
+        var mockHideIf = new Mock<IHideIfAttribute>();
+        mockHideIf.Setup(h => h.MemberName).Returns("MissingMember");
+        mockHideIf.Setup(h => h.HasValue).Returns(false);
+        mockHideIf.Setup(h => h.BoxedValue).Returns(null!);
+
+        // Act
+        var result = NestedGroupNodeComposer.CreateWrappedNode(nodes, owner, propHideIf: mockHideIf.Object, order: 0, spacingBefore: 0, spacingAfter: 0);
+        result.Draw();
+
+        // Assert
+        mockNode.Verify(n => n.Draw(), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that CreateWrappedNode safely handles an empty child-node list.
+    /// </summary>
+    [TestMethod]
+    public void CreateWrappedNode_WithEmptyNodeList_DrawsWithoutThrowing()
+    {
+        // Arrange
+        var owner = new object();
+
+        // Act
+        var result = NestedGroupNodeComposer.CreateWrappedNode([], owner, propHideIf: null, order: 3, spacingBefore: 0, spacingAfter: 0);
+        result.Draw();
+
+        // Assert
+        Assert.AreEqual(3, result.Order);
+    }
+
+    /// <summary>
     /// Helper class for testing visibility predicates with properties.
     /// </summary>
     private class TestOwner

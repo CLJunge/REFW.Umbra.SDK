@@ -45,6 +45,22 @@ public sealed class LabelAlignmentGroupTests
     }
 
     /// <summary>
+    /// Tests that Register accepts an empty label in non-seeded state without changing the committed width.
+    /// </summary>
+    [TestMethod]
+    public void Register_EmptyLabelNotSeeded_DoesNotThrow()
+    {
+        // Arrange
+        var group = new LabelAlignmentGroup();
+
+        // Act
+        group.Register(string.Empty, false);
+
+        // Assert
+        Assert.AreEqual(0f, group.LabelWidth, "LabelWidth should remain 0 before the first seeding pass.");
+    }
+
+    /// <summary>
     /// Tests that Register can be called with the same label multiple times in non-seeded state
     /// without throwing.
     /// </summary>
@@ -181,6 +197,23 @@ public sealed class LabelAlignmentGroupTests
 
         // Assert
         Assert.AreEqual(expectedMargin, group.Margin, "Margin should accept negative values");
+    }
+
+    /// <summary>
+    /// Tests that Margin returns the most recently assigned value.
+    /// </summary>
+    [TestMethod]
+    public void Margin_SetMultipleTimes_ReturnsLatestValue()
+    {
+        // Arrange
+        var group = new LabelAlignmentGroup();
+
+        // Act
+        group.Margin = 4f;
+        group.Margin = -2f;
+
+        // Assert
+        Assert.AreEqual(-2f, group.Margin, "Margin should reflect the latest assignment.");
     }
 
     /// <summary>
