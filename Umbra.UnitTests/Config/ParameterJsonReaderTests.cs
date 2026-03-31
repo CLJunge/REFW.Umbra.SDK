@@ -373,10 +373,10 @@ public partial class ParameterJsonReaderTests
     }
 
     /// <summary>
-    /// Tests that Apply skips assignment when a string element is provided for an integer target.
+    /// Tests that Apply forwards the raw string value for non-enum string JSON payloads, even when the target type is non-string.
     /// </summary>
     [TestMethod]
-    public void Apply_StringJsonElementForIntTarget_DoesNotCallSetValueWithoutNotify()
+    public void Apply_StringJsonElementForIntTarget_ForwardsRawStringValue()
     {
         var mockParam = new Mock<IParameter>();
         mockParam.Setup(p => p.ValueType).Returns(typeof(int));
@@ -385,14 +385,14 @@ public partial class ParameterJsonReaderTests
 
         ParameterJsonReader.Apply(mockParam.Object, element);
 
-        mockParam.Verify(p => p.SetValueWithoutNotify(It.IsAny<object?>()), Times.Never);
+        mockParam.Verify(p => p.SetValueWithoutNotify("42"), Times.Once);
     }
 
     /// <summary>
-    /// Tests that Apply skips assignment when a numeric element is provided for a boolean target.
+    /// Tests that Apply falls back to forwarding a numeric value for unsupported numeric target types.
     /// </summary>
     [TestMethod]
-    public void Apply_NumberJsonElementForBoolTarget_DoesNotCallSetValueWithoutNotify()
+    public void Apply_NumberJsonElementForBoolTarget_ForwardsFallbackNumericValue()
     {
         var mockParam = new Mock<IParameter>();
         mockParam.Setup(p => p.ValueType).Returns(typeof(bool));
@@ -401,7 +401,7 @@ public partial class ParameterJsonReaderTests
 
         ParameterJsonReader.Apply(mockParam.Object, element);
 
-        mockParam.Verify(p => p.SetValueWithoutNotify(It.IsAny<object?>()), Times.Never);
+        mockParam.Verify(p => p.SetValueWithoutNotify(It.Is<object?>(value => Equals(value, 1d) || Equals(value, 1))), Times.Once);
     }
 
     /// <summary>
