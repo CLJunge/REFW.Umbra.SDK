@@ -134,4 +134,94 @@ public class TextControlBuilderTests
         Assert.IsNotNull(result);
     }
 
+    /// <summary>
+    /// Tests that <see cref="TextControlBuilder.BuildString"/> accepts a zero max length.
+    /// </summary>
+    [TestMethod]
+    public void BuildString_MaxLengthZero_ReturnsNonNullAction()
+    {
+        var label = "Label";
+        var parameter = new Parameter<string>("value")
+        {
+            Key = "key",
+            Metadata = new ParameterMetadata
+            {
+                MaxLength = 0
+            }
+        };
+        var alignGroup = new LabelAlignmentGroup();
+
+        var result = TextControlBuilder.BuildString(label, parameter, alignGroup);
+
+        Assert.IsNotNull(result);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="TextControlBuilder.BuildString"/> accepts zero multiline lines.
+    /// </summary>
+    [TestMethod]
+    public void BuildString_MultilineLinesZero_ReturnsNonNullAction()
+    {
+        var label = "Label";
+        var parameter = new Parameter<string>("value")
+        {
+            Key = "key",
+            Metadata = new ParameterMetadata
+            {
+                MultilineLines = 0,
+                MaxLength = 64
+            }
+        };
+        var alignGroup = new LabelAlignmentGroup();
+
+        var result = TextControlBuilder.BuildString(label, parameter, alignGroup);
+
+        Assert.IsNotNull(result);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="TextControlBuilder.BuildString"/> accepts negative multiline lines without failing during build.
+    /// </summary>
+    [TestMethod]
+    public void BuildString_NegativeMultilineLines_ReturnsNonNullAction()
+    {
+        var label = "Label";
+        var parameter = new Parameter<string>("value")
+        {
+            Key = "key",
+            Metadata = new ParameterMetadata
+            {
+                MultilineLines = -2,
+                MaxLength = 64
+            }
+        };
+        var alignGroup = new LabelAlignmentGroup();
+
+        var result = TextControlBuilder.BuildString(label, parameter, alignGroup);
+
+        Assert.IsNotNull(result);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="TextControlBuilder.BuildString"/> accepts very large maximum lengths.
+    /// </summary>
+    [TestMethod]
+    public void BuildString_VeryLargeMaxLength_ReturnsNonNullAction()
+    {
+        var label = "Label";
+        var parameter = new Parameter<string>("value")
+        {
+            Key = "key",
+            Metadata = new ParameterMetadata
+            {
+                MaxLength = uint.MaxValue
+            }
+        };
+        var alignGroup = new LabelAlignmentGroup();
+
+        var result = TextControlBuilder.BuildString(label, parameter, alignGroup);
+
+        Assert.IsNotNull(result);
+    }
+
 }

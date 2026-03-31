@@ -313,6 +313,124 @@ public partial class SettingsRegistrarTests
         Assert.IsTrue(result.ContainsKey("publicParameter"));
     }
 
+    /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
+    /// Tests that Register throws when two parameters resolve to the same fully-qualified key.
+    /// </summary>
+    [TestMethod]
+    public void Register_DuplicateResolvedKeys_ThrowsInvalidOperationException()
+    {
+        var config = new ConfigWithDuplicateKeys();
+
+        var exception = AssertThrows<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+
+        Assert.Contains("Duplicate settings key 'enabled'", exception.Message);
+        Assert.Contains(nameof(ConfigWithDuplicateKeys.Enabled1), exception.Message);
+        Assert.Contains(nameof(ConfigWithDuplicateKeys.Enabled2), exception.Message);
+    }
+
+    /// <summary>
+    /// Tests that a property-level nested-group prefix wins over a type-level prefix.
+    /// </summary>
+    [TestMethod]
+    public void Register_PropertyPrefixOverridesNestedTypePrefix()
+    {
+        var config = new ConfigWithPropertyAndTypePrefix();
+
+        var result = SettingsRegistrar.Register(config);
+
+        Assert.HasCount(1, result);
+        Assert.IsTrue(result.ContainsKey("propertyPrefix.nestedValue"));
+        Assert.IsFalse(result.ContainsKey("typePrefix.nestedValue"));
+    }
+
+    /// <summary>
+    /// Tests that a property-level category wins over nested-type and inherited categories.
+    /// </summary>
+    [TestMethod]
+    public void Register_PropertyCategoryOverridesNestedTypeAndInheritedCategory()
+    {
+        var config = new ConfigWithPropertyAndTypeCategory();
+
+        _ = SettingsRegistrar.Register(config);
+
+        Assert.AreEqual("PropertyCategory", config.Nested.NestedValue.Metadata.Category);
+    }
+
+    /// <summary>
+    /// Tests that an explicitly empty key override is rejected.
+    /// </summary>
+    [TestMethod]
+    public void Register_EmptyKeyOverride_ThrowsInvalidOperationException()
+    {
+        var config = new ConfigWithEmptyKeyOverride();
+
+        var exception = AssertThrows<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+
+        Assert.Contains("empty string", exception.Message);
+        Assert.Contains(nameof(ConfigWithEmptyKeyOverride.Enabled), exception.Message);
+    }
+
+    /// <summary>
+    /// Tests that an explicitly empty nested property prefix is rejected.
+    /// </summary>
+    [TestMethod]
+    public void Register_EmptyNestedPropertyPrefix_ThrowsInvalidOperationException()
+    {
+        var config = new ConfigWithEmptyNestedPropertyPrefix();
+
+        var exception = AssertThrows<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+
+        Assert.Contains("empty string", exception.Message);
+        Assert.Contains(nameof(ConfigWithEmptyNestedPropertyPrefix.Nested), exception.Message);
+    }
+
+    /// <summary>
+    /// Tests that an explicitly empty nested type prefix is rejected.
+    /// </summary>
+    [TestMethod]
+    public void Register_EmptyNestedTypePrefix_ThrowsInvalidOperationException()
+    {
+        var config = new ConfigWithEmptyNestedTypePrefix();
+
+        var exception = AssertThrows<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+
+        Assert.Contains("empty string", exception.Message);
+        Assert.Contains(nameof(EmptyPrefixNestedGroup), exception.Message);
+    }
+
+    /// <summary>
+    /// Tests that nested objects without the auto-register attribute are ignored.
+    /// </summary>
+    [TestMethod]
+    public void Register_NestedObjectWithoutAutoRegisterAttribute_IsIgnored()
+    {
+        var config = new ConfigWithNonAutoRegisterNestedObject();
+
+        var result = SettingsRegistrar.Register(config);
+
+        Assert.IsNotNull(result);
+        Assert.IsEmpty(result);
+    }
+
     // Test helper classes
     [UmbraAutoRegisterSettings]
     internal class SimpleConfig
@@ -490,5 +608,81 @@ public partial class SettingsRegistrarTests
 
         [UmbraSettingsParameter]
         private Parameter<bool> PrivateParameter { get; set; } = new(false);
+    }
+
+    [UmbraAutoRegisterSettings]
+    internal class ConfigWithPropertyAndTypePrefix
+    {
+        [UmbraSettingsParameter]
+        [UmbraSettingsPrefix("propertyPrefix")]
+        public NestedGroupWithTypePrefix Nested { get; set; } = new();
+    }
+
+    [UmbraAutoRegisterSettings]
+    [UmbraSettingsPrefix("typePrefix")]
+    internal class NestedGroupWithTypePrefix
+    {
+        [UmbraSettingsParameter]
+        public Parameter<int> NestedValue { get; set; } = new(5);
+    }
+
+    [UmbraAutoRegisterSettings]
+    [UmbraCategory("InheritedCategory")]
+    internal class ConfigWithPropertyAndTypeCategory
+    {
+        [UmbraSettingsParameter]
+        [UmbraCategory("PropertyCategory")]
+        public NestedGroupWithTypeCategory Nested { get; set; } = new();
+    }
+
+    [UmbraAutoRegisterSettings]
+    [UmbraCategory("TypeCategory")]
+    internal class NestedGroupWithTypeCategory
+    {
+        [UmbraSettingsParameter]
+        public Parameter<int> NestedValue { get; set; } = new(7);
+    }
+
+    [UmbraAutoRegisterSettings]
+    internal class ConfigWithEmptyKeyOverride
+    {
+        [UmbraSettingsParameter("")]
+        public Parameter<bool> Enabled { get; set; } = new(true);
+    }
+
+    [UmbraAutoRegisterSettings]
+    internal class ConfigWithEmptyNestedPropertyPrefix
+    {
+        [UmbraSettingsParameter]
+        [UmbraSettingsPrefix("")]
+        public NestedGroup Nested { get; set; } = new();
+    }
+
+    [UmbraAutoRegisterSettings]
+    internal class ConfigWithEmptyNestedTypePrefix
+    {
+        [UmbraSettingsParameter]
+        public EmptyPrefixNestedGroup Nested { get; set; } = new();
+    }
+
+    [UmbraAutoRegisterSettings]
+    [UmbraSettingsPrefix("")]
+    internal class EmptyPrefixNestedGroup
+    {
+        [UmbraSettingsParameter]
+        public Parameter<int> NestedValue { get; set; } = new(9);
+    }
+
+    [UmbraAutoRegisterSettings]
+    internal class ConfigWithNonAutoRegisterNestedObject
+    {
+        [UmbraSettingsParameter]
+        public NonAutoRegisterNestedObject Nested { get; set; } = new();
+    }
+
+    internal class NonAutoRegisterNestedObject
+    {
+        [UmbraSettingsParameter]
+        public Parameter<int> NestedValue { get; set; } = new(11);
     }
 }

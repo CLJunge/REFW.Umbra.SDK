@@ -3321,4 +3321,130 @@ public sealed class PluginLoggerTests
             Logger.Enabled = originalEnabled;
         }
     }
+
+    /// <summary>
+    /// Tests that an informational log with a null prefix does not introduce a leading prefix or space.
+    /// </summary>
+    [TestMethod]
+    public void Info_WithNullPrefix_WritesMessageWithoutLeadingWhitespace()
+    {
+        var logger = new PluginLogger
+        {
+            Prefix = null,
+            MinLevel = LogLevel.Info
+        };
+
+        logger.Info("Hello");
+
+        Assert.HasCount(1, CurrentSink.InfoMessages);
+        Assert.AreEqual("Hello", CurrentSink.InfoMessages[0]);
+    }
+
+    /// <summary>
+    /// Tests that an informational log with an empty prefix does not introduce a leading prefix or space.
+    /// </summary>
+    [TestMethod]
+    public void Info_WithEmptyPrefix_WritesMessageWithoutLeadingWhitespace()
+    {
+        var logger = new PluginLogger
+        {
+            Prefix = string.Empty,
+            MinLevel = LogLevel.Info
+        };
+
+        logger.Info("Hello");
+
+        Assert.HasCount(1, CurrentSink.InfoMessages);
+        Assert.AreEqual("Hello", CurrentSink.InfoMessages[0]);
+    }
+
+    /// <summary>
+    /// Tests that separate logger instances keep prefix and minimum-level configuration isolated.
+    /// </summary>
+    [TestMethod]
+    public void MultipleInstances_KeepPrefixAndMinLevelIsolated()
+    {
+        var infoLogger = new PluginLogger("InfoPlugin")
+        {
+            MinLevel = LogLevel.Info
+        };
+        var warningLogger = new PluginLogger("WarningPlugin")
+        {
+            MinLevel = LogLevel.Warning
+        };
+
+        infoLogger.Info("Info");
+        warningLogger.Info("Hidden");
+        warningLogger.Warning("Warning");
+
+        Assert.HasCount(1, CurrentSink.InfoMessages);
+        Assert.AreEqual("[InfoPlugin] Info", CurrentSink.InfoMessages[0]);
+        Assert.HasCount(1, CurrentSink.WarningMessages);
+        Assert.AreEqual("[WarningPlugin] Warning", CurrentSink.WarningMessages[0]);
+        Assert.IsEmpty(CurrentSink.ErrorMessages);
+    }
+
+    /// <summary>
+    /// Tests that informational logging remains exception-safe when the underlying sink throws.
+    /// </summary>
+    [TestMethod]
+    public void Info_WhenSinkThrows_DoesNotThrow()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+        var logger = new PluginLogger("TestPlugin")
+        {
+            MinLevel = LogLevel.Info
+        };
+
+        logger.Info("Hello");
+    }
+
+    /// <summary>
+    /// Tests that exception logging remains exception-safe when the underlying sink throws.
+    /// </summary>
+    [TestMethod]
+    public void Exception_WhenSinkThrows_DoesNotThrow()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+        var logger = new PluginLogger("TestPlugin")
+        {
+            MinLevel = LogLevel.Error
+        };
+
+        logger.Exception(new InvalidOperationException("Boom"), "Context");
+    }
+
+    /// <summary>
+    /// Tests that formatted informational logging swallows exceptions thrown while formatting arguments.
+    /// </summary>
+    [TestMethod]
+    public void Info_WhenArgumentToStringThrows_DoesNotThrow()
+    {
+        var logger = new PluginLogger("TestPlugin")
+        {
+            MinLevel = LogLevel.Info
+        };
+
+        logger.Info("Value: {0}", new ThrowingToStringValue());
+    }
+
+    /// <summary>
+    /// Sink that throws for every write path.
+    /// </summary>
+    private sealed class ThrowingLogSink : ILogSink
+    {
+        public void Info(string message) => throw new InvalidOperationException("sink failed");
+
+        public void Warning(string message) => throw new InvalidOperationException("sink failed");
+
+        public void Error(string message) => throw new InvalidOperationException("sink failed");
+    }
+
+    /// <summary>
+    /// Value whose <see cref="object.ToString"/> implementation throws.
+    /// </summary>
+    private sealed class ThrowingToStringValue
+    {
+        public override string ToString() => throw new InvalidOperationException("ToString failed");
+    }
 }

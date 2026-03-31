@@ -831,6 +831,211 @@ public partial class SettingsStoreTests
         Assert.IsFalse(store.IsDisposed, $"Store should not be disposed immediately after construction. Failed for test case: {testCase}");
     }
 
+    /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.Load"/> can only be called once per store instance.
+    /// </summary>
+    [TestMethod]
+    public void Load_CalledTwice_ThrowsInvalidOperationException()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new SettingsStore<TestConfig>(tempPath);
+            _ = store.Load();
+
+            AssertThrows<InvalidOperationException>(() => store.Load());
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.Load"/> leaves the store unloaded when registration fails.
+    /// </summary>
+    [TestMethod]
+    public void Load_WhenRegistrationThrowsDuplicateKey_LeavesStoreUnloaded()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new SettingsStore<DuplicateKeyConfig>(tempPath);
+
+            AssertThrows<InvalidOperationException>(() => store.Load());
+            Assert.IsFalse(store.IsLoaded);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.Save"/> requires a successful load first.
+    /// </summary>
+    [TestMethod]
+    public void Save_BeforeLoad_ThrowsInvalidOperationException()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new SettingsStore<TestConfig>(tempPath);
+
+            AssertThrows<InvalidOperationException>(() => store.Save());
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.CopyValuesTo"/> rejects a null target.
+    /// </summary>
+    [TestMethod]
+    public void CopyValuesTo_NullTarget_ThrowsArgumentNullException()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new SettingsStore<TestConfig>(tempPath);
+            _ = store.Load();
+
+            AssertThrows<ArgumentNullException>(() => store.CopyValuesTo(null!));
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.CopyValuesTo"/> requires a target store that has already loaded.
+    /// </summary>
+    [TestMethod]
+    public void CopyValuesTo_TargetNotLoaded_ThrowsInvalidOperationException()
+    {
+        var sourcePath = Path.Combine(Path.GetTempPath(), $"source_{Guid.NewGuid()}.json");
+        var targetPath = Path.Combine(Path.GetTempPath(), $"target_{Guid.NewGuid()}.json");
+        try
+        {
+            var source = new SettingsStore<TestConfig>(sourcePath);
+            var target = new SettingsStore<TestConfig>(targetPath);
+            _ = source.Load();
+
+            AssertThrows<InvalidOperationException>(() => source.CopyValuesTo(target));
+        }
+        finally
+        {
+            if (File.Exists(sourcePath))
+                File.Delete(sourcePath);
+            if (File.Exists(targetPath))
+                File.Delete(targetPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that silent copy updates target values without raising target listeners.
+    /// </summary>
+    [TestMethod]
+    public void CopyValuesTo_SetWithoutNotifying_DoesNotRaiseTargetListeners()
+    {
+        var sourcePath = Path.Combine(Path.GetTempPath(), $"source_{Guid.NewGuid()}.json");
+        var targetPath = Path.Combine(Path.GetTempPath(), $"target_{Guid.NewGuid()}.json");
+        try
+        {
+            var source = new SettingsStore<TestConfig>(sourcePath);
+            var target = new SettingsStore<TestConfig>(targetPath);
+            var sourceConfig = source.Load();
+            var targetConfig = target.Load();
+            var callCount = 0;
+
+            sourceConfig.Value1.Set(123);
+            sourceConfig.Value2.Set("copied");
+            target.AddListenerToAll(() => callCount++);
+
+            source.CopyValuesTo(target, setWithoutNotifying: true);
+
+            Assert.AreEqual(123, targetConfig.Value1.Value);
+            Assert.AreEqual("copied", targetConfig.Value2.Value);
+            Assert.AreEqual(0, callCount);
+
+            source.Dispose();
+            target.Dispose();
+        }
+        finally
+        {
+            if (File.Exists(sourcePath))
+                File.Delete(sourcePath);
+            if (File.Exists(targetPath))
+                File.Delete(targetPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.ResetAll"/> skips delegate-backed parameters.
+    /// </summary>
+    [TestMethod]
+    public void ResetAll_WithDelegateParameter_SkipsDelegateParameter()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new SettingsStore<TestConfigWithDelegates>(tempPath);
+            var config = store.Load();
+            var originalDelegate = config.DelegateValue.Value;
+
+            config.IntValue.Set(100);
+            config.StringValue.Set("changed");
+            config.DelegateValue.Set(() => { });
+
+            store.ResetAll();
+
+            Assert.AreEqual(42, config.IntValue.Value);
+            Assert.AreEqual("default", config.StringValue.Value);
+            Assert.AreNotSame(originalDelegate, config.DelegateValue.Value);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    [UmbraAutoRegisterSettings]
+    private sealed class DuplicateKeyConfig
+    {
+        [UmbraSettingsParameter("duplicate")]
+        public Parameter<int> Value1 { get; set; } = new(1);
+
+        [UmbraSettingsParameter("duplicate")]
+        public Parameter<int> Value2 { get; set; } = new(2);
+    }
+
 }
 
 /// <summary>

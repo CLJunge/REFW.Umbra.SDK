@@ -271,6 +271,75 @@ public partial class NumericControlBuilderTests
     }
 
     /// <summary>
+    /// Tests that BuildDouble accepts a parameter value of <see cref="double.NaN"/>.
+    /// </summary>
+    [TestMethod]
+    public void BuildDouble_ValueIsNaN_ReturnsAction()
+    {
+        var parameter = new Parameter<double>(double.NaN)
+        {
+            Key = "test",
+            Metadata = new ParameterMetadata
+            {
+                Min = null,
+                Max = null,
+                InferredFloatFormat = "%.2f"
+            }
+        };
+        var alignGroup = new LabelAlignmentGroup();
+
+        var result = NumericControlBuilder.BuildDouble("Test Label", parameter, alignGroup);
+
+        Assert.IsNotNull(result, "BuildDouble should return a non-null Action when the value is NaN.");
+    }
+
+    /// <summary>
+    /// Tests that BuildDouble accepts a parameter value of positive infinity.
+    /// </summary>
+    [TestMethod]
+    public void BuildDouble_ValueIsPositiveInfinity_ReturnsAction()
+    {
+        var parameter = new Parameter<double>(double.PositiveInfinity)
+        {
+            Key = "test",
+            Metadata = new ParameterMetadata
+            {
+                Min = null,
+                Max = null,
+                InferredFloatFormat = "%.2f"
+            }
+        };
+        var alignGroup = new LabelAlignmentGroup();
+
+        var result = NumericControlBuilder.BuildDouble("Test Label", parameter, alignGroup);
+
+        Assert.IsNotNull(result, "BuildDouble should return a non-null Action when the value is positive infinity.");
+    }
+
+    /// <summary>
+    /// Tests that BuildDouble accepts a parameter value of negative infinity.
+    /// </summary>
+    [TestMethod]
+    public void BuildDouble_ValueIsNegativeInfinity_ReturnsAction()
+    {
+        var parameter = new Parameter<double>(double.NegativeInfinity)
+        {
+            Key = "test",
+            Metadata = new ParameterMetadata
+            {
+                Min = null,
+                Max = null,
+                InferredFloatFormat = "%.2f"
+            }
+        };
+        var alignGroup = new LabelAlignmentGroup();
+
+        var result = NumericControlBuilder.BuildDouble("Test Label", parameter, alignGroup);
+
+        Assert.IsNotNull(result, "BuildDouble should return a non-null Action when the value is negative infinity.");
+    }
+
+    /// <summary>
     /// Verifies that BuildInt returns a non-null Action when given valid inputs with both Min and Max defined,
     /// indicating the slider path should be taken.
     /// </summary>
@@ -598,6 +667,34 @@ public partial class NumericControlBuilderTests
         var action = NumericControlBuilder.BuildFloat("label", parameter, alignGroup);
 
         // Assert
+        Assert.IsNotNull(action);
+    }
+
+    /// <summary>
+    /// Tests BuildFloat with a parameter value of positive infinity.
+    /// </summary>
+    [TestMethod]
+    public void BuildFloat_ValuePositiveInfinity_ReturnsNonNullAction()
+    {
+        var parameter = CreateFloatParameter(float.PositiveInfinity, min: null, max: null, step: null);
+        var alignGroup = new LabelAlignmentGroup();
+
+        var action = NumericControlBuilder.BuildFloat("label", parameter, alignGroup);
+
+        Assert.IsNotNull(action);
+    }
+
+    /// <summary>
+    /// Tests BuildFloat with a parameter value of NaN.
+    /// </summary>
+    [TestMethod]
+    public void BuildFloat_ValueNaN_ReturnsNonNullAction()
+    {
+        var parameter = CreateFloatParameter(float.NaN, min: null, max: null, step: null);
+        var alignGroup = new LabelAlignmentGroup();
+
+        var action = NumericControlBuilder.BuildFloat("label", parameter, alignGroup);
+
         Assert.IsNotNull(action);
     }
 

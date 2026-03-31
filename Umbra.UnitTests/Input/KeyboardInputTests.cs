@@ -1,3 +1,5 @@
+using Hexa.NET.ImGui;
+
 namespace Umbra.Input.UnitTests;
 
 
@@ -128,6 +130,34 @@ public class KeyboardInputTests
         // Assert
         Assert.IsNotNull(result);
         Assert.AreEqual("None", result);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="KeyboardInput.GetKeyName"/> returns the enum member name for known ImGui keys.
+    /// </summary>
+    [TestMethod]
+    [DataRow(ImGuiKey.A, "A")]
+    [DataRow(ImGuiKey.Enter, "Enter")]
+    [DataRow(ImGuiKey.LeftCtrl, "LeftCtrl")]
+    public void GetKeyName_KnownImGuiKey_ReturnsEnumMemberName(ImGuiKey key, string expectedName)
+    {
+        var result = KeyboardInput.GetKeyName((int)key);
+
+        Assert.AreEqual(expectedName, result);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>true</c> for real known ImGui keys.
+    /// </summary>
+    [TestMethod]
+    [DataRow(ImGuiKey.A)]
+    [DataRow(ImGuiKey.Enter)]
+    [DataRow(ImGuiKey.LeftShift)]
+    public void IsValidKey_KnownImGuiKey_ReturnsTrue(ImGuiKey key)
+    {
+        var result = KeyboardInput.IsValidKey((int)key);
+
+        Assert.IsTrue(result, $"Expected IsValidKey to return true for known ImGui key {key}");
     }
 
 }

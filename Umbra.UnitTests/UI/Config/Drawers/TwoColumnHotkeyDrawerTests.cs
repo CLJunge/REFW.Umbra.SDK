@@ -224,4 +224,22 @@ public sealed class TwoColumnHotkeyDrawerTests
         // Assert
         Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
     }
+
+    /// <summary>
+    /// Verifies that repeated draws while not waiting do not change the displayed hotkey label.
+    /// </summary>
+    [TestMethod]
+    public void Draw_RepeatedWithoutInteraction_KeepsCurrentKeyLabel()
+    {
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
+        _inputSource.SetKeyName(70, "F2");
+        var parameter = new Parameter<int>(70) { Key = "testKey" };
+
+        drawer.Draw(parameter);
+        drawer.Draw(parameter);
+
+        Assert.AreEqual("F2", _renderer.Texts[0]);
+        Assert.AreEqual("F2", _renderer.Texts[1]);
+        Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
+    }
 }

@@ -9,6 +9,25 @@ public sealed class ManagedObjectResolverTests
     private TestManagedObjectBridge _bridge = null!;
 
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Installs a deterministic managed-object bridge before each test.
     /// </summary>
     [TestInitialize]
@@ -204,5 +223,16 @@ public sealed class ManagedObjectResolverTests
         Assert.AreEqual(expectedString, stringValue);
         Assert.AreSame(expectedException, exceptionValue);
         Assert.AreEqual(3, _bridge.InvocationCount);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="ManagedObjectResolver.SetBridge(IManagedObjectBridge)"/> rejects a null bridge.
+    /// </summary>
+    [TestMethod]
+    public void SetBridge_Null_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => ManagedObjectResolver.SetBridge(null!));
+
+        Assert.AreEqual("bridge", exception.ParamName);
     }
 }

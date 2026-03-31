@@ -232,6 +232,28 @@ public sealed class HotkeyDrawerTests
     }
 
     /// <summary>
+    /// Verifies that no help marker is rendered when the parameter has no description.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenDescriptionIsNull_DoesNotRenderHelpMarker()
+    {
+        var drawer = new HotkeyDrawer(_renderer, _inputSource);
+        var parameter = new Parameter<int>(70)
+        {
+            Key = "testKey",
+            Metadata = new ParameterMetadata
+            {
+                Description = null
+            }
+        };
+
+        drawer.Draw("Hotkey", parameter);
+
+        Assert.IsEmpty(_renderer.HelpMarkers);
+        Assert.AreEqual(1, _renderer.SameLineCount);
+    }
+
+    /// <summary>
     /// Verifies that disposing a waiting drawer decrements the shared waiting count exactly once.
     /// </summary>
     [TestMethod]
