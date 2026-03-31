@@ -171,7 +171,7 @@ public sealed class RootTreeNodeTests
     {
         var renderer = new TestRootTreeNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => new RootTreeNode("Label", true, null!, renderer));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, null!, renderer));
 
         Assert.AreEqual("children", exception.ParamName);
     }
@@ -182,7 +182,7 @@ public sealed class RootTreeNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new RootTreeNode("Label", true, [], null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, [], null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

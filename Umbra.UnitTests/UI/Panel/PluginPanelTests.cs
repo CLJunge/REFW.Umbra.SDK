@@ -33,7 +33,7 @@ public sealed class PluginPanelTests_Draw
         // Assert
         Assert.IsEmpty(renderer.PushIds);
         Assert.AreEqual(0, renderer.PopIdCount);
-        Assert.IsEmpty(0, renderer.TreeNodes);
+        Assert.IsEmpty(renderer.TreeNodes);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(0, renderer.SeparatorCount);
     }

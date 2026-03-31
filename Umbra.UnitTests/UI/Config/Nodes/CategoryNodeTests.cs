@@ -218,7 +218,7 @@ public sealed class CategoryNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new CategoryNode("Label", null, null, null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new CategoryNode("Label", null, null, null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

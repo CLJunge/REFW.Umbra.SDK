@@ -233,7 +233,7 @@ public sealed class ParameterNodeTests
     {
         var renderer = new TestParameterNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => new ParameterNode(null!, static () => { }, int.MaxValue, 0, 0, renderer));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(null!, static () => { }, int.MaxValue, 0, 0, renderer));
 
         Assert.AreEqual("isVisible", exception.ParamName);
     }
@@ -246,7 +246,7 @@ public sealed class ParameterNodeTests
     {
         var renderer = new TestParameterNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => new ParameterNode(static () => true, null!, int.MaxValue, 0, 0, renderer));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, null!, int.MaxValue, 0, 0, renderer));
 
         Assert.AreEqual("draw", exception.ParamName);
     }
@@ -257,7 +257,7 @@ public sealed class ParameterNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new ParameterNode(static () => true, static () => { }, int.MaxValue, 0, 0, null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, static () => { }, int.MaxValue, 0, 0, null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

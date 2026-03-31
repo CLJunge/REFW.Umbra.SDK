@@ -137,7 +137,7 @@ public sealed class IdScopeNodeTests
     {
         var renderer = new TestIdScopeNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => new IdScopeNode("scope", null!, renderer));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new IdScopeNode("scope", null!, renderer));
 
         Assert.AreEqual("children", exception.ParamName);
     }
@@ -148,7 +148,7 @@ public sealed class IdScopeNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new IdScopeNode("scope", [], null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new IdScopeNode("scope", [], null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

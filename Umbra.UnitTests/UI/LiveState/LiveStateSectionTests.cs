@@ -268,7 +268,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_NullContext_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => new LiveStateSection<TestState>((TestState)null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new LiveStateSection<TestState>((TestState)null!));
 
         Assert.AreEqual("context", exception.ParamName);
     }
@@ -279,7 +279,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
     {
-        var exception = AssertThrows<ArgumentException>(() => new LiveStateSection<TestState>(new TestState(), idScope: "   "));
+        var exception = AssertThrows<ArgumentException>(() => _ = new LiveStateSection<TestState>(new TestState(), idScope: "   "));
 
         Assert.AreEqual("idScope", exception.ParamName);
     }
