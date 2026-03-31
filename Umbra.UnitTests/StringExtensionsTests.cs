@@ -44,6 +44,23 @@ public class StringExtensionsTests
     }
 
     /// <summary>
+    /// Tests that <see cref="StringExtensions.ToDisplayName"/> returns the same character
+    /// when the input is a single lowercase character.
+    /// </summary>
+    [TestMethod]
+    public void ToDisplayName_SingleLowercaseCharacter_ReturnsSameCharacter()
+    {
+        // Arrange
+        var input = "a";
+
+        // Act
+        var result = input.ToDisplayName();
+
+        // Assert
+        Assert.AreEqual("a", result);
+    }
+
+    /// <summary>
     /// Tests that <see cref="StringExtensions.ToDisplayName"/> returns the string unchanged
     /// when all characters are lowercase.
     /// </summary>

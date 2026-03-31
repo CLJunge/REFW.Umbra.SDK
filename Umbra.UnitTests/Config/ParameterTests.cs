@@ -759,6 +759,20 @@ public class ParameterTests
     }
 
     /// <summary>
+    /// Tests that a newly constructed parameter initializes Key and Metadata to usable defaults.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NewParameter_InitializesKeyAndMetadataDefaults()
+    {
+        // Act
+        var parameter = new Parameter<int>(42);
+
+        // Assert
+        Assert.AreEqual(string.Empty, parameter.Key);
+        Assert.IsNotNull(parameter.Metadata);
+    }
+
+    /// <summary>
     /// Tests that the constructor correctly initializes with a nullable int that is null.
     /// </summary>
     [TestMethod]

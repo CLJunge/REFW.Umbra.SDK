@@ -12,6 +12,25 @@ public sealed class TwoColumnHotkeyDrawerTests
     private TestHotkeyInputSource _inputSource = null!;
 
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Resets the shared capture state and creates deterministic test doubles before each test.
     /// </summary>
     [TestInitialize]
@@ -241,5 +260,27 @@ public sealed class TwoColumnHotkeyDrawerTests
         Assert.AreEqual("F2", _renderer.Texts[0]);
         Assert.AreEqual("F2", _renderer.Texts[1]);
         Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a null renderer.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullRenderer_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => new TwoColumnHotkeyDrawer(null!, new TestHotkeyInputSource()));
+
+        Assert.AreEqual("renderer", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a null input source.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullInputSource_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => new TwoColumnHotkeyDrawer(new TestHotkeyDrawerRenderer(), null!));
+
+        Assert.AreEqual("inputSource", exception.ParamName);
     }
 }

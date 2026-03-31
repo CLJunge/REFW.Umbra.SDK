@@ -143,6 +143,22 @@ public class ParameterMetadataReaderTests
     }
 
     /// <summary>
+    /// Tests that ReadFrom returns a ParameterMetadata with ButtonStyle set from UmbraButtonStyleAttribute.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithButtonStyle_ReturnsButtonStyle()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithButtonStyle))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member);
+
+        // Assert
+        Assert.AreEqual(ButtonStyle.Primary, result.ButtonStyle);
+    }
+
+    /// <summary>
     /// Tests that ReadFrom returns a ParameterMetadata with HiddenLabel set when parameterKey is provided.
     /// Input: MemberInfo, parameterKey = "testKey".
     /// Expected: HiddenLabel = "##testKey".
