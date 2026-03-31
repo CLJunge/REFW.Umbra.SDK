@@ -14,6 +14,25 @@ namespace Umbra.UI.Config.UnitTests;
 public sealed class NestedGroupDrawerBinderTests
 {
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Verifies that a compatible drawer produces a draw action bound to the provided group instance.
     /// </summary>
     [TestMethod]
@@ -105,6 +124,18 @@ public sealed class NestedGroupDrawerBinderTests
         secondAction?.Invoke();
         Assert.AreSame(secondGroup, TestGroupDrawer.LastDrawnGroup);
         Assert.AreEqual(2, TestGroupDrawer.DrawCallCount);
+    }
+
+    /// <summary>
+    /// Verifies that a compatible drawer without a public parameterless constructor fails at activation time.
+    /// </summary>
+    [TestMethod]
+    public void BuildDrawAction_CompatibleDrawerWithoutParameterlessConstructor_ThrowsMissingMethodException()
+    {
+        var attribute = new TestNestedGroupDrawerAttribute(typeof(CompatibleDrawerWithoutParameterlessConstructor));
+        var group = new TestGroup();
+
+        AssertThrows<MissingMethodException>(() => NestedGroupDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out _));
     }
 
     /// <summary>
@@ -203,5 +234,17 @@ public sealed class NestedGroupDrawerBinderTests
         public static void Reset() => LastDrawnGroup = null;
 
         public void Draw(BaseGroup group) => LastDrawnGroup = group;
+    }
+
+    /// <summary>
+    /// Drawer that is type-compatible but cannot be created via Activator.CreateInstance().
+    /// </summary>
+    private sealed class CompatibleDrawerWithoutParameterlessConstructor : INestedGroupDrawer<TestGroup>
+    {
+        public CompatibleDrawerWithoutParameterlessConstructor(int _) { }
+
+        public void Draw(TestGroup group)
+        {
+        }
     }
 }

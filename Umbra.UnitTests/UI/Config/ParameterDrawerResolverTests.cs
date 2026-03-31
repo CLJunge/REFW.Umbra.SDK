@@ -310,6 +310,60 @@ public class ParameterDrawerResolverTests
         resource.Dispose();
     }
 
+    /// <summary>
+    /// Tests that resolving a two-column drawer returns a callable draw action without invoking ImGui during construction.
+    /// </summary>
+    [TestMethod]
+    public void TryResolve_ValidTwoColumnDrawer_ReturnsDeferredDrawActionAndResource()
+    {
+        // Arrange
+        var metadata = new ParameterMetadata
+        {
+            CustomDrawerType = null,
+            TwoColumnCustomDrawerType = typeof(TestTwoColumnDrawer),
+            HiddenLabel = "##explicit"
+        };
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.Metadata).Returns(metadata);
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        var alignGroup = new LabelAlignmentGroup();
+
+        // Act
+        var result = ParameterDrawerResolver.TryResolve(mockParameter.Object, "Test Label", alignGroup);
+
+        // Assert
+        Assert.IsNotNull(result);
+        Assert.IsNotNull(result.Value.draw);
+        Assert.IsInstanceOfType<TestTwoColumnDrawer>(result.Value.resource);
+    }
+
+    /// <summary>
+    /// Tests that an empty label is forwarded unchanged to a custom drawer.
+    /// </summary>
+    [TestMethod]
+    public void TryResolve_CustomDrawer_EmptyLabel_IsForwardedUnchanged()
+    {
+        // Arrange
+        var metadata = new ParameterMetadata
+        {
+            CustomDrawerType = typeof(TestParameterDrawer),
+            TwoColumnCustomDrawerType = null
+        };
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.Metadata).Returns(metadata);
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        var alignGroup = new LabelAlignmentGroup();
+
+        // Act
+        var result = ParameterDrawerResolver.TryResolve(mockParameter.Object, string.Empty, alignGroup);
+        var drawer = (TestParameterDrawer)result!.Value.resource!;
+        result.Value.draw();
+
+        // Assert
+        Assert.IsTrue(drawer.DrawCalled);
+        Assert.AreEqual(string.Empty, drawer.LastLabel);
+    }
+
     #region Helper Classes
 
     /// <summary>
