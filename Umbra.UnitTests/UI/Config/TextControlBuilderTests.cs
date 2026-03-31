@@ -135,6 +135,28 @@ public class TextControlBuilderTests
     }
 
     /// <summary>
+    /// Tests that <see cref="TextControlBuilder.BuildString"/> accepts whitespace-only parameter values.
+    /// </summary>
+    [TestMethod]
+    public void BuildString_WhitespaceValue_ReturnsNonNullAction()
+    {
+        // Arrange
+        var label = "Label";
+        var parameter = new Parameter<string>("   ")
+        {
+            Key = "key",
+            Metadata = new ParameterMetadata()
+        };
+        var alignGroup = new LabelAlignmentGroup();
+
+        // Act
+        var result = TextControlBuilder.BuildString(label, parameter, alignGroup);
+
+        // Assert
+        Assert.IsNotNull(result);
+    }
+
+    /// <summary>
     /// Tests that <see cref="TextControlBuilder.BuildString"/> accepts a zero max length.
     /// </summary>
     [TestMethod]

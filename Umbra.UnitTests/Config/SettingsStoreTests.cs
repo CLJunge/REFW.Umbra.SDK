@@ -832,6 +832,17 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
+    /// Verifies that the constructor rejects whitespace-only file paths.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhitespaceFilePath_ThrowsArgumentException()
+    {
+        var exception = AssertThrows<ArgumentException>(() => new SettingsStore<TestConfig>("   "));
+
+        Assert.AreEqual("filePath", exception.ParamName);
+    }
+
+    /// <summary>
     /// Verifies that an action throws the expected exception type and returns the captured exception.
     /// </summary>
     private static TException AssertThrows<TException>(Action action)

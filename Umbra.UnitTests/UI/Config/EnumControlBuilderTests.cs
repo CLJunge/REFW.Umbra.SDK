@@ -176,4 +176,22 @@ public class EnumControlBuilderTests
         Assert.IsNotNull(action, "Build should return a non-null Action for a nullable single-value enum.");
     }
 
+    /// <summary>
+    /// Tests that Build handles a nullable single-value enum whose current value is null.
+    /// </summary>
+    [TestMethod]
+    public void Build_WithNullableSingleValueEnumAndNullValue_ReturnsAction()
+    {
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.ValueType).Returns(typeof(SingleValueEnum?));
+        mockParameter.Setup(p => p.GetValue()).Returns((SingleValueEnum?)null);
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
+        var alignGroup = new LabelAlignmentGroup();
+
+        var action = EnumControlBuilder.Build("Single Value Label", mockParameter.Object, alignGroup);
+
+        Assert.IsNotNull(action, "Build should return a non-null Action for a nullable single-value enum with null value.");
+    }
+
 }

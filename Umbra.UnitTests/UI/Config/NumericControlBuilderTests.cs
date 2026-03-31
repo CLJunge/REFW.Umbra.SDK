@@ -801,6 +801,23 @@ public partial class NumericControlBuilderTests
     }
 
     /// <summary>
+    /// Tests BuildFloat with a NaN value in the drag path.
+    /// </summary>
+    [TestMethod]
+    public void BuildFloat_ValueIsNaN_ReturnsNonNullAction()
+    {
+        // Arrange
+        var parameter = CreateFloatParameter(float.NaN, min: null, max: null, step: null);
+        var alignGroup = new LabelAlignmentGroup();
+
+        // Act
+        var action = NumericControlBuilder.BuildFloat("label", parameter, alignGroup);
+
+        // Assert
+        Assert.IsNotNull(action);
+    }
+
+    /// <summary>
     /// Tests BuildFloat with different InferredFloatFormat values.
     /// </summary>
     [TestMethod]
