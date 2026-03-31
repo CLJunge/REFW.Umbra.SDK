@@ -135,6 +135,7 @@ public partial record NestedConfigGroup
 
     [UmbraSettingsParameter, UmbraDisplayName("MaxItems"), UmbraDescription("Maximum number of items."), UmbraRange(1, 100), UmbraStep(1)]
     public Parameter<int> MaxItems { get; set; } = new(10);
+}
 ````````
 
 ## Settings UI — ConfigDrawer

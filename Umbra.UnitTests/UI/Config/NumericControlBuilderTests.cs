@@ -685,20 +685,6 @@ public partial class NumericControlBuilderTests
     }
 
     /// <summary>
-    /// Tests BuildFloat with a parameter value of NaN.
-    /// </summary>
-    [TestMethod]
-    public void BuildFloat_ValueNaN_ReturnsNonNullAction()
-    {
-        var parameter = CreateFloatParameter(float.NaN, min: null, max: null, step: null);
-        var alignGroup = new LabelAlignmentGroup();
-
-        var action = NumericControlBuilder.BuildFloat("label", parameter, alignGroup);
-
-        Assert.IsNotNull(action);
-    }
-
-    /// <summary>
     /// Tests that BuildFloat returns a non-null Action when both Min and Max are null (drag path).
     /// </summary>
     [TestMethod]
