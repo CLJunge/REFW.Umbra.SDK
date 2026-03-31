@@ -139,6 +139,59 @@ public partial class ControlFactoryTests
         Assert.AreEqual(providedHiddenLabel, result.HiddenLabel);
     }
 
+    /// <summary>
+    /// Tests that CreateControlLayout falls back to <c>##</c> when both HiddenLabel is null and parameter.Key is null.
+    /// </summary>
+    [TestMethod]
+    public void CreateControlLayout_WithNullParameterKeyAndNullHiddenLabel_UsesDoubleHashFallback()
+    {
+        // Arrange
+        const string label = "Test Label";
+        var mockParameter = new Mock<IParameter>();
+        var alignGroup = new LabelAlignmentGroup();
+        var metadata = new ParameterMetadata
+        {
+            HiddenLabel = null,
+            Description = null,
+            ControlWidth = null
+        };
+        mockParameter.SetupGet(p => p.Metadata).Returns(metadata);
+        mockParameter.SetupGet(p => p.Key).Returns((string)null!);
+
+        // Act
+        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, alignGroup);
+
+        // Assert
+        Assert.AreEqual("##", result.HiddenLabel);
+    }
+
+    /// <summary>
+    /// Tests that CreateControlLayout preserves metadata HiddenLabel even when parameter.Key is null.
+    /// </summary>
+    [TestMethod]
+    public void CreateControlLayout_WithProvidedHiddenLabelAndNullParameterKey_PreservesMetadataValue()
+    {
+        // Arrange
+        const string label = "Test Label";
+        const string hiddenLabel = "##Explicit";
+        var mockParameter = new Mock<IParameter>();
+        var alignGroup = new LabelAlignmentGroup();
+        var metadata = new ParameterMetadata
+        {
+            HiddenLabel = hiddenLabel,
+            Description = null,
+            ControlWidth = null
+        };
+        mockParameter.SetupGet(p => p.Metadata).Returns(metadata);
+        mockParameter.SetupGet(p => p.Key).Returns((string)null!);
+
+        // Act
+        var result = ControlFactory.CreateControlLayout(label, mockParameter.Object, alignGroup);
+
+        // Assert
+        Assert.AreEqual(hiddenLabel, result.HiddenLabel);
+    }
+
     #region Helper Types
     internal class TestCustomDrawer : IParameterDrawer
     {

@@ -304,4 +304,29 @@ public sealed class UmbraCustomButtonColorsAttributeTests
         Assert.AreEqual(0f, attribute.ActiveB);
         Assert.AreEqual(1.0f, attribute.ActiveA);
     }
+
+    /// <summary>
+    /// Tests that the RGB constructor clamps infinity-derived hovered and active values per channel.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WithInfinityRgb_ClampsDerivedStatesPerChannel()
+    {
+        // Arrange & Act
+        var attribute = new UmbraCustomButtonColorsAttribute(float.PositiveInfinity, float.NegativeInfinity, 0.5f);
+
+        // Assert - normal state stores the original values as-is
+        Assert.AreEqual(float.PositiveInfinity, attribute.NormalR);
+        Assert.AreEqual(float.NegativeInfinity, attribute.NormalG);
+        Assert.AreEqual(0.5f, attribute.NormalB);
+
+        // Assert - hovered state clamps to [0, 1]
+        Assert.AreEqual(1f, attribute.HoveredR);
+        Assert.AreEqual(0f, attribute.HoveredG);
+        Assert.AreEqual(0.6f, attribute.HoveredB, 0.0001f);
+
+        // Assert - active state clamps to [0, 1]
+        Assert.AreEqual(1f, attribute.ActiveR);
+        Assert.AreEqual(0f, attribute.ActiveG);
+        Assert.AreEqual(0.42f, attribute.ActiveB, 0.0001f);
+    }
 }

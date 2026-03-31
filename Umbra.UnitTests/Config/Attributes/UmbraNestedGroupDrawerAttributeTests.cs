@@ -45,9 +45,52 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
     }
 
     /// <summary>
+    /// Tests that the drawer type is also exposed correctly through the interface contract.
+    /// </summary>
+    [TestMethod]
+    public void DrawerType_ThroughInterface_ReturnsCorrectType()
+    {
+        // Arrange
+        INestedGroupDrawerAttribute attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
+
+        // Act
+        var result = attribute.DrawerType;
+
+        // Assert
+        Assert.AreEqual(typeof(TestDrawer1), result);
+    }
+
+    /// <summary>
+    /// Tests that different drawer generic arguments produce different reported drawer types.
+    /// </summary>
+    [TestMethod]
+    public void DrawerType_WithDifferentDrawerTypes_ReturnsDifferentTypes()
+    {
+        // Arrange
+        var first = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
+        var second = new UmbraNestedGroupDrawerAttribute<TestDrawer2>();
+
+        // Act
+        var firstType = first.DrawerType;
+        var secondType = second.DrawerType;
+
+        // Assert
+        Assert.AreEqual(typeof(TestDrawer1), firstType);
+        Assert.AreEqual(typeof(TestDrawer2), secondType);
+        Assert.AreNotEqual(firstType, secondType);
+    }
+
+    /// <summary>
     /// Test drawer class for testing purposes.
     /// </summary>
     private sealed class TestDrawer1
+    {
+    }
+
+    /// <summary>
+    /// Alternate test drawer class for validating generic type variation.
+    /// </summary>
+    private sealed class TestDrawer2
     {
     }
 
