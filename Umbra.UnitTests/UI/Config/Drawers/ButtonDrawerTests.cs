@@ -17,6 +17,25 @@ public sealed class ButtonDrawerTests
     private bool _originalLoggingEnabled;
 
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Installs a recording renderer and logger sink before each test.
     /// </summary>
     [TestInitialize]
@@ -296,5 +315,37 @@ public sealed class ButtonDrawerTests
         Assert.AreEqual(1, _renderer.SameLineCount);
         Assert.HasCount(1, _renderer.HelpMarkers);
         Assert.AreEqual("Helpful description", _renderer.HelpMarkers[0]);
+    }
+
+    /// <summary>
+    /// Tests that a missing description does not render a help marker or same-line call.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WithoutDescription_DoesNotRenderHelpMarker()
+    {
+        var drawer = new ButtonDrawer(_renderer);
+        var parameter = new Parameter<Action>(() => { })
+        {
+            Metadata = new ParameterMetadata
+            {
+                Description = null
+            }
+        };
+
+        drawer.Draw("TestButton", parameter);
+
+        Assert.IsEmpty(_renderer.HelpMarkers);
+        Assert.AreEqual(0, _renderer.SameLineCount);
+    }
+
+    /// <summary>
+    /// Tests that the constructor rejects a null renderer.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullRenderer_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => new ButtonDrawer(null!));
+
+        Assert.AreEqual("renderer", exception.ParamName);
     }
 }
