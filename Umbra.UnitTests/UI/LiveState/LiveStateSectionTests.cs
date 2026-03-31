@@ -8,6 +8,25 @@ namespace Umbra.UI.LiveState.UnitTests;
 public sealed class LiveStateSectionTests
 {
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Tests that TreeNodeLabel returns the value provided to the primary constructor
     /// when a non-null tree node label is supplied.
     /// </summary>
@@ -241,6 +260,28 @@ public sealed class LiveStateSectionTests
         // Assert
         var expectedId = typeof(ValidTestState).FullName ?? typeof(ValidTestState).Name;
         Assert.AreEqual(expectedId, section.SectionId);
+    }
+
+    /// <summary>
+    /// Tests that the constructor rejects a null context instance.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullContext_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => new LiveStateSection<TestState>((TestState)null!));
+
+        Assert.AreEqual("context", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the constructor rejects whitespace-only id scopes.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
+    {
+        var exception = AssertThrows<ArgumentException>(() => new LiveStateSection<TestState>(new TestState(), idScope: "   "));
+
+        Assert.AreEqual("idScope", exception.ParamName);
     }
 
     /// <summary>

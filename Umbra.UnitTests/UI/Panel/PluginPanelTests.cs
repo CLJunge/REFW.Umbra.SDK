@@ -208,6 +208,25 @@ public sealed class PluginPanelTests_Draw
 public sealed class PluginPanelTests
 {
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Tests that Add returns the same PluginPanel instance for fluent chaining.
     /// </summary>
     [TestMethod]
@@ -407,6 +426,52 @@ public sealed class PluginPanelTests
 
         // Act & Assert (no exception should be thrown)
         panel.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that Add rejects a null section.
+    /// </summary>
+    [TestMethod]
+    public void Add_NullSection_ThrowsArgumentNullException()
+    {
+        using var panel = new PluginPanel($"NullSection_{Guid.NewGuid()}");
+
+        var exception = AssertThrows<ArgumentNullException>(() => panel.Add(null!));
+
+        Assert.AreEqual("section", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that Add rejects new sections after the panel has been disposed.
+    /// </summary>
+    [TestMethod]
+    public void Add_WhenDisposed_ThrowsObjectDisposedException()
+    {
+        var panel = new PluginPanel($"DisposedPanel_{Guid.NewGuid()}");
+        var mockSection = new Mock<IPanelSection>();
+        mockSection.Setup(s => s.Order).Returns(0);
+        mockSection.Setup(s => s.SectionId).Returns("Section");
+        panel.Dispose();
+
+        AssertThrows<ObjectDisposedException>(() => panel.Add(mockSection.Object));
+    }
+
+    /// <summary>
+    /// Tests that disposing a panel releases its ID scope for later reuse.
+    /// </summary>
+    [TestMethod]
+    public void Dispose_ReleasesRegisteredScope_AllowsNewPanelWithSameScope()
+    {
+        var idScope = $"ReusablePanel_{Guid.NewGuid()}";
+
+        using (var first = new PluginPanel(idScope))
+        {
+            Assert.IsNotNull(first);
+        }
+
+        using var second = new PluginPanel(idScope);
+
+        Assert.IsNotNull(second);
     }
 
 }

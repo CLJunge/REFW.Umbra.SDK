@@ -317,4 +317,35 @@ public class PluginPanelTreeNodeLabelsTests
         Assert.IsEmpty(exceptions, $"Expected no exceptions, but got {exceptions.Count}. First: {(exceptions.Count > 0 ? exceptions[0].ToString() : "N/A")}");
     }
 
+    /// <summary>
+    /// Tests that labels differing only by an appended panel suffix are sanitized to the same visible text.
+    /// </summary>
+    [TestMethod]
+    public void Sanitize_LabelWithAppendedSectionSuffix_ReturnsVisiblePrefixOnly()
+    {
+        var input = "General Settings##PluginConfig";
+
+        var result = PluginPanelTreeNodeLabels.Sanitize(input);
+
+        Assert.AreEqual("General Settings", result);
+    }
+
+    /// <summary>
+    /// Tests that invalid labels on different sections are handled independently without throwing.
+    /// </summary>
+    [TestMethod]
+    public void WarnIfInvalid_SameLabelDifferentSectionIds_DoesNotThrow()
+    {
+        var firstSection = new Mock<IPanelSection>();
+        firstSection.Setup(s => s.TreeNodeLabel).Returns("Shared##Label");
+        firstSection.Setup(s => s.SectionId).Returns("SectionA");
+
+        var secondSection = new Mock<IPanelSection>();
+        secondSection.Setup(s => s.TreeNodeLabel).Returns("Shared##Label");
+        secondSection.Setup(s => s.SectionId).Returns("SectionB");
+
+        PluginPanelTreeNodeLabels.WarnIfInvalid(firstSection.Object);
+        PluginPanelTreeNodeLabels.WarnIfInvalid(secondSection.Object);
+    }
+
 }

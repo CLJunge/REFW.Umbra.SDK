@@ -312,4 +312,28 @@ public partial class PluginPanelScopeRegistryTests
         Assert.IsTrue(upperResult, "Upper case scope should register successfully.");
         Assert.IsTrue(lowerResult, "Lower case scope should register successfully as distinct from upper case.");
     }
+
+    /// <summary>
+    /// Verifies that releasing one scope does not affect a different still-registered scope.
+    /// </summary>
+    [TestMethod]
+    public void Release_OneScope_DoesNotReleaseDifferentScope()
+    {
+        var scopeA = $"ScopeA_{Guid.NewGuid()}";
+        var scopeB = $"ScopeB_{Guid.NewGuid()}";
+
+        var firstA = PluginPanelScopeRegistry.TryRegister(scopeA);
+        var firstB = PluginPanelScopeRegistry.TryRegister(scopeB);
+        PluginPanelScopeRegistry.Release(scopeA);
+        var secondA = PluginPanelScopeRegistry.TryRegister(scopeA);
+        var secondB = PluginPanelScopeRegistry.TryRegister(scopeB);
+
+        Assert.IsTrue(firstA);
+        Assert.IsTrue(firstB);
+        Assert.IsTrue(secondA, "Released scope should be re-registerable.");
+        Assert.IsFalse(secondB, "Unreleased scope should still be considered registered.");
+
+        PluginPanelScopeRegistry.Release(scopeA);
+        PluginPanelScopeRegistry.Release(scopeB);
+    }
 }
