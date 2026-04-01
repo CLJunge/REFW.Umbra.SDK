@@ -19,6 +19,7 @@
   - `Logger.Enabled = false`, `Logger.DisableAll()`, or `using var _ = Logger.Suppress();` silences all Umbra logging, including `PluginLogger`, which is useful for benchmarks and tests.
 - Assume game-facing code may run in a constrained plugin environment where resilience is preferred over hard failures.
 - When introducing replacement APIs in this codebase, prefer fully implemented replacements over inheriting from obsolete types so old types can be removed cleanly later.
+- For the plugin mutex feature, apply the `UmbraPlugin` attribute at the class scope only.
 
 ## Thread safety — hooks and callbacks
 

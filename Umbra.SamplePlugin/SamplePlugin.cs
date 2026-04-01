@@ -4,6 +4,7 @@ using REFrameworkNET.Callbacks;
 using Umbra.Config;
 using Umbra.Input;
 using Umbra.Logging;
+using Umbra.Runtime;
 using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
 using Umbra.UI.Panel;
@@ -16,10 +17,12 @@ namespace Umbra.SamplePlugin;
 /// </summary>
 /// <remarks>
 /// The sample keeps its logger, settings store, deferred-save controller, and panel in static
-/// fields because REFramework plugin entry points and callbacks are static. The implementation is
-/// intentionally small so each concern in the Umbra plugin lifecycle is easy to map back to the
-/// corresponding SDK feature.
+/// fields because REFramework plugin entry points and callbacks are static. Plugin mutex ownership
+/// is delegated to <see cref="PluginBootstrapper"/> so the sample class never stores or disposes a
+/// lease directly. The implementation is intentionally small so each concern in the Umbra plugin
+/// lifecycle is easy to map back to the corresponding SDK feature.
 /// </remarks>
+[UmbraPlugin]
 public static class SamplePlugin
 {
     private static readonly PluginLogger _log = new("SamplePlugin");
@@ -29,9 +32,10 @@ public static class SamplePlugin
     private static DeferredSaveController<PluginConfig>? _saveController;
 
     /// <summary>
-    /// Plugin entry point. Resolves the configuration file path, loads persisted settings from disk
-    /// (or writes defaults if no file exists), wires the sample button action, starts deferred
-    /// save handling, and constructs the plugin panel.
+    /// Plugin entry point. Uses <see cref="PluginBootstrapper"/> to acquire the plugin's
+    /// AppDomain-local single-instance mutex, then resolves the configuration file path, loads
+    /// persisted settings from disk (or writes defaults if no file exists), wires the sample button
+    /// action, starts deferred save handling, and constructs the plugin panel.
     /// </summary>
     /// <remarks>
     /// The sample binds the <see cref="PluginConfig.LogTestMessage"/> button action after
@@ -45,6 +49,16 @@ public static class SamplePlugin
         //System.Diagnostics.Debugger.Launch();
 #endif
 
+        if (!PluginBootstrapper.Load(_log, Initialize))
+            return;
+    }
+
+    /// <summary>
+    /// Performs the sample plugin's real initialization work after the bootstrapper acquires the
+    /// mutex.
+    /// </summary>
+    private static void Initialize()
+    {
         _log.Info("Loading...");
 
         var configPath = GetConfigPath();
@@ -63,15 +77,22 @@ public static class SamplePlugin
 
     /// <summary>
     /// Plugin exit point. Flushes and disposes deferred-save handling before the settings store,
-    /// performs a final explicit save, then disposes and nulls all static resources to prevent
-    /// stale state if the plugin is reloaded in the same process session.
+    /// performs a final explicit save, then disposes and nulls all static resources so stale state
+    /// cannot leak into a later reload.
     /// </summary>
     /// <remarks>
     /// The explicit flush before disposal ensures that a pending debounce interval does not drop
-    /// the user's last in-memory edits when the plugin unloads.
+    /// the user's last in-memory edits when the plugin unloads. The bootstrapper releases the mutex
+    /// after this method returns, even if cleanup throws.
     /// </remarks>
     [PluginExitPoint]
     public static void Unload()
+        => PluginBootstrapper.Unload(Shutdown);
+
+    /// <summary>
+    /// Performs the sample plugin's real shutdown work before the bootstrapper releases the mutex.
+    /// </summary>
+    private static void Shutdown()
     {
         _log.Info("Unloading...");
 
@@ -166,3 +187,5 @@ public static class SamplePlugin
     private static void TickDeferredSaveController()
         => _saveController?.Tick();
 }
+
+
