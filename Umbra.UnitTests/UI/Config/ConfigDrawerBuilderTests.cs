@@ -373,7 +373,7 @@ public partial class ConfigDrawerBuilderTests
 
     #region Helper Types
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed record SimpleConfig
     {
     }

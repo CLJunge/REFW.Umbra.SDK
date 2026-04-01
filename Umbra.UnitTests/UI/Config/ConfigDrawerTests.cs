@@ -203,7 +203,7 @@ public sealed class ConfigDrawerTests
     /// <summary>
     /// Minimal test configuration class for ConfigDrawer draw tests.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class TestConfig
     {
     }
@@ -283,56 +283,56 @@ public sealed class ConfigDrawerTests
     /// <summary>
     /// Simple configuration class with a single parameter for basic testing.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class SimpleConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
     /// <summary>
     /// Configuration class with a nested settings group.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class ConfigWithNestedGroup
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("nested")]
+        [UmbraParameter]
+        [UmbraPrefix("nested")]
         public NestedGroup Nested { get; set; } = new();
     }
 
     /// <summary>
     /// Nested configuration group.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class NestedGroup
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Value { get; set; } = new(42);
     }
 
     /// <summary>
     /// Configuration class with multiple parameters of different types.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class ConfigWithMultipleParameters
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> BoolParam { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> IntParam { get; set; } = new(100);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<float> FloatParam { get; set; } = new(3.14f);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<double> DoubleParam { get; set; } = new(2.71828);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<string> StringParam { get; set; } = new("test");
     }
 
@@ -484,32 +484,32 @@ public sealed class ConfigDrawerTests
     /// <summary>
     /// Simple test configuration with a single parameter.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class SimpleTestConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> TestValue { get; set; } = new(42);
     }
 
     /// <summary>
     /// Complex test configuration with multiple parameters of different types.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class ComplexTestConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> IntValue { get; set; } = new(100);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<string> StringValue { get; set; } = new("test");
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> BoolValue { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<float> FloatValue { get; set; } = new(3.14f);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<double> DoubleValue { get; set; } = new(2.718);
     }
 

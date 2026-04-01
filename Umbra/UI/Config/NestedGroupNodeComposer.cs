@@ -11,7 +11,7 @@ namespace Umbra.UI.Config;
 /// This type isolates wrapper-node composition and nested-group custom-drawer node creation from
 /// <see cref="ConfigDrawerBuilder"/> so the builder remains focused on traversing the config tree.
 /// </remarks>
-internal static class NestedGroupNodeComposer
+internal static class NestedNodeComposer
 {
     /// <summary>
     /// Creates a wrapper node that applies property-level visibility, spacing, and ordering to an
@@ -74,7 +74,7 @@ internal static class NestedGroupNodeComposer
         string groupScopePath,
         TypeDrawMetadata.PropertyDrawMetadata propMeta,
         Type propType,
-        INestedGroupDrawerAttribute nestedDrawerAttr,
+        INestedDrawerAttribute nestedDrawerAttr,
         object nested,
         object owner,
         string? localCategory,
@@ -86,7 +86,7 @@ internal static class NestedGroupNodeComposer
 
         try
         {
-            var drawAction = NestedGroupDrawerBinder.BuildDrawAction(nestedDrawerAttr, propType, nested, out disposable);
+            var drawAction = NestedDrawerBinder.BuildDrawAction(nestedDrawerAttr, propType, nested, out disposable);
             if (drawAction is null)
                 return null;
 

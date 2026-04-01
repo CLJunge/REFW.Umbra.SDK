@@ -15,10 +15,10 @@ public sealed partial class DeferredSaveControllerTests
     /// <summary>
     /// Test configuration class for DeferredSaveController tests.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public sealed class TestConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> TestValue { get; set; } = new(42);
     }
 

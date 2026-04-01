@@ -1,7 +1,7 @@
 namespace Umbra.Config.Attributes.UnitTests;
 
 /// <summary>
-/// Tests for <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>.
+/// Tests for <see cref="UmbraNestedDrawerAttribute{TDrawer}"/>.
 /// </summary>
 [TestClass]
 public sealed class UmbraNestedGroupDrawerAttributeTests
@@ -15,7 +15,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
     public void DrawerType_WithTestDrawer1_ReturnsTestDrawer1Type()
     {
         // Arrange
-        var attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
+        var attribute = new UmbraNestedDrawerAttribute<TestDrawer1>();
 
         // Act
         var result = attribute.DrawerType;
@@ -34,7 +34,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
     public void DrawerType_MultipleAccesses_ReturnsSameTypeInstance()
     {
         // Arrange
-        var attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
+        var attribute = new UmbraNestedDrawerAttribute<TestDrawer1>();
 
         // Act
         var result1 = attribute.DrawerType;
@@ -51,7 +51,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
     public void DrawerType_ThroughInterface_ReturnsCorrectType()
     {
         // Arrange
-        INestedGroupDrawerAttribute attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
+        INestedDrawerAttribute attribute = new UmbraNestedDrawerAttribute<TestDrawer1>();
 
         // Act
         var result = attribute.DrawerType;
@@ -67,8 +67,8 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
     public void DrawerType_WithDifferentDrawerTypes_ReturnsDifferentTypes()
     {
         // Arrange
-        var first = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
-        var second = new UmbraNestedGroupDrawerAttribute<TestDrawer2>();
+        var first = new UmbraNestedDrawerAttribute<TestDrawer1>();
+        var second = new UmbraNestedDrawerAttribute<TestDrawer2>();
 
         // Act
         var firstType = first.DrawerType;

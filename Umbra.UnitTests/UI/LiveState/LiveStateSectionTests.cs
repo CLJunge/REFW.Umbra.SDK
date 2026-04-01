@@ -312,7 +312,7 @@ public sealed class LiveStateSectionTests
 
     /// <summary>
     /// Verifies that <see cref="LiveStateSection{T}.Order"/> returns <see cref="int.MaxValue"/>
-    /// when the state type has no <see cref="SectionOrderAttribute"/>.
+    /// when the state type has no <see cref="UmbraSectionOrderAttribute"/>.
     /// </summary>
     [TestMethod]
     public void Order_StateTypeWithoutSectionOrderAttribute_ReturnsIntMaxValue()
@@ -329,7 +329,7 @@ public sealed class LiveStateSectionTests
 
     /// <summary>
     /// Verifies that <see cref="LiveStateSection{T}.Order"/> returns zero
-    /// when the state type has <see cref="SectionOrderAttribute"/> with Order = 0.
+    /// when the state type has <see cref="UmbraSectionOrderAttribute"/> with Order = 0.
     /// </summary>
     [TestMethod]
     public void Order_StateTypeWithOrderZero_ReturnsZero()
@@ -346,7 +346,7 @@ public sealed class LiveStateSectionTests
 
     /// <summary>
     /// Verifies that <see cref="LiveStateSection{T}.Order"/> returns the positive order value
-    /// when the state type has <see cref="SectionOrderAttribute"/> with a positive Order value.
+    /// when the state type has <see cref="UmbraSectionOrderAttribute"/> with a positive Order value.
     /// </summary>
     [TestMethod]
     public void Order_StateTypeWithPositiveOrder_ReturnsPositiveValue()
@@ -376,7 +376,7 @@ public sealed class LiveStateSectionTests
     }
 
     /// <summary>
-    /// Test state type with no <see cref="SectionOrderAttribute"/> for verifying the default order.
+    /// Test state type with no <see cref="UmbraSectionOrderAttribute"/> for verifying the default order.
     /// </summary>
     [LiveStateSectionDrawer<StateWithoutOrderAttributeDrawer>]
     private sealed class StateWithoutOrderAttribute
@@ -384,19 +384,19 @@ public sealed class LiveStateSectionTests
     }
 
     /// <summary>
-    /// Test state type with an explicit zero <see cref="SectionOrderAttribute"/> value.
+    /// Test state type with an explicit zero <see cref="UmbraSectionOrderAttribute"/> value.
     /// </summary>
     [LiveStateSectionDrawer<StateWithOrderZeroDrawer>]
-    [SectionOrder(0)]
+    [UmbraSectionOrder(0)]
     private sealed class StateWithOrderZero
     {
     }
 
     /// <summary>
-    /// Test state type with a positive <see cref="SectionOrderAttribute"/> value.
+    /// Test state type with a positive <see cref="UmbraSectionOrderAttribute"/> value.
     /// </summary>
     [LiveStateSectionDrawer<StateWithOrderPositiveDrawer>]
-    [SectionOrder(100)]
+    [UmbraSectionOrder(100)]
     private sealed class StateWithOrderPositive
     {
     }

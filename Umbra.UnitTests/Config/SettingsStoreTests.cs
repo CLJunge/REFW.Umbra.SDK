@@ -35,33 +35,33 @@ public partial class SettingsStoreTests
     /// <summary>
     /// Helper configuration class for testing with delegate parameters.
     /// </summary>
-    [Attributes.UmbraAutoRegisterSettings]
+    [Attributes.UmbraAutoRegister]
     internal record TestConfigWithDelegates
     {
-        [Attributes.UmbraSettingsParameter]
+        [Attributes.UmbraParameter]
         public Parameter<int> IntValue { get; set; } = new(42);
 
-        [Attributes.UmbraSettingsParameter]
+        [Attributes.UmbraParameter]
         public Parameter<Action> DelegateValue { get; set; } = new(() =>
         {
         });
 
-        [Attributes.UmbraSettingsParameter]
+        [Attributes.UmbraParameter]
         public Parameter<string> StringValue { get; set; } = new("default");
     }
 
     /// <summary>
     /// Helper configuration class for testing with only delegate parameters.
     /// </summary>
-    [Attributes.UmbraAutoRegisterSettings]
+    [Attributes.UmbraAutoRegister]
     internal record TestConfigOnlyDelegates
     {
-        [Attributes.UmbraSettingsParameter]
+        [Attributes.UmbraParameter]
         public Parameter<Action> DelegateValue1 { get; set; } = new(() =>
         {
         });
 
-        [Attributes.UmbraSettingsParameter]
+        [Attributes.UmbraParameter]
         public Parameter<Action<int>> DelegateValue2 { get; set; } = new(_ =>
         {
         });
@@ -597,13 +597,13 @@ public partial class SettingsStoreTests
     }
 
     #region Test Configuration Classes
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public partial record TestConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Value1 { get; set; } = new(10);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<string> Value2 { get; set; } = new("default");
     }
 
@@ -795,13 +795,13 @@ public partial class SettingsStoreTests
     /// <summary>
     /// Test configuration class with different parameters for overlap testing.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private record DifferentConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> IntValue { get; set; } = new(0);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<double> DoubleValue { get; set; } = new(3.14);
     }
 
@@ -1037,13 +1037,13 @@ public partial class SettingsStoreTests
         }
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class DuplicateKeyConfig
     {
-        [UmbraSettingsParameter("duplicate")]
+        [UmbraParameter("duplicate")]
         public Parameter<int> Value1 { get; set; } = new(1);
 
-        [UmbraSettingsParameter("duplicate")]
+        [UmbraParameter("duplicate")]
         public Parameter<int> Value2 { get; set; } = new(2);
     }
 
@@ -1058,17 +1058,17 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     /// <summary>
     /// Test configuration class with a single parameter for testing.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal sealed class TestConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> TestValue { get; set; } = new(42);
     }
 
     /// <summary>
     /// Test configuration class with no parameters for edge case testing.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal sealed class EmptyConfig
     {
     }
@@ -1076,16 +1076,16 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     /// <summary>
     /// Test configuration class with multiple parameters.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal sealed class MultiParameterConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Value1 { get; set; } = new(1);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<string> Value2 { get; set; } = new("test");
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Value3 { get; set; } = new(true);
     }
 

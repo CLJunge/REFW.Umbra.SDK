@@ -6,8 +6,8 @@ namespace Umbra.UI.Config.Drawers;
 /// <remarks>
 /// <para>
 /// Prefer applying
-/// <see cref="Umbra.Config.Attributes.UmbraNestedGroupDrawerAttribute{TDrawer}"/>
-/// (<c>[UmbraNestedGroupDrawer&lt;TDrawer&gt;]</c>) to the parent property that exposes the nested
+/// <see cref="Umbra.Config.Attributes.UmbraNestedDrawerAttribute{TDrawer}"/>
+/// (<c>[UmbraNestedDrawer&lt;TDrawer&gt;]</c>) to the parent property that exposes the nested
 /// configuration group, keeping group-specific UI behaviour co-located with the property
 /// declaration. Applying the attribute to the nested configuration class itself is supported
 /// for backward compatibility and acts as a fallback when the parent property carries no drawer
@@ -33,7 +33,7 @@ namespace Umbra.UI.Config.Drawers;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The concrete nested configuration group type this drawer renders.</typeparam>
-public interface INestedGroupDrawer<T> : IDisposable
+public interface INestedDrawer<T> : IDisposable
 {
     /// <summary>
     /// Renders ImGui controls for the provided nested configuration group instance.

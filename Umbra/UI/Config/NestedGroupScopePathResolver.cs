@@ -10,12 +10,12 @@ namespace Umbra.UI.Config;
 /// builder remains focused on tree traversal and node composition. Empty scope segments are rejected
 /// so each nested group always contributes a distinct structural identifier.
 /// </remarks>
-internal static class NestedGroupScopePathResolver
+internal static class NestedScopePathResolver
 {
     /// <summary>
     /// Resolves the stable structural ImGui ID path for a nested-group property.
-    /// Property-level <see cref="UmbraSettingsPrefixAttribute"/> wins, followed by the nested type's
-    /// type-level prefix, then <see cref="UmbraSettingsParameterAttribute.KeyOverride"/>, and finally
+    /// Property-level <see cref="UmbraPrefixAttribute"/> wins, followed by the nested type's
+    /// type-level prefix, then <see cref="UmbraParameterAttribute.KeyOverride"/>, and finally
     /// the camel-cased property name. The selected segment must be non-empty.
     /// </summary>
     /// <param name="parentPath">The dot-separated structural path of the parent group.</param>

@@ -16,9 +16,9 @@ namespace Umbra.SamplePlugin.Config;
 /// type-level metadata fallback, indentation, label margins, ordering, spacing, and visibility
 /// predicates.
 /// </remarks>
-[UmbraAutoRegisterSettings]
-[UmbraConfigRootNode("Sample Plugin v2.0")]
-[UmbraSettingsPrefix("samplePlugin")]
+[UmbraAutoRegister]
+[UmbraRootNode("Sample Plugin v2.0")]
+[UmbraPrefix("samplePlugin")]
 public record PluginConfig
 {
     /// <summary>
@@ -26,7 +26,7 @@ public record PluginConfig
     /// The sample plugin entry point replaces the default no-op delegate with a live logger action
     /// after loading the persisted config instance.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraDisplayName("Log Test Message")]
     [UmbraDescription("Logs a test message to the REFramework console to verify the sample plugin is active.")]
     [UmbraButtonStyle(ButtonStyle.Primary)]
@@ -37,7 +37,7 @@ public record PluginConfig
     /// <summary>
     /// Resets the entire sample configuration tree to its default values.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraDisplayName("Reset All Samples")]
     [UmbraDescription("Resets every sample group to its default values.")]
     [UmbraButtonStyle(ButtonStyle.Danger)]
@@ -48,63 +48,63 @@ public record PluginConfig
     /// <summary>
     /// Gets or sets the general sample settings, including the enable toggle and hotkey drawers.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraCategory("General")]
-    [UmbraSettingsPrefix("general")]
+    [UmbraPrefix("general")]
     [UmbraCollapseAsTree(true)]
     public GeneralSettings General { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the boolean checkbox samples.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraCategory("Booleans")]
-    [UmbraSettingsPrefix("booleans")]
+    [UmbraPrefix("booleans")]
     [UmbraCollapseAsTree]
     public BooleanSamples Booleans { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the integer slider and drag samples.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraCategory("Integers")]
-    [UmbraSettingsPrefix("integers")]
+    [UmbraPrefix("integers")]
     [UmbraCollapseAsTree]
     public IntegerSamples Integers { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the float slider and drag samples.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraCategory("Floats")]
-    [UmbraSettingsPrefix("floats")]
+    [UmbraPrefix("floats")]
     [UmbraCollapseAsTree]
     public FloatSamples Floats { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the double slider and drag samples.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraCategory("Doubles")]
-    [UmbraSettingsPrefix("doubles")]
+    [UmbraPrefix("doubles")]
     [UmbraCollapseAsTree]
     public DoubleSamples Doubles { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the string single-line and multi-line text samples.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraCategory("Strings")]
-    [UmbraSettingsPrefix("strings")]
+    [UmbraPrefix("strings")]
     [UmbraCollapseAsTree]
     public StringSamples Strings { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the enum combo-box samples.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraCategory("Enums")]
-    [UmbraSettingsPrefix("enums")]
+    [UmbraPrefix("enums")]
     [UmbraCollapseAsTree]
     public EnumSamples Enums { get; set; } = new();
 
@@ -112,18 +112,18 @@ public record PluginConfig
     /// Gets or sets the samples covering custom parameter drawers, custom button colors, and
     /// nested-group drawers.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraCategory("Custom Drawers")]
-    [UmbraSettingsPrefix("customDrawers")]
+    [UmbraPrefix("customDrawers")]
     [UmbraCollapseAsTree]
     public CustomDrawerSamples CustomDrawers { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the samples focused on nested-group behavior and presentation metadata.
     /// </summary>
-    [UmbraSettingsParameter]
+    [UmbraParameter]
     [UmbraCategory("Nested Type Tests")]
-    [UmbraSettingsPrefix("nestedTypeTests")]
+    [UmbraPrefix("nestedTypeTests")]
     [UmbraCollapseAsTree]
     public NestedTypeTests NestedTypes { get; set; } = new();
 
@@ -244,37 +244,37 @@ public record PluginConfig
     /// <summary>
     /// General sample settings covering the basic boolean and hotkey controls used by many plugins.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record GeneralSettings
     {
         /// <summary>Gets or sets whether the sample plugin is enabled.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Enabled")]
         [UmbraDescription("Whether the sample plugin is active.")]
         public Parameter<bool> IsEnabled { get; set; } = new(true);
 
         /// <summary>Gets or sets the hotkey that toggles the sample plugin.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Toggle Hotkey")]
         [UmbraDescription("The hotkey used to toggle the sample plugin on and off.")]
-        [UmbraTwoColumnCustomDrawer<TwoColumnHotkeyDrawer>]
+        [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
         public Parameter<int> ToggleHotkey { get; set; } = new(574);
 
         /// <summary>Gets or sets the hotkey that switches between demo views.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Switch View Hotkey")]
         [UmbraDescription("The hotkey used to switch between first-person and third-person demo views.")]
-        [UmbraTwoColumnCustomDrawer<TwoColumnHotkeyDrawer>]
+        [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
         public Parameter<int> SwitchViewHotkey { get; set; } = new(575);
 
         /// <summary>Gets or sets whether the sample emits extra diagnostic logging.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Verbose Logs")]
         [UmbraDescription("When enabled, the sample plugin emits extra diagnostic log lines during manual testing.")]
         public Parameter<bool> ShowVerboseLogs { get; set; } = new(false);
 
         /// <summary>Resets the general sample settings to their defaults.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Reset General")]
         [UmbraDescription("Resets the sample plugin enable toggle, hotkeys, and verbose logging flag.")]
         [UmbraButtonStyle(ButtonStyle.Danger)]
@@ -297,23 +297,23 @@ public record PluginConfig
     /// <summary>
     /// Boolean checkbox samples, including a visibility predicate driven by another boolean value.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record BooleanSamples
     {
         /// <summary>Gets or sets whether the sample overlay is shown.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Enable Overlay")]
         [UmbraDescription("Shows or hides the sample overlay elements.")]
         public Parameter<bool> EnableOverlay { get; set; } = new(true);
 
         /// <summary>Gets or sets whether the film grain demo flag is enabled.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Enable Film Grain")]
         [UmbraDescription("A second checkbox used to validate basic boolean persistence.")]
         public Parameter<bool> EnableFilmGrain { get; set; } = new(false);
 
         /// <summary>Gets or sets whether the experimental pipeline path is enabled.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Experimental Pipeline")]
         [UmbraDescription("Enables an experimental code path and reveals the dependent restart flag below.")]
         [UmbraSpacingBefore]
@@ -323,7 +323,7 @@ public record PluginConfig
         /// Gets or sets whether a restart is required after changing the experimental pipeline.
         /// Hidden unless <see cref="UseExperimentalPipeline"/> is enabled.
         /// </summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Require Restart")]
         [UmbraDescription("Visible only while the experimental pipeline is enabled.")]
         [UmbraHideIf<bool>(nameof(UseExperimentalPipeline), false)]
@@ -331,7 +331,7 @@ public record PluginConfig
         public Parameter<bool> RequireRestart { get; set; } = new(true);
 
         /// <summary>Resets the boolean samples to their defaults.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Reset Booleans")]
         [UmbraDescription("Resets the boolean checkbox samples to their defaults.")]
         [UmbraButtonStyle(ButtonStyle.Danger)]
@@ -354,21 +354,21 @@ public record PluginConfig
     /// <summary>
     /// Integer samples organized into separate ranged-slider and unconstrained-drag nested groups.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     [UmbraLabelMargin(10f)]
     public record IntegerSamples
     {
         /// <summary>Gets or sets the ranged integer slider samples.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Sliders")]
-        [UmbraSettingsPrefix("sliders")]
+        [UmbraPrefix("sliders")]
         [UmbraCollapseAsTree(true)]
         public IntegerSliderSamples Sliders { get; set; } = new();
 
         /// <summary>Gets or sets the unconstrained integer drag samples.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Drags")]
-        [UmbraSettingsPrefix("drags")]
+        [UmbraPrefix("drags")]
         [UmbraCollapseAsTree]
         public IntegerDragSamples Drags { get; set; } = new();
     }
@@ -376,20 +376,20 @@ public record PluginConfig
     /// <summary>
     /// Float samples organized into separate ranged-slider and unconstrained-drag nested groups.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record FloatSamples
     {
         /// <summary>Gets or sets the ranged float slider samples.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Sliders")]
-        [UmbraSettingsPrefix("sliders")]
+        [UmbraPrefix("sliders")]
         [UmbraCollapseAsTree(true)]
         public FloatSliderSamples Sliders { get; set; } = new();
 
         /// <summary>Gets or sets the unconstrained float drag samples.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Drags")]
-        [UmbraSettingsPrefix("drags")]
+        [UmbraPrefix("drags")]
         [UmbraCollapseAsTree]
         public FloatDragSamples Drags { get; set; } = new();
     }
@@ -398,20 +398,20 @@ public record PluginConfig
     /// Double samples organized into separate ranged-slider and unconstrained-drag nested groups.
     /// These values are intended for manual validation of Umbra's native double-precision controls.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record DoubleSamples
     {
         /// <summary>Gets or sets the ranged double slider samples.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Sliders")]
-        [UmbraSettingsPrefix("sliders")]
+        [UmbraPrefix("sliders")]
         [UmbraCollapseAsTree(true)]
         public DoubleSliderSamples Sliders { get; set; } = new();
 
         /// <summary>Gets or sets the unconstrained double drag samples.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Drags")]
-        [UmbraSettingsPrefix("drags")]
+        [UmbraPrefix("drags")]
         [UmbraCollapseAsTree]
         public DoubleDragSamples Drags { get; set; } = new();
     }
@@ -419,20 +419,20 @@ public record PluginConfig
     /// <summary>
     /// String samples organized into single-line and multi-line nested groups.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record StringSamples
     {
         /// <summary>Gets or sets the single-line text samples.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Single Line")]
-        [UmbraSettingsPrefix("singleLine")]
+        [UmbraPrefix("singleLine")]
         [UmbraCollapseAsTree(true)]
         public SingleLineStringSamples SingleLine { get; set; } = new();
 
         /// <summary>Gets or sets the multi-line text samples.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Multi Line")]
-        [UmbraSettingsPrefix("multiline")]
+        [UmbraPrefix("multiline")]
         [UmbraCollapseAsTree]
         public MultilineStringSamples Multiline { get; set; } = new();
     }
@@ -440,36 +440,36 @@ public record PluginConfig
     /// <summary>
     /// Enum samples demonstrating combo boxes and a dependent visibility predicate.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record EnumSamples
     {
         /// <summary>Gets or sets the sample quality level.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Quality")]
         [UmbraDescription("Demonstrates enum rendering through the built-in combo-box control.")]
         public Parameter<SampleQualityLevel> Quality { get; set; } = new(SampleQualityLevel.High);
 
         /// <summary>Gets or sets the active sample theme.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Theme")]
         [UmbraDescription("A second enum combo used to validate string-backed enum persistence.")]
         public Parameter<SampleTheme> Theme { get; set; } = new(SampleTheme.Classic);
 
         /// <summary>Gets or sets the sample update channel.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Channel")]
         [UmbraDescription("Used to validate enum persistence with multiple options.")]
         public Parameter<SampleChannel> Channel { get; set; } = new(SampleChannel.Stable);
 
         /// <summary>Gets or sets whether the preview-theme enum is visible.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Show Preview Theme")]
         [UmbraDescription("Reveals the dependent preview-theme enum below when enabled.")]
         [UmbraSpacingBefore]
         public Parameter<bool> ShowPreviewTheme { get; set; } = new(false);
 
         /// <summary>Gets or sets an optional nullable enum value with an explicit <c>&lt;None&gt;</c> choice.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Optional Theme")]
         [UmbraDescription("Validates the built-in combo-box path for nullable enum parameters, including the <None> option.")]
         public Parameter<SampleTheme?> OptionalTheme { get; set; } = new(null);
@@ -477,7 +477,7 @@ public record PluginConfig
         /// <summary>
         /// Gets or sets the preview theme shown only while <see cref="ShowPreviewTheme"/> is enabled.
         /// </summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Preview Theme")]
         [UmbraDescription("A dependent enum combo-box used to validate HideIf against a sibling boolean.")]
         [UmbraHideIf<bool>(nameof(ShowPreviewTheme), false)]
@@ -488,25 +488,25 @@ public record PluginConfig
     /// <summary>
     /// Samples covering full custom parameter drawers, nested-group drawers, and custom button colors.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record CustomDrawerSamples
     {
         /// <summary>Gets or sets the full custom parameter-drawer sample.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Visual Meter")]
         [UmbraDescription("Rendered by a full custom parameter drawer instead of the default two-column layout.")]
-        [UmbraCustomDrawer<NormalizedFloatPreviewDrawer>]
+        [UmbraDrawer<NormalizedFloatPreviewDrawer>]
         public Parameter<float> VisualMeter { get; set; } = new(.42f);
 
         /// <summary>Gets or sets the sample click counter incremented by the custom-colored action button.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Accent Button Clicks")]
         [UmbraDescription("A plain persisted value that makes the custom-colored button action observable.")]
         [UmbraRange(0, 999)]
         public Parameter<int> AccentButtonClicks { get; set; } = new(0);
 
         /// <summary>Gets or sets the custom-colored action button sample.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Accent Action")]
         [UmbraDescription("Uses explicit custom RGBA button colors instead of a built-in button style.")]
         [UmbraCustomButtonColors(0.12f, 0.42f, 0.78f)]
@@ -517,18 +517,18 @@ public record PluginConfig
         /// Gets or sets the first nested-group drawer sample.
         /// Its internal widgets intentionally reuse fixed local labels shared with the sibling sample.
         /// </summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Nested Drawer")]
-        [UmbraSettingsPrefix("primaryNestedDrawer")]
+        [UmbraPrefix("primaryNestedDrawer")]
         [UmbraCollapseAsTree(true)]
         public NestedDrawerTest PrimaryNestedDrawer { get; set; } = new();
 
         /// <summary>
         /// Gets or sets the second nested-group drawer sample in the same category and parent scope.
         /// </summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Nested Drawer")]
-        [UmbraSettingsPrefix("secondaryNestedDrawer")]
+        [UmbraPrefix("secondaryNestedDrawer")]
         [UmbraCollapseAsTree(true)]
         public NestedDrawerTest SecondaryNestedDrawer { get; set; } = new()
         {
@@ -548,13 +548,13 @@ public record PluginConfig
     /// <summary>
     /// Samples focused on nested-type behavior, local category scoping, and presentation-metadata fallback.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record NestedTypeTests
     {
         /// <summary>Gets or sets the graphics branch used for local category-scoping tests.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Graphics")]
-        [UmbraSettingsPrefix("graphics")]
+        [UmbraPrefix("graphics")]
         [UmbraCollapseAsTree(true)]
         [UmbraParameterOrder(0)]
         public ScopedBranchSettings Graphics { get; set; } = new()
@@ -569,9 +569,9 @@ public record PluginConfig
         };
 
         /// <summary>Gets or sets the audio branch used for local category-scoping tests.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Audio")]
-        [UmbraSettingsPrefix("audio")]
+        [UmbraPrefix("audio")]
         [UmbraCollapseAsTree(true)]
         [UmbraParameterOrder(1)]
         public ScopedBranchSettings Audio { get; set; } = new()
@@ -590,17 +590,17 @@ public record PluginConfig
         /// <summary>
         /// Gets or sets the nested group that relies on its own type-level category and collapse metadata.
         /// </summary>
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("typeLevelFallback")]
+        [UmbraParameter]
+        [UmbraPrefix("typeLevelFallback")]
         [UmbraParameterOrder(2)]
         public TypeLevelPresentationSettings TypeLevelFallback { get; set; } = new();
 
         /// <summary>
         /// Gets or sets the nested group whose property-level category overrides its type-level fallback metadata.
         /// </summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Property Override")]
-        [UmbraSettingsPrefix("propertyOverride")]
+        [UmbraPrefix("propertyOverride")]
         [UmbraCollapseAsTree]
         [UmbraParameterOrder(3)]
         public TypeLevelPresentationSettings PropertyOverride { get; set; } = new()
@@ -612,8 +612,8 @@ public record PluginConfig
         /// <summary>
         /// Gets or sets the nested group that demonstrates type-level indentation and label-margin metadata.
         /// </summary>
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("indentedLayout")]
+        [UmbraParameter]
+        [UmbraPrefix("indentedLayout")]
         [UmbraParameterOrder(4)]
         public IndentedLayoutSettings IndentedLayout { get; set; } = new();
     }
@@ -621,18 +621,18 @@ public record PluginConfig
     /// <summary>
     /// Shared branch used by the nested-type tests to validate local category scoping and nested visibility.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record ScopedBranchSettings
     {
         /// <summary>Gets or sets whether this branch is enabled.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Enabled")]
         [UmbraDescription("Whether this nested branch is active.")]
         [UmbraCategory("General")]
         public Parameter<bool> Enabled { get; set; } = new(true);
 
         /// <summary>Gets or sets whether the nested Advanced branch is visible.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Show Advanced")]
         [UmbraDescription("Controls whether the nested Advanced branch below is rendered.")]
         [UmbraCategory("General")]
@@ -640,7 +640,7 @@ public record PluginConfig
         public Parameter<bool> ShowAdvanced { get; set; } = new(true);
 
         /// <summary>Gets or sets the branch intensity value.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Intensity")]
         [UmbraDescription("A simple float used to validate nested ordering and local categories.")]
         [UmbraCategory("General")]
@@ -650,9 +650,9 @@ public record PluginConfig
         public Parameter<float> Intensity { get; set; } = new(.50f);
 
         /// <summary>Gets or sets the nested Advanced branch.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Advanced")]
-        [UmbraSettingsPrefix("advanced")]
+        [UmbraPrefix("advanced")]
         [UmbraCollapseAsTree]
         [UmbraHideIf<bool>(nameof(ShowAdvanced), false)]
         [UmbraSpacingBefore]
@@ -664,11 +664,11 @@ public record PluginConfig
     /// <summary>
     /// Second-level nested branch used by the scoped-branch demo.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record ScopedAdvancedSettings
     {
         /// <summary>Gets or sets the advanced threshold value.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Threshold")]
         [UmbraDescription("A nested integer rendered in the Tuning category.")]
         [UmbraCategory("Tuning")]
@@ -676,7 +676,7 @@ public record PluginConfig
         public Parameter<int> Threshold { get; set; } = new(50);
 
         /// <summary>Gets or sets the advanced bias value.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Bias")]
         [UmbraDescription("A second nested integer rendered alongside Threshold.")]
         [UmbraCategory("Tuning")]
@@ -684,7 +684,7 @@ public record PluginConfig
         public Parameter<int> Bias { get; set; } = new(0);
 
         /// <summary>Gets or sets the branch note text.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Notes")]
         [UmbraDescription("A nested string rendered in a different local category.")]
         [UmbraCategory("Details")]
@@ -695,13 +695,13 @@ public record PluginConfig
     /// <summary>
     /// Nested settings group that declares its own presentation metadata at the type level.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     [UmbraCategory("Type-Level Fallback")]
     [UmbraCollapseAsTree]
     public record TypeLevelPresentationSettings
     {
         /// <summary>Gets or sets the sample numeric value rendered in the fallback group.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Sample Value")]
         [UmbraDescription("A sample numeric value used to validate type-level presentation metadata fallback.")]
         [UmbraCategory("Values")]
@@ -709,7 +709,7 @@ public record PluginConfig
         public Parameter<int> SampleValue { get; set; } = new(42);
 
         /// <summary>Gets or sets the sample note rendered in the fallback group.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Notes")]
         [UmbraDescription("A sample note used to validate type-level category fallback.")]
         [UmbraCategory("Details")]
@@ -720,7 +720,7 @@ public record PluginConfig
     /// <summary>
     /// Nested settings group that demonstrates class-level indentation and label-margin metadata.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     [UmbraCategory("Indented Layout")]
     [UmbraCollapseAsTree(true)]
     [UmbraIndent(18f)]
@@ -728,7 +728,7 @@ public record PluginConfig
     public record IndentedLayoutSettings
     {
         /// <summary>Gets or sets the primary layout scale.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Primary Scale")]
         [UmbraDescription("A ranged float rendered inside a class-level indented layout group.")]
         [UmbraRange(0.5f, 2.0f)]
@@ -736,7 +736,7 @@ public record PluginConfig
         public Parameter<float> PrimaryScale { get; set; } = new(1.00f);
 
         /// <summary>Gets or sets the secondary layout scale.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Secondary Scale")]
         [UmbraDescription("An unconstrained float used to validate layout metadata on drag controls.")]
         [UmbraStep(0.05f)]
@@ -744,7 +744,7 @@ public record PluginConfig
         public Parameter<float> SecondaryScale { get; set; } = new(1.25f);
 
         /// <summary>Gets or sets free-form notes for the layout demo.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraDisplayName("Layout Notes")]
         [UmbraDescription("A multi-line string used to validate class-level label-margin behavior.")]
         [UmbraMultiline(3)]
@@ -755,119 +755,119 @@ public record PluginConfig
     /// <summary>
     /// Ranged integer slider samples.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record IntegerSliderSamples
     {
-        [UmbraSettingsParameter, UmbraDisplayName("Master Volume"), UmbraDescription("A ranged integer slider with a percentage-like value."), UmbraRange(0, 100)]
+        [UmbraParameter, UmbraDisplayName("Master Volume"), UmbraDescription("A ranged integer slider with a percentage-like value."), UmbraRange(0, 100)]
         public Parameter<int> MasterVolume { get; set; } = new(80);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Retry Count"), UmbraDescription("A small ranged integer slider used for discrete step testing."), UmbraRange(0, 10)]
+        [UmbraParameter, UmbraDisplayName("Retry Count"), UmbraDescription("A small ranged integer slider used for discrete step testing."), UmbraRange(0, 10)]
         public Parameter<int> RetryCount { get; set; } = new(3);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Padding"), UmbraDescription("A ranged integer slider with a custom integer display format."), UmbraRange(0, 64), UmbraFormat("%d px")]
+        [UmbraParameter, UmbraDisplayName("Padding"), UmbraDescription("A ranged integer slider with a custom integer display format."), UmbraRange(0, 64), UmbraFormat("%d px")]
         public Parameter<int> PaddingPixels { get; set; } = new(12);
     }
 
     /// <summary>
     /// Unconstrained integer drag samples.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record IntegerDragSamples
     {
-        [UmbraSettingsParameter, UmbraDisplayName("Horizontal Offset"), UmbraDescription("An unconstrained integer drag sample."), UmbraStep(1)]
+        [UmbraParameter, UmbraDisplayName("Horizontal Offset"), UmbraDescription("An unconstrained integer drag sample."), UmbraStep(1)]
         public Parameter<int> HorizontalOffset { get; set; } = new(16);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Vertical Offset"), UmbraDescription("A second unconstrained integer drag sample with a negative default."), UmbraStep(1)]
+        [UmbraParameter, UmbraDisplayName("Vertical Offset"), UmbraDescription("A second unconstrained integer drag sample with a negative default."), UmbraStep(1)]
         public Parameter<int> VerticalOffset { get; set; } = new(-8);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Priority Bias"), UmbraDescription("An unconstrained integer drag sample with a larger drag step."), UmbraStep(5)]
+        [UmbraParameter, UmbraDisplayName("Priority Bias"), UmbraDescription("An unconstrained integer drag sample with a larger drag step."), UmbraStep(5)]
         public Parameter<int> PriorityBias { get; set; } = new(25);
     }
 
     /// <summary>
     /// Ranged float slider samples.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record FloatSliderSamples
     {
-        [UmbraSettingsParameter, UmbraDisplayName("Opacity"), UmbraDescription("A normalized float slider."), UmbraRange(0f, 1f), UmbraFormat("%.2f")]
+        [UmbraParameter, UmbraDisplayName("Opacity"), UmbraDescription("A normalized float slider."), UmbraRange(0f, 1f), UmbraFormat("%.2f")]
         public Parameter<float> Opacity { get; set; } = new(.65f);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Gamma"), UmbraDescription("A wider float slider range for manual validation."), UmbraRange(0.5f, 3.0f), UmbraFormat("%.2f")]
+        [UmbraParameter, UmbraDisplayName("Gamma"), UmbraDescription("A wider float slider range for manual validation."), UmbraRange(0.5f, 3.0f), UmbraFormat("%.2f")]
         public Parameter<float> Gamma { get; set; } = new(1.20f);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Exposure"), UmbraDescription("A float slider with one decimal place."), UmbraRange(-2f, 2f), UmbraFormat("%.1f")]
+        [UmbraParameter, UmbraDisplayName("Exposure"), UmbraDescription("A float slider with one decimal place."), UmbraRange(-2f, 2f), UmbraFormat("%.1f")]
         public Parameter<float> Exposure { get; set; } = new(.5f);
     }
 
     /// <summary>
     /// Unconstrained float drag samples.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record FloatDragSamples
     {
-        [UmbraSettingsParameter, UmbraDisplayName("Move Speed"), UmbraDescription("An unconstrained float drag sample."), UmbraStep(0.05f), UmbraFormat("%.2f")]
+        [UmbraParameter, UmbraDisplayName("Move Speed"), UmbraDescription("An unconstrained float drag sample."), UmbraStep(0.05f), UmbraFormat("%.2f")]
         public Parameter<float> MoveSpeed { get; set; } = new(1.50f);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Bloom Strength"), UmbraDescription("A smaller-step float drag sample."), UmbraStep(0.01f), UmbraFormat("%.2f")]
+        [UmbraParameter, UmbraDisplayName("Bloom Strength"), UmbraDescription("A smaller-step float drag sample."), UmbraStep(0.01f), UmbraFormat("%.2f")]
         public Parameter<float> BloomStrength { get; set; } = new(.35f);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Camera Lag"), UmbraDescription("A float drag sample with three decimal places."), UmbraStep(0.005f), UmbraFormat("%.3f")]
+        [UmbraParameter, UmbraDisplayName("Camera Lag"), UmbraDescription("A float drag sample with three decimal places."), UmbraStep(0.005f), UmbraFormat("%.3f")]
         public Parameter<float> CameraLag { get; set; } = new(.125f);
     }
 
     /// <summary>
     /// Ranged double slider samples.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record DoubleSliderSamples
     {
-        [UmbraSettingsParameter, UmbraDisplayName("Precision Scale"), UmbraDescription("A ranged double slider used to validate native double-precision slider editing."), UmbraRange(0.0, 1.0), UmbraStep(0.001), UmbraFormat("%.3f")]
+        [UmbraParameter, UmbraDisplayName("Precision Scale"), UmbraDescription("A ranged double slider used to validate native double-precision slider editing."), UmbraRange(0.0, 1.0), UmbraStep(0.001), UmbraFormat("%.3f")]
         public Parameter<double> PrecisionScale { get; set; } = new(0.125);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Zoom Factor"), UmbraDescription("A second ranged double slider with a broader range."), UmbraRange(0.5, 4.0), UmbraStep(0.001), UmbraFormat("%.3f")]
+        [UmbraParameter, UmbraDisplayName("Zoom Factor"), UmbraDescription("A second ranged double slider with a broader range."), UmbraRange(0.5, 4.0), UmbraStep(0.001), UmbraFormat("%.3f")]
         public Parameter<double> ZoomFactor { get; set; } = new(1.750);
     }
 
     /// <summary>
     /// Unconstrained double drag samples.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record DoubleDragSamples
     {
-        [UmbraSettingsParameter, UmbraDisplayName("World Offset"), UmbraDescription("An unconstrained double drag sample used to validate precision beyond float."), UmbraStep(0.125), UmbraFormat("%.3f")]
+        [UmbraParameter, UmbraDisplayName("World Offset"), UmbraDescription("An unconstrained double drag sample used to validate precision beyond float."), UmbraStep(0.125), UmbraFormat("%.3f")]
         public Parameter<double> WorldOffset { get; set; } = new(12.375);
 
-        [UmbraSettingsParameter, UmbraDisplayName("Calibration Bias"), UmbraDescription("A second unconstrained double drag sample with a small step size."), UmbraStep(0.0005), UmbraFormat("%.4f")]
+        [UmbraParameter, UmbraDisplayName("Calibration Bias"), UmbraDescription("A second unconstrained double drag sample with a small step size."), UmbraStep(0.0005), UmbraFormat("%.4f")]
         public Parameter<double> CalibrationBias { get; set; } = new(0.0025);
     }
 
     /// <summary>
     /// Single-line string samples.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record SingleLineStringSamples
     {
-        [UmbraSettingsParameter, UmbraDisplayName("Profile Name"), UmbraDescription("A short single-line string sample."), UmbraMaxLength(40)]
+        [UmbraParameter, UmbraDisplayName("Profile Name"), UmbraDescription("A short single-line string sample."), UmbraMaxLength(40)]
         public Parameter<string> ProfileName { get; set; } = new("Umbra Tester");
 
-        [UmbraSettingsParameter, UmbraDisplayName("Export Directory"), UmbraDescription("A longer single-line string sample."), UmbraMaxLength(120)]
+        [UmbraParameter, UmbraDisplayName("Export Directory"), UmbraDescription("A longer single-line string sample."), UmbraMaxLength(120)]
         public Parameter<string> ExportDirectory { get; set; } = new("data/Umbra/SamplePlugin/exports");
 
-        [UmbraSettingsParameter, UmbraDisplayName("Search Filter"), UmbraDescription("A third single-line string sample used for quick manual edits."), UmbraMaxLength(60)]
+        [UmbraParameter, UmbraDisplayName("Search Filter"), UmbraDescription("A third single-line string sample used for quick manual edits."), UmbraMaxLength(60)]
         public Parameter<string> SearchFilter { get; set; } = new("player camera");
     }
 
     /// <summary>
     /// Multi-line string samples.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public record MultilineStringSamples
     {
-        [UmbraSettingsParameter, UmbraDisplayName("Notes"), UmbraDescription("A short multi-line text sample."), UmbraMultiline(3), UmbraMaxLength(160)]
+        [UmbraParameter, UmbraDisplayName("Notes"), UmbraDescription("A short multi-line text sample."), UmbraMultiline(3), UmbraMaxLength(160)]
         public Parameter<string> Notes { get; set; } = new("Use this field to validate multi-line text persistence.");
 
-        [UmbraSettingsParameter, UmbraDisplayName("Changelog"), UmbraDescription("A larger multi-line text sample with more visible rows."), UmbraMultiline(5), UmbraMaxLength(320)]
+        [UmbraParameter, UmbraDisplayName("Changelog"), UmbraDescription("A larger multi-line text sample with more visible rows."), UmbraMultiline(5), UmbraMaxLength(320)]
         public Parameter<string> Changelog { get; set; } = new("- Added data-type sample groups\n- Added nested type tests\n- Added custom drawer coverage");
     }
 
@@ -876,26 +876,26 @@ public record PluginConfig
     /// Multiple instances of this type intentionally reuse the same local widget labels so the
     /// sample can validate nested-group ImGui ID scoping manually.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     [UmbraCategory("Drawer Test")]
     [UmbraCollapseAsTree]
-    [UmbraNestedGroupDrawer<NestedDrawerTestDrawer>]
+    [UmbraNestedDrawer<NestedDrawerTestDrawer>]
     public record NestedDrawerTest
     {
         /// <summary>Gets or sets the first sample integer value for the nested drawer test.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Value1 { get; set; } = new(123);
 
         /// <summary>Gets or sets the second sample boolean value for the nested drawer test.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Value2 { get; set; } = new(true);
 
         /// <summary>Gets or sets the third sample string value for the nested drawer test.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<string> Value3 { get; set; } = new("Hello, world!");
 
         /// <summary>Gets or sets the fourth sample float value for the nested drawer test.</summary>
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<float> Value4 { get; set; } = new(3.14f);
     }
 }

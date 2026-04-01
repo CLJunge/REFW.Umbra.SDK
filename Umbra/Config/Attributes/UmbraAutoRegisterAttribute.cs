@@ -13,4 +13,4 @@ namespace Umbra.Config.Attributes;
 /// carry this attribute to be traversed.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class UmbraAutoRegisterSettingsAttribute : Attribute { }
+public sealed class UmbraAutoRegisterAttribute : Attribute { }

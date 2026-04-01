@@ -17,7 +17,7 @@ namespace Umbra.Config.Attributes;
 /// to contribute a persisted path segment.
 /// </param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class UmbraSettingsPrefixAttribute(string prefix) : Attribute
+public sealed class UmbraPrefixAttribute(string prefix) : Attribute
 {
     /// <summary>
     /// Gets the prefix string applied to parameter keys in the decorated scope.

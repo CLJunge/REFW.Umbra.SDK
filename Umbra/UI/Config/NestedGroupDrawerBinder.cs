@@ -14,9 +14,9 @@ namespace Umbra.UI.Config;
 /// activation, and disposable tracking from <see cref="ConfigDrawerBuilder"/> so the builder can
 /// remain focused on config-tree traversal and draw-node composition.
 /// </remarks>
-internal static class NestedGroupDrawerBinder
+internal static class NestedDrawerBinder
 {
-    private static readonly ConcurrentDictionary<NestedGroupDrawerFactoryKey, NestedGroupDrawerFactory> s_factories = new();
+    private static readonly ConcurrentDictionary<NestedGroupDrawerFactoryKey, NestedDrawerFactory> s_factories = new();
 
     /// <summary>
     /// Cache key for one nested-group drawer binding shape.
@@ -34,7 +34,7 @@ internal static class NestedGroupDrawerBinder
     /// reduced to creating the drawer instance and binding the cached invoker to that instance and
     /// nested group object.
     /// </remarks>
-    private sealed class NestedGroupDrawerFactory(bool isSupported, Action<object, object>? invoker)
+    private sealed class NestedDrawerFactory(bool isSupported, Action<object, object>? invoker)
     {
         internal bool IsSupported { get; } = isSupported;
         private int _unsupportedLogged;
@@ -63,7 +63,7 @@ internal static class NestedGroupDrawerBinder
     /// drawer type does not support <paramref name="groupType"/>.
     /// </returns>
     internal static Action? BuildDrawAction(
-        INestedGroupDrawerAttribute nestedDrawerAttr,
+        INestedDrawerAttribute nestedDrawerAttr,
         Type groupType,
         object nestedGroup,
         out IDisposable? disposable)
@@ -103,7 +103,7 @@ internal static class NestedGroupDrawerBinder
     /// A cached factory describing whether the drawer supports <paramref name="groupType"/> and,
     /// when supported, the precompiled invoker used to bind concrete instances.
     /// </returns>
-    private static NestedGroupDrawerFactory CreateFactory(Type drawerType, Type groupType)
+    private static NestedDrawerFactory CreateFactory(Type drawerType, Type groupType)
     {
         Type? genericIface = null;
         Type? supportedGroupType = null;
@@ -112,7 +112,7 @@ internal static class NestedGroupDrawerBinder
             if (!iface.IsGenericType)
                 continue;
 
-            if (iface.GetGenericTypeDefinition() != typeof(INestedGroupDrawer<>))
+            if (iface.GetGenericTypeDefinition() != typeof(INestedDrawer<>))
                 continue;
 
             var candidateGroupType = iface.GetGenericArguments()[0];
@@ -125,9 +125,9 @@ internal static class NestedGroupDrawerBinder
         }
 
         if (genericIface is null || supportedGroupType is null)
-            return new NestedGroupDrawerFactory(false, null);
+            return new NestedDrawerFactory(false, null);
 
-        var drawMethod = genericIface.GetMethod(nameof(INestedGroupDrawer<object>.Draw))!;
+        var drawMethod = genericIface.GetMethod(nameof(INestedDrawer<object>.Draw))!;
         var drawerParam = Expression.Parameter(typeof(object), "drawer");
         var groupParam = Expression.Parameter(typeof(object), "group");
         var callExpr = Expression.Call(
@@ -136,6 +136,6 @@ internal static class NestedGroupDrawerBinder
             Expression.Convert(groupParam, supportedGroupType));
         var invoker = Expression.Lambda<Action<object, object>>(callExpr, drawerParam, groupParam).Compile();
 
-        return new NestedGroupDrawerFactory(true, invoker);
+        return new NestedDrawerFactory(true, invoker);
     }
 }

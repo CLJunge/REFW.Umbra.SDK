@@ -6,7 +6,7 @@ namespace Umbra.Config.Attributes;
 /// </summary>
 /// <remarks>
 /// Parameters sharing the same category name are grouped together when rendered in the UI.
-/// When applied to an <see cref="UmbraAutoRegisterSettingsAttribute"/> type, the category becomes the
+/// When applied to an <see cref="UmbraAutoRegisterAttribute"/> type, the category becomes the
 /// fallback category for that group's direct parameters unless a member overrides it. When applied
 /// to a nested settings-group property, the category creates the visible container section for that
 /// group, and direct child controls without their own category render inside that container.

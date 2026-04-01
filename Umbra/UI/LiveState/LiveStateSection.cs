@@ -93,7 +93,7 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
         _idScope = idScope;
         _treeNodeLabel = treeNodeLabel;
         _treeNodeDefaultOpen = treeNodeDefaultOpen;
-        _order = typeof(T).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
+        _order = typeof(T).GetDrawerAttribute<UmbraSectionOrderAttribute>()?.Order ?? int.MaxValue;
         _drawAction = LiveStateSectionDrawerResolver.Resolve(typeof(T), context, out _drawerDisposable);
     }
 

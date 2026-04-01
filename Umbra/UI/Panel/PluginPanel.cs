@@ -140,7 +140,7 @@ public sealed class PluginPanel : IDisposable
     /// <para>
     /// Sections are rendered in ascending <see cref="IPanelSection.Order"/> order. Equal-order
     /// sections preserve their insertion order (stable sort). To control ordering, apply
-    /// <see cref="SectionOrderAttribute"/> to the state or config type, or pass a custom
+    /// <see cref="UmbraSectionOrderAttribute"/> to the state or config type, or pass a custom
     /// <see cref="IPanelSection"/> implementation that overrides <see cref="IPanelSection.Order"/>.
     /// </para>
     /// <para>

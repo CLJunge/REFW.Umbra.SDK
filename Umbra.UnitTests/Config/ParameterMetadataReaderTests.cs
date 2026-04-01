@@ -458,13 +458,13 @@ public class ParameterMetadataReaderTests
 
     // Helper attribute classes for testing interface-based detection
     [AttributeUsage(AttributeTargets.Property)]
-    private class TestCustomDrawerAttribute : Attribute, ICustomDrawerAttribute
+    private class TestCustomDrawerAttribute : Attribute, IDrawerAttribute
     {
         public Type DrawerType => typeof(TestDrawer);
     }
 
     [AttributeUsage(AttributeTargets.Property)]
-    private class TestTwoColumnCustomDrawerAttribute : Attribute, ITwoColumnCustomDrawerAttribute
+    private class TestTwoColumnCustomDrawerAttribute : Attribute, ITwoColumnDrawerAttribute
     {
         public Type DrawerType => typeof(TestTwoColumnDrawer);
     }

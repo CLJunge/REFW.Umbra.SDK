@@ -460,287 +460,287 @@ public partial class SettingsRegistrarTests
     }
 
     // Test helper classes
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class SimpleConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
     internal class ConfigWithoutAttribute
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class EmptyConfig
     {
     }
 
-    [UmbraAutoRegisterSettings]
-    [UmbraSettingsPrefix("myPrefix")]
+    [UmbraAutoRegister]
+    [UmbraPrefix("myPrefix")]
     internal class ConfigWithPrefix
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Value { get; set; } = new(42);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     [UmbraCategory("TestCategory")]
     internal class ConfigWithCategory
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
-    [UmbraAutoRegisterSettings]
-    [UmbraSettingsPrefix("pre")]
+    [UmbraAutoRegister]
+    [UmbraPrefix("pre")]
     [UmbraCategory("Cat")]
     internal class ConfigWithPrefixAndCategory
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithKeyOverride
     {
-        [UmbraSettingsParameter("customKey")]
+        [UmbraParameter("customKey")]
         public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithMultipleParameters
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Count { get; set; } = new(10);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<string> Name { get; set; } = new("test");
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithNestedSettings
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> TopLevel { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("nested")]
+        [UmbraParameter]
+        [UmbraPrefix("nested")]
         public NestedGroup Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class NestedGroup
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> NestedValue { get; set; } = new(100);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithNestedPropertyPrefix
     {
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("customPrefix")]
+        [UmbraParameter]
+        [UmbraPrefix("customPrefix")]
         public NestedGroup Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
-    [UmbraSettingsPrefix("root")]
+    [UmbraAutoRegister]
+    [UmbraPrefix("root")]
     internal class ConfigWithDeeplyNestedSettings
     {
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("level1")]
+        [UmbraParameter]
+        [UmbraPrefix("level1")]
         public Level1Group Level1 { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class Level1Group
     {
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("level2")]
+        [UmbraParameter]
+        [UmbraPrefix("level2")]
         public Level2Group Level2 { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class Level2Group
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<string> DeepValue { get; set; } = new("deep");
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithDuplicateKeys
     {
-        [UmbraSettingsParameter("enabled")]
+        [UmbraParameter("enabled")]
         public Parameter<bool> Enabled1 { get; set; } = new(true);
 
-        [UmbraSettingsParameter("enabled")]
+        [UmbraParameter("enabled")]
         public Parameter<bool> Enabled2 { get; set; } = new(false);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithCircularReference
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Value1 { get; set; } = new(1);
 
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("other")]
+        [UmbraParameter]
+        [UmbraPrefix("other")]
         public ConfigWithCircularReference2 Other { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithCircularReference2
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Value2 { get; set; } = new(2);
 
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("circular")]
+        [UmbraParameter]
+        [UmbraPrefix("circular")]
         public ConfigWithCircularReference? Other { get; set; }
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithNullProperty
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> TopLevel { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("nested")]
+        [UmbraParameter]
+        [UmbraPrefix("nested")]
         public NestedGroup? Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
-    [UmbraSettingsPrefix("")]
+    [UmbraAutoRegister]
+    [UmbraPrefix("")]
     [UmbraCategory("")]
     internal class ConfigWithEmptyPrefix
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithPrivateProperty
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> PublicParameter { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         private Parameter<bool> PrivateParameter { get; set; } = new(false);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithPropertyAndTypePrefix
     {
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("propertyPrefix")]
+        [UmbraParameter]
+        [UmbraPrefix("propertyPrefix")]
         public NestedGroupWithTypePrefix Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
-    [UmbraSettingsPrefix("typePrefix")]
+    [UmbraAutoRegister]
+    [UmbraPrefix("typePrefix")]
     internal class NestedGroupWithTypePrefix
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> NestedValue { get; set; } = new(5);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     [UmbraCategory("InheritedCategory")]
     internal class ConfigWithPropertyAndTypeCategory
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("PropertyCategory")]
         public NestedGroupWithTypeCategory Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     [UmbraCategory("TypeCategory")]
     internal class NestedGroupWithTypeCategory
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> NestedValue { get; set; } = new(7);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithEmptyKeyOverride
     {
-        [UmbraSettingsParameter("")]
+        [UmbraParameter("")]
         public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithEmptyNestedPropertyPrefix
     {
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("")]
+        [UmbraParameter]
+        [UmbraPrefix("")]
         public NestedGroup Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithEmptyNestedTypePrefix
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public EmptyPrefixNestedGroup Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
-    [UmbraSettingsPrefix("")]
+    [UmbraAutoRegister]
+    [UmbraPrefix("")]
     internal class EmptyPrefixNestedGroup
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> NestedValue { get; set; } = new(9);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithNonAutoRegisterNestedObject
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public NonAutoRegisterNestedObject Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithNestedTypeCategoryOnly
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public NestedGroupWithStandaloneCategory Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     [UmbraCategory("NestedTypeCategory")]
     internal class NestedGroupWithStandaloneCategory
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> NestedValue { get; set; } = new(13);
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal class ConfigWithNestedTypePrefixOnly
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public NestedGroupWithStandalonePrefix Nested { get; set; } = new();
     }
 
-    [UmbraAutoRegisterSettings]
-    [UmbraSettingsPrefix("typeOnlyPrefix")]
+    [UmbraAutoRegister]
+    [UmbraPrefix("typeOnlyPrefix")]
     internal class NestedGroupWithStandalonePrefix
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> NestedValue { get; set; } = new(17);
     }
 
     internal class NonAutoRegisterNestedObject
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> NestedValue { get; set; } = new(11);
     }
 }

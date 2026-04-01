@@ -177,15 +177,15 @@ public sealed class TypeDrawMetadataTests
     {
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     [UmbraCategory("Root Category")]
-    [UmbraSettingsPrefix("rootPrefix")]
+    [UmbraPrefix("rootPrefix")]
     [UmbraIndent(5f)]
     [UmbraCollapseAsTree]
     [UmbraLabelMargin(12f)]
     internal sealed class AttributedConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         [UmbraCategory("Enabled Category")]
         [UmbraParameterOrder(7)]
         [UmbraSpacingBefore(1)]
@@ -193,8 +193,8 @@ public sealed class TypeDrawMetadataTests
         [UmbraHideIf<bool>(nameof(HideEnabled))]
         public Parameter<bool> Enabled { get; set; } = new(true);
 
-        [UmbraSettingsParameter("nestedKey")]
-        [UmbraSettingsPrefix("nestedPrefix")]
+        [UmbraParameter("nestedKey")]
+        [UmbraPrefix("nestedPrefix")]
         [UmbraIndent(3f)]
         [UmbraCollapseAsTree]
         [UmbraLabelMargin(4f)]
@@ -203,10 +203,10 @@ public sealed class TypeDrawMetadataTests
         public bool HideEnabled { get; set; }
     }
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal sealed class NestedAttributedConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Value { get; set; } = new(1);
     }
 

@@ -8,10 +8,10 @@ using Umbra.UI.Config.Drawers;
 namespace Umbra.UI.Config.UnitTests;
 
 /// <summary>
-/// Tests focused public behavior of <see cref="NestedGroupDrawerBinder"/>.
+/// Tests focused public behavior of <see cref="NestedDrawerBinder"/>.
 /// </summary>
 [TestClass]
-public sealed class NestedGroupDrawerBinderTests
+public sealed class NestedDrawerBinderTests
 {
     /// <summary>
     /// Verifies that an action throws the expected exception type and returns the captured exception.
@@ -38,11 +38,11 @@ public sealed class NestedGroupDrawerBinderTests
     [TestMethod]
     public void BuildDrawAction_WithCompatibleDrawer_ReturnsActionThatDrawsProvidedGroup()
     {
-        var attribute = new TestNestedGroupDrawerAttribute(typeof(TestGroupDrawer));
+        var attribute = new TestNestedDrawerAttribute(typeof(TestGroupDrawer));
         var group = new TestGroup { Value = 42 };
         TestGroupDrawer.Reset();
 
-        var action = NestedGroupDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out var disposable);
+        var action = NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out var disposable);
         action?.Invoke();
 
         Assert.IsNotNull(action);
@@ -57,10 +57,10 @@ public sealed class NestedGroupDrawerBinderTests
     [TestMethod]
     public void BuildDrawAction_WithIncompatibleDrawer_ReturnsNull()
     {
-        var attribute = new TestNestedGroupDrawerAttribute(typeof(IncompatibleDrawer));
+        var attribute = new TestNestedDrawerAttribute(typeof(IncompatibleDrawer));
         var group = new TestGroup();
 
-        var action = NestedGroupDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out var disposable);
+        var action = NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out var disposable);
 
         Assert.IsNull(action);
         Assert.IsNull(disposable);
@@ -72,10 +72,10 @@ public sealed class NestedGroupDrawerBinderTests
     [TestMethod]
     public void BuildDrawAction_WithDisposableDrawer_ReturnsTrackedDisposablePerCall()
     {
-        var attribute = new TestNestedGroupDrawerAttribute(typeof(DisposableTestGroupDrawer));
+        var attribute = new TestNestedDrawerAttribute(typeof(DisposableTestGroupDrawer));
 
-        var firstAction = NestedGroupDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), new TestGroup(), out var firstDisposable);
-        var secondAction = NestedGroupDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), new TestGroup(), out var secondDisposable);
+        var firstAction = NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), new TestGroup(), out var firstDisposable);
+        var secondAction = NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), new TestGroup(), out var secondDisposable);
 
         Assert.IsNotNull(firstAction);
         Assert.IsNotNull(secondAction);
@@ -92,11 +92,11 @@ public sealed class NestedGroupDrawerBinderTests
     [TestMethod]
     public void BuildDrawAction_WhenDrawerSupportsBaseType_AcceptsDerivedGroup()
     {
-        var attribute = new TestNestedGroupDrawerAttribute(typeof(BaseGroupDrawer));
+        var attribute = new TestNestedDrawerAttribute(typeof(BaseGroupDrawer));
         var group = new DerivedGroup();
         BaseGroupDrawer.Reset();
 
-        var action = NestedGroupDrawerBinder.BuildDrawAction(attribute, typeof(DerivedGroup), group, out var disposable);
+        var action = NestedDrawerBinder.BuildDrawAction(attribute, typeof(DerivedGroup), group, out var disposable);
         action?.Invoke();
 
         Assert.IsNotNull(action);
@@ -110,13 +110,13 @@ public sealed class NestedGroupDrawerBinderTests
     [TestMethod]
     public void BuildDrawAction_MultipleBindings_KeepTheirOwnGroupInstances()
     {
-        var attribute = new TestNestedGroupDrawerAttribute(typeof(TestGroupDrawer));
+        var attribute = new TestNestedDrawerAttribute(typeof(TestGroupDrawer));
         var firstGroup = new TestGroup { Value = 1 };
         var secondGroup = new TestGroup { Value = 2 };
         TestGroupDrawer.Reset();
 
-        var firstAction = NestedGroupDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), firstGroup, out _);
-        var secondAction = NestedGroupDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), secondGroup, out _);
+        var firstAction = NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), firstGroup, out _);
+        var secondAction = NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), secondGroup, out _);
 
         firstAction?.Invoke();
         Assert.AreSame(firstGroup, TestGroupDrawer.LastDrawnGroup);
@@ -132,16 +132,16 @@ public sealed class NestedGroupDrawerBinderTests
     [TestMethod]
     public void BuildDrawAction_CompatibleDrawerWithoutParameterlessConstructor_ThrowsMissingMethodException()
     {
-        var attribute = new TestNestedGroupDrawerAttribute(typeof(CompatibleDrawerWithoutParameterlessConstructor));
+        var attribute = new TestNestedDrawerAttribute(typeof(CompatibleDrawerWithoutParameterlessConstructor));
         var group = new TestGroup();
 
-        AssertThrows<MissingMethodException>(() => NestedGroupDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out _));
+        AssertThrows<MissingMethodException>(() => NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out _));
     }
 
     /// <summary>
     /// Minimal attribute implementation used to supply drawer types to the binder.
     /// </summary>
-    private sealed class TestNestedGroupDrawerAttribute(Type drawerType) : INestedGroupDrawerAttribute
+    private sealed class TestNestedDrawerAttribute(Type drawerType) : INestedDrawerAttribute
     {
         public Type DrawerType { get; } = drawerType;
     }
@@ -157,7 +157,7 @@ public sealed class NestedGroupDrawerBinderTests
     /// <summary>
     /// Drawer that records the group passed to <see cref="Draw"/>.
     /// </summary>
-    private sealed class TestGroupDrawer : INestedGroupDrawer<TestGroup>
+    private sealed class TestGroupDrawer : INestedDrawer<TestGroup>
     {
         public static int DrawCallCount { get; private set; }
 
@@ -179,7 +179,7 @@ public sealed class NestedGroupDrawerBinderTests
     /// <summary>
     /// Drawer that supports <see cref="TestGroup"/> and is disposable.
     /// </summary>
-    private sealed class DisposableTestGroupDrawer : INestedGroupDrawer<TestGroup>, IDisposable
+    private sealed class DisposableTestGroupDrawer : INestedDrawer<TestGroup>, IDisposable
     {
         public void Draw(TestGroup group)
         {
@@ -202,7 +202,7 @@ public sealed class NestedGroupDrawerBinderTests
     /// <summary>
     /// Drawer intentionally incompatible with <see cref="TestGroup"/>.
     /// </summary>
-    private sealed class IncompatibleDrawer : INestedGroupDrawer<OtherGroup>
+    private sealed class IncompatibleDrawer : INestedDrawer<OtherGroup>
     {
         public void Draw(OtherGroup group)
         {
@@ -227,7 +227,7 @@ public sealed class NestedGroupDrawerBinderTests
     /// <summary>
     /// Drawer that records base-group invocations.
     /// </summary>
-    private sealed class BaseGroupDrawer : INestedGroupDrawer<BaseGroup>
+    private sealed class BaseGroupDrawer : INestedDrawer<BaseGroup>
     {
         public static BaseGroup? LastDrawnGroup { get; private set; }
 
@@ -239,7 +239,7 @@ public sealed class NestedGroupDrawerBinderTests
     /// <summary>
     /// Drawer that is type-compatible but cannot be created via Activator.CreateInstance().
     /// </summary>
-    private sealed class CompatibleDrawerWithoutParameterlessConstructor : INestedGroupDrawer<TestGroup>
+    private sealed class CompatibleDrawerWithoutParameterlessConstructor : INestedDrawer<TestGroup>
     {
         public CompatibleDrawerWithoutParameterlessConstructor(int _) { }
 

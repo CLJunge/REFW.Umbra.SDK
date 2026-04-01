@@ -14,7 +14,7 @@ namespace Umbra.Config.Attributes;
 /// When <see langword="true"/>, the root tree node starts in its expanded state.
 /// </param>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class UmbraConfigRootNodeAttribute(string? label = null, bool defaultOpen = false) : Attribute
+public sealed class UmbraRootNodeAttribute(string? label = null, bool defaultOpen = false) : Attribute
 {
     /// <summary>Gets the label shown on the root tree node header.</summary>
     public string? Label { get; } = label;

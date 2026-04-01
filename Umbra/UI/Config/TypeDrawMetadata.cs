@@ -15,6 +15,20 @@ internal sealed class TypeDrawMetadata
     /// <summary>
     /// Cached UI metadata for one public instance property of a config type.
     /// </summary>
+    /// <param name="property">The reflected property.</param>
+    /// <param name="propertyType">The property's type.</param>
+    /// <param name="isParameter">Whether the property is a <see cref="Umbra.Config.Parameter{T}"/>.</param>
+    /// <param name="category">The property's <see cref="UmbraCategoryAttribute"/> value, or <see langword="null"/> if not specified.</param>
+    /// <param name="indentAttr">The property's <see cref="UmbraIndentAttribute"/>, if any.</param>
+    /// <param name="collapseAttr">The property's <see cref="UmbraCollapseAsTreeAttribute"/>, if any.</param>
+    /// <param name="labelMarginAttr">The property's <see cref="UmbraLabelMarginAttribute"/>, if any.</param>
+    /// <param name="nestedDrawerAttr">The property's <see cref="INestedDrawerAttribute"/>, if any.</param>
+    /// <param name="hideIf">The property's <see cref="IHideIfAttribute"/>, if any.</param>
+    /// <param name="order">The property's <see cref="UmbraParameterOrderAttribute.Order"/> value, or <see cref="int.MaxValue"/> if not specified.</param>
+    /// <param name="spacingBefore">The property's <see cref="UmbraSpacingBeforeAttribute.Count"/> value, or 0 if not specified.</param>
+    /// <param name="spacingAfter">The property's <see cref="UmbraSpacingAfterAttribute.Count"/> value, or 0 if not specified.</param>
+    /// <param name="settingsPrefix">The property's <see cref="UmbraPrefixAttribute.Prefix"/> value, or <see langword="null"/> if not specified.</param>
+    /// <param name="settingsParameterKeyOverride">The property's <see cref="UmbraParameterAttribute.KeyOverride"/>" value, or <see langword="null"/> if not specified.</param>
     internal sealed class PropertyDrawMetadata(
         PropertyInfo property,
         Type propertyType,
@@ -23,7 +37,7 @@ internal sealed class TypeDrawMetadata
         UmbraIndentAttribute? indentAttr,
         UmbraCollapseAsTreeAttribute? collapseAttr,
         UmbraLabelMarginAttribute? labelMarginAttr,
-        INestedGroupDrawerAttribute? nestedGroupDrawerAttr,
+        INestedDrawerAttribute? nestedDrawerAttr,
         IHideIfAttribute? hideIf,
         int order,
         int spacingBefore,
@@ -38,7 +52,7 @@ internal sealed class TypeDrawMetadata
         internal UmbraIndentAttribute? IndentAttr { get; } = indentAttr;
         internal UmbraCollapseAsTreeAttribute? CollapseAttr { get; } = collapseAttr;
         internal UmbraLabelMarginAttribute? LabelMarginAttr { get; } = labelMarginAttr;
-        internal INestedGroupDrawerAttribute? NestedGroupDrawerAttr { get; } = nestedGroupDrawerAttr;
+        internal INestedDrawerAttribute? NestedDrawerAttr { get; } = nestedDrawerAttr;
         internal IHideIfAttribute? HideIf { get; } = hideIf;
         internal int Order { get; } = order;
         internal int SpacingBefore { get; } = spacingBefore;
@@ -57,7 +71,7 @@ internal sealed class TypeDrawMetadata
     internal UmbraIndentAttribute? IndentAttr { get; }
     internal UmbraCollapseAsTreeAttribute? CollapseAttr { get; }
     internal UmbraLabelMarginAttribute? LabelMarginAttr { get; }
-    internal INestedGroupDrawerAttribute? NestedGroupDrawerAttr { get; }
+    internal INestedDrawerAttribute? NestedDrawerAttr { get; }
     internal bool IsAutoRegisterSettings { get; }
     internal PropertyDrawMetadata[] Properties { get; }
 
@@ -67,7 +81,7 @@ internal sealed class TypeDrawMetadata
         UmbraIndentAttribute? indentAttr,
         UmbraCollapseAsTreeAttribute? collapseAttr,
         UmbraLabelMarginAttribute? labelMarginAttr,
-        INestedGroupDrawerAttribute? nestedGroupDrawerAttr,
+        INestedDrawerAttribute? nestedDrawerAttr,
         bool isAutoRegisterSettings,
         PropertyDrawMetadata[] properties)
     {
@@ -76,7 +90,7 @@ internal sealed class TypeDrawMetadata
         IndentAttr = indentAttr;
         CollapseAttr = collapseAttr;
         LabelMarginAttr = labelMarginAttr;
-        NestedGroupDrawerAttr = nestedGroupDrawerAttr;
+        NestedDrawerAttr = nestedDrawerAttr;
         IsAutoRegisterSettings = isAutoRegisterSettings;
         Properties = properties;
     }
@@ -90,18 +104,18 @@ internal sealed class TypeDrawMetadata
         UmbraIndentAttribute? indentAttr = null;
         UmbraCollapseAsTreeAttribute? collapseAttr = null;
         UmbraLabelMarginAttribute? labelMarginAttr = null;
-        INestedGroupDrawerAttribute? nestedDrawerAttr = null;
+        INestedDrawerAttribute? nestedDrawerAttr = null;
         var isAutoRegister = false;
 
         foreach (var a in type.GetCustomAttributes(inherit: true))
         {
             if (a is UmbraCategoryAttribute cat) { category = cat.Name; continue; }
-            if (a is UmbraSettingsPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
+            if (a is UmbraPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
             if (a is UmbraIndentAttribute ind) { indentAttr = ind; continue; }
             if (a is UmbraCollapseAsTreeAttribute col) { collapseAttr = col; continue; }
             if (a is UmbraLabelMarginAttribute lm) { labelMarginAttr = lm; continue; }
-            if (a is INestedGroupDrawerAttribute ngd) { nestedDrawerAttr = ngd; continue; }
-            if (a is UmbraAutoRegisterSettingsAttribute) isAutoRegister = true;
+            if (a is INestedDrawerAttribute nd) { nestedDrawerAttr = nd; continue; }
+            if (a is UmbraAutoRegisterAttribute) isAutoRegister = true;
         }
 
         var rawProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -127,7 +141,7 @@ internal sealed class TypeDrawMetadata
         UmbraIndentAttribute? indentAttr = null;
         UmbraCollapseAsTreeAttribute? collapseAttr = null;
         UmbraLabelMarginAttribute? labelMarginAttr = null;
-        INestedGroupDrawerAttribute? nestedGroupDrawerAttr = null;
+        INestedDrawerAttribute? nestedDrawerAttr = null;
         IHideIfAttribute? hideIf = null;
         var order = int.MaxValue;
         var spacingBefore = 0;
@@ -136,12 +150,12 @@ internal sealed class TypeDrawMetadata
         foreach (var attribute in property.GetCustomAttributes(inherit: false))
         {
             if (attribute is UmbraCategoryAttribute cat) { category = cat.Name; continue; }
-            if (attribute is UmbraSettingsPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
-            if (attribute is UmbraSettingsParameterAttribute settingsParameter) { settingsParameterKeyOverride = settingsParameter.KeyOverride; continue; }
+            if (attribute is UmbraPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
+            if (attribute is UmbraParameterAttribute settingsParameter) { settingsParameterKeyOverride = settingsParameter.KeyOverride; continue; }
             if (attribute is UmbraIndentAttribute indent) { indentAttr = indent; continue; }
             if (attribute is UmbraCollapseAsTreeAttribute collapse) { collapseAttr = collapse; continue; }
             if (attribute is UmbraLabelMarginAttribute labelMargin) { labelMarginAttr = labelMargin; continue; }
-            if (attribute is INestedGroupDrawerAttribute nestedDrawer) { nestedGroupDrawerAttr = nestedDrawer; continue; }
+            if (attribute is INestedDrawerAttribute nestedDrawer) { nestedDrawerAttr = nestedDrawer; continue; }
             if (attribute is IHideIfAttribute propertyHideIf) { hideIf = propertyHideIf; continue; }
             if (attribute is UmbraParameterOrderAttribute parameterOrder) { order = parameterOrder.Order; continue; }
             if (attribute is UmbraSpacingBeforeAttribute before) { spacingBefore = before.Count; continue; }
@@ -156,7 +170,7 @@ internal sealed class TypeDrawMetadata
             indentAttr,
             collapseAttr,
             labelMarginAttr,
-            nestedGroupDrawerAttr,
+            nestedDrawerAttr,
             hideIf,
             order,
             spacingBefore,
