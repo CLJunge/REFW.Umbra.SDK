@@ -113,8 +113,8 @@ public sealed class PluginInstanceGuardTests
         Assert.IsFalse(secondResult);
         Assert.IsNull(secondLease);
         Assert.HasCount(1, _sink.WarningMessages);
-        Assert.Contains(_sink.WarningMessages[0], "Skipped load for plugin");
-        Assert.Contains(_sink.WarningMessages[0], typeof(DefaultMutexPlugin).FullName!);
+        Assert.Contains("Skipped load for plugin", _sink.WarningMessages[0]);
+        Assert.Contains(typeof(DefaultMutexPlugin).FullName!, _sink.WarningMessages[0]);
 
         firstLease.Dispose();
     }
@@ -180,7 +180,7 @@ public sealed class PluginInstanceGuardTests
             PluginInstanceGuard.TryAcquire(typeof(MissingAttributePlugin), _log, out _));
 
         // Assert
-        Assert.Contains(exception.Message, "[UmbraPlugin]");
+        Assert.Contains("[UmbraPlugin]", exception.Message);
     }
 
     /// <summary>
@@ -195,7 +195,7 @@ public sealed class PluginInstanceGuardTests
             MissingAttributeInferencePlugin.Load(_log, out _));
 
         // Assert
-        Assert.Contains(exception.Message, "[UmbraPlugin]");
+        Assert.Contains("[UmbraPlugin]", exception.Message);
     }
 
     /// <summary>
@@ -209,7 +209,7 @@ public sealed class PluginInstanceGuardTests
             PluginInstanceGuard.TryAcquire(typeof(WhitespaceMutexPlugin), _log, out _));
 
         // Assert
-        Assert.Contains(exception.Message, "empty or whitespace mutex key");
+        Assert.Contains("empty or whitespace mutex key", exception.Message);
     }
 
     [UmbraPlugin]
