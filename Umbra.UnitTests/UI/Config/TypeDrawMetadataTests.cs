@@ -1,9 +1,8 @@
-namespace Umbra.UI.Config.UnitTests;
 
 using Umbra.Config;
 using Umbra.Config.Attributes;
 
-
+namespace Umbra.UI.Config.UnitTests;
 /// <summary>
 /// Unit tests for the <see cref="TypeDrawMetadata"/> class.
 /// </summary>

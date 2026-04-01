@@ -206,10 +206,11 @@ public sealed class LabelAlignmentGroupTests
     public void Margin_SetMultipleTimes_ReturnsLatestValue()
     {
         // Arrange
-        var group = new LabelAlignmentGroup();
-
-        // Act
-        group.Margin = 4f;
+        var group = new LabelAlignmentGroup
+        {
+            // Act
+            Margin = 4f
+        };
         group.Margin = -2f;
 
         // Assert

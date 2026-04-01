@@ -3392,10 +3392,7 @@ public sealed class LoggerTests
     /// Verifies that <see cref="Logger.SetLogSink(ILogSink)"/> rejects null sinks.
     /// </summary>
     [TestMethod]
-    public void SetLogSink_Null_ThrowsArgumentNullException()
-    {
-        AssertThrows<ArgumentNullException>(() => Logger.SetLogSink(null!));
-    }
+    public void SetLogSink_Null_ThrowsArgumentNullException() => AssertThrows<ArgumentNullException>(() => Logger.SetLogSink(null!));
 
     /// <summary>
     /// Verifies that <see cref="Logger.Info(string)"/> swallows sink exceptions.
@@ -3445,10 +3442,7 @@ public sealed class LoggerTests
     /// Verifies that formatted logging swallows exceptions thrown while formatting arguments.
     /// </summary>
     [TestMethod]
-    public void Error_WhenArgumentToStringThrows_DoesNotThrow()
-    {
-        Logger.Error("Value: {0}", new ThrowingToStringValue());
-    }
+    public void Error_WhenArgumentToStringThrows_DoesNotThrow() => Logger.Error("Value: {0}", new ThrowingToStringValue());
 
     /// <summary>
     /// Sink that throws for every write path.
