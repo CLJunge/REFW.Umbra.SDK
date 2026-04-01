@@ -58,7 +58,7 @@ public sealed class PluginBootstrapperTests
         Assert.IsFalse(secondResult);
         Assert.IsTrue(initialized);
         Assert.HasCount(1, _sink.WarningMessages);
-        Assert.IsTrue(_sink.WarningMessages[0].Contains("Skipped load for plugin"));
+        Assert.Contains("Skipped load for plugin", _sink.WarningMessages[0]);
     }
 
     /// <summary>
