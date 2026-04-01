@@ -11,7 +11,6 @@ namespace Umbra.Runtime.UnitTests;
 public sealed class PluginInstanceGuardTests
 {
     private TestLogSink _sink = null!;
-    private PluginLogger _log = null!;
 
     /// <summary>
     /// Verifies that an action throws the expected exception type and returns the captured exception.
@@ -39,7 +38,6 @@ public sealed class PluginInstanceGuardTests
     public void TestInitialize()
     {
         _sink = new TestLogSink();
-        _log = new PluginLogger("PluginInstanceGuardTests");
 
         Logger.EnableAll();
         Logger.SetLogSink(_sink);
@@ -64,7 +62,7 @@ public sealed class PluginInstanceGuardTests
     public void TryAcquire_FirstDecoratedPlugin_ReturnsTrueAndProvidesLease()
     {
         // Act
-        var result = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), _log, out var lease);
+        var result = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), out var lease);
 
         // Assert
         Assert.IsTrue(result);
@@ -83,7 +81,7 @@ public sealed class PluginInstanceGuardTests
     public void TryAcquire_CallerInferenceOverload_ReturnsTrueAndProvidesLease()
     {
         // Act
-        var result = InferredMutexPlugin.Load(_log, out var lease);
+        var result = InferredMutexPlugin.Load(out var lease);
 
         // Assert
         Assert.IsTrue(result);
@@ -102,12 +100,12 @@ public sealed class PluginInstanceGuardTests
     public void TryAcquire_DuplicateLoad_ReturnsFalseAndLogsWarning()
     {
         // Arrange
-        var firstResult = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), _log, out var firstLease);
+        var firstResult = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), out var firstLease);
         Assert.IsTrue(firstResult);
         Assert.IsNotNull(firstLease);
 
         // Act
-        var secondResult = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), _log, out var secondLease);
+        var secondResult = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), out var secondLease);
 
         // Assert
         Assert.IsFalse(secondResult);
@@ -126,13 +124,13 @@ public sealed class PluginInstanceGuardTests
     public void Dispose_AfterAcquire_AllowsLaterReacquire()
     {
         // Arrange
-        var firstResult = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), _log, out var firstLease);
+        var firstResult = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), out var firstLease);
         Assert.IsTrue(firstResult);
         Assert.IsNotNull(firstLease);
 
         // Act
         firstLease.Dispose();
-        var secondResult = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), _log, out var secondLease);
+        var secondResult = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), out var secondLease);
 
         // Assert
         Assert.IsTrue(secondResult);
@@ -149,14 +147,14 @@ public sealed class PluginInstanceGuardTests
     public void TryAcquire_SharedExplicitMutexKey_RejectsSecondPluginUntilFirstReleases()
     {
         // Arrange
-        var firstResult = PluginInstanceGuard.TryAcquire(typeof(SharedMutexPluginA), _log, out var firstLease);
+        var firstResult = PluginInstanceGuard.TryAcquire(typeof(SharedMutexPluginA), out var firstLease);
         Assert.IsTrue(firstResult);
         Assert.IsNotNull(firstLease);
 
         // Act
-        var secondResultWhileHeld = PluginInstanceGuard.TryAcquire(typeof(SharedMutexPluginB), _log, out var secondLeaseWhileHeld);
+        var secondResultWhileHeld = PluginInstanceGuard.TryAcquire(typeof(SharedMutexPluginB), out var secondLeaseWhileHeld);
         firstLease.Dispose();
-        var secondResultAfterRelease = PluginInstanceGuard.TryAcquire(typeof(SharedMutexPluginB), _log, out var secondLeaseAfterRelease);
+        var secondResultAfterRelease = PluginInstanceGuard.TryAcquire(typeof(SharedMutexPluginB), out var secondLeaseAfterRelease);
 
         // Assert
         Assert.IsFalse(secondResultWhileHeld);
@@ -177,7 +175,7 @@ public sealed class PluginInstanceGuardTests
     {
         // Act
         var exception = AssertThrows<InvalidOperationException>(() =>
-            PluginInstanceGuard.TryAcquire(typeof(MissingAttributePlugin), _log, out _));
+            PluginInstanceGuard.TryAcquire(typeof(MissingAttributePlugin), out _));
 
         // Assert
         Assert.Contains("[UmbraPlugin]", exception.Message);
@@ -192,7 +190,7 @@ public sealed class PluginInstanceGuardTests
     {
         // Act
         var exception = AssertThrows<InvalidOperationException>(() =>
-            MissingAttributeInferencePlugin.Load(_log, out _));
+            MissingAttributeInferencePlugin.Load(out _));
 
         // Assert
         Assert.Contains("[UmbraPlugin]", exception.Message);
@@ -206,7 +204,7 @@ public sealed class PluginInstanceGuardTests
     {
         // Act
         var exception = AssertThrows<InvalidOperationException>(() =>
-            PluginInstanceGuard.TryAcquire(typeof(WhitespaceMutexPlugin), _log, out _));
+            PluginInstanceGuard.TryAcquire(typeof(WhitespaceMutexPlugin), out _));
 
         // Assert
         Assert.Contains("empty or whitespace mutex key", exception.Message);
@@ -219,8 +217,8 @@ public sealed class PluginInstanceGuardTests
     private static class InferredMutexPlugin
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static bool Load(PluginLogger log, out PluginInstanceLease? lease)
-            => PluginInstanceGuard.TryAcquire(log, out lease);
+        internal static bool Load(out PluginInstanceLease? lease)
+            => PluginInstanceGuard.TryAcquire(out lease);
     }
 
     [UmbraPlugin("shared-group")]
@@ -234,8 +232,8 @@ public sealed class PluginInstanceGuardTests
     private static class MissingAttributeInferencePlugin
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static bool Load(PluginLogger log, out PluginInstanceLease? lease)
-            => PluginInstanceGuard.TryAcquire(log, out lease);
+        internal static bool Load(out PluginInstanceLease? lease)
+            => PluginInstanceGuard.TryAcquire(out lease);
     }
 
     [UmbraPlugin("   ")]

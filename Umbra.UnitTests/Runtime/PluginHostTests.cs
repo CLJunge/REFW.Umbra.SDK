@@ -1,0 +1,126 @@
+using Umbra.Logging;
+using Umbra.Logging.UnitTests;
+
+namespace Umbra.Runtime.UnitTests;
+
+/// <summary>
+/// Unit tests for <see cref="PluginHost{TPlugin}"/>.
+/// </summary>
+[TestClass]
+public sealed class PluginHostTests
+{
+    private TestLogSink _sink = null!;
+
+    /// <summary>
+    /// Installs an in-memory log sink and clears any active plugin leases before each test.
+    /// </summary>
+    [TestInitialize]
+    public void TestInitialize()
+    {
+        _sink = new TestLogSink();
+
+        Logger.EnableAll();
+        Logger.SetLogSink(_sink);
+        PluginInstanceGuard.Reset();
+        LifecyclePlugin.Reset();
+    }
+
+    /// <summary>
+    /// Restores the default logging sink and clears any remaining plugin leases after each test.
+    /// </summary>
+    [TestCleanup]
+    public void TestCleanup()
+    {
+        PluginInstanceGuard.Reset();
+        Logger.ResetLogSink();
+        Logger.EnableAll();
+        LifecyclePlugin.Reset();
+    }
+
+    /// <summary>
+    /// Verifies that the host loads, dispatches callbacks, and unloads the live plugin instance.
+    /// </summary>
+    [TestMethod]
+    public void Load_PreDrawAndUnload_DispatchToLivePluginInstance()
+    {
+        // Arrange
+        var host = new PluginHost<LifecyclePlugin>(
+            typeof(LifecyclePluginHost),
+            static () => new LifecyclePlugin());
+
+        // Act
+        var loaded = host.Load();
+        host.OnPreImGuiDrawUI();
+        host.Unload();
+
+        // Assert
+        Assert.IsTrue(loaded);
+        Assert.AreEqual(1, LifecyclePlugin.InitializeCount);
+        Assert.AreEqual(1, LifecyclePlugin.PreDrawCount);
+        Assert.AreEqual(1, LifecyclePlugin.ShutdownCount);
+    }
+
+    /// <summary>
+    /// Verifies that a duplicate load attempt through the same host is rejected by the mutex.
+    /// </summary>
+    [TestMethod]
+    public void Load_WhenHostAlreadyLoaded_ReturnsFalseAndDoesNotCreateSecondInstance()
+    {
+        // Arrange
+        var factoryCalls = 0;
+        var host = new PluginHost<LifecyclePlugin>(
+            typeof(LifecyclePluginHost),
+            () =>
+            {
+                factoryCalls++;
+                return new LifecyclePlugin();
+            });
+
+        // Act
+        var firstLoad = host.Load();
+        var secondLoad = host.Load();
+        host.Unload();
+
+        // Assert
+        Assert.IsTrue(firstLoad);
+        Assert.IsFalse(secondLoad);
+        Assert.AreEqual(1, factoryCalls);
+        Assert.AreEqual(1, LifecyclePlugin.InitializeCount);
+        Assert.AreEqual(1, LifecyclePlugin.ShutdownCount);
+        Assert.HasCount(1, _sink.WarningMessages);
+        Assert.Contains("Skipped load for plugin", _sink.WarningMessages[0]);
+    }
+
+    private sealed class LifecyclePlugin : IUmbraPlugin
+    {
+        private static readonly PluginLogger _log = new("LifecyclePlugin");
+
+        internal static int InitializeCount;
+        internal static int ShutdownCount;
+        internal static int PreDrawCount;
+
+        public void Initialize()
+        {
+            InitializeCount++;
+            _log.Info("Initialized.");
+        }
+
+        public void Shutdown()
+        {
+            ShutdownCount++;
+            _log.Info("Shutdown.");
+        }
+
+        public void OnPreImGuiDrawUI() => PreDrawCount++;
+
+        internal static void Reset()
+        {
+            InitializeCount = 0;
+            ShutdownCount = 0;
+            PreDrawCount = 0;
+        }
+    }
+
+    [UmbraPlugin]
+    private static class LifecyclePluginHost;
+}

@@ -10,7 +10,6 @@ namespace Umbra.Runtime.UnitTests;
 public sealed class PluginBootstrapperTests
 {
     private TestLogSink _sink = null!;
-    private PluginLogger _log = null!;
 
     /// <summary>
     /// Installs an in-memory log sink and clears any active plugin leases before each test.
@@ -19,7 +18,6 @@ public sealed class PluginBootstrapperTests
     public void TestInitialize()
     {
         _sink = new TestLogSink();
-        _log = new PluginLogger("PluginBootstrapperTests");
 
         Logger.EnableAll();
         Logger.SetLogSink(_sink);
@@ -69,11 +67,11 @@ public sealed class PluginBootstrapperTests
     {
         // Arrange
         var cleanupRan = false;
-        Assert.IsTrue(PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log));
+        Assert.IsTrue(PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }));
 
         // Act
         PluginBootstrapper.Unload(typeof(BootstrapPlugin), () => cleanupRan = true);
-        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log);
+        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { });
 
         // Assert
         Assert.IsTrue(cleanupRan);
@@ -87,13 +85,13 @@ public sealed class PluginBootstrapperTests
     public void Unload_CleanupThrows_StillReleasesMutex()
     {
         // Arrange
-        Assert.IsTrue(PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log));
+        Assert.IsTrue(PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }));
 
         // Act
         var exception = AssertThrows<InvalidOperationException>(() =>
             PluginBootstrapper.Unload(typeof(BootstrapPlugin), () => throw new InvalidOperationException("boom")));
 
-        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log);
+        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { });
 
         // Assert
         Assert.AreEqual("boom", exception.Message);
@@ -108,9 +106,9 @@ public sealed class PluginBootstrapperTests
     {
         // Act
         var exception = AssertThrows<InvalidOperationException>(() =>
-            PluginBootstrapper.Load(typeof(BootstrapPlugin), () => throw new InvalidOperationException("load failed"), _log));
+            PluginBootstrapper.Load(typeof(BootstrapPlugin), () => throw new InvalidOperationException("load failed")));
 
-        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log);
+        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { });
 
         // Assert
         Assert.AreEqual("load failed", exception.Message);

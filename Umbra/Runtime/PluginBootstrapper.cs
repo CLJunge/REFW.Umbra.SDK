@@ -1,5 +1,3 @@
-using Umbra.Logging;
-
 namespace Umbra.Runtime;
 
 /// <summary>
@@ -24,19 +22,17 @@ public static class PluginBootstrapper
     /// entry-point method.
     /// </summary>
     /// <param name="initialize">The plugin initialization callback.</param>
-    /// <param name="log">
-    /// The logger used to report duplicate load attempts, or <see langword="null"/> to log through
-    /// the global <see cref="Logger"/> facade instead.
-    /// </param>
     /// <returns>
     /// <see langword="true"/> when the plugin acquired its mutex and the initialization callback ran;
     /// otherwise <see langword="false"/> when another instance already holds the mutex.
     /// </returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="initialize"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a decorated plugin type.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a decorated plugin host type.</exception>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    public static bool Load(Action initialize, PluginLogger? log = null)
+    public static bool Load(Action initialize)
     {
+        ArgumentNullException.ThrowIfNull(initialize);
+
         var callerMethod = new System.Diagnostics.StackFrame(1, false).GetMethod()
             ?? throw new InvalidOperationException(
                 $"Unable to resolve the calling method for {nameof(PluginBootstrapper)}.{nameof(Load)}.");
@@ -44,31 +40,30 @@ public static class PluginBootstrapper
         var pluginType = callerMethod.DeclaringType
             ?? throw new InvalidOperationException(
                 $"Calling method '{callerMethod.Name}' does not declare a plugin type. " +
-                $"Use {nameof(Load)}(Type, PluginLogger, Action) when caller inference is not available.");
+                $"Use {nameof(Load)}(Type, Action) when caller inference is not available.");
 
-        return Load(pluginType, initialize, log);
+        return Load(pluginType, initialize);
     }
 
     /// <summary>
     /// Runs a plugin's initialization code under the single-instance guard for <paramref name="pluginType"/>.
     /// </summary>
-    /// <param name="pluginType">The plugin class decorated with <see cref="UmbraPluginAttribute"/>.</param>
-    /// <param name="initialize">The plugin initialization callback.</param>
-    /// <param name="log">
-    /// The logger used to report duplicate load attempts, or <see langword="null"/> to log through
-    /// the global <see cref="Logger"/> facade instead.
+    /// <param name="pluginType">
+    /// The assembly-facing host type decorated with <see cref="UmbraPluginAttribute"/> that defines
+    /// the plugin's mutex identity.
     /// </param>
+    /// <param name="initialize">The plugin initialization callback.</param>
     /// <returns>
     /// <see langword="true"/> when the plugin acquired its mutex and the initialization callback ran;
     /// otherwise <see langword="false"/> when another instance already holds the mutex.
     /// </returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="pluginType"/> or <paramref name="initialize"/> is <see langword="null"/>.</exception>
-    public static bool Load(Type pluginType, Action initialize, PluginLogger? log = null)
+    public static bool Load(Type pluginType, Action initialize)
     {
         ArgumentNullException.ThrowIfNull(pluginType);
         ArgumentNullException.ThrowIfNull(initialize);
 
-        if (!PluginInstanceGuard.TryAcquire(pluginType, log, out var lease))
+        if (!PluginInstanceGuard.TryAcquire(pluginType, out var lease))
             return false;
 
         try
@@ -93,7 +88,7 @@ public static class PluginBootstrapper
     /// blocked by a partially failed shutdown path.
     /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="cleanup"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a decorated plugin type.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a decorated plugin host type.</exception>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     public static void Unload(Action cleanup)
     {
@@ -112,7 +107,10 @@ public static class PluginBootstrapper
     /// <summary>
     /// Runs a plugin's shutdown code and then releases its single-instance mutex.
     /// </summary>
-    /// <param name="pluginType">The plugin class decorated with <see cref="UmbraPluginAttribute"/>.</param>
+    /// <param name="pluginType">
+    /// The assembly-facing host type decorated with <see cref="UmbraPluginAttribute"/> that defines
+    /// the plugin's mutex identity.
+    /// </param>
     /// <param name="cleanup">The plugin cleanup callback.</param>
     /// <remarks>
     /// The mutex is released even if <paramref name="cleanup"/> throws, so a later reload is not

@@ -25,19 +25,15 @@ internal static class PluginInstanceGuard
 #pragma warning restore IDE0028
 
     /// <summary>
-    /// Attempts to acquire the single-instance mutex for the plugin class that owns the calling
-    /// entry-point method.
+    /// Attempts to acquire the single-instance mutex for the decorated host type that owns the
+    /// calling entry-point method.
     /// </summary>
     /// <remarks>
     /// This overload is intended for direct use inside a plugin's <c>[PluginEntryPoint]</c> method.
     /// It inspects the immediate caller, resolves that method's declaring type, and then applies the
     /// same <see cref="UmbraPluginAttribute"/> validation and mutex-key resolution as
-    /// <see cref="TryAcquire(Type, PluginLogger, out PluginInstanceLease?)"/>.
+    /// <see cref="TryAcquire(Type, out PluginInstanceLease?)"/>.
     /// </remarks>
-    /// <param name="log">
-    /// The logger used to emit duplicate-load warnings, or <see langword="null"/> to log through the
-    /// process-wide <see cref="Logger"/> facade instead.
-    /// </param>
     /// <param name="lease">
     /// Receives the acquired lease when the method returns <see langword="true"/>; otherwise
     /// <see langword="null"/>.
@@ -51,7 +47,7 @@ internal static class PluginInstanceGuard
     /// decorated with <see cref="UmbraPluginAttribute"/>, or when the declared mutex key is empty or whitespace.
     /// </exception>
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static bool TryAcquire(PluginLogger? log, [NotNullWhen(true)] out PluginInstanceLease? lease)
+    public static bool TryAcquire([NotNullWhen(true)] out PluginInstanceLease? lease)
     {
         var callerMethod = new StackFrame(1, false).GetMethod()
             ?? throw new InvalidOperationException(
@@ -60,18 +56,16 @@ internal static class PluginInstanceGuard
         var pluginType = callerMethod.DeclaringType
             ?? throw new InvalidOperationException(
                 $"Calling method '{callerMethod.Name}' does not declare a plugin type. " +
-                $"Use {nameof(TryAcquire)}(Type, PluginLogger, out PluginInstanceLease?) when caller inference is not available.");
+                $"Use {nameof(TryAcquire)}(Type, out PluginInstanceLease?) when caller inference is not available.");
 
-        return TryAcquire(pluginType, log, out lease);
+        return TryAcquire(pluginType, out lease);
     }
 
     /// <summary>
     /// Attempts to acquire the single-instance mutex declared by <paramref name="pluginType"/>.
     /// </summary>
-    /// <param name="pluginType">The plugin class decorated with <see cref="UmbraPluginAttribute"/>.</param>
-    /// <param name="log">
-    /// The logger used to emit duplicate-load warnings, or <see langword="null"/> to log through the
-    /// process-wide <see cref="Logger"/> facade instead.
+    /// <param name="pluginType">
+    /// The decorated host type whose <see cref="UmbraPluginAttribute"/> defines the plugin's mutex identity.
     /// </param>
     /// <param name="lease">
     /// Receives the acquired lease when the method returns <see langword="true"/>; otherwise
@@ -85,7 +79,7 @@ internal static class PluginInstanceGuard
     /// Thrown when <paramref name="pluginType"/> is not decorated with <see cref="UmbraPluginAttribute"/>,
     /// or when the declared mutex key is empty or whitespace.
     /// </exception>
-    public static bool TryAcquire(Type pluginType, PluginLogger? log, [NotNullWhen(true)] out PluginInstanceLease? lease)
+    public static bool TryAcquire(Type pluginType, [NotNullWhen(true)] out PluginInstanceLease? lease)
     {
         ArgumentNullException.ThrowIfNull(pluginType);
 
@@ -96,7 +90,7 @@ internal static class PluginInstanceGuard
         {
             if (_activeLeases.TryGetValue(mutexKey, out var activeLease))
             {
-                WarnDuplicateLoad(log, pluginName, mutexKey, GetTypeDisplayName(activeLease.PluginType));
+                WarnDuplicateLoad(pluginName, mutexKey, GetTypeDisplayName(activeLease.PluginType));
                 lease = null;
                 return false;
             }
@@ -130,7 +124,9 @@ internal static class PluginInstanceGuard
     /// This is the release primitive used by <see cref="PluginBootstrapper"/> so plugin authors do
     /// not need to store or dispose a lease object in their own code.
     /// </remarks>
-    /// <param name="pluginType">The plugin class decorated with <see cref="UmbraPluginAttribute"/>.</param>
+    /// <param name="pluginType">
+    /// The decorated host type whose <see cref="UmbraPluginAttribute"/> defines the plugin's mutex identity.
+    /// </param>
     internal static void Release(Type pluginType)
     {
         ArgumentNullException.ThrowIfNull(pluginType);
@@ -162,23 +158,22 @@ internal static class PluginInstanceGuard
     }
 
     /// <summary>
-    /// Emits the duplicate-load warning through either the plugin logger or the global logger.
+    /// Emits the duplicate-load warning through the global logger.
     /// </summary>
-    /// <param name="log">The optional plugin logger.</param>
     /// <param name="pluginName">The plugin name used in the warning.</param>
     /// <param name="mutexKey">The mutex key that is already held.</param>
     /// <param name="ownerName">The plugin type currently holding the mutex key.</param>
-    private static void WarnDuplicateLoad(PluginLogger? log, string pluginName, string mutexKey, string ownerName)
+    private static void WarnDuplicateLoad(string pluginName, string mutexKey, string ownerName)
     {
-        var message = $"Skipped load for plugin '{pluginName}' because mutex key '{mutexKey}' is already held by '{ownerName}'.";
-        if (log is null)
-            Logger.Warning(message);
-        else
-            log.Warning(message);
+        Logger.Warning(
+            "Skipped load for plugin '{0}' because mutex key '{1}' is already held by '{2}'.",
+            pluginName,
+            mutexKey,
+            ownerName);
     }
 
     /// <summary>
-    /// Resolves the mutex key contributed by the plugin type and its <see cref="UmbraPluginAttribute"/>.
+    /// Resolves the mutex key contributed by the decorated host type and its <see cref="UmbraPluginAttribute"/>.
     /// </summary>
     /// <param name="pluginType">The decorated plugin type.</param>
     /// <returns>The non-empty mutex key used for acquisition.</returns>
