@@ -47,17 +47,18 @@ public sealed class PluginBootstrapperTests
         var initialized = false;
 
         // Act
-        var result = PluginBootstrapper.Load(typeof(BootstrapPlugin), _log, () => initialized = true);
+        var result = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => initialized = true);
 
         // Assert
         Assert.IsTrue(result);
         Assert.IsTrue(initialized);
 
         // The active mutex should block a second load until unload runs.
-        var secondResult = PluginBootstrapper.Load(typeof(BootstrapPlugin), _log, () => initialized = false);
+        var secondResult = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => initialized = false);
         Assert.IsFalse(secondResult);
         Assert.IsTrue(initialized);
         Assert.HasCount(1, _sink.WarningMessages);
+        Assert.IsTrue(_sink.WarningMessages[0].Contains("Skipped load for plugin"));
     }
 
     /// <summary>
@@ -68,11 +69,11 @@ public sealed class PluginBootstrapperTests
     {
         // Arrange
         var cleanupRan = false;
-        Assert.IsTrue(PluginBootstrapper.Load(typeof(BootstrapPlugin), _log, () => { }));
+        Assert.IsTrue(PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log));
 
         // Act
         PluginBootstrapper.Unload(typeof(BootstrapPlugin), () => cleanupRan = true);
-        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), _log, () => { });
+        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log);
 
         // Assert
         Assert.IsTrue(cleanupRan);
@@ -86,13 +87,13 @@ public sealed class PluginBootstrapperTests
     public void Unload_CleanupThrows_StillReleasesMutex()
     {
         // Arrange
-        Assert.IsTrue(PluginBootstrapper.Load(typeof(BootstrapPlugin), _log, () => { }));
+        Assert.IsTrue(PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log));
 
         // Act
         var exception = AssertThrows<InvalidOperationException>(() =>
             PluginBootstrapper.Unload(typeof(BootstrapPlugin), () => throw new InvalidOperationException("boom")));
 
-        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), _log, () => { });
+        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log);
 
         // Assert
         Assert.AreEqual("boom", exception.Message);
@@ -107,9 +108,9 @@ public sealed class PluginBootstrapperTests
     {
         // Act
         var exception = AssertThrows<InvalidOperationException>(() =>
-            PluginBootstrapper.Load(typeof(BootstrapPlugin), _log, () => throw new InvalidOperationException("load failed")));
+            PluginBootstrapper.Load(typeof(BootstrapPlugin), () => throw new InvalidOperationException("load failed"), _log));
 
-        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), _log, () => { });
+        var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }, _log);
 
         // Assert
         Assert.AreEqual("load failed", exception.Message);

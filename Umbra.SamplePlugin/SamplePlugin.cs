@@ -49,7 +49,7 @@ public static class SamplePlugin
         //System.Diagnostics.Debugger.Launch();
 #endif
 
-        if (!PluginBootstrapper.Load(_log, Initialize))
+        if (!PluginBootstrapper.Load(Initialize, _log))
             return;
     }
 

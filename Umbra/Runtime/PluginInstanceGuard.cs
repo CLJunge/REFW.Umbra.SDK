@@ -17,10 +17,12 @@ namespace Umbra.Runtime;
 /// explicit lease handling is desirable. When two plugin types resolve to the same mutex key, only
 /// the first successful acquisition is allowed to proceed.
 /// </remarks>
-public static class PluginInstanceGuard
+internal static class PluginInstanceGuard
 {
     private static readonly object _sync = new();
+#pragma warning disable IDE0028
     private static readonly Dictionary<string, PluginInstanceLease> _activeLeases = new(StringComparer.Ordinal);
+#pragma warning restore IDE0028
 
     /// <summary>
     /// Attempts to acquire the single-instance mutex for the plugin class that owns the calling
@@ -32,7 +34,10 @@ public static class PluginInstanceGuard
     /// same <see cref="UmbraPluginAttribute"/> validation and mutex-key resolution as
     /// <see cref="TryAcquire(Type, PluginLogger, out PluginInstanceLease?)"/>.
     /// </remarks>
-    /// <param name="log">The logger used to emit duplicate-load warnings.</param>
+    /// <param name="log">
+    /// The logger used to emit duplicate-load warnings, or <see langword="null"/> to log through the
+    /// process-wide <see cref="Logger"/> facade instead.
+    /// </param>
     /// <param name="lease">
     /// Receives the acquired lease when the method returns <see langword="true"/>; otherwise
     /// <see langword="null"/>.
@@ -41,16 +46,13 @@ public static class PluginInstanceGuard
     /// <see langword="true"/> when the caller's plugin mutex key was acquired successfully;
     /// otherwise <see langword="false"/> when another plugin instance already holds that key.
     /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="log"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the caller cannot be resolved to a declaring plugin type, when that type is not
     /// decorated with <see cref="UmbraPluginAttribute"/>, or when the declared mutex key is empty or whitespace.
     /// </exception>
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static bool TryAcquire(PluginLogger log, [NotNullWhen(true)] out PluginInstanceLease? lease)
+    public static bool TryAcquire(PluginLogger? log, [NotNullWhen(true)] out PluginInstanceLease? lease)
     {
-        ArgumentNullException.ThrowIfNull(log);
-
         var callerMethod = new StackFrame(1, false).GetMethod()
             ?? throw new InvalidOperationException(
                 $"Unable to resolve the calling method for {nameof(PluginInstanceGuard)}.{nameof(TryAcquire)}.");
@@ -67,7 +69,10 @@ public static class PluginInstanceGuard
     /// Attempts to acquire the single-instance mutex declared by <paramref name="pluginType"/>.
     /// </summary>
     /// <param name="pluginType">The plugin class decorated with <see cref="UmbraPluginAttribute"/>.</param>
-    /// <param name="log">The logger used to emit duplicate-load warnings.</param>
+    /// <param name="log">
+    /// The logger used to emit duplicate-load warnings, or <see langword="null"/> to log through the
+    /// process-wide <see cref="Logger"/> facade instead.
+    /// </param>
     /// <param name="lease">
     /// Receives the acquired lease when the method returns <see langword="true"/>; otherwise
     /// <see langword="null"/>.
@@ -76,17 +81,13 @@ public static class PluginInstanceGuard
     /// <see langword="true"/> when the mutex key was acquired successfully; otherwise
     /// <see langword="false"/> when another plugin instance already holds that key.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="pluginType"/> or <paramref name="log"/> is <see langword="null"/>.
-    /// </exception>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <paramref name="pluginType"/> is not decorated with <see cref="UmbraPluginAttribute"/>,
     /// or when the declared mutex key is empty or whitespace.
     /// </exception>
-    public static bool TryAcquire(Type pluginType, PluginLogger log, [NotNullWhen(true)] out PluginInstanceLease? lease)
+    public static bool TryAcquire(Type pluginType, PluginLogger? log, [NotNullWhen(true)] out PluginInstanceLease? lease)
     {
         ArgumentNullException.ThrowIfNull(pluginType);
-        ArgumentNullException.ThrowIfNull(log);
 
         var mutexKey = ResolveMutexKey(pluginType);
         var pluginName = GetTypeDisplayName(pluginType);
@@ -95,11 +96,7 @@ public static class PluginInstanceGuard
         {
             if (_activeLeases.TryGetValue(mutexKey, out var activeLease))
             {
-                log.Warning(
-                    "Skipped load for plugin '{0}' because mutex key '{1}' is already held by '{2}'.",
-                    pluginName,
-                    mutexKey,
-                    GetTypeDisplayName(activeLease.PluginType));
+                WarnDuplicateLoad(log, pluginName, mutexKey, GetTypeDisplayName(activeLease.PluginType));
                 lease = null;
                 return false;
             }
@@ -162,6 +159,22 @@ public static class PluginInstanceGuard
     {
         lock (_sync)
             _activeLeases.Clear();
+    }
+
+    /// <summary>
+    /// Emits the duplicate-load warning through either the plugin logger or the global logger.
+    /// </summary>
+    /// <param name="log">The optional plugin logger.</param>
+    /// <param name="pluginName">The plugin name used in the warning.</param>
+    /// <param name="mutexKey">The mutex key that is already held.</param>
+    /// <param name="ownerName">The plugin type currently holding the mutex key.</param>
+    private static void WarnDuplicateLoad(PluginLogger? log, string pluginName, string mutexKey, string ownerName)
+    {
+        var message = $"Skipped load for plugin '{pluginName}' because mutex key '{mutexKey}' is already held by '{ownerName}'.";
+        if (log is null)
+            Logger.Warning(message);
+        else
+            log.Warning(message);
     }
 
     /// <summary>

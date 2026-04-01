@@ -7,7 +7,7 @@ namespace Umbra.Runtime;
 /// Dispose the lease from the plugin's <c>[PluginExitPoint]</c> method to release the mutex key and
 /// allow a future load to acquire it again. Disposal is idempotent.
 /// </remarks>
-public sealed class PluginInstanceLease : IDisposable
+internal sealed class PluginInstanceLease : IDisposable
 {
     private int _disposed;
 

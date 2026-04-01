@@ -23,16 +23,19 @@ public static class PluginBootstrapper
     /// Runs a plugin's initialization code under the single-instance guard inferred from the calling
     /// entry-point method.
     /// </summary>
-    /// <param name="log">The logger used to report duplicate load attempts.</param>
     /// <param name="initialize">The plugin initialization callback.</param>
+    /// <param name="log">
+    /// The logger used to report duplicate load attempts, or <see langword="null"/> to log through
+    /// the global <see cref="Logger"/> facade instead.
+    /// </param>
     /// <returns>
     /// <see langword="true"/> when the plugin acquired its mutex and the initialization callback ran;
     /// otherwise <see langword="false"/> when another instance already holds the mutex.
     /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="log"/> or <paramref name="initialize"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="initialize"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a decorated plugin type.</exception>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    public static bool Load(PluginLogger log, Action initialize)
+    public static bool Load(Action initialize, PluginLogger? log = null)
     {
         var callerMethod = new System.Diagnostics.StackFrame(1, false).GetMethod()
             ?? throw new InvalidOperationException(
@@ -43,24 +46,26 @@ public static class PluginBootstrapper
                 $"Calling method '{callerMethod.Name}' does not declare a plugin type. " +
                 $"Use {nameof(Load)}(Type, PluginLogger, Action) when caller inference is not available.");
 
-        return Load(pluginType, log, initialize);
+        return Load(pluginType, initialize, log);
     }
 
     /// <summary>
     /// Runs a plugin's initialization code under the single-instance guard for <paramref name="pluginType"/>.
     /// </summary>
     /// <param name="pluginType">The plugin class decorated with <see cref="UmbraPluginAttribute"/>.</param>
-    /// <param name="log">The logger used to report duplicate load attempts.</param>
     /// <param name="initialize">The plugin initialization callback.</param>
+    /// <param name="log">
+    /// The logger used to report duplicate load attempts, or <see langword="null"/> to log through
+    /// the global <see cref="Logger"/> facade instead.
+    /// </param>
     /// <returns>
     /// <see langword="true"/> when the plugin acquired its mutex and the initialization callback ran;
     /// otherwise <see langword="false"/> when another instance already holds the mutex.
     /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="pluginType"/>, <paramref name="log"/> or <paramref name="initialize"/> is <see langword="null"/>.</exception>
-    public static bool Load(Type pluginType, PluginLogger log, Action initialize)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="pluginType"/> or <paramref name="initialize"/> is <see langword="null"/>.</exception>
+    public static bool Load(Type pluginType, Action initialize, PluginLogger? log = null)
     {
         ArgumentNullException.ThrowIfNull(pluginType);
-        ArgumentNullException.ThrowIfNull(log);
         ArgumentNullException.ThrowIfNull(initialize);
 
         if (!PluginInstanceGuard.TryAcquire(pluginType, log, out var lease))
