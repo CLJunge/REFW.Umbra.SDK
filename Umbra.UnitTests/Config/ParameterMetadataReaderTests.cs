@@ -42,8 +42,8 @@ public class ParameterMetadataReaderTests
         Assert.AreEqual(0, result.SpacingBefore);
         Assert.AreEqual(0, result.SpacingAfter);
         Assert.IsNull(result.Indent);
-        Assert.IsNull(result.CustomDrawerType);
-        Assert.IsNull(result.TwoColumnCustomDrawerType);
+        Assert.IsNull(result.DrawerType);
+        Assert.IsNull(result.TwoColumnDrawerType);
         Assert.IsNull(result.HideIf);
         Assert.AreEqual("%.2f", result.InferredFloatFormat);
         Assert.IsNull(result.HiddenLabel);
@@ -211,12 +211,12 @@ public class ParameterMetadataReaderTests
     }
 
     /// <summary>
-    /// Tests that ReadFrom returns a ParameterMetadata with CustomDrawerType set from ICustomDrawerAttribute.
+    /// Tests that ReadFrom returns a ParameterMetadata with DrawerType set from ICustomDrawerAttribute.
     /// Input: MemberInfo with an attribute implementing ICustomDrawerAttribute.
-    /// Expected: CustomDrawerType = typeof(TestDrawer).
+    /// Expected: DrawerType = typeof(TestDrawer).
     /// </summary>
     [TestMethod]
-    public void ReadFrom_MemberWithCustomDrawer_ReturnsCustomDrawerType()
+    public void ReadFrom_MemberWithCustomDrawer_ReturnsDrawerType()
     {
         // Arrange
         var member = typeof(TestClass).GetProperty(nameof(TestClass.WithCustomDrawer))!;
@@ -225,16 +225,16 @@ public class ParameterMetadataReaderTests
         var result = ParameterMetadataReader.ReadFrom(member);
 
         // Assert
-        Assert.AreEqual(typeof(TestDrawer), result.CustomDrawerType);
+        Assert.AreEqual(typeof(TestDrawer), result.DrawerType);
     }
 
     /// <summary>
-    /// Tests that ReadFrom returns a ParameterMetadata with TwoColumnCustomDrawerType set from ITwoColumnCustomDrawerAttribute.
+    /// Tests that ReadFrom returns a ParameterMetadata with TwoColumnDrawerType set from ITwoColumnCustomDrawerAttribute.
     /// Input: MemberInfo with an attribute implementing ITwoColumnCustomDrawerAttribute.
-    /// Expected: TwoColumnCustomDrawerType = typeof(TestTwoColumnDrawer).
+    /// Expected: TwoColumnDrawerType = typeof(TestTwoColumnDrawer).
     /// </summary>
     [TestMethod]
-    public void ReadFrom_MemberWithTwoColumnCustomDrawer_ReturnsTwoColumnCustomDrawerType()
+    public void ReadFrom_MemberWithTwoColumnCustomDrawer_ReturnsTwoColumnDrawerType()
     {
         // Arrange
         var member = typeof(TestClass).GetProperty(nameof(TestClass.WithTwoColumnCustomDrawer))!;
@@ -243,7 +243,7 @@ public class ParameterMetadataReaderTests
         var result = ParameterMetadataReader.ReadFrom(member);
 
         // Assert
-        Assert.AreEqual(typeof(TestTwoColumnDrawer), result.TwoColumnCustomDrawerType);
+        Assert.AreEqual(typeof(TestTwoColumnDrawer), result.TwoColumnDrawerType);
     }
 
     /// <summary>
@@ -473,3 +473,4 @@ public class ParameterMetadataReaderTests
     private class TestDrawer { }
     private class TestTwoColumnDrawer { }
 }
+
