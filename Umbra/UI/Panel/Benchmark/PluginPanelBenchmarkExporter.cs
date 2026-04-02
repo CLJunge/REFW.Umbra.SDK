@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Umbra.Logging;
-using Umbra.UI.Panel;
 
 namespace Umbra.UI.Panel.Benchmark;
 
@@ -18,6 +17,11 @@ namespace Umbra.UI.Panel.Benchmark;
 /// </remarks>
 internal sealed class PluginPanelBenchmarkExporter
 {
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        WriteIndented = true
+    };
+
     private readonly string _outputDirectory;
     private readonly List<PluginPanelBenchmarkSample> _samples = [];
     private StreamWriter? _csvWriter;
@@ -178,12 +182,7 @@ internal sealed class PluginPanelBenchmarkExporter
                 Samples = [.. _samples]
             };
 
-            var json = JsonSerializer.Serialize(
-                exportDocument,
-                new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
+            var json = JsonSerializer.Serialize(exportDocument, _jsonOptions);
 
             File.WriteAllText(_jsonPath, json);
             File.WriteAllText(_markdownPath, BuildMarkdownSummary(exportDocument));

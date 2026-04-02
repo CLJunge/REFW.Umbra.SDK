@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Hexa.NET.ImGui;
 using Umbra.UI.Config;
-using Umbra.UI.Panel;
 
 namespace Umbra.UI.Panel.Benchmark;
 
@@ -362,9 +361,5 @@ public sealed class PluginPanelBenchmark : IDisposable
     /// <summary>
     /// Throws when the benchmark host has already been disposed.
     /// </summary>
-    private void ThrowIfDisposed()
-    {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(PluginPanelBenchmark));
-    }
+    private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(PluginPanelBenchmark));
 }
