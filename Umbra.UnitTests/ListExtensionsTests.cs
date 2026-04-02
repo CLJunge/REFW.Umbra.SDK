@@ -145,7 +145,7 @@ public sealed class ListExtensionsTests
         Assert.AreEqual(5, list[3].OriginalIndex);
     }
 
-    private static readonly string[] expectedOrder = ["a", "ab", "test", "hello", "world"];
+    private static readonly string[] _expectedOrder = ["a", "ab", "test", "hello", "world"];
 
     /// <summary>
     /// Verifies that sorting works for other element types using the provided key selector.
@@ -157,6 +157,6 @@ public sealed class ListExtensionsTests
 
         list.SortBy(static value => value.Length);
 
-        CollectionAssert.AreEqual(expectedOrder, list);
+        CollectionAssert.AreEqual(_expectedOrder, list);
     }
 }

@@ -30,7 +30,7 @@ namespace Umbra.UI.Panel.Benchmark;
 /// </remarks>
 public sealed class PluginPanelBenchmark : IDisposable
 {
-    private static readonly string[] s_scenarioLabels =
+    private static readonly string[] _scenarioLabels =
     [
         "Collapsed Panel",
         "Expanded Panel",
@@ -283,7 +283,7 @@ public sealed class PluginPanelBenchmark : IDisposable
         ImGui.Checkbox("Suppress runtime panel while sampling", ref suppressRuntimePanelWhileSampling);
         SuppressRuntimePanelWhileSampling = suppressRuntimePanelWhileSampling;
         var scenarioIndex = (int)Scenario;
-        if (ImGui.Combo("Scenario", ref scenarioIndex, s_scenarioLabels, s_scenarioLabels.Length))
+        if (ImGui.Combo("Scenario", ref scenarioIndex, _scenarioLabels, _scenarioLabels.Length))
             Scenario = (PluginPanelBenchmarkScenario)scenarioIndex;
 
         var warmupFrames = WarmupFrames;

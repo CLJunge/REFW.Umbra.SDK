@@ -11,9 +11,9 @@ namespace Umbra.UI.Panel;
 /// </remarks>
 internal static class PluginPanelScopeRegistry
 {
-    private static readonly HashSet<string> s_registeredScopes = [];
-    private static readonly HashSet<string> s_warnedDuplicateScopes = [];
-    private static readonly object s_scopeLock = new();
+    private static readonly HashSet<string> _registeredScopes = [];
+    private static readonly HashSet<string> _warnedDuplicateScopes = [];
+    private static readonly object _scopeLock = new();
 
     /// <summary>
     /// Registers <paramref name="idScope"/> and logs a developer warning the first time the same
@@ -31,10 +31,10 @@ internal static class PluginPanelScopeRegistry
     {
         bool registered;
         bool shouldWarn;
-        lock (s_scopeLock)
+        lock (_scopeLock)
         {
-            registered = s_registeredScopes.Add(idScope);
-            shouldWarn = !registered && s_warnedDuplicateScopes.Add(idScope);
+            registered = _registeredScopes.Add(idScope);
+            shouldWarn = !registered && _warnedDuplicateScopes.Add(idScope);
         }
 
         if (shouldWarn)
@@ -63,10 +63,10 @@ internal static class PluginPanelScopeRegistry
     /// <param name="idScope">The scope to release.</param>
     internal static void Release(string idScope)
     {
-        lock (s_scopeLock)
+        lock (_scopeLock)
         {
-            s_registeredScopes.Remove(idScope);
-            s_warnedDuplicateScopes.Remove(idScope);
+            _registeredScopes.Remove(idScope);
+            _warnedDuplicateScopes.Remove(idScope);
         }
     }
 }

@@ -12,8 +12,8 @@ namespace Umbra.UI.Panel;
 /// </remarks>
 internal static class PluginPanelTreeNodeLabels
 {
-    private static readonly HashSet<(string SectionId, string TreeLabel)> s_warnedInvalidLabels = [];
-    private static readonly object s_warningLock = new();
+    private static readonly HashSet<(string SectionId, string TreeLabel)> _warnedInvalidLabels = [];
+    private static readonly object _warningLock = new();
 
     /// <summary>
     /// Logs a developer warning when the section's tree-node label contains ImGui's label/ID
@@ -30,9 +30,9 @@ internal static class PluginPanelTreeNodeLabels
             return;
 
         var shouldWarn = false;
-        lock (s_warningLock)
+        lock (_warningLock)
         {
-            shouldWarn = s_warnedInvalidLabels.Add((section.SectionId, treeLabel));
+            shouldWarn = _warnedInvalidLabels.Add((section.SectionId, treeLabel));
         }
 
         if (!shouldWarn)

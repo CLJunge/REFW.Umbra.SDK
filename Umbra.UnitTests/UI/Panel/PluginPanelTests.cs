@@ -87,7 +87,7 @@ public sealed class PluginPanelTests_Draw
         Assert.AreEqual(1, renderer.PopIdCount);
     }
 
-    private static readonly int[] expectedCalls = [1, 2];
+    private static readonly int[] _expectedCalls = [1, 2];
 
     /// <summary>
     /// Tests that an open root tree node draws sections in sorted order, draws the separator, and
@@ -108,7 +108,7 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        CollectionAssert.AreEqual(expectedCalls, calls);
+        CollectionAssert.AreEqual(_expectedCalls, calls);
         Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);

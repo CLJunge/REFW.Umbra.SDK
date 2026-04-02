@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Hexa.NET.ImGui;
 using REFrameworkNET;
 using Umbra.Config;
 using Umbra.Logging;
@@ -24,10 +23,10 @@ namespace Umbra.SamplePlugin;
 /// </remarks>
 public sealed class SamplePlugin : UmbraPlugin
 {
-    private const string RuntimePanelScope = "SamplePlugin.RuntimePanel";
-    private const string RuntimeSectionScope = "SamplePlugin.RuntimeConfigSection";
-    private const string BenchmarkPanelScope = "SamplePlugin.BenchmarkPanel";
-    private const string BenchmarkSectionScope = "SamplePlugin.BenchmarkConfigSection";
+    private const string _runtimePanelScope = "SamplePlugin.RuntimePanel";
+    private const string _runtimeSectionScope = "SamplePlugin.RuntimeConfigSection";
+    private const string _benchmarkPanelScope = "SamplePlugin.BenchmarkPanel";
+    private const string _benchmarkSectionScope = "SamplePlugin.BenchmarkConfigSection";
 
     private static readonly PluginLogger _log = new("SamplePlugin");
     private PluginPanel? _panel;
@@ -180,8 +179,8 @@ public sealed class SamplePlugin : UmbraPlugin
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
     /// <returns>The runtime panel.</returns>
     private static PluginPanel CreateRuntimePanel(PluginConfig config)
-        => new PluginPanel(RuntimePanelScope)
-            .Add(new ConfigSection<PluginConfig>(config, RuntimeSectionScope));
+        => new PluginPanel(_runtimePanelScope)
+            .Add(new ConfigSection<PluginConfig>(config, _runtimeSectionScope));
 
     /// <summary>
     /// Builds a duplicate panel for isolated benchmark measurement.
@@ -194,8 +193,8 @@ public sealed class SamplePlugin : UmbraPlugin
     /// <param name="config">The loaded config instance shared by the benchmark section.</param>
     /// <returns>The benchmark panel.</returns>
     private static PluginPanel CreateBenchmarkPanel(PluginConfig config)
-        => new PluginPanel(BenchmarkPanelScope)
-            .Add(new ConfigSection<PluginConfig>(config, BenchmarkSectionScope));
+        => new PluginPanel(_benchmarkPanelScope)
+            .Add(new ConfigSection<PluginConfig>(config, _benchmarkSectionScope));
 
     /// <summary>
     /// Draws the runtime panel and the reusable benchmark host window only while the REFramework UI

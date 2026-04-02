@@ -96,17 +96,17 @@ public sealed class LiveStateSectionTests
     /// </summary>
     private sealed class TestDrawer : ILiveStateSectionDrawer<TestState>, IDisposable
     {
-        private static int s_disposeCallCount;
+        private static int _disposeCallCount;
 
         /// <summary>
         /// Gets the number of times Dispose has been called across all instances.
         /// </summary>
-        public static int DisposeCallCount => s_disposeCallCount;
+        public static int DisposeCallCount => _disposeCallCount;
 
         /// <summary>
         /// Resets the dispose call counter.
         /// </summary>
-        public static void Reset() => s_disposeCallCount = 0;
+        public static void Reset() => _disposeCallCount = 0;
 
         /// <inheritdoc/>
         public void Draw(TestState state)
@@ -115,7 +115,7 @@ public sealed class LiveStateSectionTests
         }
 
         /// <inheritdoc/>
-        public void Dispose() => s_disposeCallCount++;
+        public void Dispose() => _disposeCallCount++;
     }
 
     /// <summary>

@@ -24,8 +24,8 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal static class ControlFactory
 {
-    private const float DefaultFillControlWidth = -1f;
-    private const string HiddenLabelPrefix = "##";
+    private const float _defaultFillControlWidth = -1f;
+    private const string _hiddenLabelPrefix = "##";
 
     // One entry per supported built-in value type. Enum and fallback are handled separately.
     // Add or replace entries here to change the default control for any value type.
@@ -168,7 +168,7 @@ internal static class ControlFactory
         if (hiddenLabel is null)
         {
             var key = parameter.Key;
-            hiddenLabel = key is null ? HiddenLabelPrefix : string.Concat(HiddenLabelPrefix, key);
+            hiddenLabel = key is null ? _hiddenLabelPrefix : string.Concat(_hiddenLabelPrefix, key);
         }
 
         alignGroup.Register(label, hasDescription);
@@ -177,7 +177,7 @@ internal static class ControlFactory
             label,
             meta.Description,
             alignGroup,
-            meta.ControlWidth.GetValueOrDefault(DefaultFillControlWidth),
+            meta.ControlWidth.GetValueOrDefault(_defaultFillControlWidth),
             hiddenLabel);
     }
 }

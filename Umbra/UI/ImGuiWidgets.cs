@@ -12,7 +12,7 @@ namespace Umbra.UI;
 /// </remarks>
 public static class ImGuiWidgets
 {
-    private const string HelpMarkerText = "(?)";
+    private const string _helpMarkerText = "(?)";
 
     /// <summary>
     /// Renders a tooltip containing <paramref name="description"/> when the previously submitted
@@ -37,7 +37,7 @@ public static class ImGuiWidgets
     /// <param name="description">The tooltip text to display on hover.</param>
     public static void DrawHelpMarker(string description)
     {
-        ImGui.TextDisabled(HelpMarkerText);
+        ImGui.TextDisabled(_helpMarkerText);
         DrawHoverTooltip(description);
     }
 }
