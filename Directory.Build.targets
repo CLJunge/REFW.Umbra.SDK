@@ -14,9 +14,9 @@
     the script paths used directly in this file to the solution root. Each participating
     project sets $(UmbraDeployScript) to an absolute path via $(MSBuildProjectDirectory),
     so deployment works regardless of how the build is invoked.
-  -->
+    -->
 
-    <!-- Terminate the game process before any Debug build so that locked DLLs can be replaced. -->
+    <!-- Terminate the game process before any build in Visual Studio so that locked DLLs can be replaced. -->
     <Target Name="PreBuild_KillGame"
             BeforeTargets="PreBuildEvent"
             Condition="'$(RunLocalDevBuildHooks)' == 'true' And Exists('$(MSBuildThisFileDirectory)scripts\kill_re9.bat')">
@@ -24,7 +24,7 @@
     </Target>
 
     <!--
-    Deploy build output to the local game directory after a successful Debug build.
+    Deploy build output to the local game directory after a successful build in Visual Studio.
 
     Each participating project sets $(UmbraDeployScript) in its own PropertyGroup to the
     absolute path of the appropriate deployment batch file. Projects that leave the property
@@ -37,7 +37,7 @@
     </Target>
 
     <!--
-    Upload the generated NuGet package to a private feed after packing a Debug build. This is used
+    Upload the generated NuGet package to a private feed after packing a build in Visual Studio. This is used
     to facilitate local testing of the SDK and plugin packages in other projects without needing to manually copy .nupkg files around
     or require the package to be published to 'nuget.org' first.
     -->
