@@ -14,9 +14,11 @@ namespace Umbra.Config;
 /// consumed by the settings UI to render appropriate labels, tooltips, sliders,
 /// and input constraints without requiring each parameter to carry that information
 /// itself. All properties are optional; absent values are represented as
-/// <see langword="null"/>.
+/// <see langword="null"/>. Debugger-only summary formatting is delegated to
+/// <see cref="ParameterMetadataDebuggerDisplayFormatter"/> so this type stays focused on immutable
+/// metadata storage.
 /// </remarks>
-[DebuggerDisplay("{GetDebuggerDisplay()}")]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class ParameterMetadata
 {
     /// <summary>
@@ -219,39 +221,7 @@ public sealed class ParameterMetadata
     public string? HiddenLabel { get; init; }
 
     /// <summary>
-    /// Returns a concise, human-readable summary of all non-null metadata fields,
-    /// used by the debugger via <see cref="DebuggerDisplayAttribute"/>.
+    /// Gets the concise debugger summary used by <see cref="DebuggerDisplayAttribute"/>.
     /// </summary>
-    /// <returns>
-    /// A comma-separated string of key-value pairs for each metadata property that
-    /// has a non-null, non-empty value, with no trailing comma or whitespace.
-    /// </returns>
-    private string GetDebuggerDisplay()
-    {
-        var parts = new List<string>();
-
-        if (!string.IsNullOrEmpty(Category)) parts.Add($"Category: {Category}");
-        if (!string.IsNullOrEmpty(DisplayName)) parts.Add($"DisplayName: {DisplayName}");
-        if (!string.IsNullOrEmpty(Description)) parts.Add($"Description: {Description}");
-        if (MaxLength.HasValue) parts.Add($"MaxLength: {MaxLength.Value}");
-        if (Min.HasValue) parts.Add($"Min: {Min.Value}");
-        if (Max.HasValue) parts.Add($"Max: {Max.Value}");
-        if (Step.HasValue) parts.Add($"Step: {Step.Value}");
-        if (!string.IsNullOrEmpty(Format)) parts.Add($"Format: {Format}");
-        if (ButtonStyle.HasValue) parts.Add($"ButtonStyle: {ButtonStyle.Value}");
-        if (CustomButtonColors.HasValue) parts.Add($"CustomButtonColors: N={CustomButtonColors.Value.Normal} H={CustomButtonColors.Value.Hovered} A={CustomButtonColors.Value.Active}");
-        if (ControlWidth.HasValue) parts.Add($"ControlWidth: {ControlWidth.Value}");
-        if (MultilineLines.HasValue) parts.Add($"MultilineLines: {MultilineLines.Value}");
-        if (Order.HasValue) parts.Add($"Order: {Order.Value}");
-        if (SpacingBefore > 0) parts.Add($"SpacingBefore: {SpacingBefore}");
-        if (SpacingAfter > 0) parts.Add($"SpacingAfter: {SpacingAfter}");
-        if (Indent.HasValue) parts.Add($"Indent: {Indent.Value}");
-        if (DrawerType is not null) parts.Add($"Drawer: {DrawerType.Name}");
-        if (TwoColumnDrawerType is not null) parts.Add($"TwoColumnDrawer: {TwoColumnDrawerType.Name}");
-        if (HideIf is not null) parts.Add($"HideIf: {HideIf.MemberName}");
-        if (InferredFloatFormat != "%.2f") parts.Add($"InferredFloatFormat: {InferredFloatFormat}");
-        if (HiddenLabel is not null) parts.Add($"HiddenLabel: {HiddenLabel}");
-
-        return string.Join(", ", parts);
-    }
+    internal string DebuggerDisplay => ParameterMetadataDebuggerDisplayFormatter.Format(this);
 }
