@@ -39,7 +39,7 @@ public sealed class PluginBootstrapperTests
     /// Verifies that load initialization runs under the mutex and does not require manual lease handling.
     /// </summary>
     [TestMethod]
-    public void Load_FirstDecoratedPlugin_RunsInitializationAndKeepsInstanceActive()
+    public void Load_FirstPluginType_RunsInitializationAndKeepsInstanceActive()
     {
         // Arrange
         var initialized = false;
@@ -134,6 +134,5 @@ public sealed class PluginBootstrapperTests
         throw new InvalidOperationException("Unreachable");
     }
 
-    [UmbraPlugin]
     private static class BootstrapPlugin;
 }

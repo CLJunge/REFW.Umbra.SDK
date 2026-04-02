@@ -12,11 +12,9 @@ namespace Umbra.SamplePlugin;
 /// The host keeps the live plugin instance in the shared runtime helper because REFramework
 /// requires static entry points and callbacks. The plugin itself remains fully instance based.
 /// </remarks>
-[UmbraPlugin]
 public static class SamplePluginHost
 {
     private static readonly PluginHost<SamplePlugin> _host = new(
-        typeof(SamplePlugin),
         static () => new SamplePlugin());
 
     /// <summary>
@@ -27,7 +25,7 @@ public static class SamplePluginHost
     public static void Load()
     {
 #if DEBUG
-        //System.Diagnostics.Debugger.Launch();
+        System.Diagnostics.Debugger.Launch();
 #endif
 
         _host.Load();

@@ -46,7 +46,6 @@ public sealed class PluginHostTests
     {
         // Arrange
         var host = new PluginHost<LifecyclePlugin>(
-            typeof(LifecyclePluginHost),
             static () => new LifecyclePlugin());
 
         // Act
@@ -74,7 +73,6 @@ public sealed class PluginHostTests
         // Arrange
         var factoryCalls = 0;
         var host = new PluginHost<LifecyclePlugin>(
-            typeof(LifecyclePluginHost),
             () =>
             {
                 factoryCalls++;
@@ -135,6 +133,5 @@ public sealed class PluginHostTests
         }
     }
 
-    [UmbraPlugin]
     private static class LifecyclePluginHost;
 }

@@ -1,21 +1,20 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Umbra.Logging;
 
 namespace Umbra.Runtime;
 
 /// <summary>
-/// Coordinates AppDomain-local single-instance enforcement for plugins decorated with
-/// <see cref="UmbraPluginAttribute"/>.
+/// Coordinates AppDomain-local single-instance enforcement for plugin identity types.
 /// </summary>
 /// <remarks>
 /// This registry is process-local to the current managed plugin host. The preferred entry point for
 /// plugin authors is <see cref="PluginBootstrapper"/>, which owns both acquisition and release.
 /// <see cref="PluginInstanceLease"/> remains available for advanced or test-oriented scenarios where
-/// explicit lease handling is desirable. When two plugin types resolve to the same mutex key, only
-/// the first successful acquisition is allowed to proceed.
+/// explicit lease handling is desirable. Mutex keys are derived from the supplied plugin type's
+/// assembly identity, so only the first successful acquisition for a given assembly key is allowed
+/// to proceed.
 /// </remarks>
 internal static class PluginInstanceGuard
 {
@@ -31,7 +30,7 @@ internal static class PluginInstanceGuard
     /// <remarks>
     /// This overload is intended for direct use inside a plugin's <c>[PluginEntryPoint]</c> method.
     /// It inspects the immediate caller, resolves that method's declaring type, and then applies the
-    /// same <see cref="UmbraPluginAttribute"/> validation and mutex-key resolution as
+    /// same class validation and mutex-key resolution as
     /// <see cref="TryAcquire(Type, out PluginInstanceLease?)"/>.
     /// </remarks>
     /// <param name="lease">
@@ -43,8 +42,8 @@ internal static class PluginInstanceGuard
     /// otherwise <see langword="false"/> when another plugin instance already holds that key.
     /// </returns>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the caller cannot be resolved to a declaring plugin type, when that type is not
-    /// decorated with <see cref="UmbraPluginAttribute"/>, or when the declared mutex key is empty or whitespace.
+    /// Thrown when the caller cannot be resolved to a declaring plugin type, when that type is not a
+    /// class, or when a mutex key cannot be derived from the supplied type.
     /// </exception>
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool TryAcquire([NotNullWhen(true)] out PluginInstanceLease? lease)
@@ -65,7 +64,7 @@ internal static class PluginInstanceGuard
     /// Attempts to acquire the single-instance mutex declared by <paramref name="pluginType"/>.
     /// </summary>
     /// <param name="pluginType">
-    /// The decorated host type whose <see cref="UmbraPluginAttribute"/> defines the plugin's mutex identity.
+    /// The plugin identity type whose assembly contributes the mutex key.
     /// </param>
     /// <param name="lease">
     /// Receives the acquired lease when the method returns <see langword="true"/>; otherwise
@@ -76,8 +75,8 @@ internal static class PluginInstanceGuard
     /// <see langword="false"/> when another plugin instance already holds that key.
     /// </returns>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="pluginType"/> is not decorated with <see cref="UmbraPluginAttribute"/>,
-    /// or when the declared mutex key is empty or whitespace.
+    /// Thrown when <paramref name="pluginType"/> is not a class or when a mutex key cannot be
+    /// derived from the supplied type.
     /// </exception>
     public static bool TryAcquire(Type pluginType, [NotNullWhen(true)] out PluginInstanceLease? lease)
     {
@@ -125,7 +124,7 @@ internal static class PluginInstanceGuard
     /// not need to store or dispose a lease object in their own code.
     /// </remarks>
     /// <param name="pluginType">
-    /// The decorated host type whose <see cref="UmbraPluginAttribute"/> defines the plugin's mutex identity.
+    /// The plugin identity type whose assembly contributes the mutex key.
     /// </param>
     internal static void Release(Type pluginType)
     {
@@ -173,30 +172,16 @@ internal static class PluginInstanceGuard
     }
 
     /// <summary>
-    /// Resolves the mutex key contributed by the decorated host type and its <see cref="UmbraPluginAttribute"/>.
+    /// Resolves the mutex key contributed by the supplied plugin identity type.
     /// </summary>
-    /// <param name="pluginType">The decorated plugin type.</param>
+    /// <param name="pluginType">The plugin identity type.</param>
     /// <returns>The non-empty mutex key used for acquisition.</returns>
     private static string ResolveMutexKey(Type pluginType)
     {
         if (!pluginType.IsClass)
         {
             throw new InvalidOperationException(
-                $"Plugin type '{GetTypeDisplayName(pluginType)}' must be a class to use [UmbraPlugin].");
-        }
-
-        var attribute = pluginType.GetCustomAttribute<UmbraPluginAttribute>(false)
-            ?? throw new InvalidOperationException(
-                $"Plugin type '{GetTypeDisplayName(pluginType)}' must be decorated with [UmbraPlugin] before calling {nameof(TryAcquire)}.");
-
-        if (attribute.MutexKey is { } explicitMutexKey)
-        {
-            if (!string.IsNullOrWhiteSpace(explicitMutexKey))
-                return explicitMutexKey;
-
-            throw new InvalidOperationException(
-                $"Plugin type '{GetTypeDisplayName(pluginType)}' declares [UmbraPlugin] with an empty or whitespace mutex key. " +
-                "Supply a non-empty key or omit the constructor argument.");
+                $"Plugin type '{GetTypeDisplayName(pluginType)}' must be a class to participate in single-instance enforcement.");
         }
 
         var assemblyName = pluginType.Assembly.GetName().Name;

@@ -9,8 +9,8 @@ namespace Umbra.Runtime;
 /// This base class supplies the plugin-scoped <see cref="PluginLogger"/> dependency and surfaces the
 /// core Umbra lifecycle defined by the <see cref="IUmbraPlugin"/> contract. Derived plugins are free
 /// to implement any additional REFramework callbacks they require on their own types.
-/// Mutex metadata still belongs on the assembly-facing static host class via
-/// <see cref="UmbraPluginAttribute"/>, not on the instance plugin type.
+/// Single-instance coordination still belongs on the assembly-facing static host class, not on the
+/// instance plugin type.
 /// </remarks>
 public abstract class UmbraPlugin : IUmbraPlugin
 {

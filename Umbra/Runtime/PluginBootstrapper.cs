@@ -27,7 +27,7 @@ public static class PluginBootstrapper
     /// otherwise <see langword="false"/> when another instance already holds the mutex.
     /// </returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="initialize"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a decorated plugin host type.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a class-based plugin host type.</exception>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     public static bool Load(Action initialize)
     {
@@ -49,8 +49,8 @@ public static class PluginBootstrapper
     /// Runs a plugin's initialization code under the single-instance guard for <paramref name="pluginType"/>.
     /// </summary>
     /// <param name="pluginType">
-    /// The assembly-facing host type decorated with <see cref="UmbraPluginAttribute"/> that defines
-    /// the plugin's mutex identity.
+    /// The plugin identity type whose assembly contributes the mutex key used for single-instance
+    /// enforcement.
     /// </param>
     /// <param name="initialize">The plugin initialization callback.</param>
     /// <returns>
@@ -88,7 +88,7 @@ public static class PluginBootstrapper
     /// blocked by a partially failed shutdown path.
     /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="cleanup"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a decorated plugin host type.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a class-based plugin host type.</exception>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     public static void Unload(Action cleanup)
     {
@@ -108,8 +108,8 @@ public static class PluginBootstrapper
     /// Runs a plugin's shutdown code and then releases its single-instance mutex.
     /// </summary>
     /// <param name="pluginType">
-    /// The assembly-facing host type decorated with <see cref="UmbraPluginAttribute"/> that defines
-    /// the plugin's mutex identity.
+    /// The plugin identity type whose assembly contributes the mutex key used for single-instance
+    /// enforcement.
     /// </param>
     /// <param name="cleanup">The plugin cleanup callback.</param>
     /// <remarks>

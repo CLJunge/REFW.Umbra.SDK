@@ -256,11 +256,10 @@ public sealed class MyPlugin : UmbraPlugin
 }
 
 // Static host — satisfies REFramework's static entry-point requirement and owns the mutex identity.
-[UmbraPlugin]
 public static class MyPluginHost
 {
     private static readonly PluginHost<MyPlugin> _host =
-        new(typeof(MyPluginHost), static () => new MyPlugin());
+        new(typeof(MyPlugin), static () => new MyPlugin());
 
     [PluginEntryPoint]
     public static void Load() => _host.Load();

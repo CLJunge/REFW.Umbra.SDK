@@ -56,10 +56,10 @@ public sealed class PluginInstanceGuardTests
     }
 
     /// <summary>
-    /// Verifies that the first load of a decorated plugin acquires a lease successfully.
+    /// Verifies that the first load of a plugin identity type acquires a lease successfully.
     /// </summary>
     [TestMethod]
-    public void TryAcquire_FirstDecoratedPlugin_ReturnsTrueAndProvidesLease()
+    public void TryAcquire_FirstPluginType_ReturnsTrueAndProvidesLease()
     {
         // Act
         var result = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), out var lease);
@@ -141,79 +141,62 @@ public sealed class PluginInstanceGuardTests
     }
 
     /// <summary>
-    /// Verifies that different plugin types sharing the same explicit mutex key are mutually exclusive.
+    /// Verifies that different plugin identity types from the same assembly are mutually exclusive.
     /// </summary>
     [TestMethod]
-    public void TryAcquire_SharedExplicitMutexKey_RejectsSecondPluginUntilFirstReleases()
+    public void TryAcquire_DifferentPluginTypesInSameAssembly_RejectsSecondPluginUntilFirstReleases()
     {
         // Arrange
-        var firstResult = PluginInstanceGuard.TryAcquire(typeof(SharedMutexPluginA), out var firstLease);
+        var firstResult = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), out var firstLease);
         Assert.IsTrue(firstResult);
         Assert.IsNotNull(firstLease);
 
         // Act
-        var secondResultWhileHeld = PluginInstanceGuard.TryAcquire(typeof(SharedMutexPluginB), out var secondLeaseWhileHeld);
+        var secondResultWhileHeld = PluginInstanceGuard.TryAcquire(typeof(SameAssemblyPlugin), out var secondLeaseWhileHeld);
         firstLease.Dispose();
-        var secondResultAfterRelease = PluginInstanceGuard.TryAcquire(typeof(SharedMutexPluginB), out var secondLeaseAfterRelease);
+        var secondResultAfterRelease = PluginInstanceGuard.TryAcquire(typeof(SameAssemblyPlugin), out var secondLeaseAfterRelease);
 
         // Assert
         Assert.IsFalse(secondResultWhileHeld);
         Assert.IsNull(secondLeaseWhileHeld);
         Assert.IsTrue(secondResultAfterRelease);
         Assert.IsNotNull(secondLeaseAfterRelease);
-        Assert.AreEqual("shared-group", secondLeaseAfterRelease.MutexKey);
+        Assert.AreEqual(typeof(DefaultMutexPlugin).Assembly.GetName().Name, secondLeaseAfterRelease.MutexKey);
 
         secondLeaseAfterRelease.Dispose();
     }
 
     /// <summary>
-    /// Verifies that attempting to acquire a lease for a type without <see cref="UmbraPluginAttribute"/>
-    /// fails with a clear exception.
+    /// Verifies that attempting to acquire a lease for a non-class type fails with a clear exception.
     /// </summary>
     [TestMethod]
-    public void TryAcquire_PluginIsMissingUmbraPluginAttribute_ThrowsInvalidOperationException()
+    public void TryAcquire_PluginTypeIsNotClass_ThrowsInvalidOperationException()
     {
         // Act
         var exception = AssertThrows<InvalidOperationException>(() =>
-            PluginInstanceGuard.TryAcquire(typeof(MissingAttributePlugin), out _));
+            PluginInstanceGuard.TryAcquire(typeof(INonClassPlugin), out _));
 
         // Assert
-        Assert.Contains("[UmbraPlugin]", exception.Message);
+        Assert.Contains("must be a class", exception.Message);
     }
 
     /// <summary>
     /// Verifies that the convenience overload fails with a clear exception when the calling plugin
-    /// type is not decorated with <see cref="UmbraPluginAttribute"/>.
+    /// identity type is not a class.
     /// </summary>
     [TestMethod]
-    public void TryAcquire_CallerInferenceOverloadWithoutUmbraPluginAttribute_ThrowsInvalidOperationException()
+    public void TryAcquire_CallerInferenceOverloadWithStructDeclaringType_ThrowsInvalidOperationException()
     {
         // Act
         var exception = AssertThrows<InvalidOperationException>(() =>
-            MissingAttributeInferencePlugin.Load(out _));
+            NonClassInferencePlugin.Load(out _));
 
         // Assert
-        Assert.Contains("[UmbraPlugin]", exception.Message);
+        Assert.Contains("must be a class", exception.Message);
     }
 
-    /// <summary>
-    /// Verifies that an explicitly empty or whitespace mutex key is rejected.
-    /// </summary>
-    [TestMethod]
-    public void TryAcquire_ExplicitWhitespaceMutexKey_ThrowsInvalidOperationException()
-    {
-        // Act
-        var exception = AssertThrows<InvalidOperationException>(() =>
-            PluginInstanceGuard.TryAcquire(typeof(WhitespaceMutexPlugin), out _));
-
-        // Assert
-        Assert.Contains("empty or whitespace mutex key", exception.Message);
-    }
-
-    [UmbraPlugin]
     private static class DefaultMutexPlugin;
 
-    [UmbraPlugin]
     private static class InferredMutexPlugin
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -221,21 +204,14 @@ public sealed class PluginInstanceGuardTests
             => PluginInstanceGuard.TryAcquire(out lease);
     }
 
-    [UmbraPlugin("shared-group")]
-    private static class SharedMutexPluginA;
+    private static class SameAssemblyPlugin;
 
-    [UmbraPlugin("shared-group")]
-    private static class SharedMutexPluginB;
+    private interface INonClassPlugin;
 
-    private static class MissingAttributePlugin;
-
-    private static class MissingAttributeInferencePlugin
+    private readonly struct NonClassInferencePlugin
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static bool Load(out PluginInstanceLease? lease)
             => PluginInstanceGuard.TryAcquire(out lease);
     }
-
-    [UmbraPlugin("   ")]
-    private static class WhitespaceMutexPlugin;
 }

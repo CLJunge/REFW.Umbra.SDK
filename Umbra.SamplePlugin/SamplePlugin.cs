@@ -16,8 +16,8 @@ namespace Umbra.SamplePlugin;
 /// <remarks>
 /// This type is fully instance based. Static REFramework entry points and callbacks live in
 /// <see cref="SamplePluginHost"/> so this class owns only its per-plugin state and behavior. The
-/// mutex metadata lives on the static host, while this type inherits shared logger plumbing from
-/// <see cref="UmbraPlugin"/>.
+/// static host also owns single-instance coordination, while this type inherits shared logger
+/// plumbing from <see cref="UmbraPlugin"/>.
 /// </remarks>
 public sealed class SamplePlugin : UmbraPlugin
 {

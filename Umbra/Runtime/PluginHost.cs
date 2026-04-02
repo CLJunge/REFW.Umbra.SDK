@@ -8,8 +8,7 @@ namespace Umbra.Runtime;
 /// <remarks>
 /// This type centralizes the runtime behavior that previously lived in each plugin assembly's static
 /// wrapper class. The assembly-specific wrapper still exists only to satisfy REFramework's static
-/// entry-point requirements and supplies the mutex identity type decorated with
-/// <see cref="UmbraPluginAttribute"/>.
+/// entry-point requirements and to supply the identity type used for mutex acquisition and release.
 /// </remarks>
 public sealed class PluginHost<TPlugin>
     where TPlugin : class, IUmbraPlugin
@@ -21,17 +20,12 @@ public sealed class PluginHost<TPlugin>
     /// <summary>
     /// Initialises a new host for the specified plugin type.
     /// </summary>
-    /// <param name="identityType">
-    /// The assembly-facing host type decorated with <see cref="UmbraPluginAttribute"/>. This type
-    /// defines the plugin's mutex identity independently from the instance implementation type.
-    /// </param>
     /// <param name="factory">Creates the plugin instance when load succeeds.</param>
-    public PluginHost(Type identityType, Func<TPlugin> factory)
+    public PluginHost(Func<TPlugin> factory)
     {
-        ArgumentNullException.ThrowIfNull(identityType);
         ArgumentNullException.ThrowIfNull(factory);
 
-        _identityType = identityType;
+        _identityType = typeof(TPlugin);
         _factory = factory;
     }
 
