@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Umbra.Logging;
@@ -14,7 +13,8 @@ namespace Umbra.Runtime;
 /// <see cref="PluginInstanceLease"/> remains available for advanced or test-oriented scenarios where
 /// explicit lease handling is desirable. Mutex keys are derived from the supplied plugin type's
 /// assembly identity, so only the first successful acquisition for a given assembly key is allowed
-/// to proceed.
+/// to proceed. The convenience overload delegates caller-type inference to
+/// <see cref="PluginCallerTypeResolver"/>.
 /// </remarks>
 internal static class PluginInstanceGuard
 {
@@ -29,7 +29,7 @@ internal static class PluginInstanceGuard
     /// </summary>
     /// <remarks>
     /// This overload is intended for direct use inside a plugin's <c>[PluginEntryPoint]</c> method.
-    /// It inspects the immediate caller, resolves that method's declaring type, and then applies the
+    /// It delegates caller-type inference to <see cref="PluginCallerTypeResolver"/>, then applies the
     /// same class validation and mutex-key resolution as
     /// <see cref="TryAcquire(Type, out PluginInstanceLease?)"/>.
     /// </remarks>
@@ -48,14 +48,10 @@ internal static class PluginInstanceGuard
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool TryAcquire([NotNullWhen(true)] out PluginInstanceLease? lease)
     {
-        var callerMethod = new StackFrame(1, false).GetMethod()
-            ?? throw new InvalidOperationException(
-                $"Unable to resolve the calling method for {nameof(PluginInstanceGuard)}.{nameof(TryAcquire)}.");
-
-        var pluginType = callerMethod.DeclaringType
-            ?? throw new InvalidOperationException(
-                $"Calling method '{callerMethod.Name}' does not declare a plugin type. " +
-                $"Use {nameof(TryAcquire)}(Type, out PluginInstanceLease?) when caller inference is not available.");
+        var pluginType = PluginCallerTypeResolver.ResolveCallingPluginType(
+            typeof(PluginInstanceGuard),
+            nameof(TryAcquire),
+            $"{nameof(TryAcquire)}(Type, out PluginInstanceLease?)");
 
         return TryAcquire(pluginType, out lease);
     }
