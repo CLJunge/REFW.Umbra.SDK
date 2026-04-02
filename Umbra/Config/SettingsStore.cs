@@ -4,8 +4,13 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Manages loading, saving, and lifecycle of typed configuration settings for a plugin or mod.
+/// Owns the public lifecycle and parameter set of a typed settings store.
 /// </summary>
+/// <remarks>
+/// Persistence orchestration is delegated to <see cref="SettingsStorePersistenceCoordinator{TConfig}"/>
+/// and listener bookkeeping is delegated to <see cref="SettingsStoreListenerRegistry"/>, keeping this
+/// type focused on store state, public API guards, and parameter-level operations.
+/// </remarks>
 /// <typeparam name="TConfig">
 /// The configuration class type. Must have a public parameterless constructor.
 /// </typeparam>
@@ -13,25 +18,11 @@ namespace Umbra.Config;
 public class SettingsStore<TConfig> : ISettingsStore<TConfig>
     where TConfig : class, new()
 {
-    private sealed class ListenerCleanupRegistration(
-        Action cleanup,
-        Delegate listener,
-        Type? valueType,
-        Func<IParameter, bool>? predicate)
-    {
-        internal Action Cleanup { get; } = cleanup;
-        internal Delegate Listener { get; } = listener;
-        internal Type? ValueType { get; } = valueType;
-        internal Func<IParameter, bool>? Predicate { get; } = predicate;
-    }
-
-    private readonly string _filePath;
     private readonly Dictionary<string, IParameter> _parameters = [];
-    private readonly List<ListenerCleanupRegistration> _cleanupRegistrations = [];
+    private readonly SettingsStoreListenerRegistry _listenerRegistry = new();
+    private readonly SettingsStorePersistenceCoordinator<TConfig> _persistenceCoordinator;
     private bool _loaded;
     private bool _disposed;
-    private bool _saveBlocked;
-    private bool _saveBlockedWarningLogged;
 
     /// <summary>
     /// Initializes a new instance of <see cref="SettingsStore{TConfig}"/> with the specified file path.
@@ -47,7 +38,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
         if (string.IsNullOrWhiteSpace(filePath))
             throw new ArgumentException("File path cannot be null, empty, or whitespace.", nameof(filePath));
 
-        _filePath = filePath;
+        _persistenceCoordinator = new SettingsStorePersistenceCoordinator<TConfig>(filePath, _parameters);
     }
 
     /// <summary>
@@ -86,14 +77,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
-
-        if (_saveBlocked)
-        {
-            WarnSaveBlockedOnce();
-            return;
-        }
-
-        SettingsPersistence.Save(_filePath, _parameters);
+        _persistenceCoordinator.Save();
     }
 
     /// <summary>
@@ -162,54 +146,8 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
                 $"SettingsStore<{typeof(TConfig).Name}>.Load() must only be called once per instance. " +
                 "Create a new SettingsStore to load a fresh configuration.");
 
-        var instance = new TConfig();
-        var discovered = SettingsRegistrar.Register(instance);
-
-        foreach (var (key, param) in discovered)
-            _parameters[key] = param;
-
+        var instance = _persistenceCoordinator.Load(CreateRegisteredDefaults);
         _loaded = true;
-
-        Logger.Info($"SettingsStore<{typeof(TConfig).Name}>: discovered {_parameters.Count} parameter(s).");
-
-        if (!File.Exists(_filePath))
-        {
-            Logger.Info($"SettingsStore<{typeof(TConfig).Name}>: no existing config file found at '{_filePath}', saving defaults.");
-            Save();
-            return instance;
-        }
-
-        var loadResult = SettingsPersistence.Load(_filePath, _parameters);
-        if (loadResult == SettingsPersistence.LoadResult.MissingFile)
-        {
-            // File disappeared between our File.Exists check and the actual read (TOCTOU race).
-            // Treat identically to the no-file-at-all case: save defaults now.
-            Logger.Info($"SettingsStore<{typeof(TConfig).Name}>: settings file '{_filePath}' vanished before it could be read; saving defaults.");
-            Save();
-        }
-        else if (loadResult == SettingsPersistence.LoadResult.RecoveredToDefaults)
-        {
-            Logger.Warning(
-                $"SettingsStore<{typeof(TConfig).Name}>: existing config was unreadable; rewriting defaults to '{_filePath}'.");
-
-            // The previous load attempt may have partially mutated parameter values before failing.
-            // Rebuild the config instance and parameter map from scratch to guarantee we persist true defaults.
-            instance = RebuildDefaults();
-
-            Save();
-        }
-        else if (loadResult == SettingsPersistence.LoadResult.Failed)
-        {
-            // Even when the unreadable file must be preserved in place, the current session should
-            // still continue from true defaults rather than any values that may have been applied
-            // before the failure occurred.
-            instance = RebuildDefaults();
-            _saveBlocked = true;
-            Logger.Warning(
-                $"SettingsStore<{typeof(TConfig).Name}>: preserving unreadable config at '{_filePath}'. " +
-                "Saves are suppressed for this store instance because the file could not be backed up safely.");
-        }
-
         return instance;
     }
 
@@ -244,7 +182,8 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
 
         foreach (var (key, param) in _parameters)
         {
-            if (!target._parameters.TryGetValue(key, out var dest)) continue;
+            if (!target._parameters.TryGetValue(key, out var dest))
+                continue;
 
             if (setWithoutNotifying)
                 dest.SetValueWithoutNotify(param.GetValue());
@@ -271,12 +210,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
         ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
-        foreach (var p in _parameters.Values) p.ValueChanged += listener;
-        RegisterCleanup(() =>
-        {
-            foreach (var p in _parameters.Values)
-                p.ValueChanged -= listener;
-        }, listener, null, null);
+        _listenerRegistry.AddToAll(_parameters, listener);
     }
 
     /// <summary>
@@ -309,14 +243,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
         ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
-        foreach (var p in _parameters.Values)
-            if (p is Parameter<T> typed) typed.ValueChanged += listener;
-
-        RegisterCleanup(() =>
-        {
-            foreach (var p in _parameters.Values)
-                if (p is Parameter<T> typed) typed.ValueChanged -= listener;
-        }, listener, typeof(T), null);
+        _listenerRegistry.AddToAll(_parameters, listener);
     }
 
     /// <summary>
@@ -341,9 +268,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
     /// This method requires <see cref="Load"/> to have completed so there is a stable registered
     /// parameter set to subscribe to.
     /// </remarks>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="predicate"/> or <paramref name="listener"/> is <see langword="null"/>.
-    /// </exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="listener"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void AddListenerToAll(Func<IParameter, bool> predicate, Action listener)
@@ -352,20 +277,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
         ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
-
-        var matched = new List<IParameter>();
-        foreach (var p in _parameters.Values)
-        {
-            if (!predicate(p)) continue;
-            p.ValueChanged += listener;
-            matched.Add(p);
-        }
-
-        RegisterCleanup(() =>
-        {
-            foreach (var p in matched)
-                p.ValueChanged -= listener;
-        }, listener, null, predicate);
+        _listenerRegistry.AddToAll(_parameters, predicate, listener);
     }
 
     /// <summary>
@@ -386,11 +298,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
         ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
-        if (TryRemoveTrackedCleanup(listener, null, null))
-            return;
-
-        foreach (var p in _parameters.Values)
-            p.ValueChanged -= listener;
+        _listenerRegistry.RemoveFromAll(_parameters, listener);
     }
 
     /// <summary>
@@ -415,11 +323,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
         ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
-        if (TryRemoveTrackedCleanup(listener, typeof(T), null))
-            return;
-
-        foreach (var p in _parameters.Values)
-            if (p is Parameter<T> typed) typed.ValueChanged -= listener;
+        _listenerRegistry.RemoveFromAll(_parameters, listener);
     }
 
     /// <summary>
@@ -449,11 +353,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
         ArgumentNullException.ThrowIfNull(listener);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
-        if (TryRemoveTrackedCleanup(listener, null, predicate))
-            return;
-
-        foreach (var p in _parameters.Values)
-            if (predicate(p)) p.ValueChanged -= listener;
+        _listenerRegistry.RemoveFromAll(_parameters, predicate, listener);
     }
 
     /// <summary>
@@ -473,67 +373,30 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
         var count = 0;
-        foreach (var p in _parameters.Values)
+        foreach (var parameter in _parameters.Values)
         {
-            if (typeof(Delegate).IsAssignableFrom(p.ValueType)) continue;
-            p.Reset();
+            if (typeof(Delegate).IsAssignableFrom(parameter.ValueType))
+                continue;
+
+            parameter.Reset();
             count++;
         }
+
         Logger.Info($"SettingsStore<{typeof(TConfig).Name}>: reset {count} parameter(s) to defaults.");
     }
 
     /// <summary>
     /// Releases all resources used by this <see cref="SettingsStore{TConfig}"/>,
-    /// including removing all remaining tracked event listeners.
+    /// including removing all remaining tracked event listeners through the internal listener registry.
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
+
         _disposed = true;
-
-        foreach (var registration in _cleanupRegistrations)
-            registration.Cleanup();
-        _cleanupRegistrations.Clear();
-
+        _listenerRegistry.Dispose();
         GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Records one listener cleanup action so it can be undone on <see cref="Dispose"/> or by a
-    /// matching manual remove call.
-    /// </summary>
-    /// <param name="cleanup">The unsubscription action to execute later.</param>
-    /// <param name="listener">The listener delegate associated with the cleanup action.</param>
-    /// <param name="valueType">The typed parameter value type when the listener is type-filtered; otherwise <see langword="null"/>.</param>
-    /// <param name="predicate">The predicate associated with the listener when predicate-filtered; otherwise <see langword="null"/>.</param>
-    private void RegisterCleanup(Action cleanup, Delegate listener, Type? valueType, Func<IParameter, bool>? predicate)
-        => _cleanupRegistrations.Add(new ListenerCleanupRegistration(cleanup, listener, valueType, predicate));
-
-    /// <summary>
-    /// Removes one tracked cleanup registration that matches the supplied listener shape and executes it immediately.
-    /// </summary>
-    /// <param name="listener">The listener delegate being removed.</param>
-    /// <param name="valueType">The type filter associated with the listener, if any.</param>
-    /// <param name="predicate">The predicate filter associated with the listener, if any.</param>
-    /// <returns><see langword="true"/> when a matching tracked cleanup registration was found; otherwise <see langword="false"/>.</returns>
-    private bool TryRemoveTrackedCleanup(Delegate listener, Type? valueType, Func<IParameter, bool>? predicate)
-    {
-        for (var i = _cleanupRegistrations.Count - 1; i >= 0; i--)
-        {
-            var registration = _cleanupRegistrations[i];
-            if (!Equals(registration.Listener, listener))
-                continue;
-            if (registration.ValueType != valueType)
-                continue;
-            if (!Equals(registration.Predicate, predicate))
-                continue;
-
-            _cleanupRegistrations.RemoveAt(i);
-            registration.Cleanup();
-            return true;
-        }
-
-        return false;
     }
 
     /// <summary>
@@ -553,25 +416,11 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
     }
 
     /// <summary>
-    /// Logs a warning once when saves are being suppressed after an unrecoverable load failure.
-    /// </summary>
-    private void WarnSaveBlockedOnce()
-    {
-        if (_saveBlockedWarningLogged)
-            return;
-
-        _saveBlockedWarningLogged = true;
-        Logger.Warning(
-            $"SettingsStore<{typeof(TConfig).Name}>: Save() ignored because the original config file at '{_filePath}' " +
-            "was unreadable and could not be backed up during Load().");
-    }
-
-    /// <summary>
-    /// Rebuilds the store from a fresh <typeparamref name="TConfig"/> instance so all parameter
-    /// values and metadata return to their declared defaults.
+    /// Creates a fresh <typeparamref name="TConfig"/> instance and repopulates the shared parameter map
+    /// from that instance's declared defaults.
     /// </summary>
     /// <returns>A newly created config instance registered into this store.</returns>
-    private TConfig RebuildDefaults()
+    private TConfig CreateRegisteredDefaults()
     {
         var instance = new TConfig();
         _parameters.Clear();
