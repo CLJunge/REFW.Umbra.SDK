@@ -113,6 +113,53 @@ public sealed class ParameterNodeTests
     }
 
     /// <summary>
+    /// Verifies that a configured indent is applied around the draw action exactly once.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WithIndent_UsesRendererIndentationAroundDrawAction()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        const float indentAmount = 12.5f;
+        bool isVisible() => true;
+        void draw() => drawCallCount++;
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 0, 0, renderer, indentAmount);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(1, renderer.IndentCount);
+        Assert.AreEqual(1, renderer.UnindentCount);
+        Assert.AreEqual(indentAmount, renderer.LastIndentAmount);
+        Assert.AreEqual(indentAmount, renderer.LastUnindentAmount);
+    }
+
+    /// <summary>
+    /// Verifies that indentation is skipped when the parameter node is not visible.
+    /// </summary>
+    [TestMethod]
+    public void Draw_NotVisibleWithIndent_DoesNotIndentOrDraw()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCalled = false;
+        bool isVisible() => false;
+        void draw() => drawCalled = true;
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 0, 0, renderer, 8f);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.IsFalse(drawCalled);
+        Assert.AreEqual(0, renderer.IndentCount);
+        Assert.AreEqual(0, renderer.UnindentCount);
+    }
+
+    /// <summary>
     /// Verifies that negative spacing values do not emit any spacing operations and still invoke the
     /// draw action.
     /// </summary>

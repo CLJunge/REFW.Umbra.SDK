@@ -155,6 +155,27 @@ public sealed class TypeDrawMetadataTests
         Assert.IsNotNull(nestedProperty.LabelMarginAttr);
     }
 
+    /// <summary>
+    /// Tests that property metadata exposes a cached getter which reads the current boxed property value.
+    /// </summary>
+    [TestMethod]
+    public void For_TypeWithAnnotatedProperties_CachedGetterReadsCurrentPropertyValue()
+    {
+        // Arrange
+        var config = new AttributedConfig();
+        var metadata = TypeDrawMetadata.For(typeof(AttributedConfig));
+        var parameterProperty = Array.Find(metadata.Properties, static p => p.Property.Name == nameof(AttributedConfig.Enabled));
+        var nestedProperty = Array.Find(metadata.Properties, static p => p.Property.Name == nameof(AttributedConfig.Nested));
+
+        // Act
+        var parameterValue = parameterProperty!.GetValue(config);
+        var nestedValue = nestedProperty!.GetValue(config);
+
+        // Assert
+        Assert.AreSame(config.Enabled, parameterValue);
+        Assert.AreSame(config.Nested, nestedValue);
+    }
+
     #region Helper Test Classes
 
     internal class SimpleTestClass
