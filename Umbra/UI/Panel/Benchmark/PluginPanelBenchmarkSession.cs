@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Umbra.UI.Panel;
 
 namespace Umbra.UI.Panel.Benchmark;
 

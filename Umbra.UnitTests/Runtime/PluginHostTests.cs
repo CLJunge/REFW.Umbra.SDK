@@ -104,14 +104,14 @@ public sealed class PluginHostTests
     public void Load_WhenSeparateHostForSamePluginTypeIsLoaded_ReturnsFalseUntilFirstUnloads()
     {
         // Arrange
-        var firstHost  = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+        var firstHost = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
         var secondHost = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
 
         // Act
-        var firstLoad         = firstHost.Load();
+        var firstLoad = firstHost.Load();
         var secondLoadBlocked = secondHost.Load();
         firstHost.Unload();
-        var secondLoadAfter   = secondHost.Load();
+        var secondLoadAfter = secondHost.Load();
         secondHost.Unload();
 
         // Assert
