@@ -9,7 +9,7 @@ namespace Umbra.UI.Config;
 /// </summary>
 /// <remarks>
 /// <para>
-/// When the config type carries <see cref="UmbraConfigRootNodeAttribute"/>, the section
+/// When the config type carries <see cref="UmbraRootNodeAttribute"/>, the section
 /// automatically exposes <see cref="IPanelSection.TreeNodeLabel"/> and
 /// <see cref="IPanelSection.TreeNodeDefaultOpen"/> so that the owning
 /// <see cref="PluginPanel"/> renders the tree node. An explicit constructor-supplied tree-node
@@ -57,7 +57,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// </param>
     /// <param name="suppressTreeNode">
     /// When <see langword="true"/>, suppresses any tree-node metadata inferred from
-    /// <see cref="UmbraConfigRootNodeAttribute"/> on <typeparamref name="TConfig"/>.
+    /// <see cref="UmbraRootNodeAttribute"/> on <typeparamref name="TConfig"/>.
     /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
@@ -70,7 +70,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
             throw new ArgumentException("idScope cannot be empty or whitespace when supplied.", nameof(idScope));
 
         _sectionId = idScope ?? typeof(TConfig).FullName ?? typeof(TConfig).Name;
-        _order = typeof(TConfig).GetDrawerAttribute<SectionOrderAttribute>()?.Order ?? int.MaxValue;
+        _order = typeof(TConfig).GetDrawerAttribute<UmbraSectionOrderAttribute>()?.Order ?? int.MaxValue;
 
         if (!suppressTreeNode)
         {
@@ -124,7 +124,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private static (string? Label, bool DefaultOpen)? GetRootNodeMetadata(Type type)
     {
         foreach (var attr in type.GetCustomAttributes(inherit: true))
-            if (attr is UmbraConfigRootNodeAttribute prefixed)
+            if (attr is UmbraRootNodeAttribute prefixed)
                 return (prefixed.Label, prefixed.DefaultOpen);
 
         return null;

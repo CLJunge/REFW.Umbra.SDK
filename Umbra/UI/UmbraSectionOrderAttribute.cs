@@ -25,7 +25,7 @@ namespace Umbra.UI;
 /// Thrown when <paramref name="order"/> is negative.
 /// </exception>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class SectionOrderAttribute(int order) : Attribute
+public sealed class UmbraSectionOrderAttribute(int order) : Attribute
 {
     /// <summary>Gets the render position of the section. Lower values render first.</summary>
     public int Order { get; } = order >= 0

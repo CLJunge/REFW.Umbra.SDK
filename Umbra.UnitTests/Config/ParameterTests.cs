@@ -7,6 +7,25 @@ namespace Umbra.Config.UnitTests;
 [TestClass]
 public class ParameterTests
 {
+    /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
     #region IsModified Tests - Initial State
 
     /// <summary>
@@ -737,6 +756,20 @@ public class ParameterTests
         Assert.AreEqual(expectedValue, parameter.Value);
         Assert.AreEqual(expectedValue, parameter.DefaultValue);
         Assert.IsFalse(parameter.IsModified);
+    }
+
+    /// <summary>
+    /// Tests that a newly constructed parameter initializes Key and Metadata to usable defaults.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NewParameter_InitializesKeyAndMetadataDefaults()
+    {
+        // Act
+        var parameter = new Parameter<int>(42);
+
+        // Assert
+        Assert.AreEqual(string.Empty, parameter.Key);
+        Assert.IsNotNull(parameter.Metadata);
     }
 
     /// <summary>

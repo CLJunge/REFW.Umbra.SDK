@@ -15,6 +15,25 @@ public sealed class ConfigDrawerTests
     private bool _originalLoggingEnabled;
 
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Installs a recording log sink before each test.
     /// </summary>
     [TestInitialize]
@@ -184,7 +203,7 @@ public sealed class ConfigDrawerTests
     /// <summary>
     /// Minimal test configuration class for ConfigDrawer draw tests.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class TestConfig
     {
     }
@@ -264,56 +283,56 @@ public sealed class ConfigDrawerTests
     /// <summary>
     /// Simple configuration class with a single parameter for basic testing.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class SimpleConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
     /// <summary>
     /// Configuration class with a nested settings group.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class ConfigWithNestedGroup
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
-        [UmbraSettingsPrefix("nested")]
+        [UmbraParameter]
+        [UmbraPrefix("nested")]
         public NestedGroup Nested { get; set; } = new();
     }
 
     /// <summary>
     /// Nested configuration group.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class NestedGroup
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> Value { get; set; } = new(42);
     }
 
     /// <summary>
     /// Configuration class with multiple parameters of different types.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class ConfigWithMultipleParameters
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> BoolParam { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> IntParam { get; set; } = new(100);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<float> FloatParam { get; set; } = new(3.14f);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<double> DoubleParam { get; set; } = new(2.71828);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<string> StringParam { get; set; } = new("test");
     }
 
@@ -416,37 +435,81 @@ public sealed class ConfigDrawerTests
         Assert.AreEqual(1, disposable2.DisposeCount);
     }
 
+    /// <summary>
+    /// Tests that the public constructor rejects a null config instance.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullConfig_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleConfig>(null!, "TestScope"));
+
+        Assert.AreEqual("config", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the public constructor rejects whitespace-only id scopes.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
+    {
+        var exception = AssertThrows<ArgumentException>(() => _ = new ConfigDrawer<SimpleConfig>(new SimpleConfig(), "   "));
+
+        Assert.AreEqual("idScope", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the internal constructor rejects a null node list.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_InternalNullNodes_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", null!, [], new TestConfigDrawerScope()));
+
+        Assert.AreEqual("nodes", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the internal constructor rejects a null disposable list.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_InternalNullDisposables_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", [], null!, new TestConfigDrawerScope()));
+
+        Assert.AreEqual("disposables", exception.ParamName);
+    }
+
     #region Test Config Classes
 
     /// <summary>
     /// Simple test configuration with a single parameter.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class SimpleTestConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> TestValue { get; set; } = new(42);
     }
 
     /// <summary>
     /// Complex test configuration with multiple parameters of different types.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class ComplexTestConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> IntValue { get; set; } = new(100);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<string> StringValue { get; set; } = new("test");
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> BoolValue { get; set; } = new(true);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<float> FloatValue { get; set; } = new(3.14f);
 
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<double> DoubleValue { get; set; } = new(2.718);
     }
 

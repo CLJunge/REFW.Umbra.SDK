@@ -9,7 +9,7 @@ namespace Umbra.Config.Attributes;
 /// must be non-empty.
 /// </param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class UmbraSettingsParameterAttribute(string? keyOverride = null) : Attribute
+public sealed class UmbraParameterAttribute(string? keyOverride = null) : Attribute
 {
     /// <summary>Gets the explicit key override for this parameter.</summary>
     public string? KeyOverride { get; } = keyOverride;

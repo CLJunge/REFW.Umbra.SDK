@@ -11,13 +11,13 @@ namespace Umbra.UI.Config.Drawers;
 /// <remarks>
 /// <para>
 /// Use this interface with
-/// <see cref="Umbra.Config.Attributes.UmbraTwoColumnCustomDrawerAttribute{TDrawer}"/>
-/// (<c>[UmbraTwoColumnCustomDrawer&lt;TDrawer&gt;]</c>) when you need a fully custom control but still
+/// <see cref="Umbra.Config.Attributes.UmbraTwoColumnDrawerAttribute{TDrawer}"/>
+/// (<c>[UmbraTwoColumnDrawer&lt;TDrawer&gt;]</c>) when you need a fully custom control but still
 /// want the label aligned with all other parameters in the same category or root scope. For
 /// complete layout control (custom label rendering, non-standard row structure), use
 /// <see cref="IParameterDrawer"/> with
-/// <see cref="Umbra.Config.Attributes.UmbraCustomDrawerAttribute{TDrawer}"/>
-/// (<c>[UmbraCustomDrawer&lt;TDrawer&gt;]</c>) instead.
+/// <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/>
+/// (<c>[UmbraDrawer&lt;TDrawer&gt;]</c>) instead.
 /// </para>
 /// <para>
 /// When <see cref="Draw"/> is called, <see cref="ImGui.SetNextItemWidth(float)"/> has already been applied

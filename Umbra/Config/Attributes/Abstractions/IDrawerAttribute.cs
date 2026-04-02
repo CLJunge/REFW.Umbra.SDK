@@ -3,9 +3,9 @@ using Umbra.UI.Config.Drawers;
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Non-generic marker interface implemented by <see cref="UmbraCustomDrawerAttribute{TDrawer}"/>.
+/// Non-generic marker interface implemented by <see cref="UmbraDrawerAttribute{TDrawer}"/>.
 /// Allows custom-drawer detection via
-/// <c>property.GetDrawerAttribute&lt;ICustomDrawerAttribute&gt;()</c>
+/// <c>property.GetDrawerAttribute&lt;IDrawerAttribute&gt;()</c>
 /// without runtime generic type inspection.
 /// </summary>
 /// <remarks>
@@ -13,9 +13,9 @@ namespace Umbra.Config.Attributes;
 /// <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Reflection.PropertyInfo)"/>
 /// and reflection-based tooling can use it as a generic type argument to detect custom drawers on properties.
 /// Plugin authors should not implement this interface themselves; it is implemented only
-/// by framework-provided attributes such as <see cref="UmbraCustomDrawerAttribute{TDrawer}"/>.
+/// by framework-provided attributes such as <see cref="UmbraDrawerAttribute{TDrawer}"/>.
 /// </remarks>
-internal interface ICustomDrawerAttribute
+internal interface IDrawerAttribute
 {
     /// <summary>Gets the concrete <see cref="IParameterDrawer"/> type used to render the parameter.</summary>
     Type DrawerType { get; }

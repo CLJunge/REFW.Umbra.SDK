@@ -98,6 +98,23 @@ public sealed class LoggerTests
     }
 
     /// <summary>
+    /// Tests that Warning writes the message to the active warning sink when logging is enabled.
+    /// </summary>
+    [TestMethod]
+    public void Warning_WhenEnabled_WritesMessageToSink()
+    {
+        // Arrange
+        Logger.Enabled = true;
+
+        // Act
+        Logger.Warning("Warned");
+
+        // Assert
+        Assert.HasCount(1, CurrentSink.WarningMessages);
+        Assert.AreEqual("Warned", CurrentSink.WarningMessages[0]);
+    }
+
+    /// <summary>
     /// Tests that <see cref="Logger.Exception(Exception, string)"/> writes the context message and
     /// exception details to the active error sink.
     /// </summary>
@@ -3350,5 +3367,100 @@ public sealed class LoggerTests
         // Assert
         Logger.Error(message); // Should log again (suppression removed)
         // No exception expected
+    }
+
+    /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="Logger.SetLogSink(ILogSink)"/> rejects null sinks.
+    /// </summary>
+    [TestMethod]
+    public void SetLogSink_Null_ThrowsArgumentNullException() => AssertThrows<ArgumentNullException>(() => Logger.SetLogSink(null!));
+
+    /// <summary>
+    /// Verifies that <see cref="Logger.Info(string)"/> swallows sink exceptions.
+    /// </summary>
+    [TestMethod]
+    public void Info_WhenSinkThrows_DoesNotThrow()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+
+        Logger.Info("message");
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="Logger.Warning(string)"/> swallows sink exceptions.
+    /// </summary>
+    [TestMethod]
+    public void Warning_WhenSinkThrows_DoesNotThrow()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+
+        Logger.Warning("message");
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="Logger.Error(string)"/> swallows sink exceptions.
+    /// </summary>
+    [TestMethod]
+    public void Error_WhenSinkThrows_DoesNotThrow()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+
+        Logger.Error("message");
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="Logger.Exception(Exception, string)"/> swallows sink exceptions.
+    /// </summary>
+    [TestMethod]
+    public void Exception_WhenSinkThrows_DoesNotThrow()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+
+        Logger.Exception(new InvalidOperationException("boom"), "context");
+    }
+
+    /// <summary>
+    /// Verifies that formatted logging swallows exceptions thrown while formatting arguments.
+    /// </summary>
+    [TestMethod]
+    public void Error_WhenArgumentToStringThrows_DoesNotThrow() => Logger.Error("Value: {0}", new ThrowingToStringValue());
+
+    /// <summary>
+    /// Sink that throws for every write path.
+    /// </summary>
+    private sealed class ThrowingLogSink : ILogSink
+    {
+        public void Info(string message) => throw new InvalidOperationException("sink failed");
+
+        public void Warning(string message) => throw new InvalidOperationException("sink failed");
+
+        public void Error(string message) => throw new InvalidOperationException("sink failed");
+    }
+
+    /// <summary>
+    /// Value whose <see cref="object.ToString"/> implementation throws.
+    /// </summary>
+    private sealed class ThrowingToStringValue
+    {
+        public override string ToString() => throw new InvalidOperationException("ToString failed");
     }
 }

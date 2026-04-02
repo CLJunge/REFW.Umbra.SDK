@@ -15,10 +15,11 @@
   - `PluginLogger` exposes `Prefix`, `PrefixFormat`, and `MinLevel` as instance properties, fully isolated per plugin.
   - All `PluginLogger` methods are exception-safe and silently suppress errors to avoid disrupting the game process. Formatted overloads (`...(string format, params object[] args)`) also swallow any exception thrown by `string.Format`, so an invalid format string or mismatched arguments causes the message to be silently discarded rather than propagated.
   - `_log.Exception(Exception ex, string message)` logs a context message followed by the exception type, message, and stack trace via `API.LogError`. Use this — **not** `_log.Error` — when logging exceptions.
-  - SDK internals should use the static `Logger` facade for raw, unconditional logging with no per-plugin prefix or minimum level.
+  - SDK internals and runtime host/bootstrap/mutex infrastructure should use the static `Logger` facade for raw, unconditional logging with no per-plugin prefix or minimum level. Plugin instance code should typically use `PluginLogger` as described above; do not pass `PluginLogger` instances into shared runtime infrastructure.
   - `Logger.Enabled = false`, `Logger.DisableAll()`, or `using var _ = Logger.Suppress();` silences all Umbra logging, including `PluginLogger`, which is useful for benchmarks and tests.
 - Assume game-facing code may run in a constrained plugin environment where resilience is preferred over hard failures.
 - When introducing replacement APIs in this codebase, prefer fully implemented replacements over inheriting from obsolete types so old types can be removed cleanly later.
+- For the plugin mutex feature, mutex identity is derived from the plugin type passed to `PluginHost<TPlugin>` or `PluginBootstrapper` (used internally by `PluginInstanceGuard`). Use a stable, unique plugin type — typically the concrete plugin class itself — as `TPlugin` so the assembly-based mutex key remains consistent across reloads.
 
 ## Thread safety — hooks and callbacks
 
@@ -307,3 +308,6 @@ internal static class FovHooks
 - Favor examples that integrate with REFramework.NET and ImGui.
 - Prefer safe, practical code that can run in-process with the game.
 - Avoid suggestions that assume a normal app entry point, service host, or external UI process unless the request explicitly asks for one.
+
+## Batch Processing
+- Process all files in a batch and then wait for the next explicit continue, while still building after each file change and running the test validation layer at the end of the batch.

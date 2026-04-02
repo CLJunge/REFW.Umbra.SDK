@@ -34,7 +34,7 @@ public sealed class ParameterMetadata
 
     /// <summary>
     /// Gets the fully resolved display label for this parameter. Equals <see cref="DisplayName"/>
-    /// when a <c>[DisplayName(...)]</c> attribute is present; otherwise the property name
+    /// when a <c>[UmbraDisplayName(...)]</c> attribute is present; otherwise the property name
     /// converted to a human-readable form (e.g. <c>"FieldOfView"</c> → <c>"Field Of View"</c>).
     /// Pre-computed by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to
     /// avoid repeated <see cref="System.Text.StringBuilder"/> allocations at draw-tree construction time.
@@ -172,24 +172,24 @@ public sealed class ParameterMetadata
 
     /// <summary>
     /// Gets the concrete <see cref="Umbra.UI.Config.Drawers.IParameterDrawer"/> type used
-    /// to render this parameter, or <see langword="null"/> when no <c>[CustomDrawer&lt;TDrawer&gt;]</c>
+    /// to render this parameter, or <see langword="null"/> when no <c>[UmbraDrawer&lt;TDrawer&gt;]</c>
     /// attribute is present. When non-<see langword="null"/>, <see cref="Umbra.UI.Config.ControlFactory"/> instantiates this
     /// type and delegates all rendering to it; the default two-column layout is bypassed entirely.
-    /// Sourced from <see cref="UmbraCustomDrawerAttribute{TDrawer}"/> via a single attribute scan in
+    /// Sourced from <see cref="UmbraDrawerAttribute{TDrawer}"/> via a single attribute scan in
     /// <see cref="ParameterMetadataReader"/>.
     /// </summary>
-    public Type? CustomDrawerType { get; init; }
+    public Type? DrawerType { get; init; }
 
     /// <summary>
     /// Gets the concrete <see cref="Umbra.UI.Config.Drawers.ITwoColumnParameterDrawer"/> type
     /// used to render this parameter's editing widget, or <see langword="null"/> when no
-    /// <c>[UmbraTwoColumnCustomDrawer&lt;TDrawer&gt;]</c> attribute is present. When non-<see langword="null"/>,
+    /// <c>[UmbraTwoColumnDrawer&lt;TDrawer&gt;]</c> attribute is present. When non-<see langword="null"/>,
     /// <see cref="Umbra.UI.Config.ControlFactory"/> instantiates this type and delegates widget rendering to it while retaining
     /// the standard two-column label layout.
-    /// Sourced from <see cref="UmbraTwoColumnCustomDrawerAttribute{TDrawer}"/> via a single attribute scan in
+    /// Sourced from <see cref="UmbraTwoColumnDrawerAttribute{TDrawer}"/> via a single attribute scan in
     /// <see cref="ParameterMetadataReader"/>.
     /// </summary>
-    public Type? TwoColumnCustomDrawerType { get; init; }
+    public Type? TwoColumnDrawerType { get; init; }
 
     /// <summary>
     /// Gets the cached hide-condition data sourced from <see cref="UmbraHideIfAttribute{T}"/> on this
@@ -246,8 +246,8 @@ public sealed class ParameterMetadata
         if (SpacingBefore > 0) parts.Add($"SpacingBefore: {SpacingBefore}");
         if (SpacingAfter > 0) parts.Add($"SpacingAfter: {SpacingAfter}");
         if (Indent.HasValue) parts.Add($"Indent: {Indent.Value}");
-        if (CustomDrawerType is not null) parts.Add($"CustomDrawer: {CustomDrawerType.Name}");
-        if (TwoColumnCustomDrawerType is not null) parts.Add($"TwoColumnCustomDrawer: {TwoColumnCustomDrawerType.Name}");
+        if (DrawerType is not null) parts.Add($"Drawer: {DrawerType.Name}");
+        if (TwoColumnDrawerType is not null) parts.Add($"TwoColumnDrawer: {TwoColumnDrawerType.Name}");
         if (HideIf is not null) parts.Add($"HideIf: {HideIf.MemberName}");
         if (InferredFloatFormat != "%.2f") parts.Add($"InferredFloatFormat: {InferredFloatFormat}");
         if (HiddenLabel is not null) parts.Add($"HiddenLabel: {HiddenLabel}");

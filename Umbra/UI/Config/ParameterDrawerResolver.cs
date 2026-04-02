@@ -31,7 +31,7 @@ internal static class ParameterDrawerResolver
         var meta = parameter.Metadata;
 
         // 1. Full custom drawer — explicit opt-in, highest priority.
-        if (meta.CustomDrawerType is { } customDrawerType)
+        if (meta.DrawerType is { } customDrawerType)
         {
             try
             {
@@ -45,7 +45,7 @@ internal static class ParameterDrawerResolver
         }
 
         // 2. Two-column custom drawer — factory owns layout; drawer renders widget only.
-        if (meta.TwoColumnCustomDrawerType is { } twoColumnDrawerType)
+        if (meta.TwoColumnDrawerType is { } twoColumnDrawerType)
         {
             try
             {

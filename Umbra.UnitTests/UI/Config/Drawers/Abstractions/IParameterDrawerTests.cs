@@ -32,6 +32,18 @@ public sealed class IParameterDrawerTests
     }
 
     /// <summary>
+    /// Verifies that the drawer remains callable through the interface before disposal.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenCalledThroughInterface_DoesNotThrow()
+    {
+        IParameterDrawer drawer = new TestParameterDrawer();
+        IParameter parameter = new Parameter<int>(42);
+
+        drawer.Draw("Label", parameter);
+    }
+
+    /// <summary>
     /// Minimal <see cref="IParameterDrawer"/> implementation used to exercise the default dispose behavior.
     /// </summary>
     private sealed class TestParameterDrawer : IParameterDrawer

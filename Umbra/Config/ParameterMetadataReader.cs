@@ -32,13 +32,13 @@ internal static class ParameterMetadataReader
         var spacingAfter = member.GetCustomAttribute<UmbraSpacingAfterAttribute>();
         var indent = member.GetCustomAttribute<UmbraIndentAttribute>();
 
-        Type? customDrawerType = null;
-        Type? twoColumnCustomDrawerType = null;
+        Type? drawerType = null;
+        Type? twoColumnDrawerType = null;
         IHideIfAttribute? hideIf = null;
         foreach (var attr in member.GetCustomAttributes(inherit: false))
         {
-            if (attr is ICustomDrawerAttribute cd) { customDrawerType = cd.DrawerType; continue; }
-            if (attr is ITwoColumnCustomDrawerAttribute tcd) { twoColumnCustomDrawerType = tcd.DrawerType; continue; }
+            if (attr is IDrawerAttribute cd) { drawerType = cd.DrawerType; continue; }
+            if (attr is ITwoColumnDrawerAttribute tcd) { twoColumnDrawerType = tcd.DrawerType; continue; }
             if (attr is IHideIfAttribute h) hideIf = h;
         }
 
@@ -67,8 +67,8 @@ internal static class ParameterMetadataReader
             SpacingBefore = spacingBefore?.Count ?? 0,
             SpacingAfter = spacingAfter?.Count ?? 0,
             Indent = indent?.Amount,
-            CustomDrawerType = customDrawerType,
-            TwoColumnCustomDrawerType = twoColumnCustomDrawerType,
+            DrawerType = drawerType,
+            TwoColumnDrawerType = twoColumnDrawerType,
             HideIf = hideIf,
             InferredFloatFormat = inferredFloatFormat,
             HiddenLabel = parameterKey is not null ? string.Concat("##", parameterKey) : null,

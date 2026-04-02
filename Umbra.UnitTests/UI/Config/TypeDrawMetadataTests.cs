@@ -1,5 +1,8 @@
-namespace Umbra.UI.Config.UnitTests;
 
+using Umbra.Config;
+using Umbra.Config.Attributes;
+
+namespace Umbra.UI.Config.UnitTests;
 
 /// <summary>
 /// Unit tests for the <see cref="TypeDrawMetadata"/> class.
@@ -102,6 +105,56 @@ public sealed class TypeDrawMetadataTests
         }
     }
 
+    /// <summary>
+    /// Tests that class-level metadata is populated from the corresponding attributes.
+    /// </summary>
+    [TestMethod]
+    public void For_AutoRegisteredTypeWithClassAttributes_PopulatesClassMetadata()
+    {
+        // Arrange
+        var testType = typeof(AttributedConfig);
+
+        // Act
+        var result = TypeDrawMetadata.For(testType);
+
+        // Assert
+        Assert.IsTrue(result.IsAutoRegisterSettings);
+        Assert.AreEqual("Root Category", result.Category);
+        Assert.AreEqual("rootPrefix", result.SettingsPrefix);
+        Assert.IsNotNull(result.IndentAttr);
+        Assert.IsNotNull(result.CollapseAttr);
+        Assert.IsNotNull(result.LabelMarginAttr);
+    }
+
+    /// <summary>
+    /// Tests that property-level metadata captures parameter and nested-group settings information.
+    /// </summary>
+    [TestMethod]
+    public void For_TypeWithAnnotatedProperties_PopulatesPropertyMetadata()
+    {
+        // Arrange
+        var result = TypeDrawMetadata.For(typeof(AttributedConfig));
+        var parameterProperty = Array.Find(result.Properties, static p => p.Property.Name == nameof(AttributedConfig.Enabled));
+        var nestedProperty = Array.Find(result.Properties, static p => p.Property.Name == nameof(AttributedConfig.Nested));
+
+        // Assert
+        Assert.IsNotNull(parameterProperty);
+        Assert.IsTrue(parameterProperty.IsParameter);
+        Assert.AreEqual("Enabled Category", parameterProperty.Category);
+        Assert.AreEqual(7, parameterProperty.Order);
+        Assert.AreEqual(1, parameterProperty.SpacingBefore);
+        Assert.AreEqual(2, parameterProperty.SpacingAfter);
+        Assert.IsNotNull(parameterProperty.HideIf);
+
+        Assert.IsNotNull(nestedProperty);
+        Assert.IsFalse(nestedProperty.IsParameter);
+        Assert.AreEqual("nestedPrefix", nestedProperty.SettingsPrefix);
+        Assert.AreEqual("nestedKey", nestedProperty.SettingsParameterKeyOverride);
+        Assert.IsNotNull(nestedProperty.CollapseAttr);
+        Assert.IsNotNull(nestedProperty.IndentAttr);
+        Assert.IsNotNull(nestedProperty.LabelMarginAttr);
+    }
+
     #region Helper Test Classes
 
     internal class SimpleTestClass
@@ -122,6 +175,39 @@ public sealed class TypeDrawMetadataTests
 
     internal class ConcurrencyTestClass
     {
+    }
+
+    [UmbraAutoRegister]
+    [UmbraCategory("Root Category")]
+    [UmbraPrefix("rootPrefix")]
+    [UmbraIndent(5f)]
+    [UmbraCollapseAsTree]
+    [UmbraLabelMargin(12f)]
+    internal sealed class AttributedConfig
+    {
+        [UmbraParameter]
+        [UmbraCategory("Enabled Category")]
+        [UmbraParameterOrder(7)]
+        [UmbraSpacingBefore(1)]
+        [UmbraSpacingAfter(2)]
+        [UmbraHideIf<bool>(nameof(HideEnabled))]
+        public Parameter<bool> Enabled { get; set; } = new(true);
+
+        [UmbraParameter("nestedKey")]
+        [UmbraPrefix("nestedPrefix")]
+        [UmbraIndent(3f)]
+        [UmbraCollapseAsTree]
+        [UmbraLabelMargin(4f)]
+        public NestedAttributedConfig Nested { get; set; } = new();
+
+        public bool HideEnabled { get; set; }
+    }
+
+    [UmbraAutoRegister]
+    internal sealed class NestedAttributedConfig
+    {
+        [UmbraParameter]
+        public Parameter<int> Value { get; set; } = new(1);
     }
 
     #endregion

@@ -39,6 +39,20 @@ public class ITwoColumnParameterDrawerTests
     }
 
     /// <summary>
+    /// Tests that the Draw method can be invoked on a minimal implementation without throwing.
+    /// </summary>
+    [TestMethod]
+    public void Draw_MinimalImplementation_DoesNotThrow()
+    {
+        // Arrange
+        ITwoColumnParameterDrawer drawer = new MinimalDrawerImplementation();
+        IParameter parameter = new Parameter<int>(42);
+
+        // Act & Assert
+        drawer.Draw(parameter);
+    }
+
+    /// <summary>
     /// Minimal implementation of ITwoColumnParameterDrawer for testing the default Dispose implementation.
     /// </summary>
     private sealed class MinimalDrawerImplementation : ITwoColumnParameterDrawer

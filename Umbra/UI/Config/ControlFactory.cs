@@ -43,8 +43,8 @@ internal static class ControlFactory
     /// </summary>
     /// <remarks>
     /// Custom drawer types are pre-resolved during <c>SettingsStore.Load()</c> by
-    /// <c>ParameterMetadataReader</c> and stored in <see cref="ParameterMetadata.CustomDrawerType"/>
-    /// and <see cref="ParameterMetadata.TwoColumnCustomDrawerType"/>, eliminating the need to scan
+    /// <c>ParameterMetadataReader</c> and stored in <see cref="ParameterMetadata.DrawerType"/>
+    /// and <see cref="ParameterMetadata.TwoColumnDrawerType"/>, eliminating the need to scan
     /// property attributes at draw-tree construction time.
     /// </remarks>
     internal static (Action draw, IDisposable? resource) BuildDrawAction(

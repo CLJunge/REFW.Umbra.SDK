@@ -15,11 +15,79 @@ public sealed partial class DeferredSaveControllerTests
     /// <summary>
     /// Test configuration class for DeferredSaveController tests.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     public sealed class TestConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<int> TestValue { get; set; } = new(42);
+    }
+
+    /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a null settings store.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhenStoreIsNull_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new DeferredSaveController<TestConfig>(null!));
+
+        Assert.AreEqual("store", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Verifies that the constructor rejects a disposed settings store.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhenStoreIsDisposed_ThrowsObjectDisposedException()
+    {
+        var storeMock = new Mock<ISettingsStore<TestConfig>>(MockBehavior.Strict);
+        storeMock.SetupGet(s => s.IsDisposed).Returns(true);
+
+        AssertThrows<ObjectDisposedException>(() => _ = new DeferredSaveController<TestConfig>(storeMock.Object));
+    }
+
+    /// <summary>
+    /// Verifies that the constructor requires the settings store to be loaded first.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhenStoreIsNotLoaded_ThrowsInvalidOperationException()
+    {
+        var storeMock = new Mock<ISettingsStore<TestConfig>>(MockBehavior.Strict);
+        storeMock.SetupGet(s => s.IsDisposed).Returns(false);
+        storeMock.SetupGet(s => s.IsLoaded).Returns(false);
+
+        AssertThrows<InvalidOperationException>(() => _ = new DeferredSaveController<TestConfig>(storeMock.Object));
+    }
+
+    /// <summary>
+    /// Verifies that omitting the debounce window uses the documented one-second default.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhenDebounceWindowIsOmitted_UsesOneSecondDefault()
+    {
+        var storeMock = CreateMockStore();
+
+        var controller = new DeferredSaveController<TestConfig>(storeMock.Object);
+
+        Assert.AreEqual(TimeSpan.FromSeconds(1), controller.DebounceWindow);
     }
 
     /// <summary>

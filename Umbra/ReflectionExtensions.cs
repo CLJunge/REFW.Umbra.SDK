@@ -37,7 +37,7 @@ public static class ReflectionExtensions
     /// <typeparamref name="T"/>, or <see langword="null"/> when no match is found.
     /// </summary>
     /// <remarks>
-    /// Use this to locate interface-typed attributes (e.g. <see cref="Config.Attributes.ICustomDrawerAttribute"/>)
+    /// Use this to locate interface-typed attributes (e.g. <see cref="Config.Attributes.IDrawerAttribute"/>)
     /// without knowing the concrete generic type argument at the call site.
     /// </remarks>
     /// <typeparam name="T">The attribute type or interface to search for. Must be a reference type.</typeparam>
@@ -63,7 +63,7 @@ public static class ReflectionExtensions
     /// </summary>
     /// <remarks>
     /// Use this to locate interface-typed class-level attributes (e.g.
-    /// <see cref="Config.Attributes.INestedGroupDrawerAttribute"/>) on a configuration group
+    /// <see cref="Config.Attributes.INestedDrawerAttribute"/>) on a configuration group
     /// type without knowing the concrete generic type argument at the call site.
     /// </remarks>
     /// <typeparam name="T">The attribute type or interface to search for. Must be a reference type.</typeparam>

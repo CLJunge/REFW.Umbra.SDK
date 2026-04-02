@@ -42,8 +42,8 @@ public class ParameterMetadataReaderTests
         Assert.AreEqual(0, result.SpacingBefore);
         Assert.AreEqual(0, result.SpacingAfter);
         Assert.IsNull(result.Indent);
-        Assert.IsNull(result.CustomDrawerType);
-        Assert.IsNull(result.TwoColumnCustomDrawerType);
+        Assert.IsNull(result.DrawerType);
+        Assert.IsNull(result.TwoColumnDrawerType);
         Assert.IsNull(result.HideIf);
         Assert.AreEqual("%.2f", result.InferredFloatFormat);
         Assert.IsNull(result.HiddenLabel);
@@ -65,6 +65,22 @@ public class ParameterMetadataReaderTests
 
         // Assert
         Assert.AreEqual("Inherited", result.Category);
+    }
+
+    /// <summary>
+    /// Tests that an explicit category attribute overrides an inherited category.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithCategory_OverridesInheritedCategory()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithCategory))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member, inheritedCategory: "Inherited");
+
+        // Assert
+        Assert.AreEqual("Test Category", result.Category);
     }
 
     /// <summary>
@@ -127,6 +143,22 @@ public class ParameterMetadataReaderTests
     }
 
     /// <summary>
+    /// Tests that ReadFrom returns a ParameterMetadata with ButtonStyle set from UmbraButtonStyleAttribute.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithButtonStyle_ReturnsButtonStyle()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithButtonStyle))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member);
+
+        // Assert
+        Assert.AreEqual(ButtonStyle.Primary, result.ButtonStyle);
+    }
+
+    /// <summary>
     /// Tests that ReadFrom returns a ParameterMetadata with HiddenLabel set when parameterKey is provided.
     /// Input: MemberInfo, parameterKey = "testKey".
     /// Expected: HiddenLabel = "##testKey".
@@ -163,12 +195,28 @@ public class ParameterMetadataReaderTests
     }
 
     /// <summary>
-    /// Tests that ReadFrom returns a ParameterMetadata with CustomDrawerType set from ICustomDrawerAttribute.
-    /// Input: MemberInfo with an attribute implementing ICustomDrawerAttribute.
-    /// Expected: CustomDrawerType = typeof(TestDrawer).
+    /// Tests that ReadFrom still prefixes an empty parameter key with the hidden-label marker.
     /// </summary>
     [TestMethod]
-    public void ReadFrom_MemberWithCustomDrawer_ReturnsCustomDrawerType()
+    public void ReadFrom_EmptyParameterKey_ReturnsDoubleHashHiddenLabel()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.NoAttributes))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member, parameterKey: string.Empty);
+
+        // Assert
+        Assert.AreEqual("##", result.HiddenLabel);
+    }
+
+    /// <summary>
+    /// Tests that ReadFrom returns a ParameterMetadata with DrawerType set from ICustomDrawerAttribute.
+    /// Input: MemberInfo with an attribute implementing ICustomDrawerAttribute.
+    /// Expected: DrawerType = typeof(TestDrawer).
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithCustomDrawer_ReturnsDrawerType()
     {
         // Arrange
         var member = typeof(TestClass).GetProperty(nameof(TestClass.WithCustomDrawer))!;
@@ -177,16 +225,16 @@ public class ParameterMetadataReaderTests
         var result = ParameterMetadataReader.ReadFrom(member);
 
         // Assert
-        Assert.AreEqual(typeof(TestDrawer), result.CustomDrawerType);
+        Assert.AreEqual(typeof(TestDrawer), result.DrawerType);
     }
 
     /// <summary>
-    /// Tests that ReadFrom returns a ParameterMetadata with TwoColumnCustomDrawerType set from ITwoColumnCustomDrawerAttribute.
+    /// Tests that ReadFrom returns a ParameterMetadata with TwoColumnDrawerType set from ITwoColumnCustomDrawerAttribute.
     /// Input: MemberInfo with an attribute implementing ITwoColumnCustomDrawerAttribute.
-    /// Expected: TwoColumnCustomDrawerType = typeof(TestTwoColumnDrawer).
+    /// Expected: TwoColumnDrawerType = typeof(TestTwoColumnDrawer).
     /// </summary>
     [TestMethod]
-    public void ReadFrom_MemberWithTwoColumnCustomDrawer_ReturnsTwoColumnCustomDrawerType()
+    public void ReadFrom_MemberWithTwoColumnCustomDrawer_ReturnsTwoColumnDrawerType()
     {
         // Arrange
         var member = typeof(TestClass).GetProperty(nameof(TestClass.WithTwoColumnCustomDrawer))!;
@@ -195,7 +243,7 @@ public class ParameterMetadataReaderTests
         var result = ParameterMetadataReader.ReadFrom(member);
 
         // Assert
-        Assert.AreEqual(typeof(TestTwoColumnDrawer), result.TwoColumnCustomDrawerType);
+        Assert.AreEqual(typeof(TestTwoColumnDrawer), result.TwoColumnDrawerType);
     }
 
     /// <summary>
@@ -305,6 +353,22 @@ public class ParameterMetadataReaderTests
         Assert.AreEqual("%.3f", result.InferredFloatFormat);
     }
 
+    /// <summary>
+    /// Tests that negative step values still infer precision from their decimal places.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_NegativeStep_ReturnsPrecisionFromDecimalPlaces()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithNegativeStepThreeDecimals))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member);
+
+        // Assert
+        Assert.AreEqual("%.3f", result.InferredFloatFormat);
+    }
+
     // Test helper classes with various attribute combinations
     private class TestClass
     {
@@ -387,17 +451,20 @@ public class ParameterMetadataReaderTests
 
         [UmbraStep(0.001)]
         public double WithStepThreeDecimals { get; set; }
+
+        [UmbraStep(-0.125)]
+        public double WithNegativeStepThreeDecimals { get; set; }
     }
 
     // Helper attribute classes for testing interface-based detection
     [AttributeUsage(AttributeTargets.Property)]
-    private class TestCustomDrawerAttribute : Attribute, ICustomDrawerAttribute
+    private class TestCustomDrawerAttribute : Attribute, IDrawerAttribute
     {
         public Type DrawerType => typeof(TestDrawer);
     }
 
     [AttributeUsage(AttributeTargets.Property)]
-    private class TestTwoColumnCustomDrawerAttribute : Attribute, ITwoColumnCustomDrawerAttribute
+    private class TestTwoColumnCustomDrawerAttribute : Attribute, ITwoColumnDrawerAttribute
     {
         public Type DrawerType => typeof(TestTwoColumnDrawer);
     }
@@ -406,3 +473,4 @@ public class ParameterMetadataReaderTests
     private class TestDrawer { }
     private class TestTwoColumnDrawer { }
 }
+

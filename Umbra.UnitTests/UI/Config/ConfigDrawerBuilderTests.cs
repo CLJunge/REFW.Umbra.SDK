@@ -353,9 +353,27 @@ public partial class ConfigDrawerBuilderTests
         Assert.HasCount(initialCount, builder.Nodes, "Nodes should be cleared between calls.");
     }
 
+    /// <summary>
+    /// Tests that Collect clears previously tracked disposable resources before rebuilding the draw tree.
+    /// </summary>
+    [TestMethod]
+    public void Collect_WithPreexistingDisposables_ClearsDisposableList()
+    {
+        // Arrange
+        var builder = new ConfigDrawerBuilder();
+        var config = new SimpleConfig();
+        builder.Disposables.Add(new Mock<IDisposable>().Object);
+
+        // Act
+        builder.Collect(config, typeof(SimpleConfig));
+
+        // Assert
+        Assert.IsEmpty(builder.Disposables);
+    }
+
     #region Helper Types
 
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed record SimpleConfig
     {
     }

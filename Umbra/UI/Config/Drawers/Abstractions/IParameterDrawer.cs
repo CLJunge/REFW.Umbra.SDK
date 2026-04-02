@@ -10,6 +10,17 @@ namespace Umbra.UI.Config.Drawers;
 /// <see cref="ConfigDrawer{TConfig}"/> is disposed. Implementations that hold no
 /// per-instance state do not need to override <see cref="IDisposable.Dispose"/>.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Use this interface with
+/// <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/> (<c>[UmbraDrawer&lt;TDrawer&gt;]</c>)
+/// for complete layout control (custom label rendering, non-standard row structure), use
+/// <see cref="ITwoColumnParameterDrawer"/> with
+/// <see cref="Umbra.Config.Attributes.UmbraTwoColumnDrawerAttribute{TDrawer}"/> 
+/// (<c>[UmbraTwoColumnDrawer&lt;TDrawer&gt;]</c>) when you need a fully custom control but still
+/// want the label aligned with all other parameters in the same category or root scope instead.
+/// </para>
+/// </remarks>
 public interface IParameterDrawer : IDisposable
 {
     /// <summary>

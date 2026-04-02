@@ -182,6 +182,25 @@ public partial class ParameterJsonReaderTests
     }
 
     /// <summary>
+    /// Tests that Apply correctly applies a nullable boolean false value from a JSON false element.
+    /// </summary>
+    [TestMethod]
+    public void Apply_ValidNullableBooleanFalse_CallsSetValueWithoutNotifyWithFalse()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(bool?));
+        using var doc = JsonDocument.Parse("false");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(false), Times.Once);
+    }
+
+    /// <summary>
     /// Tests that Apply correctly applies a boolean false value from a JSON false element.
     /// </summary>
     [TestMethod]
@@ -315,6 +334,25 @@ public partial class ParameterJsonReaderTests
     }
 
     /// <summary>
+    /// Tests that Apply forwards the raw string value for non-enum object targets.
+    /// </summary>
+    [TestMethod]
+    public void Apply_StringJsonElementForObjectTarget_ForwardsRawStringValue()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(object));
+        using var doc = JsonDocument.Parse("\"payload\"");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify("payload"), Times.Once);
+    }
+
+    /// <summary>
     /// Tests that Apply correctly handles a JSON null element by calling SetValueWithoutNotify with null.
     /// </summary>
     [TestMethod]
@@ -370,6 +408,38 @@ public partial class ParameterJsonReaderTests
 
         // Assert
         mockParam.Verify(p => p.SetValueWithoutNotify(It.IsAny<object?>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Tests that Apply forwards the raw string value for non-enum string JSON payloads, even when the target type is non-string.
+    /// </summary>
+    [TestMethod]
+    public void Apply_StringJsonElementForIntTarget_ForwardsRawStringValue()
+    {
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(int));
+        using var doc = JsonDocument.Parse("\"42\"");
+        var element = doc.RootElement;
+
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        mockParam.Verify(p => p.SetValueWithoutNotify("42"), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply falls back to forwarding a numeric value for unsupported numeric target types.
+    /// </summary>
+    [TestMethod]
+    public void Apply_NumberJsonElementForBoolTarget_ForwardsFallbackNumericValue()
+    {
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(bool));
+        using var doc = JsonDocument.Parse("1");
+        var element = doc.RootElement;
+
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        mockParam.Verify(p => p.SetValueWithoutNotify(It.Is<object?>(value => Equals(value, 1d) || Equals(value, 1))), Times.Once);
     }
 
     /// <summary>
@@ -508,6 +578,20 @@ public partial class ParameterJsonReaderTests
     }
 
     /// <summary>
+    /// Tests that Apply throws when a numeric JSON value overflows the target int type.
+    /// </summary>
+    [TestMethod]
+    public void Apply_IntOverflow_ThrowsFormatException()
+    {
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(int));
+        using var doc = JsonDocument.Parse("2147483648");
+        var element = doc.RootElement;
+
+        AssertThrows<FormatException>(() => ParameterJsonReader.Apply(mockParam.Object, element));
+    }
+
+    /// <summary>
     /// Tests that Apply correctly handles long.MinValue.
     /// </summary>
     [TestMethod]
@@ -565,6 +649,40 @@ public partial class ParameterJsonReaderTests
     }
 
     /// <summary>
+    /// Tests that Apply throws when a numeric JSON value overflows the target byte type.
+    /// </summary>
+    [TestMethod]
+    public void Apply_ByteOverflow_ThrowsFormatException()
+    {
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(byte));
+        using var doc = JsonDocument.Parse("256");
+        var element = doc.RootElement;
+
+        AssertThrows<FormatException>(() => ParameterJsonReader.Apply(mockParam.Object, element));
+
+    }
+
+    /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Tests that Apply correctly handles short.MinValue.
     /// </summary>
     [TestMethod]
@@ -581,6 +699,22 @@ public partial class ParameterJsonReaderTests
 
         // Assert
         mockParam.Verify(p => p.SetValueWithoutNotify((short)-32768), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests the current unchecked-cast behavior when a numeric JSON value exceeds the target short range.
+    /// </summary>
+    [TestMethod]
+    public void Apply_ShortOverflow_UsesUncheckedCastBehavior()
+    {
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(short));
+        using var doc = JsonDocument.Parse("40000");
+        var element = doc.RootElement;
+
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        mockParam.Verify(p => p.SetValueWithoutNotify(unchecked((short)40000)), Times.Once);
     }
 
     /// <summary>

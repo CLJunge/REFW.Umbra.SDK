@@ -10,9 +10,9 @@ namespace Umbra.SamplePlugin.Config;
 /// </summary>
 /// <remarks>
 /// This drawer is deliberately simple and self-contained: each helper edits exactly one persisted
-/// parameter so the sample remains a clear reference for implementing <see cref="INestedGroupDrawer{TGroup}"/>.
+/// parameter so the sample remains a clear reference for implementing <see cref="INestedDrawer{T}"/>.
 /// </remarks>
-internal sealed class NestedDrawerTestDrawer : INestedGroupDrawer<PluginConfig.NestedDrawerTest>
+internal sealed class NestedDrawerTestDrawer : INestedDrawer<PluginConfig.NestedDrawerTest>
 {
     /// <summary>
     /// Draws the nested group and writes changed values back to the underlying parameters.

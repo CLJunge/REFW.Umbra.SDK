@@ -3,7 +3,7 @@ using Umbra.UI.Config.Drawers;
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Non-generic marker interface implemented by <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>.
+/// Non-generic marker interface implemented by <see cref="UmbraNestedDrawerAttribute{TDrawer}"/>.
 /// Allows nested-group custom-drawer detection on either a parent property declaration or the
 /// nested group type itself without runtime generic type inspection.
 /// </summary>
@@ -14,8 +14,8 @@ namespace Umbra.Config.Attributes;
 /// visible so that <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Reflection.PropertyInfo)"/>
 /// and <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Type)"/> can use it as a generic type argument.
 /// </remarks>
-internal interface INestedGroupDrawerAttribute
+internal interface INestedDrawerAttribute
 {
-    /// <summary>Gets the concrete <see cref="INestedGroupDrawer{T}"/> type used to render the nested group instance.</summary>
+    /// <summary>Gets the concrete <see cref="INestedDrawer{T}"/> type used to render the nested group instance.</summary>
     Type DrawerType { get; }
 }

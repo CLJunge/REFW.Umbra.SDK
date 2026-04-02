@@ -4,10 +4,10 @@ using System.Reflection;
 namespace Umbra.UI.Config.UnitTests;
 
 /// <summary>
-/// Unit tests for <see cref="NestedGroupScopePathResolver"/>.
+/// Unit tests for <see cref="NestedScopePathResolver"/>.
 /// </summary>
 [TestClass]
-public class NestedGroupScopePathResolverTests
+public class NestedScopePathResolverTests
 {
     /// <summary>
     /// Verifies that when <see cref="TypeDrawMetadata.PropertyDrawMetadata.SettingsPrefix"/> is non-null,
@@ -26,7 +26,7 @@ public class NestedGroupScopePathResolverTests
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: "typePrefix");
 
         // Act
-        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("parent.path.propSettingsPrefix", result);
@@ -49,7 +49,7 @@ public class NestedGroupScopePathResolverTests
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: expectedSegment);
 
         // Act
-        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("parent.typeSettingsPrefix", result);
@@ -73,7 +73,7 @@ public class NestedGroupScopePathResolverTests
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
         // Act
-        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("root.customKey", result);
@@ -94,7 +94,7 @@ public class NestedGroupScopePathResolverTests
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
         // Act
-        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("base.myProperty", result);
@@ -115,10 +115,50 @@ public class NestedGroupScopePathResolverTests
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
         // Act
-        var result = NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
+        var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
         Assert.AreEqual("segment", result);
+    }
+
+    /// <summary>
+    /// Verifies that when the parent path is empty and a key override is selected, the result contains only the key override without a leading dot.
+    /// </summary>
+    [TestMethod]
+    public void Resolve_WhenParentPathIsEmptyAndKeyOverrideIsUsed_ReturnsOnlyKeyOverride()
+    {
+        // Arrange
+        var propMeta = CreatePropertyMetadata(
+            settingsPrefix: null,
+            settingsParameterKeyOverride: "overrideKey",
+            propertyName: "Property");
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+
+        // Act
+        var result = NestedScopePathResolver.Resolve(string.Empty, propMeta, propTypeMeta);
+
+        // Assert
+        Assert.AreEqual("overrideKey", result);
+    }
+
+    /// <summary>
+    /// Verifies that when all metadata is null and the property name is already camelCase, it is preserved.
+    /// </summary>
+    [TestMethod]
+    public void Resolve_WhenPropertyNameIsAlreadyCamelCase_PreservesPropertyName()
+    {
+        // Arrange
+        var propMeta = CreatePropertyMetadata(
+            settingsPrefix: null,
+            settingsParameterKeyOverride: null,
+            propertyName: "dummyProperty");
+        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+
+        // Act
+        var result = NestedScopePathResolver.Resolve(string.Empty, propMeta, propTypeMeta);
+
+        // Assert
+        Assert.AreEqual("dummyProperty", result);
     }
 
     /// <summary>
@@ -135,9 +175,13 @@ public class NestedGroupScopePathResolverTests
             propertyName: "");
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
+        // Act
+        var exception = AssertThrowsInvalidOperationException(
+            () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
+
         // Assert
-        AssertThrowsInvalidOperationException(
-            () => NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
+        Assert.Contains("resolves to an empty scope segment", exception.Message);
+        Assert.Contains("TestPropertyHolder.", exception.Message);
     }
 
     /// <summary>
@@ -156,7 +200,7 @@ public class NestedGroupScopePathResolverTests
 
         // Assert
         AssertThrowsInvalidOperationException(
-            () => NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
+            () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
     }
 
     /// <summary>
@@ -175,7 +219,7 @@ public class NestedGroupScopePathResolverTests
 
         // Assert
         AssertThrowsInvalidOperationException(
-            () => NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
+            () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
     }
 
     /// <summary>
@@ -194,19 +238,22 @@ public class NestedGroupScopePathResolverTests
 
         // Assert
         AssertThrowsInvalidOperationException(
-            () => NestedGroupScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
+            () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
     }
 
-    private static void AssertThrowsInvalidOperationException(Action action)
+    private static InvalidOperationException AssertThrowsInvalidOperationException(Action action)
     {
         try
         {
             action();
             Assert.Fail("Expected InvalidOperationException.");
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException exception)
         {
+            return exception;
         }
+
+        throw new InvalidOperationException("Unreachable");
     }
 
     /// <summary>
@@ -240,7 +287,7 @@ public class NestedGroupScopePathResolverTests
             indentAttr: null,
             collapseAttr: null,
             labelMarginAttr: null,
-            nestedGroupDrawerAttr: null,
+            nestedDrawerAttr: null,
             hideIf: null,
             order: 0,
             spacingBefore: 0,

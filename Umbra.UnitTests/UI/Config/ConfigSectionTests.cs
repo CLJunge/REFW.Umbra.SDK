@@ -11,12 +11,31 @@ namespace Umbra.UI.Config.UnitTests;
 public sealed class ConfigSectionTests
 {
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Test configuration class used for testing <see cref="ConfigSection{TConfig}"/>.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     private sealed class TestConfig
     {
-        [UmbraSettingsParameter]
+        [UmbraParameter]
         public Parameter<bool> TestParameter { get; set; } = new(true);
     }
 
@@ -229,6 +248,40 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
+    /// Tests that the constructor rejects a null config instance.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullConfig_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigSection<TestConfig>(null!));
+
+        Assert.AreEqual("config", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the constructor rejects whitespace-only id scopes.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
+    {
+        var exception = AssertThrows<ArgumentException>(() => _ = new ConfigSection<TestConfig>(new TestConfig(), idScope: "   "));
+
+        Assert.AreEqual("idScope", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that an explicit tree-node label also controls the default-open flag.
+    /// </summary>
+    [TestMethod]
+    public void TreeNodeDefaultOpen_ExplicitLabelProvided_UsesExplicitFlag()
+    {
+        var config = new ConfigWithRootNodeAttribute();
+        var section = new ConfigSection<ConfigWithRootNodeAttribute>(config, treeNodeLabel: "Explicit", treeNodeDefaultOpen: false);
+
+        Assert.IsFalse(section.TreeNodeDefaultOpen);
+    }
+
+    /// <summary>
     /// Tests that <see cref="ConfigSection{TConfig}.TreeNodeLabel"/> returns the same value after disposal
     /// when the value was previously set.
     /// </summary>
@@ -253,7 +306,7 @@ public sealed class ConfigSectionTests
     /// <summary>
     /// Simple test configuration class with no attributes.
     /// </summary>
-    [UmbraAutoRegisterSettings]
+    [UmbraAutoRegister]
     internal sealed class SimpleConfig
     {
     }
@@ -261,8 +314,8 @@ public sealed class ConfigSectionTests
     /// <summary>
     /// Test configuration class with UmbraConfigRootNodeAttribute specifying a label.
     /// </summary>
-    [UmbraAutoRegisterSettings]
-    [UmbraConfigRootNode("Attribute Label", true)]
+    [UmbraAutoRegister]
+    [UmbraRootNode("Attribute Label", true)]
     internal sealed class ConfigWithRootNodeAttribute
     {
     }
@@ -270,8 +323,8 @@ public sealed class ConfigSectionTests
     /// <summary>
     /// Test configuration class with UmbraConfigRootNodeAttribute with null label.
     /// </summary>
-    [UmbraAutoRegisterSettings]
-    [UmbraConfigRootNode(null, false)]
+    [UmbraAutoRegister]
+    [UmbraRootNode(null, false)]
     internal sealed class ConfigWithNullLabelAttribute
     {
     }
@@ -373,7 +426,7 @@ public sealed class ConfigSectionTests
     /// <summary>
     /// Tests that <see cref="ConfigSection{TConfig}.TreeNodeDefaultOpen"/> returns false when
     /// no explicit tree node label is provided and the config type has no
-    /// <see cref="UmbraConfigRootNodeAttribute"/>.
+    /// <see cref="UmbraRootNodeAttribute"/>.
     /// </summary>
     [TestMethod]
     public void TreeNodeDefaultOpen_NoAttributeNoExplicitLabel_ReturnsFalse()
@@ -390,7 +443,7 @@ public sealed class ConfigSectionTests
 
     /// <summary>
     /// Tests that an explicit <paramref name="treeNodeLabel"/> parameter overrides the
-    /// <see cref="UmbraConfigRootNodeAttribute"/> when both are present. The explicit
+    /// <see cref="UmbraRootNodeAttribute"/> when both are present. The explicit
     /// <paramref name="treeNodeDefaultOpen"/> parameter value should be returned.
     /// </summary>
     [TestMethod]
@@ -543,7 +596,7 @@ public sealed class ConfigSectionTests
     /// <summary>
     /// Test config class with SectionOrderAttribute having order = 0.
     /// </summary>
-    [SectionOrder(0)]
+    [UmbraSectionOrder(0)]
     internal sealed class ConfigWithOrderZero
     {
     }
@@ -551,7 +604,7 @@ public sealed class ConfigSectionTests
     /// <summary>
     /// Test config class with SectionOrderAttribute having a positive order value.
     /// </summary>
-    [SectionOrder(100)]
+    [UmbraSectionOrder(100)]
     internal sealed class ConfigWithOrderPositive
     {
     }
@@ -559,7 +612,7 @@ public sealed class ConfigSectionTests
     /// <summary>
     /// Test config class with SectionOrderAttribute having order = int.MaxValue.
     /// </summary>
-    [SectionOrder(int.MaxValue)]
+    [UmbraSectionOrder(int.MaxValue)]
     internal sealed class ConfigWithOrderMaxValue
     {
     }
@@ -914,42 +967,42 @@ public sealed class ConfigSectionTests
     {
     }
 
-    [SectionOrder(0)]
+    [UmbraSectionOrder(0)]
     internal sealed class ConfigWithOrder0
     {
     }
 
-    [SectionOrder(1)]
+    [UmbraSectionOrder(1)]
     internal sealed class ConfigWithOrder1
     {
     }
 
-    [SectionOrder(10)]
+    [UmbraSectionOrder(10)]
     internal sealed class ConfigWithOrder10
     {
     }
 
-    [SectionOrder(100)]
+    [UmbraSectionOrder(100)]
     internal sealed class ConfigWithOrder100
     {
     }
 
-    [UmbraConfigRootNode("Root Settings", false)]
+    [UmbraRootNode("Root Settings", false)]
     internal sealed class ConfigWithRootNodeLabel
     {
     }
 
-    [UmbraConfigRootNode(null, false)]
+    [UmbraRootNode(null, false)]
     internal sealed class ConfigWithRootNodeNoLabel
     {
     }
 
-    [UmbraConfigRootNode("Open Tree", true)]
+    [UmbraRootNode("Open Tree", true)]
     internal sealed class ConfigWithRootNodeDefaultOpenTrue
     {
     }
 
-    [UmbraConfigRootNode("Closed Tree", false)]
+    [UmbraRootNode("Closed Tree", false)]
     internal sealed class ConfigWithRootNodeDefaultOpenFalse
     {
     }

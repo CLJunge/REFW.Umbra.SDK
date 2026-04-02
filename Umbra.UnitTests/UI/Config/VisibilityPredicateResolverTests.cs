@@ -37,6 +37,38 @@ public sealed class VisibilityPredicateResolverTests
     }
 
     /// <summary>
+    /// Verifies that explicit comparisons also unwrap <see cref="Parameter{T}"/> members.
+    /// </summary>
+    [TestMethod]
+    public void Build_WithParameterMemberAndExplicitComparison_UsesUnderlyingValue()
+    {
+        var owner = new TestOwner { ParameterInt = new Parameter<int>(10) };
+        var predicate = VisibilityPredicateResolver.Build(new UmbraHideIfAttribute<int>(nameof(TestOwner.ParameterInt), 10), owner);
+
+        Assert.IsFalse(predicate());
+
+        owner.ParameterInt.Set(20);
+
+        Assert.IsTrue(predicate());
+    }
+
+    /// <summary>
+    /// Verifies that explicit null comparison also works for nullable parameter members.
+    /// </summary>
+    [TestMethod]
+    public void Build_WithNullableParameterAndNullComparison_HidesWhenUnderlyingValueIsNull()
+    {
+        var owner = new TestOwner { ParameterNullableInt = new Parameter<int?>(null) };
+        var predicate = VisibilityPredicateResolver.Build(new UmbraHideIfAttribute<int?>(nameof(TestOwner.ParameterNullableInt), null), owner);
+
+        Assert.IsFalse(predicate());
+
+        owner.ParameterNullableInt.Set(5);
+
+        Assert.IsTrue(predicate());
+    }
+
+    /// <summary>
     /// Verifies that explicit comparison hides when the current member value equals the configured comparison value.
     /// </summary>
     [TestMethod]
@@ -82,6 +114,23 @@ public sealed class VisibilityPredicateResolverTests
     }
 
     /// <summary>
+    /// Verifies that explicit comparison also works for private fields and reevaluates after the field changes.
+    /// </summary>
+    [TestMethod]
+    public void Build_WithPrivateFieldAndExplicitComparison_ReevaluatesCurrentValue()
+    {
+        var owner = new TestOwner();
+        owner.SetPrivateField(false);
+        var predicate = VisibilityPredicateResolver.Build(new UmbraHideIfAttribute<bool>("_privateField", false), owner);
+
+        Assert.IsFalse(predicate());
+
+        owner.SetPrivateField(true);
+
+        Assert.IsTrue(predicate());
+    }
+
+    /// <summary>
     /// Verifies that invalid member names are ignored and leave the control visible.
     /// </summary>
     [TestMethod]
@@ -122,6 +171,10 @@ public sealed class VisibilityPredicateResolverTests
         public int? NullableIntProperty { get; set; }
 
         public Parameter<bool> ParameterBool { get; set; } = new(false);
+
+        public Parameter<int> ParameterInt { get; set; } = new(0);
+
+        public Parameter<int?> ParameterNullableInt { get; set; } = new(null);
 
         public void SetPrivateField(bool value) => _privateField = value;
     }

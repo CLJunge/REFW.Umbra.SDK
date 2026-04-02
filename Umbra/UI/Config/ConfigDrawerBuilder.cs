@@ -26,10 +26,10 @@ namespace Umbra.UI.Config;
 /// <para>
 /// Every nested-group subtree is additionally wrapped in a stable ImGui ID scope derived from the
 /// group's structural settings path. Nested-group custom drawer binding is delegated to
-/// <see cref="NestedGroupDrawerBinder"/>, structural path derivation is delegated to
-/// <see cref="NestedGroupScopePathResolver"/>, scope-local category routing is delegated to
+/// <see cref="NestedDrawerBinder"/>, structural path derivation is delegated to
+/// <see cref="NestedScopePathResolver"/>, scope-local category routing is delegated to
 /// <see cref="ConfigDrawScope"/>, nested-group node composition is delegated to
-/// <see cref="NestedGroupNodeComposer"/>, and leaf parameter node composition is delegated to
+/// <see cref="NestedNodeComposer"/>, and leaf parameter node composition is delegated to
 /// <see cref="ParameterNodeComposer"/> so this type remains focused on tree assembly.
 /// </para>
 /// </remarks>
@@ -73,7 +73,7 @@ internal sealed class ConfigDrawerBuilder
     /// </param>
     /// <remarks>
     /// Returns immediately without emitting any nodes when <paramref name="type"/> is decorated
-    /// with <see cref="INestedGroupDrawerAttribute"/>. Such types are rendered entirely by their
+    /// with <see cref="INestedDrawerAttribute"/>. Such types are rendered entirely by their
     /// custom drawer; expanding their parameters here would duplicate what the drawer manages.
     /// Nested child groups receive their own stable ImGui ID scopes derived from the root config's
     /// settings prefix and the nested-group property path.
@@ -115,7 +115,7 @@ internal sealed class ConfigDrawerBuilder
     private void CollectInto(ConfigDrawScope scope, object obj, Type type)
     {
         var typeMeta = TypeDrawMetadata.For(type);
-        if (typeMeta.NestedGroupDrawerAttr is not null)
+        if (typeMeta.NestedDrawerAttr is not null)
             return;
 
         var classIndent = typeMeta.IndentAttr;
@@ -150,18 +150,18 @@ internal sealed class ConfigDrawerBuilder
             if (!propTypeMeta.IsAutoRegisterSettings || prop.GetValue(obj) is not { } nested)
                 continue;
 
-            var nestedDrawerAttr = propMeta.NestedGroupDrawerAttr ?? propTypeMeta.NestedGroupDrawerAttr;
+            var nestedDrawerAttr = propMeta.NestedDrawerAttr ?? propTypeMeta.NestedDrawerAttr;
             var nestedLocalCategory = propMeta.Category ?? propTypeMeta.Category;
             var nestedCollapseAttr = propMeta.CollapseAttr ?? propTypeMeta.CollapseAttr;
             var nestedLabelMargin = propMeta.LabelMarginAttr
                 ?? propTypeMeta.LabelMarginAttr
                 ?? scope.LabelMarginAttr;
             var propertyIndent = propMeta.IndentAttr;
-            var nestedGroupPath = NestedGroupScopePathResolver.Resolve(scope.GroupPath, propMeta, propTypeMeta);
+            var nestedGroupPath = NestedScopePathResolver.Resolve(scope.GroupPath, propMeta, propTypeMeta);
 
             if (nestedDrawerAttr is not null)
             {
-                var drawerNode = NestedGroupNodeComposer.CreateNestedDrawerNode(
+                var drawerNode = NestedNodeComposer.CreateNestedDrawerNode(
                     RegisterCategoryNode,
                     scope.LabelMarginAttr,
                     nestedGroupPath,
@@ -207,13 +207,13 @@ internal sealed class ConfigDrawerBuilder
             if (nestedLocalCategory is not null)
             {
                 var childContainer = childScope.CreateContainerNode(nestedLocalCategory);
-                var scopedChildNode = NestedGroupNodeComposer.CreateIdScopedSubtree(nestedGroupPath, [childContainer]);
+                var scopedChildNode = NestedNodeComposer.CreateIdScopedSubtree(nestedGroupPath, [childContainer]);
 
                 if (propMeta.HasWrapperMetadata)
                 {
                     scope.AddNode(
                         null,
-                        NestedGroupNodeComposer.CreateWrappedNode(
+                        NestedNodeComposer.CreateWrappedNode(
                             [scopedChildNode],
                             obj,
                             propMeta.HideIf,
@@ -229,13 +229,13 @@ internal sealed class ConfigDrawerBuilder
                 continue;
             }
 
-            var scopedSubtreeNode = NestedGroupNodeComposer.CreateIdScopedSubtree(nestedGroupPath, childScope.Nodes);
+            var scopedSubtreeNode = NestedNodeComposer.CreateIdScopedSubtree(nestedGroupPath, childScope.Nodes);
 
             if (propMeta.HasWrapperMetadata)
             {
                 scope.AddNode(
                     ambientCategory,
-                    NestedGroupNodeComposer.CreateWrappedNode(
+                    NestedNodeComposer.CreateWrappedNode(
                         [scopedSubtreeNode],
                         obj,
                         propMeta.HideIf,

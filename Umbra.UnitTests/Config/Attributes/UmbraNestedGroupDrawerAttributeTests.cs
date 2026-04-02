@@ -1,7 +1,7 @@
 namespace Umbra.Config.Attributes.UnitTests;
 
 /// <summary>
-/// Tests for <see cref="UmbraNestedGroupDrawerAttribute{TDrawer}"/>.
+/// Tests for <see cref="UmbraNestedDrawerAttribute{TDrawer}"/>.
 /// </summary>
 [TestClass]
 public sealed class UmbraNestedGroupDrawerAttributeTests
@@ -15,7 +15,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
     public void DrawerType_WithTestDrawer1_ReturnsTestDrawer1Type()
     {
         // Arrange
-        var attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
+        var attribute = new UmbraNestedDrawerAttribute<TestDrawer1>();
 
         // Act
         var result = attribute.DrawerType;
@@ -34,7 +34,7 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
     public void DrawerType_MultipleAccesses_ReturnsSameTypeInstance()
     {
         // Arrange
-        var attribute = new UmbraNestedGroupDrawerAttribute<TestDrawer1>();
+        var attribute = new UmbraNestedDrawerAttribute<TestDrawer1>();
 
         // Act
         var result1 = attribute.DrawerType;
@@ -45,9 +45,52 @@ public sealed class UmbraNestedGroupDrawerAttributeTests
     }
 
     /// <summary>
+    /// Tests that the drawer type is also exposed correctly through the interface contract.
+    /// </summary>
+    [TestMethod]
+    public void DrawerType_ThroughInterface_ReturnsCorrectType()
+    {
+        // Arrange
+        INestedDrawerAttribute attribute = new UmbraNestedDrawerAttribute<TestDrawer1>();
+
+        // Act
+        var result = attribute.DrawerType;
+
+        // Assert
+        Assert.AreEqual(typeof(TestDrawer1), result);
+    }
+
+    /// <summary>
+    /// Tests that different drawer generic arguments produce different reported drawer types.
+    /// </summary>
+    [TestMethod]
+    public void DrawerType_WithDifferentDrawerTypes_ReturnsDifferentTypes()
+    {
+        // Arrange
+        var first = new UmbraNestedDrawerAttribute<TestDrawer1>();
+        var second = new UmbraNestedDrawerAttribute<TestDrawer2>();
+
+        // Act
+        var firstType = first.DrawerType;
+        var secondType = second.DrawerType;
+
+        // Assert
+        Assert.AreEqual(typeof(TestDrawer1), firstType);
+        Assert.AreEqual(typeof(TestDrawer2), secondType);
+        Assert.AreNotEqual(firstType, secondType);
+    }
+
+    /// <summary>
     /// Test drawer class for testing purposes.
     /// </summary>
     private sealed class TestDrawer1
+    {
+    }
+
+    /// <summary>
+    /// Alternate test drawer class for validating generic type variation.
+    /// </summary>
+    private sealed class TestDrawer2
     {
     }
 

@@ -8,8 +8,8 @@ namespace Umbra.Config;
 /// object by walking its public instance property tree and respecting the Umbra settings attributes.
 /// </summary>
 /// <remarks>
-/// Explicit key segments supplied by <see cref="UmbraSettingsPrefixAttribute"/> on nested groups and
-/// <see cref="UmbraSettingsParameterAttribute.KeyOverride"/> on parameters must be non-empty so the
+/// Explicit key segments supplied by <see cref="UmbraPrefixAttribute"/> on nested groups and
+/// <see cref="UmbraParameterAttribute.KeyOverride"/> on parameters must be non-empty so the
 /// resulting persisted keys remain structurally unambiguous.
 /// </remarks>
 internal static class SettingsRegistrar
@@ -32,7 +32,7 @@ internal static class SettingsRegistrar
         var rootType = config.GetType();
         RegisterRecursive(
             config,
-            GetSettingsPrefix(rootType) ?? "",
+            GetPrefix(rootType) ?? "",
             GetCategory(rootType),
             parameters,
             parameterOrigins,
@@ -43,8 +43,8 @@ internal static class SettingsRegistrar
 
     /// <summary>
     /// Recursively walks the public instance property tree of <paramref name="obj"/>, registering any
-    /// <see cref="IParameter"/> properties annotated with <see cref="UmbraSettingsParameterAttribute"/>.
-    /// Nested objects that are themselves decorated with <see cref="UmbraAutoRegisterSettingsAttribute"/>
+    /// <see cref="IParameter"/> properties annotated with <see cref="UmbraParameterAttribute"/>.
+    /// Nested objects that are themselves decorated with <see cref="UmbraAutoRegisterAttribute"/>
     /// are traversed automatically.
     /// </summary>
     private static void RegisterRecursive(
@@ -58,12 +58,12 @@ internal static class SettingsRegistrar
         if (!visited.Add(obj)) return;
 
         var type = obj.GetType();
-        if (!Attribute.IsDefined(type, typeof(UmbraAutoRegisterSettingsAttribute)))
+        if (!Attribute.IsDefined(type, typeof(UmbraAutoRegisterAttribute)))
             return;
 
         foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            var paramAttr = prop.GetCustomAttribute<UmbraSettingsParameterAttribute>();
+            var paramAttr = prop.GetCustomAttribute<UmbraParameterAttribute>();
             if (paramAttr == null) continue;
 
             var value = prop.GetValue(obj);
@@ -87,13 +87,13 @@ internal static class SettingsRegistrar
     /// Resolves the persisted key segment for a parameter property.
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when <see cref="UmbraSettingsParameterAttribute.KeyOverride"/> is explicitly set to an
+    /// Thrown when <see cref="UmbraParameterAttribute.KeyOverride"/> is explicitly set to an
     /// empty string.
     /// </exception>
-    private static string GetParameterKeySegment(PropertyInfo property, UmbraSettingsParameterAttribute parameterAttribute)
+    private static string GetParameterKeySegment(PropertyInfo property, UmbraParameterAttribute parameterAttribute)
     {
         if (parameterAttribute.KeyOverride is not null)
-            return RequireNonEmptySegment(parameterAttribute.KeyOverride, property, "[UmbraSettingsParameter] key override");
+            return RequireNonEmptySegment(parameterAttribute.KeyOverride, property, "[UmbraParameter] key override");
 
         return property.Name.ToCamelCase() ?? property.Name;
     }
@@ -102,18 +102,18 @@ internal static class SettingsRegistrar
     /// Resolves the nested-group prefix segment contributed by a property or nested type.
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a nested-group <see cref="UmbraSettingsPrefixAttribute"/> is explicitly set to an
+    /// Thrown when a nested-group <see cref="UmbraPrefixAttribute"/> is explicitly set to an
     /// empty string.
     /// </exception>
     private static string GetNestedPrefixSegment(PropertyInfo property, Type nestedType)
     {
-        var propertyPrefix = GetSettingsPrefix(property);
+        var propertyPrefix = GetPrefix(property);
         if (propertyPrefix is not null)
-            return RequireNonEmptySegment(propertyPrefix, property, "[UmbraSettingsPrefix] on the nested-group property");
+            return RequireNonEmptySegment(propertyPrefix, property, "[UmbraPrefix] on the nested-group property");
 
-        var typePrefix = GetSettingsPrefix(nestedType);
+        var typePrefix = GetPrefix(nestedType);
         if (typePrefix is not null)
-            return RequireNonEmptySegment(typePrefix, nestedType, "[UmbraSettingsPrefix] on the nested-group type");
+            return RequireNonEmptySegment(typePrefix, nestedType, "[UmbraPrefix] on the nested-group type");
 
         return "";
     }
@@ -159,8 +159,8 @@ internal static class SettingsRegistrar
     /// <summary>
     /// Returns the prefix declared on <paramref name="member"/>, or <see langword="null"/> when absent.
     /// </summary>
-    private static string? GetSettingsPrefix(MemberInfo member)
-        => member.GetCustomAttribute<UmbraSettingsPrefixAttribute>()?.Prefix;
+    private static string? GetPrefix(MemberInfo member)
+        => member.GetCustomAttribute<UmbraPrefixAttribute>()?.Prefix;
 
     /// <summary>
     /// Returns the category declared on <paramref name="member"/>, or <see langword="null"/> when absent.

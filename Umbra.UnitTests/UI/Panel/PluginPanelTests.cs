@@ -31,9 +31,9 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        Assert.AreEqual(0, renderer.PushIds.Count);
+        Assert.IsEmpty(renderer.PushIds);
         Assert.AreEqual(0, renderer.PopIdCount);
-        Assert.AreEqual(0, renderer.TreeNodes.Count);
+        Assert.IsEmpty(renderer.TreeNodes);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(0, renderer.SeparatorCount);
     }
@@ -52,10 +52,10 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        Assert.AreEqual(1, renderer.PushIds.Count);
+        Assert.HasCount(1, renderer.PushIds);
         Assert.AreEqual("FlatScope", renderer.PushIds[0]);
         Assert.AreEqual(1, renderer.PopIdCount);
-        Assert.AreEqual(0, renderer.TreeNodes.Count);
+        Assert.IsEmpty(renderer.TreeNodes);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.SeparatorCount);
     }
@@ -77,15 +77,17 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        Assert.AreEqual(1, renderer.PushIds.Count);
+        Assert.HasCount(1, renderer.PushIds);
         Assert.AreEqual("RootScope", renderer.PushIds[0]);
-        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
         Assert.IsFalse(sectionDrawn);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(0, renderer.SeparatorCount);
         Assert.AreEqual(1, renderer.PopIdCount);
     }
+
+    private static readonly int[] expectedCalls = [1, 2];
 
     /// <summary>
     /// Tests that an open root tree node draws sections in sorted order, draws the separator, and
@@ -106,8 +108,8 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        CollectionAssert.AreEqual(new[] { 1, 2 }, calls);
-        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        CollectionAssert.AreEqual(expectedCalls, calls);
+        Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.SeparatorCount);
@@ -132,7 +134,7 @@ public sealed class PluginPanelTests_Draw
         panel.Draw();
 
         // Assert
-        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("General##MySection", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
         Assert.AreEqual(0, drawCount);
         Assert.AreEqual(0, renderer.TreePopCount);
@@ -167,7 +169,7 @@ public sealed class PluginPanelTests_Draw
         // Assert
         Assert.IsNotNull(exception);
         Assert.AreEqual("boom", exception.Message);
-        Assert.AreEqual(1, renderer.TreeNodes.Count);
+        Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Boom##ThrowingSection", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.PopIdCount);
@@ -207,6 +209,25 @@ public sealed class PluginPanelTests_Draw
 [TestClass]
 public sealed class PluginPanelTests
 {
+    /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
     /// <summary>
     /// Tests that Add returns the same PluginPanel instance for fluent chaining.
     /// </summary>
@@ -407,6 +428,52 @@ public sealed class PluginPanelTests
 
         // Act & Assert (no exception should be thrown)
         panel.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that Add rejects a null section.
+    /// </summary>
+    [TestMethod]
+    public void Add_NullSection_ThrowsArgumentNullException()
+    {
+        using var panel = new PluginPanel($"NullSection_{Guid.NewGuid()}");
+
+        var exception = AssertThrows<ArgumentNullException>(() => panel.Add(null!));
+
+        Assert.AreEqual("section", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that Add rejects new sections after the panel has been disposed.
+    /// </summary>
+    [TestMethod]
+    public void Add_WhenDisposed_ThrowsObjectDisposedException()
+    {
+        var panel = new PluginPanel($"DisposedPanel_{Guid.NewGuid()}");
+        var mockSection = new Mock<IPanelSection>();
+        mockSection.Setup(s => s.Order).Returns(0);
+        mockSection.Setup(s => s.SectionId).Returns("Section");
+        panel.Dispose();
+
+        AssertThrows<ObjectDisposedException>(() => panel.Add(mockSection.Object));
+    }
+
+    /// <summary>
+    /// Tests that disposing a panel releases its ID scope for later reuse.
+    /// </summary>
+    [TestMethod]
+    public void Dispose_ReleasesRegisteredScope_AllowsNewPanelWithSameScope()
+    {
+        var idScope = $"ReusablePanel_{Guid.NewGuid()}";
+
+        using (var first = new PluginPanel(idScope))
+        {
+            Assert.IsNotNull(first);
+        }
+
+        using var second = new PluginPanel(idScope);
+
+        Assert.IsNotNull(second);
     }
 
 }

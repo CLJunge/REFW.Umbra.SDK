@@ -8,6 +8,25 @@ namespace Umbra.UI.LiveState.UnitTests;
 public sealed class LiveStateSectionTests
 {
     /// <summary>
+    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// </summary>
+    private static TException AssertThrows<TException>(Action action)
+        where TException : Exception
+    {
+        try
+        {
+            action();
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
+        throw new InvalidOperationException("Unreachable");
+    }
+
+    /// <summary>
     /// Tests that TreeNodeLabel returns the value provided to the primary constructor
     /// when a non-null tree node label is supplied.
     /// </summary>
@@ -244,6 +263,28 @@ public sealed class LiveStateSectionTests
     }
 
     /// <summary>
+    /// Tests that the constructor rejects a null context instance.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullContext_ThrowsArgumentNullException()
+    {
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new LiveStateSection<TestState>((TestState)null!));
+
+        Assert.AreEqual("context", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the constructor rejects whitespace-only id scopes.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
+    {
+        var exception = AssertThrows<ArgumentException>(() => _ = new LiveStateSection<TestState>(new TestState(), idScope: "   "));
+
+        Assert.AreEqual("idScope", exception.ParamName);
+    }
+
+    /// <summary>
     /// A valid test state type decorated with LiveStateSectionDrawerAttribute
     /// for testing valid constructor scenarios.
     /// </summary>
@@ -271,7 +312,7 @@ public sealed class LiveStateSectionTests
 
     /// <summary>
     /// Verifies that <see cref="LiveStateSection{T}.Order"/> returns <see cref="int.MaxValue"/>
-    /// when the state type has no <see cref="SectionOrderAttribute"/>.
+    /// when the state type has no <see cref="UmbraSectionOrderAttribute"/>.
     /// </summary>
     [TestMethod]
     public void Order_StateTypeWithoutSectionOrderAttribute_ReturnsIntMaxValue()
@@ -288,7 +329,7 @@ public sealed class LiveStateSectionTests
 
     /// <summary>
     /// Verifies that <see cref="LiveStateSection{T}.Order"/> returns zero
-    /// when the state type has <see cref="SectionOrderAttribute"/> with Order = 0.
+    /// when the state type has <see cref="UmbraSectionOrderAttribute"/> with Order = 0.
     /// </summary>
     [TestMethod]
     public void Order_StateTypeWithOrderZero_ReturnsZero()
@@ -305,7 +346,7 @@ public sealed class LiveStateSectionTests
 
     /// <summary>
     /// Verifies that <see cref="LiveStateSection{T}.Order"/> returns the positive order value
-    /// when the state type has <see cref="SectionOrderAttribute"/> with a positive Order value.
+    /// when the state type has <see cref="UmbraSectionOrderAttribute"/> with a positive Order value.
     /// </summary>
     [TestMethod]
     public void Order_StateTypeWithPositiveOrder_ReturnsPositiveValue()
@@ -335,7 +376,7 @@ public sealed class LiveStateSectionTests
     }
 
     /// <summary>
-    /// Test state type with no <see cref="SectionOrderAttribute"/> for verifying the default order.
+    /// Test state type with no <see cref="UmbraSectionOrderAttribute"/> for verifying the default order.
     /// </summary>
     [LiveStateSectionDrawer<StateWithoutOrderAttributeDrawer>]
     private sealed class StateWithoutOrderAttribute
@@ -343,19 +384,19 @@ public sealed class LiveStateSectionTests
     }
 
     /// <summary>
-    /// Test state type with an explicit zero <see cref="SectionOrderAttribute"/> value.
+    /// Test state type with an explicit zero <see cref="UmbraSectionOrderAttribute"/> value.
     /// </summary>
     [LiveStateSectionDrawer<StateWithOrderZeroDrawer>]
-    [SectionOrder(0)]
+    [UmbraSectionOrder(0)]
     private sealed class StateWithOrderZero
     {
     }
 
     /// <summary>
-    /// Test state type with a positive <see cref="SectionOrderAttribute"/> value.
+    /// Test state type with a positive <see cref="UmbraSectionOrderAttribute"/> value.
     /// </summary>
     [LiveStateSectionDrawer<StateWithOrderPositiveDrawer>]
-    [SectionOrder(100)]
+    [UmbraSectionOrder(100)]
     private sealed class StateWithOrderPositive
     {
     }

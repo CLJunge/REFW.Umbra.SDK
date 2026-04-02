@@ -20,8 +20,8 @@ public class ParameterDrawerResolverTests
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = null,
-            TwoColumnCustomDrawerType = null
+            DrawerType = null,
+            TwoColumnDrawerType = null
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -37,16 +37,16 @@ public class ParameterDrawerResolverTests
 
     /// <summary>
     /// Tests that TryResolve successfully creates a draw action and resource when a valid
-    /// CustomDrawerType is specified.
+    /// DrawerType is specified.
     /// </summary>
     [TestMethod]
-    public void TryResolve_WithValidCustomDrawerType_ReturnsDrawActionAndResource()
+    public void TryResolve_WithValidDrawerType_ReturnsDrawActionAndResource()
     {
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = typeof(TestParameterDrawer),
-            TwoColumnCustomDrawerType = null
+            DrawerType = typeof(TestParameterDrawer),
+            TwoColumnDrawerType = null
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -66,7 +66,7 @@ public class ParameterDrawerResolverTests
 
     /// <summary>
     /// Tests that TryResolve successfully creates a draw action and resource when a valid
-    /// TwoColumnCustomDrawerType is specified.
+    /// TwoColumnDrawerType is specified.
     /// </summary>
     [TestMethod]
     public void TryResolve_WithValidTwoColumnDrawerType_ReturnsDrawActionAndResource()
@@ -74,8 +74,8 @@ public class ParameterDrawerResolverTests
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = null,
-            TwoColumnCustomDrawerType = typeof(TestTwoColumnDrawer)
+            DrawerType = null,
+            TwoColumnDrawerType = typeof(TestTwoColumnDrawer)
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -94,8 +94,8 @@ public class ParameterDrawerResolverTests
     }
 
     /// <summary>
-    /// Tests that when both CustomDrawerType and TwoColumnCustomDrawerType are present,
-    /// CustomDrawerType takes priority (highest priority).
+    /// Tests that when both DrawerType and TwoColumnDrawerType are present,
+    /// DrawerType takes priority (highest priority).
     /// </summary>
     [TestMethod]
     public void TryResolve_BothDrawerTypesPresent_CustomDrawerTakesPriority()
@@ -103,8 +103,8 @@ public class ParameterDrawerResolverTests
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = typeof(TestParameterDrawer),
-            TwoColumnCustomDrawerType = typeof(TestTwoColumnDrawer)
+            DrawerType = typeof(TestParameterDrawer),
+            TwoColumnDrawerType = typeof(TestTwoColumnDrawer)
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -122,17 +122,17 @@ public class ParameterDrawerResolverTests
     }
 
     /// <summary>
-    /// Tests that when CustomDrawerType instantiation fails, the method falls through
-    /// to check TwoColumnCustomDrawerType.
+    /// Tests that when DrawerType instantiation fails, the method falls through
+    /// to check TwoColumnDrawerType.
     /// </summary>
     [TestMethod]
-    public void TryResolve_CustomDrawerTypeThrowsOnInstantiation_ChecksTwoColumnDrawer()
+    public void TryResolve_DrawerTypeThrowsOnInstantiation_ChecksTwoColumnDrawer()
     {
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = typeof(DrawerWithNoParameterlessConstructor),
-            TwoColumnCustomDrawerType = typeof(TestTwoColumnDrawer)
+            DrawerType = typeof(DrawerWithNoParameterlessConstructor),
+            TwoColumnDrawerType = typeof(TestTwoColumnDrawer)
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -149,17 +149,17 @@ public class ParameterDrawerResolverTests
     }
 
     /// <summary>
-    /// Tests that when CustomDrawerType is not an IParameterDrawer, the method falls through
-    /// to check TwoColumnCustomDrawerType.
+    /// Tests that when DrawerType is not an IParameterDrawer, the method falls through
+    /// to check TwoColumnDrawerType.
     /// </summary>
     [TestMethod]
-    public void TryResolve_CustomDrawerTypeNotImplementingInterface_ChecksTwoColumnDrawer()
+    public void TryResolve_DrawerTypeNotImplementingInterface_ChecksTwoColumnDrawer()
     {
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = typeof(NotADrawer),
-            TwoColumnCustomDrawerType = typeof(TestTwoColumnDrawer)
+            DrawerType = typeof(NotADrawer),
+            TwoColumnDrawerType = typeof(TestTwoColumnDrawer)
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -176,7 +176,7 @@ public class ParameterDrawerResolverTests
     }
 
     /// <summary>
-    /// Tests that when TwoColumnCustomDrawerType instantiation fails and no CustomDrawerType
+    /// Tests that when TwoColumnDrawerType instantiation fails and no DrawerType
     /// is present, the method returns null.
     /// </summary>
     [TestMethod]
@@ -185,8 +185,8 @@ public class ParameterDrawerResolverTests
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = null,
-            TwoColumnCustomDrawerType = typeof(DrawerWithNoParameterlessConstructor)
+            DrawerType = null,
+            TwoColumnDrawerType = typeof(DrawerWithNoParameterlessConstructor)
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -201,7 +201,7 @@ public class ParameterDrawerResolverTests
     }
 
     /// <summary>
-    /// Tests that when both CustomDrawerType and TwoColumnCustomDrawerType fail to instantiate,
+    /// Tests that when both DrawerType and TwoColumnDrawerType fail to instantiate,
     /// the method returns null.
     /// </summary>
     [TestMethod]
@@ -210,8 +210,8 @@ public class ParameterDrawerResolverTests
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = typeof(DrawerWithNoParameterlessConstructor),
-            TwoColumnCustomDrawerType = typeof(DrawerWithNoParameterlessConstructor)
+            DrawerType = typeof(DrawerWithNoParameterlessConstructor),
+            TwoColumnDrawerType = typeof(DrawerWithNoParameterlessConstructor)
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -226,7 +226,7 @@ public class ParameterDrawerResolverTests
     }
 
     /// <summary>
-    /// Tests that when TwoColumnCustomDrawerType does not implement ITwoColumnParameterDrawer,
+    /// Tests that when TwoColumnDrawerType does not implement ITwoColumnParameterDrawer,
     /// the method returns null.
     /// </summary>
     [TestMethod]
@@ -235,8 +235,8 @@ public class ParameterDrawerResolverTests
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = null,
-            TwoColumnCustomDrawerType = typeof(NotADrawer)
+            DrawerType = null,
+            TwoColumnDrawerType = typeof(NotADrawer)
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -260,8 +260,8 @@ public class ParameterDrawerResolverTests
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = typeof(TestParameterDrawer),
-            TwoColumnCustomDrawerType = null
+            DrawerType = typeof(TestParameterDrawer),
+            TwoColumnDrawerType = null
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -289,8 +289,8 @@ public class ParameterDrawerResolverTests
         // Arrange
         var metadata = new ParameterMetadata
         {
-            CustomDrawerType = typeof(TestParameterDrawer),
-            TwoColumnCustomDrawerType = null
+            DrawerType = typeof(TestParameterDrawer),
+            TwoColumnDrawerType = null
         };
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.Metadata).Returns(metadata);
@@ -307,6 +307,88 @@ public class ParameterDrawerResolverTests
         Assert.IsInstanceOfType<IDisposable>(resource);
 
         // Verify Dispose doesn't throw
+        resource.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that resolving a two-column drawer returns a callable draw action without invoking ImGui during construction.
+    /// </summary>
+    [TestMethod]
+    public void TryResolve_ValidTwoColumnDrawer_ReturnsDeferredDrawActionAndResource()
+    {
+        // Arrange
+        var metadata = new ParameterMetadata
+        {
+            DrawerType = null,
+            TwoColumnDrawerType = typeof(TestTwoColumnDrawer),
+            HiddenLabel = "##explicit"
+        };
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.Metadata).Returns(metadata);
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        var alignGroup = new LabelAlignmentGroup();
+
+        // Act
+        var result = ParameterDrawerResolver.TryResolve(mockParameter.Object, "Test Label", alignGroup);
+
+        // Assert
+        Assert.IsNotNull(result);
+        Assert.IsNotNull(result.Value.draw);
+        Assert.IsInstanceOfType<TestTwoColumnDrawer>(result.Value.resource);
+    }
+
+    /// <summary>
+    /// Tests that an empty label is forwarded unchanged to a custom drawer.
+    /// </summary>
+    [TestMethod]
+    public void TryResolve_CustomDrawer_EmptyLabel_IsForwardedUnchanged()
+    {
+        // Arrange
+        var metadata = new ParameterMetadata
+        {
+            DrawerType = typeof(TestParameterDrawer),
+            TwoColumnDrawerType = null
+        };
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.Metadata).Returns(metadata);
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        var alignGroup = new LabelAlignmentGroup();
+
+        // Act
+        var result = ParameterDrawerResolver.TryResolve(mockParameter.Object, string.Empty, alignGroup);
+        var drawer = (TestParameterDrawer)result!.Value.resource!;
+        result.Value.draw();
+
+        // Assert
+        Assert.IsTrue(drawer.DrawCalled);
+        Assert.AreEqual(string.Empty, drawer.LastLabel);
+    }
+
+    /// <summary>
+    /// Tests that a resolved two-column drawer still exposes a disposable resource.
+    /// </summary>
+    [TestMethod]
+    public void TryResolve_ValidTwoColumnDrawer_ResourceIsDisposable()
+    {
+        // Arrange
+        var metadata = new ParameterMetadata
+        {
+            DrawerType = null,
+            TwoColumnDrawerType = typeof(TestTwoColumnDrawer),
+            HiddenLabel = "##explicit"
+        };
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.Metadata).Returns(metadata);
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        var alignGroup = new LabelAlignmentGroup();
+
+        // Act
+        var result = ParameterDrawerResolver.TryResolve(mockParameter.Object, "Test Label", alignGroup);
+        var resource = result!.Value.resource;
+
+        // Assert
+        Assert.IsNotNull(resource);
+        Assert.IsInstanceOfType<IDisposable>(resource);
         resource.Dispose();
     }
 
@@ -378,3 +460,4 @@ public class ParameterDrawerResolverTests
 
     #endregion
 }
+

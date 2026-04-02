@@ -122,4 +122,76 @@ public class EnumControlBuilderTests
         // Full execution test requires ImGui context and is not feasible here.
     }
 
+    /// <summary>
+    /// Tests that Build returns a non-null Action when a nullable enum parameter currently holds null.
+    /// </summary>
+    [TestMethod]
+    public void Build_WithNullableEnumAndNullValue_ReturnsNonNullAction()
+    {
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.ValueType).Returns(typeof(TestEnum?));
+        mockParameter.Setup(p => p.GetValue()).Returns((TestEnum?)null);
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
+        var alignGroup = new LabelAlignmentGroup();
+
+        var action = EnumControlBuilder.Build("Test Label", mockParameter.Object, alignGroup);
+
+        Assert.IsNotNull(action, "Build should return a non-null Action when the nullable enum value is null.");
+    }
+
+    /// <summary>
+    /// Tests that Build returns a non-null Action when a nullable enum parameter holds an invalid enum value.
+    /// </summary>
+    [TestMethod]
+    public void Build_WithNullableEnumAndInvalidValue_ReturnsNonNullAction()
+    {
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.ValueType).Returns(typeof(TestEnum?));
+        mockParameter.Setup(p => p.GetValue()).Returns((TestEnum?)((TestEnum)999));
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
+        var alignGroup = new LabelAlignmentGroup();
+
+        var action = EnumControlBuilder.Build("Test Label", mockParameter.Object, alignGroup);
+
+        Assert.IsNotNull(action, "Build should return a non-null Action for an invalid nullable enum value.");
+    }
+
+    /// <summary>
+    /// Tests that Build handles a nullable single-value enum correctly.
+    /// </summary>
+    [TestMethod]
+    public void Build_WithNullableSingleValueEnum_ReturnsAction()
+    {
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.ValueType).Returns(typeof(SingleValueEnum?));
+        mockParameter.Setup(p => p.GetValue()).Returns((SingleValueEnum?)SingleValueEnum.OnlyValue);
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
+        var alignGroup = new LabelAlignmentGroup();
+
+        var action = EnumControlBuilder.Build("Single Value Label", mockParameter.Object, alignGroup);
+
+        Assert.IsNotNull(action, "Build should return a non-null Action for a nullable single-value enum.");
+    }
+
+    /// <summary>
+    /// Tests that Build handles a nullable single-value enum whose current value is null.
+    /// </summary>
+    [TestMethod]
+    public void Build_WithNullableSingleValueEnumAndNullValue_ReturnsAction()
+    {
+        var mockParameter = new Mock<IParameter>();
+        mockParameter.Setup(p => p.ValueType).Returns(typeof(SingleValueEnum?));
+        mockParameter.Setup(p => p.GetValue()).Returns((SingleValueEnum?)null);
+        mockParameter.Setup(p => p.Key).Returns("testKey");
+        mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
+        var alignGroup = new LabelAlignmentGroup();
+
+        var action = EnumControlBuilder.Build("Single Value Label", mockParameter.Object, alignGroup);
+
+        Assert.IsNotNull(action, "Build should return a non-null Action for a nullable single-value enum with null value.");
+    }
+
 }

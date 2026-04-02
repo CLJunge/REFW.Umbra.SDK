@@ -10,7 +10,7 @@ namespace Umbra.Config.Attributes;
 /// The <see cref="ITwoColumnParameterDrawer"/> implementation to use.
 /// </typeparam>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class UmbraTwoColumnCustomDrawerAttribute<TDrawer> : Attribute, ITwoColumnCustomDrawerAttribute
+public sealed class UmbraTwoColumnDrawerAttribute<TDrawer> : Attribute, ITwoColumnDrawerAttribute
     where TDrawer : ITwoColumnParameterDrawer, new()
 {
     /// <summary>Gets the type of the custom drawer used to render this parameter's editing widget.</summary>
