@@ -23,6 +23,9 @@ internal sealed class PluginPanelBenchmarkSession
     private long _totalTicks;
     private long _maxTicks;
     private long _lastTicks;
+    private bool _percentilesDirty;
+    private long _cachedP95Ticks;
+    private long _cachedP99Ticks;
 
     /// <summary>
     /// Gets whether the benchmark is currently recording.
@@ -77,18 +80,34 @@ internal sealed class PluginPanelBenchmarkSession
     /// </summary>
     /// <remarks>
     /// Only recorded samples are included; warmup frames are excluded from the percentile
-    /// calculation.
+    /// calculation. The result is cached and recomputed only when a new sample is added. Returns
+    /// <c>0</c> when no recorded samples exist. The cache is cleared on <see cref="Reset"/>.
     /// </remarks>
-    internal double P95Milliseconds => GetPercentileMilliseconds(0.95d);
+    internal double P95Milliseconds
+    {
+        get
+        {
+            EnsurePercentilesUpToDate();
+            return TicksToMilliseconds(_cachedP95Ticks);
+        }
+    }
 
     /// <summary>
     /// Gets the 99th-percentile steady-state frame duration in milliseconds.
     /// </summary>
     /// <remarks>
     /// Only recorded samples are included; warmup frames are excluded from the percentile
-    /// calculation.
+    /// calculation. The result is cached and recomputed only when a new sample is added. Returns
+    /// <c>0</c> when no recorded samples exist. The cache is cleared on <see cref="Reset"/>.
     /// </remarks>
-    internal double P99Milliseconds => GetPercentileMilliseconds(0.99d);
+    internal double P99Milliseconds
+    {
+        get
+        {
+            EnsurePercentilesUpToDate();
+            return TicksToMilliseconds(_cachedP99Ticks);
+        }
+    }
 
     /// <summary>
     /// Starts a new benchmark run.
@@ -129,6 +148,9 @@ internal sealed class PluginPanelBenchmarkSession
         _totalTicks = 0;
         _maxTicks = 0;
         _lastTicks = 0;
+        _percentilesDirty = false;
+        _cachedP95Ticks = 0;
+        _cachedP99Ticks = 0;
     }
 
     /// <summary>
@@ -158,6 +180,7 @@ internal sealed class PluginPanelBenchmarkSession
         _recordedSampleCount++;
         _recordedTicks.Add(elapsedTicks);
         _totalTicks += elapsedTicks;
+        _percentilesDirty = true;
 
         if (elapsedTicks > _maxTicks)
             _maxTicks = elapsedTicks;
@@ -169,25 +192,49 @@ internal sealed class PluginPanelBenchmarkSession
     }
 
     /// <summary>
-    /// Computes a nearest-rank percentile over the recorded non-warmup samples.
+    /// Ensures the cached P95 and P99 tick values are up to date.
     /// </summary>
-    /// <param name="percentile">The percentile to compute as a value between 0 and 1.</param>
-    /// <returns>The percentile duration in milliseconds, or <c>0</c> when no recorded samples exist.</returns>
-    private double GetPercentileMilliseconds(double percentile)
+    /// <remarks>
+    /// Sorts the recorded-ticks list once and caches both percentile values. Subsequent reads
+    /// within the same frame are O(1). The cache is invalidated on every new recorded sample
+    /// and cleared to zero on <see cref="Reset"/> or when no samples have been recorded.
+    /// </remarks>
+    private void EnsurePercentilesUpToDate()
     {
+        if (!_percentilesDirty)
+            return;
+
         if (_recordedTicks.Count == 0)
-            return 0d;
+        {
+            _cachedP95Ticks = 0;
+            _cachedP99Ticks = 0;
+            _percentilesDirty = false;
+            return;
+        }
 
         var sorted = _recordedTicks.ToArray();
         Array.Sort(sorted);
 
-        var rank = (int)Math.Ceiling(sorted.Length * percentile) - 1;
+        _cachedP95Ticks = sorted[GetPercentileRank(sorted.Length, 0.95d)];
+        _cachedP99Ticks = sorted[GetPercentileRank(sorted.Length, 0.99d)];
+        _percentilesDirty = false;
+    }
+
+    /// <summary>
+    /// Computes the nearest-rank index for the given percentile over a sorted array of
+    /// <paramref name="count"/> elements.
+    /// </summary>
+    /// <param name="count">The number of elements in the sorted array.</param>
+    /// <param name="percentile">The percentile as a value between 0 and 1.</param>
+    /// <returns>A valid array index for the requested percentile.</returns>
+    private static int GetPercentileRank(int count, double percentile)
+    {
+        var rank = (int)Math.Ceiling(count * percentile) - 1;
         if (rank < 0)
             rank = 0;
-        if (rank >= sorted.Length)
-            rank = sorted.Length - 1;
-
-        return TicksToMilliseconds(sorted[rank]);
+        if (rank >= count)
+            rank = count - 1;
+        return rank;
     }
 
     /// <summary>
