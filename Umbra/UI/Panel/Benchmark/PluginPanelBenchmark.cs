@@ -189,6 +189,12 @@ public sealed class PluginPanelBenchmark : IDisposable
     /// <summary>
     /// Starts a new benchmark run using the current UI-configured settings.
     /// </summary>
+    /// <remarks>
+    /// If a run is already active, it is finalized (exporting any partial data with the reason
+    /// "Restarted") before the session state is cleared and the new run begins. This ensures the
+    /// exported artifacts from the previous run contain the correct summary statistics rather than
+    /// zeroed values.
+    /// </remarks>
     public void Start()
     {
         ThrowIfDisposed();
@@ -198,6 +204,12 @@ public sealed class PluginPanelBenchmark : IDisposable
 
         if (SampleFrames < 1)
             SampleFrames = 1;
+
+        // Finalize any active exporter run with the current session data before the session is
+        // reset by _session.Start(); without this the exporter would receive a cleared session
+        // and write zeroed summary statistics.
+        if (_exporter.IsRunActive)
+            _exporter.CompleteRun(_session, "Restarted");
 
         _session.Start(WarmupFrames, SampleFrames);
         _exporter.StartRun(
