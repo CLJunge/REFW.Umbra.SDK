@@ -6,9 +6,9 @@ namespace Umbra.Runtime;
 /// <remarks>
 /// The managed REFramework host still requires static entry points, but those entry points should
 /// only forward into a plugin instance that implements this interface. Implementations are expected
-/// to keep all mutable plugin state on the instance itself. Additional REFramework engine callback
-/// hooks are exposed in the companion partial declaration of this interface as optional default
-/// no-op members named <c>On&lt;CallbackName&gt;()</c>.
+/// to keep all mutable plugin state on the instance itself. Plugins may optionally expose additional
+/// REFramework engine callback handlers using an <c>On&lt;CallbackName&gt;()</c> naming convention,
+/// but such callbacks are not defined or required by this interface.
 /// </remarks>
 public partial interface IUmbraPlugin
 {
