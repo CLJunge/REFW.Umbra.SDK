@@ -82,32 +82,16 @@ public sealed class LabelAlignmentGroupTests
 
     /// <summary>
     /// Tests that EnsureSeeded returns immediately without processing when already seeded.
-    /// This verifies the idempotency guarantee: subsequent calls after the first are no-ops.
+    /// This verifies the idempotency guarantee: subsequent calls after seeding are no-ops.
     /// </summary>
     [TestMethod]
     public void EnsureSeeded_WhenAlreadySeeded_ReturnsImmediatelyWithoutReprocessing()
     {
         // Arrange
         var group = new LabelAlignmentGroup();
+        SetSeeded(group);
 
-        // Note: This test cannot fully verify the internal state without an active ImGui context.
-        // The first call to EnsureSeeded will set _seeded to true but will fail when attempting
-        // to call ImGui.CalcTextSize due to no active ImGui context. However, we can verify
-        // that subsequent calls hit the guard clause and return immediately without throwing.
-
-        try
-        {
-            // First call - will attempt to process and likely throw due to no ImGui context
-            group.EnsureSeeded();
-        }
-        catch
-        {
-            // Expected: ImGui calls will fail without active context
-            // The _seeded flag should still be set to true before the loop
-        }
-
-        // Act - second call should hit the guard clause and return immediately
-        // Assert - no exception should be thrown on subsequent calls
+        // Act & Assert
         group.EnsureSeeded();
         group.EnsureSeeded();
         group.EnsureSeeded();
@@ -280,6 +264,17 @@ public sealed class LabelAlignmentGroupTests
 
         // Assert
         Assert.AreEqual(0f, actual);
+    }
+
+    /// <summary>
+    /// Marks a <see cref="LabelAlignmentGroup"/> instance as already seeded so the idempotency
+    /// behavior can be exercised without requiring a live ImGui context.
+    /// </summary>
+    private static void SetSeeded(LabelAlignmentGroup group)
+    {
+        var seededField = typeof(LabelAlignmentGroup).GetField("_seeded", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.IsNotNull(seededField, "Expected the _seeded field to exist for test setup.");
+        seededField.SetValue(group, true);
     }
 
 }

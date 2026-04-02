@@ -13,16 +13,20 @@ namespace Umbra.UI.Config;
 /// <see cref="Action"/> default to <see cref="Drawers.ButtonDrawer"/>, and enum or nullable-enum
 /// controls are delegated to <see cref="EnumControlBuilder"/>. This type now focuses on dispatch
 /// and shared layout creation.
-/// All controls use a two-column text-label layout unconditionally: the parameter label (and
-/// optional <c>(?)</c> help marker) is rendered on the left; the editing widget is placed on
-/// the right at the column x position determined by <see cref="LabelAlignmentGroup"/>. Labels
-/// are registered with the group at build time and measured once on the first draw frame via
+/// All controls use a two-column text-label layout unconditionally: the parameter label is
+/// rendered on the left and any description is exposed as a hover tooltip on that label; the
+/// editing widget is placed on the right at the column x position determined by
+/// <see cref="LabelAlignmentGroup"/>. Labels are registered with the group at build time and
+/// measured once on the first draw frame via
 /// <see cref="LabelAlignmentGroup.EnsureSeeded"/>; no per-frame measurement occurs after that.
 /// The widget width defaults to fill-to-right-edge (<c>SetNextItemWidth(-1f)</c>) and can be
 /// fixed with <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(px)]</c>).
 /// </remarks>
 internal static class ControlFactory
 {
+    private const float DefaultFillControlWidth = -1f;
+    private const string HiddenLabelPrefix = "##";
+
     // One entry per supported built-in value type. Enum and fallback are handled separately.
     // Add or replace entries here to change the default control for any value type.
     private static readonly Dictionary<Type, Func<string, IParameter, LabelAlignmentGroup, Action>> _defaultBuilders = new()
@@ -103,8 +107,8 @@ internal static class ControlFactory
 
     /// <summary>
     /// Constructs a <see cref="ControlLayout"/> capturing the pre-computed layout state for a
-    /// single parameter row. All rows use a two-column layout: the visible label (and optional
-    /// <c>(?)</c> help marker) on the left; the editing widget on the right at the column x
+    /// single parameter row. All rows use a two-column layout: the visible label on the left,
+    /// an optional hover tooltip on that label when description metadata exists, and the editing widget on the right at the column x
     /// position determined by <paramref name="alignGroup"/>.
     /// </summary>
     /// <remarks>
@@ -149,14 +153,31 @@ internal static class ControlFactory
     /// <param name="alignGroup">The shared alignment group for the owning category or root scope.</param>
     /// <returns>
     /// A <see cref="ControlLayout"/> value capturing the label, description, alignment group,
-    /// and pre-computed hidden ImGui label for the row. Callers must invoke <see cref="ControlLayout.Pre"/>
+    /// widget width, and hidden ImGui label for the row. Metadata-derived fallback decisions are
+    /// resolved here once at draw-tree construction time, and the row's label is registered with
+    /// the shared alignment group before the struct is created so the layout value itself remains
+    /// a small immutable data carrier. Callers must invoke <see cref="ControlLayout.Pre"/>
     /// immediately before the ImGui widget call to set up layout and alignment state.
     /// </returns>
     internal static ControlLayout CreateControlLayout(
         string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
         var meta = parameter.Metadata;
-        var hiddenLabel = meta.HiddenLabel ?? string.Concat("##", parameter.Key);
-        return new ControlLayout(label, meta.Description, alignGroup, meta.ControlWidth ?? -1f, hiddenLabel);
+        var hasDescription = meta.Description is not null;
+        var hiddenLabel = meta.HiddenLabel;
+        if (hiddenLabel is null)
+        {
+            var key = parameter.Key;
+            hiddenLabel = key is null ? HiddenLabelPrefix : string.Concat(HiddenLabelPrefix, key);
+        }
+
+        alignGroup.Register(label, hasDescription);
+
+        return new ControlLayout(
+            label,
+            meta.Description,
+            alignGroup,
+            meta.ControlWidth.GetValueOrDefault(DefaultFillControlWidth),
+            hiddenLabel);
     }
 }
