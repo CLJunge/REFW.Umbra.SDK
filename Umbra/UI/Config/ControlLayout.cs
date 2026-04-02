@@ -51,8 +51,8 @@ internal readonly struct ControlLayout
 
     /// <summary>
     /// Performs the standard two-column pre-draw step: seeds the shared alignment group on
-    /// the first call, renders the label text (and optional help marker), advances the cursor
-    /// to the shared column x position, and sets the next item width.
+    /// the first call, renders the label text, shows an on-hover tooltip when a description is
+    /// available, advances the cursor to the shared column x position, and sets the next item width.
     /// Must be called immediately before the ImGui widget call in each per-frame draw action.
     /// </summary>
     /// <remarks>
@@ -66,11 +66,7 @@ internal readonly struct ControlLayout
         _alignGroup.EnsureSeeded();
         var startX = ImGui.GetCursorPosX();
         ImGui.Text(_label);
-        if (_desc is not null)
-        {
-            ImGui.SameLine();
-            ImGuiWidgets.DrawHelpMarker(_desc);
-        }
+        if (_desc is not null) ImGuiWidgets.DrawHoverTooltip(_desc);
         ImGui.SameLine();
         // Advance to the shared column position (plus optional per-group margin); never
         // move backward so that on frame 1 (before the committed max is available) labels

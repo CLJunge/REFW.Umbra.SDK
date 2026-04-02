@@ -12,6 +12,23 @@ namespace Umbra.UI;
 /// </remarks>
 public static class ImGuiWidgets
 {
+    private const string HelpMarkerText = "(?)";
+
+    /// <summary>
+    /// Renders a tooltip containing <paramref name="description"/> when the previously submitted
+    /// ImGui item is hovered.
+    /// </summary>
+    /// <param name="description">The tooltip text to display while the item is hovered.</param>
+    public static void DrawHoverTooltip(string description)
+    {
+        if (!ImGui.IsItemHovered()) return;
+        ImGui.BeginTooltip();
+        ImGui.PushTextWrapPos(ImGui.GetFontSize() * 24f);
+        ImGui.TextUnformatted(description);
+        ImGui.PopTextWrapPos();
+        ImGui.EndTooltip();
+    }
+
     /// <summary>
     /// Renders an inline <c>(?)</c> marker that shows a tooltip containing
     /// <paramref name="description"/> when hovered.
@@ -20,12 +37,7 @@ public static class ImGuiWidgets
     /// <param name="description">The tooltip text to display on hover.</param>
     public static void DrawHelpMarker(string description)
     {
-        ImGui.TextDisabled("(?)");
-        if (!ImGui.IsItemHovered()) return;
-        ImGui.BeginTooltip();
-        ImGui.PushTextWrapPos(ImGui.GetFontSize() * 24f);
-        ImGui.TextUnformatted(description);
-        ImGui.PopTextWrapPos();
-        ImGui.EndTooltip();
+        ImGui.TextDisabled(HelpMarkerText);
+        DrawHoverTooltip(description);
     }
 }

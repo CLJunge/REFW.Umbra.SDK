@@ -258,7 +258,7 @@ public class NestedScopePathResolverTests
 
     /// <summary>
     /// Helper method to create a <see cref="TypeDrawMetadata.PropertyDrawMetadata"/> instance
-    /// with minimal required parameters for testing.
+    /// with the minimal required parameters and a stable value accessor for testing.
     /// </summary>
     private static TypeDrawMetadata.PropertyDrawMetadata CreatePropertyMetadata(
         string? settingsPrefix,
@@ -282,6 +282,7 @@ public class NestedScopePathResolverTests
         return new TypeDrawMetadata.PropertyDrawMetadata(
             property: propertyInfo,
             propertyType: typeof(object),
+            getValue: owner => propertyInfo.GetValue(owner),
             isParameter: false,
             category: null,
             indentAttr: null,

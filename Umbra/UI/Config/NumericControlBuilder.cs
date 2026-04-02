@@ -37,10 +37,10 @@ internal static class NumericControlBuilder
             };
         }
 
+        var step = meta.Step.HasValue ? (float)meta.Step : 1f;
         return () =>
         {
             var v = p.Value;
-            var step = meta.Step.HasValue ? (float)meta.Step : 1f;
             layout.Pre();
             if (ImGui.DragInt(layout.HiddenLabel, ref v, step, 0, 0, fmt)) p.Value = v;
         };
@@ -69,10 +69,10 @@ internal static class NumericControlBuilder
             };
         }
 
+        var step = meta.Step.HasValue ? (float)meta.Step : 1f;
         return () =>
         {
             var v = p.Value;
-            var step = meta.Step.HasValue ? (float)meta.Step : 1f;
             layout.Pre();
             if (ImGui.DragFloat(layout.HiddenLabel, ref v, step, 0f, 0f, fmt)) p.Value = v;
         };
@@ -101,10 +101,10 @@ internal static class NumericControlBuilder
             };
         }
 
+        var step = meta.Step.HasValue ? (float)meta.Step : 1f;
         return () =>
         {
             var v = p.Value;
-            var step = meta.Step.HasValue ? (float)meta.Step : 1f;
             layout.Pre();
             if (DragDouble(layout.HiddenLabel, ref v, step, fmt)) p.Value = v;
         };

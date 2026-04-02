@@ -70,6 +70,26 @@ public sealed class ParameterNodeTests
     }
 
     /// <summary>
+    /// Verifies that the always-visible constructor skips predicate evaluation and still invokes the draw action.
+    /// </summary>
+    [TestMethod]
+    public void Draw_AlwaysVisibleConstructor_CallsDrawActionWithoutVisibilityPredicate()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        void draw() => drawCallCount++;
+        var node = new ParameterNode(draw, int.MaxValue, 0, 0, renderer);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(0, renderer.SpacingCount);
+    }
+
+    /// <summary>
     /// Verifies that mixed spacing values emit only the positive side's spacing calls.
     /// </summary>
     [TestMethod]
@@ -299,12 +319,12 @@ public sealed class ParameterNodeTests
     }
 
     /// <summary>
-    /// Verifies that the constructor rejects a null renderer.
+    /// Verifies that the renderer-aware constructor rejects a null renderer.
     /// </summary>
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, static () => { }, int.MaxValue, 0, 0, null!));
+        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, static () => { }, int.MaxValue, 0, 0, renderer: null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

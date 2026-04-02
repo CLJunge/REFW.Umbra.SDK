@@ -13,10 +13,11 @@ namespace Umbra.UI.Config;
 /// <see cref="Action"/> default to <see cref="Drawers.ButtonDrawer"/>, and enum or nullable-enum
 /// controls are delegated to <see cref="EnumControlBuilder"/>. This type now focuses on dispatch
 /// and shared layout creation.
-/// All controls use a two-column text-label layout unconditionally: the parameter label (and
-/// optional <c>(?)</c> help marker) is rendered on the left; the editing widget is placed on
-/// the right at the column x position determined by <see cref="LabelAlignmentGroup"/>. Labels
-/// are registered with the group at build time and measured once on the first draw frame via
+/// All controls use a two-column text-label layout unconditionally: the parameter label is
+/// rendered on the left and any description is exposed as a hover tooltip on that label; the
+/// editing widget is placed on the right at the column x position determined by
+/// <see cref="LabelAlignmentGroup"/>. Labels are registered with the group at build time and
+/// measured once on the first draw frame via
 /// <see cref="LabelAlignmentGroup.EnsureSeeded"/>; no per-frame measurement occurs after that.
 /// The widget width defaults to fill-to-right-edge (<c>SetNextItemWidth(-1f)</c>) and can be
 /// fixed with <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(px)]</c>).
@@ -106,8 +107,8 @@ internal static class ControlFactory
 
     /// <summary>
     /// Constructs a <see cref="ControlLayout"/> capturing the pre-computed layout state for a
-    /// single parameter row. All rows use a two-column layout: the visible label (and optional
-    /// <c>(?)</c> help marker) on the left; the editing widget on the right at the column x
+    /// single parameter row. All rows use a two-column layout: the visible label on the left,
+    /// an optional hover tooltip on that label when description metadata exists, and the editing widget on the right at the column x
     /// position determined by <paramref name="alignGroup"/>.
     /// </summary>
     /// <remarks>
