@@ -30,7 +30,7 @@ public static class SamplePluginHost
         //System.Diagnostics.Debugger.Launch();
 #endif
 
-        _host?.Load();
+        _host.Load();
     }
 
     /// <summary>
@@ -42,13 +42,13 @@ public static class SamplePluginHost
     /// </remarks>
     [PluginExitPoint]
     public static void Unload()
-        => _host?.Unload();
+        => _host.Unload();
 
     /// <summary>
     /// Ingame update callback. Dispatches to the live plugin instance when one is loaded.
     /// </summary>
     [Callback(typeof(UpdateBehavior), CallbackType.Pre)]
-    public static void OnPreUpdateBehavior() => _host?.OnPreUpdateBehavior();
+    public static void OnPreUpdateBehavior() => _host.OnPreUpdateBehavior();
 
     /// <summary>
     /// ImGui pre-draw callback. Dispatches to the live plugin instance when one is loaded.
@@ -57,11 +57,11 @@ public static class SamplePluginHost
     /// This callback is a no-op after unload or before load completes.
     /// </remarks>
     [Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
-    public static void OnPreImGuiDrawUI() => _host?.OnPreImGuiDrawUI();
+    public static void OnPreImGuiDrawUI() => _host.OnPreImGuiDrawUI();
 
     /// <summary>
     /// ImGui pre-renderer callback. Dispatches to the live plugin instance when one is loaded.
     /// </summary>
     [Callback(typeof(ImGuiRender), CallbackType.Pre)]
-    public static void OnPreImGuiRenderer() => _host?.OnPreImGuiRenderer();
+    public static void OnPreImGuiRenderer() => _host.OnPreImGuiRenderer();
 }
