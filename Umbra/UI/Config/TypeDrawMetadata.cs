@@ -28,7 +28,7 @@ internal sealed class TypeDrawMetadata
     /// <param name="spacingBefore">The property's <see cref="UmbraSpacingBeforeAttribute.Count"/> value, or 0 if not specified.</param>
     /// <param name="spacingAfter">The property's <see cref="UmbraSpacingAfterAttribute.Count"/> value, or 0 if not specified.</param>
     /// <param name="settingsPrefix">The property's <see cref="UmbraPrefixAttribute.Prefix"/> value, or <see langword="null"/> if not specified.</param>
-    /// <param name="settingsParameterKeyOverride">The property's <see cref="UmbraParameterAttribute.KeyOverride"/>" value, or <see langword="null"/> if not specified.</param>
+    /// <param name="settingsParameterKeyOverride">The property's <see cref="UmbraParameterAttribute.KeyOverride"/> value, or <see langword="null"/> if not specified.</param>
     internal sealed class PropertyDrawMetadata(
         PropertyInfo property,
         Type propertyType,

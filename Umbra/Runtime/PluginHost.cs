@@ -6,9 +6,17 @@ namespace Umbra.Runtime;
 /// </summary>
 /// <typeparam name="TPlugin">The concrete plugin type.</typeparam>
 /// <remarks>
+/// <para>
 /// This type centralizes the runtime behavior that previously lived in each plugin assembly's static
 /// wrapper class. The assembly-specific wrapper still exists only to satisfy REFramework's static
-/// entry-point requirements and to supply the identity type used for mutex acquisition and release.
+/// entry-point requirements; it delegates to this host for all lifecycle and callback behavior.
+/// </para>
+/// <para>
+/// <typeparamref name="TPlugin"/> is used as the mutex identity type for single-instance
+/// enforcement. The mutex key is derived from the assembly name of <typeparamref name="TPlugin"/>,
+/// so all types from the same assembly share one key. Ensure that the plugin type's assembly name
+/// is stable and unique across all plugins loaded in the same process session.
+/// </para>
 /// </remarks>
 public sealed class PluginHost<TPlugin>
     where TPlugin : class, IUmbraPlugin
@@ -18,7 +26,8 @@ public sealed class PluginHost<TPlugin>
     private volatile TPlugin? _instance;
 
     /// <summary>
-    /// Initialises a new host for the specified plugin type.
+    /// Initialises a new host for the specified plugin type, using <typeparamref name="TPlugin"/>
+    /// as the mutex identity type for single-instance enforcement.
     /// </summary>
     /// <param name="factory">Creates the plugin instance when load succeeds.</param>
     public PluginHost(Func<TPlugin> factory)

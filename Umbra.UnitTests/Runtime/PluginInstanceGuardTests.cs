@@ -167,6 +167,27 @@ public sealed class PluginInstanceGuardTests
     }
 
     /// <summary>
+    /// Verifies that <see cref="PluginInstanceGuard.Release(Type)"/> releases the lease when called
+    /// with a different type from the same assembly that originally acquired it.
+    /// </summary>
+    [TestMethod]
+    public void Release_WithDifferentTypeFromSameAssembly_ReleasesLeaseByMutexKey()
+    {
+        // Arrange — acquire with DefaultMutexPlugin
+        var acquired = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), out var lease);
+        Assert.IsTrue(acquired);
+        Assert.IsNotNull(lease);
+
+        // Act — release using a different type from the same assembly (same mutexKey)
+        PluginInstanceGuard.Release(typeof(SameAssemblyPlugin));
+
+        // Assert — the mutex key is now free; a fresh acquire succeeds
+        var reacquired = PluginInstanceGuard.TryAcquire(typeof(DefaultMutexPlugin), out var newLease);
+        Assert.IsTrue(reacquired, "Lease should have been released by the same-assembly type.");
+        newLease?.Dispose();
+    }
+
+    /// <summary>
     /// Verifies that attempting to acquire a lease for a non-class type fails with a clear exception.
     /// </summary>
     [TestMethod]

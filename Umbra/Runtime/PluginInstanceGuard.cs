@@ -134,12 +134,6 @@ internal static class PluginInstanceGuard
 
         lock (_sync)
         {
-            if (!_activeLeases.TryGetValue(mutexKey, out var activeLease))
-                return;
-
-            if (!ReferenceEquals(activeLease.PluginType, pluginType))
-                return;
-
             _activeLeases.Remove(mutexKey);
         }
     }
