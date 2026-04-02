@@ -268,7 +268,9 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
     /// This method requires <see cref="Load"/> to have completed so there is a stable registered
     /// parameter set to subscribe to.
     /// </remarks>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="listener"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="predicate"/> or <paramref name="listener"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void AddListenerToAll(Func<IParameter, bool> predicate, Action listener)
