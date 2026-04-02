@@ -36,7 +36,7 @@ internal sealed class PluginPanelSectionCollection : IDisposable
     }
 
     /// <summary>
-    /// Disposes all sections in insertion order and clears the collection.
+    /// Disposes all sections in their current ordered sequence and clears the collection.
     /// </summary>
     public void Dispose()
     {
