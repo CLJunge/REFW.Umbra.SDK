@@ -9,10 +9,9 @@ namespace Umbra.UI.Config;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Constructed at draw-tree build time by <see cref="ControlFactory"/>. The constructor
-/// immediately calls <see cref="LabelAlignmentGroup.Register"/> so the label is enrolled in
-/// the group's build-time batch before any ImGui frame is active; no font measurement happens
-/// at this point.
+/// Constructed at draw-tree build time by <see cref="ControlFactory"/> after the label has
+/// already been enrolled in the owning <see cref="LabelAlignmentGroup"/>'s build-time batch.
+/// No font measurement happens during construction.
 /// </para>
 /// <para>
 /// On the first draw frame, <see cref="Pre"/> calls <see cref="LabelAlignmentGroup.EnsureSeeded"/>,
@@ -48,7 +47,6 @@ internal readonly struct ControlLayout
         _alignGroup = alignGroup;
         _controlWidth = controlWidth;
         HiddenLabel = hiddenLabel;
-        alignGroup.Register(label, desc is not null);
     }
 
     /// <summary>

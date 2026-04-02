@@ -112,6 +112,11 @@ internal sealed class ConfigDrawerBuilder
     /// <param name="scope">The local category and alignment scope to populate.</param>
     /// <param name="obj">The group instance to reflect over.</param>
     /// <param name="type">The compile-time type of <paramref name="obj"/>.</param>
+    /// <remarks>
+    /// Property values are read through the cached delegates stored in <see cref="TypeDrawMetadata"/>
+    /// so repeated drawer construction walks the object graph without invoking
+    /// <see cref="System.Reflection.PropertyInfo.GetValue(object?)"/> for every property.
+    /// </remarks>
     private void CollectInto(ConfigDrawScope scope, object obj, Type type)
     {
         var typeMeta = TypeDrawMetadata.For(type);
@@ -123,12 +128,12 @@ internal sealed class ConfigDrawerBuilder
 
         foreach (var propMeta in typeMeta.Properties)
         {
-            var prop = propMeta.Property;
+            var value = propMeta.GetValue(obj);
             var propType = propMeta.PropertyType;
 
             if (propMeta.IsParameter)
             {
-                if (prop.GetValue(obj) is not IParameter parameter)
+                if (value is not IParameter parameter)
                     continue;
 
                 var category = propMeta.Category ?? scope.DefaultCategory;
@@ -147,7 +152,7 @@ internal sealed class ConfigDrawerBuilder
             }
 
             var propTypeMeta = TypeDrawMetadata.For(propType);
-            if (!propTypeMeta.IsAutoRegisterSettings || prop.GetValue(obj) is not { } nested)
+            if (!propTypeMeta.IsAutoRegisterSettings || value is not { } nested)
                 continue;
 
             var nestedDrawerAttr = propMeta.NestedDrawerAttr ?? propTypeMeta.NestedDrawerAttr;

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using System.Reflection;
 using Umbra.Config.Attributes;
 
@@ -17,6 +18,7 @@ internal sealed class TypeDrawMetadata
     /// </summary>
     /// <param name="property">The reflected property.</param>
     /// <param name="propertyType">The property's type.</param>
+    /// <param name="getValue">The cached accessor that reads the property's current value from a config instance.</param>
     /// <param name="isParameter">Whether the property is a <see cref="Umbra.Config.Parameter{T}"/>.</param>
     /// <param name="category">The property's <see cref="UmbraCategoryAttribute"/> value, or <see langword="null"/> if not specified.</param>
     /// <param name="indentAttr">The property's <see cref="UmbraIndentAttribute"/>, if any.</param>
@@ -32,6 +34,7 @@ internal sealed class TypeDrawMetadata
     internal sealed class PropertyDrawMetadata(
         PropertyInfo property,
         Type propertyType,
+        Func<object, object?> getValue,
         bool isParameter,
         string? category,
         UmbraIndentAttribute? indentAttr,
@@ -47,6 +50,7 @@ internal sealed class TypeDrawMetadata
     {
         internal PropertyInfo Property { get; } = property;
         internal Type PropertyType { get; } = propertyType;
+        internal Func<object, object?> GetValue { get; } = getValue;
         internal bool IsParameter { get; } = isParameter;
         internal string? Category { get; } = category;
         internal UmbraIndentAttribute? IndentAttr { get; } = indentAttr;
@@ -129,9 +133,16 @@ internal sealed class TypeDrawMetadata
     /// <summary>
     /// Reads and caches all property-level UI metadata consulted during config drawer assembly.
     /// </summary>
+    /// <remarks>
+    /// The returned metadata also carries a compiled boxed getter delegate so
+    /// <see cref="ConfigDrawerBuilder.CollectInto(ConfigDrawScope, object, Type)"/> can traverse the
+    /// live config object graph without paying <see cref="PropertyInfo.GetValue(object?)"/> reflection
+    /// overhead for each property on every draw-tree build.
+    /// </remarks>
     private static PropertyDrawMetadata BuildPropertyMetadata(PropertyInfo property)
     {
         var propertyType = property.PropertyType;
+        var getValue = BuildGetter(property);
         var isParameter = propertyType.IsGenericType
             && propertyType.GetGenericTypeDefinition() == typeof(Umbra.Config.Parameter<>);
 
@@ -165,6 +176,7 @@ internal sealed class TypeDrawMetadata
         return new PropertyDrawMetadata(
             property,
             propertyType,
+            getValue,
             isParameter,
             category,
             indentAttr,
@@ -177,5 +189,32 @@ internal sealed class TypeDrawMetadata
             spacingAfter,
             settingsPrefix,
             settingsParameterKeyOverride);
+    }
+
+    /// <summary>
+    /// Builds the cached boxed getter used during config-object traversal for a reflected property.
+    /// </summary>
+    /// <remarks>
+    /// Expression compilation is performed once per cached property. If the expression path cannot be
+    /// compiled, the metadata falls back to <see cref="PropertyInfo.GetValue(object?)"/> so config UI
+    /// construction remains functional.
+    /// </remarks>
+    /// <param name="property">The reflected property whose getter should be cached.</param>
+    /// <returns>A delegate that reads the property's current value from a boxed owner instance.</returns>
+    private static Func<object, object?> BuildGetter(PropertyInfo property)
+    {
+        try
+        {
+            var ownerParameter = Expression.Parameter(typeof(object), "owner");
+            var typedOwner = Expression.Convert(ownerParameter, property.DeclaringType!);
+            var propertyAccess = Expression.Property(typedOwner, property);
+            var boxedValue = Expression.Convert(propertyAccess, typeof(object));
+
+            return Expression.Lambda<Func<object, object?>>(boxedValue, ownerParameter).Compile();
+        }
+        catch
+        {
+            return property.GetValue;
+        }
     }
 }

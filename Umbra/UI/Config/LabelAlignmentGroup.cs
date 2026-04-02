@@ -32,7 +32,10 @@ namespace Umbra.UI.Config;
 [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
 internal sealed class LabelAlignmentGroup
 {
-    private readonly List<(string label, bool hasDescription)> _entries = [];
+    private const string HelpMarkerLabel = "(?)";
+
+    private readonly List<string> _labelsWithoutDescription = [];
+    private readonly List<string> _labelsWithDescription = [];
     private float _committedMax;
     private bool _seeded;
 
@@ -76,13 +79,15 @@ internal sealed class LabelAlignmentGroup
         {
             // Late registration after seeding: measure immediately so the column still widens
             // to accommodate the new label rather than silently using a stale narrower width.
-            var w2 = ImGui.CalcTextSize(label).X;
-            if (hasDescription)
-                w2 += ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize("(?)").X;
-            if (w2 > _committedMax) _committedMax = w2;
+            var width = MeasureLabelWidth(label, hasDescription);
+            if (width > _committedMax) _committedMax = width;
             return;
         }
-        _entries.Add((label, hasDescription));
+
+        if (hasDescription)
+            _labelsWithDescription.Add(label);
+        else
+            _labelsWithoutDescription.Add(label);
     }
 
     /// <summary>
@@ -95,14 +100,46 @@ internal sealed class LabelAlignmentGroup
     {
         if (_seeded) return;
         _seeded = true;
-        foreach (var (label, hasDesc) in _entries)
+
+        CommitMeasuredMax(_labelsWithoutDescription, 0f);
+        var helpMarkerExtraWidth = ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize(HelpMarkerLabel).X;
+        CommitMeasuredMax(_labelsWithDescription, helpMarkerExtraWidth);
+
+        _labelsWithoutDescription.Clear();
+        _labelsWithDescription.Clear();
+    }
+
+    /// <summary>
+    /// Measures each pending label in <paramref name="labels"/> and folds the maximum width into
+    /// <see cref="LabelWidth"/>, adding <paramref name="extraWidth"/> for rows that render an
+    /// inline help marker.
+    /// </summary>
+    /// <param name="labels">The pending labels to measure.</param>
+    /// <param name="extraWidth">The per-label width added after measuring the visible text.</param>
+    private void CommitMeasuredMax(List<string> labels, float extraWidth)
+    {
+        for (var i = 0; i < labels.Count; i++)
         {
-            var w = ImGui.CalcTextSize(label).X;
-            if (hasDesc)
-                w += ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize("(?)").X;
-            if (w > _committedMax) _committedMax = w;
+            var width = ImGui.CalcTextSize(labels[i]).X + extraWidth;
+            if (width > _committedMax)
+                _committedMax = width;
         }
-        _entries.Clear();
+    }
+
+    /// <summary>
+    /// Measures one label using the current ImGui font and includes the inline help-marker width
+    /// when <paramref name="hasDescription"/> is <see langword="true"/>.
+    /// </summary>
+    /// <param name="label">The label text to measure.</param>
+    /// <param name="hasDescription">Whether the row renders the inline help marker.</param>
+    /// <returns>The measured width used for label-column alignment.</returns>
+    private static float MeasureLabelWidth(string label, bool hasDescription)
+    {
+        var width = ImGui.CalcTextSize(label).X;
+        if (!hasDescription)
+            return width;
+
+        return width + ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize(HelpMarkerLabel).X;
     }
 
     /// <summary>Builds a human-readable summary string for debugger visualizers.</summary>

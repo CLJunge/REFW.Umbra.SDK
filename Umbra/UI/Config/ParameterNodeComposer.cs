@@ -12,6 +12,8 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal static class ParameterNodeComposer
 {
+    private static readonly Func<bool> s_alwaysVisible = static () => true;
+
     /// <summary>
     /// Creates the draw node for one leaf <see cref="IParameter"/> along with any disposable
     /// resource produced by the resolved control drawer.
@@ -33,33 +35,15 @@ internal static class ParameterNodeComposer
         float? classLabelMarginPixels)
     {
         var meta = parameter.Metadata;
-        if (classLabelMarginPixels.HasValue)
+        if (classLabelMarginPixels.HasValue && alignmentGroup.Margin != classLabelMarginPixels.Value)
             alignmentGroup.Margin = classLabelMarginPixels.Value;
 
         var (draw, resource) = ControlFactory.BuildDrawAction(parameter, meta.ResolvedLabel, alignmentGroup);
 
         var indentAmount = meta.Indent ?? classIndentAmount;
-        if (indentAmount.HasValue)
-        {
-            var amount = indentAmount.Value;
-            var inner = draw;
-            draw = () =>
-            {
-                Hexa.NET.ImGui.ImGui.Indent(amount);
-                try
-                {
-                    inner();
-                }
-                finally
-                {
-                    Hexa.NET.ImGui.ImGui.Unindent(amount);
-                }
-            };
-        }
-
         var isVisible = meta.HideIf is not null
             ? VisibilityPredicateResolver.Build(meta.HideIf, owner)
-            : static () => true;
+            : s_alwaysVisible;
 
         return (
             new ParameterNode(
@@ -67,7 +51,8 @@ internal static class ParameterNodeComposer
                 draw,
                 meta.Order ?? int.MaxValue,
                 meta.SpacingBefore,
-                meta.SpacingAfter),
+                meta.SpacingAfter,
+                indentAmount),
             resource);
     }
 }
