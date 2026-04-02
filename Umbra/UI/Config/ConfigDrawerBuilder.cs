@@ -1,12 +1,10 @@
-using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
 
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Walks a configuration object tree once at construction time and produces the ordered list of
-/// top-level <see cref="IDrawNode"/> instances consumed by <see cref="ConfigDrawer{TConfig}.Draw"/>.
+/// Builds the top-level draw-tree result consumed by <see cref="ConfigDrawer{TConfig}.Draw"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,21 +14,10 @@ namespace Umbra.UI.Config;
 /// or cousin branches of the configuration tree.
 /// </para>
 /// <para>
-/// When a nested group does not declare its own <see cref="UmbraCategoryAttribute"/>, its uncategorized
-/// direct children are injected into the parent scope's current category context. When the nested
-/// group does declare its own category, that category is rendered as a real container node whose
-/// children are the nested group's uncategorized direct controls plus any additional locally scoped
-/// categories declared within that group. This avoids creating a redundant nested category header
-/// with the same label as the container.
-/// </para>
-/// <para>
-/// Every nested-group subtree is additionally wrapped in a stable ImGui ID scope derived from the
-/// group's structural settings path. Nested-group custom drawer binding is delegated to
-/// <see cref="NestedDrawerBinder"/>, structural path derivation is delegated to
-/// <see cref="NestedScopePathResolver"/>, scope-local category routing is delegated to
-/// <see cref="ConfigDrawScope"/>, nested-group node composition is delegated to
-/// <see cref="NestedNodeComposer"/>, and leaf parameter node composition is delegated to
-/// <see cref="ParameterNodeComposer"/> so this type remains focused on tree assembly.
+/// Recursive traversal of the config object graph is delegated to
+/// <see cref="ConfigDrawTreeCollector"/>. This type remains responsible for top-level scope setup,
+/// collecting the final node and disposable lists, tracking category nodes for later stable sorting,
+/// and applying the final parameter-order pass.
 /// </para>
 /// </remarks>
 internal sealed class ConfigDrawerBuilder
@@ -71,13 +58,6 @@ internal sealed class ConfigDrawerBuilder
     /// The property-level <see cref="UmbraLabelMarginAttribute"/> selected for this nested group,
     /// or <see langword="null"/> when the type-level attribute should be used as fallback.
     /// </param>
-    /// <remarks>
-    /// Returns immediately without emitting any nodes when <paramref name="type"/> is decorated
-    /// with <see cref="INestedDrawerAttribute"/>. Such types are rendered entirely by their
-    /// custom drawer; expanding their parameters here would duplicate what the drawer manages.
-    /// Nested child groups receive their own stable ImGui ID scopes derived from the root config's
-    /// settings prefix and the nested-group property path.
-    /// </remarks>
     internal void Collect(
         object obj,
         Type type,
@@ -100,159 +80,10 @@ internal sealed class ConfigDrawerBuilder
             labelMarginOverride ?? typeMeta.LabelMarginAttr,
             RegisterCategoryNode);
 
-        CollectInto(scope, obj, type);
+        ConfigDrawTreeCollector.CollectInto(scope, obj, type, RegisterCategoryNode, Disposables, SortNodesInPlace);
 
         foreach (var node in scope.Nodes)
             Nodes.Add(node);
-    }
-
-    /// <summary>
-    /// Walks one configuration-group object into the specified local layout <paramref name="scope"/>.
-    /// </summary>
-    /// <param name="scope">The local category and alignment scope to populate.</param>
-    /// <param name="obj">The group instance to reflect over.</param>
-    /// <param name="type">The compile-time type of <paramref name="obj"/>.</param>
-    /// <remarks>
-    /// Property values are read through the cached delegates stored in <see cref="TypeDrawMetadata"/>
-    /// so repeated drawer construction walks the object graph without invoking
-    /// <see cref="System.Reflection.PropertyInfo.GetValue(object?)"/> for every property.
-    /// </remarks>
-    private void CollectInto(ConfigDrawScope scope, object obj, Type type)
-    {
-        var typeMeta = TypeDrawMetadata.For(type);
-        if (typeMeta.NestedDrawerAttr is not null)
-            return;
-
-        var classIndent = typeMeta.IndentAttr;
-        var classLabelMargin = scope.LabelMarginAttr;
-
-        foreach (var propMeta in typeMeta.Properties)
-        {
-            var value = propMeta.GetValue(obj);
-            var propType = propMeta.PropertyType;
-
-            if (propMeta.IsParameter)
-            {
-                if (value is not IParameter parameter)
-                    continue;
-
-                var category = propMeta.Category ?? scope.DefaultCategory;
-                var alignmentGroup = scope.GetAlignmentGroup(category);
-                var (node, resource) = ParameterNodeComposer.Create(
-                    parameter,
-                    obj,
-                    alignmentGroup,
-                    classIndent?.Amount,
-                    classLabelMargin?.Pixels);
-                if (resource is not null)
-                    Disposables.Add(resource);
-
-                scope.AddNode(category, node);
-                continue;
-            }
-
-            var propTypeMeta = TypeDrawMetadata.For(propType);
-            if (!propTypeMeta.IsAutoRegisterSettings || value is not { } nested)
-                continue;
-
-            var nestedDrawerAttr = propMeta.NestedDrawerAttr ?? propTypeMeta.NestedDrawerAttr;
-            var nestedLocalCategory = propMeta.Category ?? propTypeMeta.Category;
-            var nestedCollapseAttr = propMeta.CollapseAttr ?? propTypeMeta.CollapseAttr;
-            var nestedLabelMargin = propMeta.LabelMarginAttr
-                ?? propTypeMeta.LabelMarginAttr
-                ?? scope.LabelMarginAttr;
-            var propertyIndent = propMeta.IndentAttr;
-            var nestedGroupPath = NestedScopePathResolver.Resolve(scope.GroupPath, propMeta, propTypeMeta);
-
-            if (nestedDrawerAttr is not null)
-            {
-                var drawerNode = NestedNodeComposer.CreateNestedDrawerNode(
-                    RegisterCategoryNode,
-                    scope.LabelMarginAttr,
-                    nestedGroupPath,
-                    propMeta,
-                    propType,
-                    nestedDrawerAttr,
-                    nested,
-                    obj,
-                    nestedLocalCategory,
-                    nestedCollapseAttr,
-                    propertyIndent,
-                    out var disposable);
-                if (drawerNode is null)
-                    continue;
-
-                if (disposable is not null)
-                    Disposables.Add(disposable);
-
-                var targetCategory = nestedLocalCategory is null ? scope.DefaultCategory : null;
-                scope.AddNode(targetCategory, drawerNode);
-                continue;
-            }
-
-            var ambientCategory = nestedLocalCategory is null ? scope.DefaultCategory : null;
-            LabelAlignmentGroup? childAlignmentGroup = null;
-            if (nestedLocalCategory is null)
-                childAlignmentGroup = scope.GetAlignmentGroup(ambientCategory);
-
-            var childScope = new ConfigDrawScope(
-                nestedGroupPath,
-                null,
-                nestedCollapseAttr,
-                propertyIndent,
-                nestedLabelMargin,
-                RegisterCategoryNode,
-                childAlignmentGroup);
-
-            CollectInto(childScope, nested, propType);
-
-            if (nestedLocalCategory is null)
-                SortNodesInPlace(childScope.Nodes);
-
-            if (nestedLocalCategory is not null)
-            {
-                var childContainer = childScope.CreateContainerNode(nestedLocalCategory);
-                var scopedChildNode = NestedNodeComposer.CreateIdScopedSubtree(nestedGroupPath, [childContainer]);
-
-                if (propMeta.HasWrapperMetadata)
-                {
-                    scope.AddNode(
-                        null,
-                        NestedNodeComposer.CreateWrappedNode(
-                            [scopedChildNode],
-                            obj,
-                            propMeta.HideIf,
-                            propMeta.Order,
-                            propMeta.SpacingBefore,
-                            propMeta.SpacingAfter));
-                }
-                else
-                {
-                    scope.AddNode(null, scopedChildNode);
-                }
-
-                continue;
-            }
-
-            var scopedSubtreeNode = NestedNodeComposer.CreateIdScopedSubtree(nestedGroupPath, childScope.Nodes);
-
-            if (propMeta.HasWrapperMetadata)
-            {
-                scope.AddNode(
-                    ambientCategory,
-                    NestedNodeComposer.CreateWrappedNode(
-                        [scopedSubtreeNode],
-                        obj,
-                        propMeta.HideIf,
-                        propMeta.Order,
-                        propMeta.SpacingBefore,
-                        propMeta.SpacingAfter));
-            }
-            else
-            {
-                scope.AddNode(ambientCategory, scopedSubtreeNode);
-            }
-        }
     }
 
     /// <summary>

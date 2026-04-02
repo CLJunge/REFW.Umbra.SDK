@@ -62,7 +62,7 @@ internal static class TypeDrawMetadataFactory
     /// </summary>
     /// <remarks>
     /// The returned metadata also carries a cached boxed getter delegate so
-    /// <see cref="ConfigDrawerBuilder.CollectInto(ConfigDrawScope, object, Type)"/> can traverse the
+    /// <see cref="ConfigDrawTreeCollector.CollectInto(ConfigDrawScope, object, Type, Action{Nodes.CategoryNode}, List{IDisposable}, Action{List{Nodes.IDrawNode}})"/> can traverse the
     /// live config object graph without paying <see cref="PropertyInfo.GetValue(object?)"/> reflection
     /// overhead for each property on every draw-tree build.
     /// </remarks>
