@@ -141,4 +141,3 @@ internal static class NestedNodeComposer
     internal static IdScopeNode CreateIdScopedSubtree(string scopePath, List<IDrawNode> nodes)
         => new(scopePath, nodes);
 }
-

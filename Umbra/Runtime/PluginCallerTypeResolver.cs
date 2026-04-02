@@ -46,4 +46,3 @@ internal static class PluginCallerTypeResolver
                 $"Use {fallbackSignature} when caller inference is not available.");
     }
 }
-
