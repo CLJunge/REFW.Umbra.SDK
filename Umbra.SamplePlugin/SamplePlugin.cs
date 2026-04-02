@@ -1,6 +1,5 @@
 using REFrameworkNET;
 using Umbra.Config;
-using Umbra.Input;
 using Umbra.Logging;
 using Umbra.Runtime;
 using Umbra.SamplePlugin.Config;
@@ -85,8 +84,8 @@ public sealed class SamplePlugin : UmbraPlugin
     {
 #if DEBUG
         if (!System.Diagnostics.Debugger.IsAttached
-            && KeyboardInput.IsCtrlHeld && KeyboardInput.IsShiftHeld
-            && KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
+            && Input.KeyboardInput.IsCtrlHeld && Input.KeyboardInput.IsShiftHeld
+            && Input.KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
             && capturedKey == (int)Hexa.NET.ImGui.ImGuiKey.F12)
         {
             Log.Info("Ctrl + Shift + F12 detected, attaching debugger...");
