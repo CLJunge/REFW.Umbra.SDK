@@ -108,10 +108,10 @@ public sealed class SamplePlugin : UmbraPlugin
     public override void OnPreUpdateBehavior()
     {
 #if DEBUG
-        if (!Debugger.IsAttached
-            && KeyboardInput.IsCtrlHeld && KeyboardInput.IsShiftHeld
-            && KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
-            && capturedKey == (int)ImGuiKey.F12)
+        if (!System.Diagnostics.Debugger.IsAttached
+            && Input.KeyboardInput.IsCtrlHeld && Input.KeyboardInput.IsShiftHeld
+            && Input.KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
+            && capturedKey == (int)Hexa.NET.ImGui.ImGuiKey.F12)
         {
             Log.Info("Ctrl + Shift + F12 detected, attaching debugger...");
             Debugger.Launch();
