@@ -30,11 +30,17 @@ public abstract class UmbraPlugin : IUmbraPlugin
     protected PluginLogger Log { get; }
 
     /// <inheritdoc/>
-    public abstract void Initialize();
+    public virtual void Initialize() { }
 
     /// <inheritdoc/>
-    public abstract void Shutdown();
+    public virtual void Shutdown() { }
 
     /// <inheritdoc/>
-    public abstract void OnPreImGuiDrawUI();
+    public virtual void OnPreUpdateBehavior() { }
+
+    /// <inheritdoc/>
+    public virtual void OnPreImGuiDrawUI() { }
+
+    /// <inheritdoc/>
+    public virtual void OnPreImGuiRenderer() { }
 }

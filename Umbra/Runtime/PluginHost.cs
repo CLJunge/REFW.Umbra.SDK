@@ -62,9 +62,26 @@ public sealed class PluginHost<TPlugin>
     }
 
     /// <summary>
-    /// Dispatches the ImGui pre-draw callback to the live instance, if present.
+    /// Invokes the pre-update behavior logic on the underlying instance, if available.
     /// </summary>
+    /// <remarks>This method delegates to the underlying instance's OnPreUpdateBehavior method if the instance
+    /// is not null. Call this method to perform any actions required before the main update behavior is
+    /// executed.</remarks>
+    public void OnPreUpdateBehavior() => _instance?.OnPreUpdateBehavior();
+
+    /// <summary>
+    /// Invokes the pre-draw logic for the ImGui UI, if an instance is available.
+    /// </summary>
+    /// <remarks>This method should be called before rendering the ImGui-based user interface to allow any
+    /// necessary setup or state updates. If no instance is present, the method performs no action.</remarks>
     public void OnPreImGuiDrawUI() => _instance?.OnPreImGuiDrawUI();
+
+    /// <summary>
+    /// Invokes the pre-ImGui rendering logic for the current instance, if available.
+    /// </summary>
+    /// <remarks>Call this method before rendering ImGui UI elements for an ingame overlay.
+    /// If no instance is set, this method has no effect.</remarks>
+    public void OnPreImGuiRenderer() => _instance?.OnPreImGuiRenderer();
 
     /// <summary>
     /// Creates, initializes, and publishes the live plugin instance.

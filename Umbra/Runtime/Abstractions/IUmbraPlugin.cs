@@ -23,7 +23,27 @@ public partial interface IUmbraPlugin
     void Shutdown();
 
     /// <summary>
+    /// Performs custom logic before the behavior update phase of the game loop.
+    /// </summary>
+    /// <remarks>
+    /// Use this callback to implement any custom behavior that should run before the game updates its
+    /// internal behavior state.
+    /// </remarks>
+    void OnPreUpdateBehavior();
+
+    /// <summary>
     /// Performs custom logic immediately before the ImGui UI is drawn.
     /// </summary>
+    /// <remarks>
+    /// Use this callback to draw ImGui elements.
+    /// </remarks>
     void OnPreImGuiDrawUI();
+
+    /// <summary>
+    /// Performs custom logic immediately before the ImGui renderer executes its draw calls.
+    /// </summary>
+    /// <remarks>
+    /// Use this callback to draw an ingame overlay using ImGui elements.
+    /// </remarks>
+    void OnPreImGuiRenderer();
 }

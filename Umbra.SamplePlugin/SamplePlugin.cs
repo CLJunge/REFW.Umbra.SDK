@@ -76,9 +76,13 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 
     /// <summary>
-    /// Renders the plugin UI and advances deferred persistence when the REFramework UI pass is active.
+    /// Performs pre-update logic for the behavior, including handling debug key input and ticking the deferred save
+    /// controller.
     /// </summary>
-    public override void OnPreImGuiDrawUI()
+    /// <remarks>In debug builds, this method checks for the Ctrl+Shift+F12 key combination and launches the
+    /// debugger if detected. This allows for convenient debugging during development. In all builds, it advances the
+    /// deferred save controller state.</remarks>
+    public override void OnPreUpdateBehavior()
     {
 #if DEBUG
         if (!System.Diagnostics.Debugger.IsAttached
@@ -91,9 +95,14 @@ public sealed class SamplePlugin : UmbraPlugin
             System.Diagnostics.Debugger.Launch();
         }
 #endif
-        DrawPanelIfUiIsActive();
+
         TickDeferredSaveController();
     }
+
+    /// <summary>
+    /// Renders the plugin UI when the REFramework UI pass is active.
+    /// </summary>
+    public override void OnPreImGuiDrawUI() => DrawPanelIfUiIsActive();
 
     /// <summary>
     /// Resolves the absolute path to the plugin's JSON configuration file.
