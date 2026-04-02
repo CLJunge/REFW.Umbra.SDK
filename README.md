@@ -28,6 +28,18 @@ The repository also includes `Umbra.SamplePlugin`, which demonstrates the curren
 - Keyboard capture utilities in `KeyboardInput`
 - Small runtime helper `ManagedObjectResolver` with `Resolve<T>` / `TryResolve<T>` for resolving REFramework managed objects
 
+### Plugin lifecycle callbacks
+
+`UmbraPlugin` exposes five `virtual` methods — override only the ones your plugin needs:
+
+| Override | REFramework callback | Typical use |
+|---|---|---|
+| `Initialize()` | `[PluginEntryPoint]` | One-time startup; load config, build panel |
+| `Shutdown()` | `[PluginExitPoint]` | Flush/dispose config, panel, and state |
+| `OnPreUpdateBehavior()` | `[Callback(typeof(UpdateBehavior), Pre)]` | Per-frame game logic; tick `DeferredSaveController` |
+| `OnPreImGuiDrawUI()` | `[Callback(typeof(ImGuiDrawUI), Pre)]` | Draw settings/status panel via ImGui |
+| `OnPreImGuiRenderer()` | `[Callback(typeof(ImGuiRender), Pre)]` | Draw in-game overlays via ImGui |
+
 ### Default config drawers
 
 - `Parameter<Action>` → button via `ButtonDrawer`
@@ -77,6 +89,10 @@ REFW.Umbra
 │  ├─ Input
 │  │  └─ KeyboardInput
 │  └─ Runtime
+│     ├─ UmbraPlugin (Initialize / Shutdown / OnPreUpdateBehavior / OnPreImGuiDrawUI / OnPreImGuiRenderer)
+│     ├─ PluginHost<TPlugin>
+│     ├─ PluginBootstrapper
+│     ├─ PluginInstanceGuard
 │     └─ ManagedObjectResolver
 ├─ Umbra.SamplePlugin
 │  └─ reference plugin showing settings, deferred save, nested groups, custom drawers, and broad control coverage
@@ -122,7 +138,9 @@ From the repository root:
 ```powershell
 .\scripts\setup_reframework_deps.ps1
 ```
+
 or
+
 ```bash
 .\scripts\setup_reframework_deps.bat
 ```
@@ -223,13 +241,18 @@ public sealed class MyPlugin : UmbraPlugin
         Log.Info("Unloaded.");
     }
 
+    // Override OnPreUpdateBehavior here if the plugin needs per-frame logic, e.g. for polling input, updating live state, etc.
+
+    // Draw the settings panel when the REFramework UI pass is active.
     public override void OnPreImGuiDrawUI()
     {
         if (API.IsDrawingUI())
             _panel?.Draw();
 
-        _saveController?.Tick();
+            _saveController?.Tick();
     }
+
+    // Override OnPreImGuiRenderer() here if the plugin needs an in-game overlay.
 }
 
 // Static host — satisfies REFramework's static entry-point requirement and owns the mutex identity.
@@ -245,8 +268,14 @@ public static class MyPluginHost
     [PluginExitPoint]
     public static void Unload() => _host.Unload();
 
+    [Callback(typeof(UpdateBehavior), CallbackType.Pre)]
+    public static void OnPreUpdateBehavior() => _host.OnPreUpdateBehavior();
+
     [Callback(typeof(ImGuiDrawUI), CallbackType.Pre)]
-    public static void PreDrawUI() => _host.OnPreImGuiDrawUI();
+    public static void OnPreImGuiDrawUI() => _host.OnPreImGuiDrawUI();
+
+    [Callback(typeof(ImGuiRender), CallbackType.Pre)]
+    public static void OnPreImGuiRenderer() => _host.OnPreImGuiRenderer();
 }
 ```
 
