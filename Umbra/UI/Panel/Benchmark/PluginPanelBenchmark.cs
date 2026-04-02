@@ -260,7 +260,12 @@ public sealed class PluginPanelBenchmark : IDisposable
     {
         ThrowIfDisposed();
 
-        ImGui.Begin(WindowTitle);
+        var isWindowVisible = ImGui.Begin(WindowTitle);
+        if (!isWindowVisible)
+        {
+            ImGui.End();
+            return;
+        }
 
         var suppressRuntimePanelWhileSampling = SuppressRuntimePanelWhileSampling;
         ImGui.Checkbox("Suppress runtime panel while sampling", ref suppressRuntimePanelWhileSampling);
