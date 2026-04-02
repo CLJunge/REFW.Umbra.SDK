@@ -36,8 +36,8 @@ The repository also includes `Umbra.SamplePlugin`, which demonstrates the curren
 |---|---|---|
 | `Initialize()` | `[PluginEntryPoint]` | One-time startup; load config, build panel |
 | `Shutdown()` | `[PluginExitPoint]` | Flush/dispose config, panel, and state |
-| `OnPreUpdateBehavior()` | `[Callback(typeof(UpdateBehavior), Pre)]` | Per-frame game logic; tick `DeferredSaveController` |
-| `OnPreImGuiDrawUI()` | `[Callback(typeof(ImGuiDrawUI), Pre)]` | Draw settings/status panel via ImGui |
+| `OnPreUpdateBehavior()` | `[Callback(typeof(UpdateBehavior), Pre)]` | Per-frame game logic |
+| `OnPreImGuiDrawUI()` | `[Callback(typeof(ImGuiDrawUI), Pre)]` | Draw settings/status panel via ImGui; tick `DeferredSaveController` |
 | `OnPreImGuiRenderer()` | `[Callback(typeof(ImGuiRender), Pre)]` | Draw in-game overlays via ImGui |
 
 ### Default config drawers
