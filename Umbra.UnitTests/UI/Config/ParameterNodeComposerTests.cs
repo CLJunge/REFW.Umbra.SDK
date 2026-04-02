@@ -201,8 +201,8 @@ public class ParameterNodeComposerTests
             Order = 1,
             SpacingBefore = 0,
             SpacingAfter = 0,
-            CustomDrawerType = null,
-            TwoColumnCustomDrawerType = null
+            DrawerType = null,
+            TwoColumnDrawerType = null
         };
         var parameter = new Parameter<int>(42) { Metadata = metadata };
         var alignmentGroup = new LabelAlignmentGroup();
@@ -234,3 +234,4 @@ public class ParameterNodeComposerTests
     }
 
 }
+

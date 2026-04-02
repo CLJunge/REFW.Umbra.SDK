@@ -13,7 +13,7 @@ namespace Umbra.UI.Config.Drawers;
 /// <remarks>
 /// <para>
 /// Use this interface with
-/// <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/> (<c>[UmbraCustomDrawer&lt;TDrawer&gt;]</c>)
+/// <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/> (<c>[UmbraDrawer&lt;TDrawer&gt;]</c>)
 /// for complete layout control (custom label rendering, non-standard row structure), use
 /// <see cref="ITwoColumnParameterDrawer"/> with
 /// <see cref="Umbra.Config.Attributes.UmbraTwoColumnDrawerAttribute{TDrawer}"/> 
