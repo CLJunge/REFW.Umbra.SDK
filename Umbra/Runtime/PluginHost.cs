@@ -21,7 +21,6 @@ namespace Umbra.Runtime;
 public sealed class PluginHost<TPlugin>
     where TPlugin : class, IUmbraPlugin
 {
-    private readonly Type _identityType;
     private readonly Func<TPlugin> _factory;
     private volatile TPlugin? _instance;
 
@@ -33,8 +32,6 @@ public sealed class PluginHost<TPlugin>
     public PluginHost(Func<TPlugin> factory)
     {
         ArgumentNullException.ThrowIfNull(factory);
-
-        _identityType = typeof(TPlugin);
         _factory = factory;
     }
 
@@ -43,7 +40,7 @@ public sealed class PluginHost<TPlugin>
     /// </summary>
     /// <returns><see langword="true"/> when the plugin instance was created and initialised.</returns>
     public bool Load()
-        => PluginBootstrapper.Load(_identityType, InitializeInstance);
+        => PluginBootstrapper.Load(typeof(TPlugin), InitializeInstance);
 
     /// <summary>
     /// Stops the plugin, runs its shutdown logic, and releases its mutex.
@@ -56,7 +53,7 @@ public sealed class PluginHost<TPlugin>
 
         try
         {
-            PluginBootstrapper.Unload(_identityType, instance.Shutdown);
+            PluginBootstrapper.Unload(typeof(TPlugin), instance.Shutdown);
         }
         finally
         {
