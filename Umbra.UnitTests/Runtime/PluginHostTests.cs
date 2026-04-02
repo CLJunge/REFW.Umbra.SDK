@@ -65,10 +65,11 @@ public sealed class PluginHostTests
     }
 
     /// <summary>
-    /// Verifies that a duplicate load attempt through the same host is rejected by the mutex.
+    /// Verifies that calling <see cref="PluginHost{TPlugin}.Load"/> twice on the same host is
+    /// rejected by the mutex.
     /// </summary>
     [TestMethod]
-    public void Load_WhenHostAlreadyLoaded_ReturnsFalseAndDoesNotCreateSecondInstance()
+    public void Load_WhenSameHostAlreadyLoaded_ReturnsFalseAndDoesNotCreateSecondInstance()
     {
         // Arrange
         var factoryCalls = 0;
@@ -92,6 +93,57 @@ public sealed class PluginHostTests
         Assert.AreEqual(1, LifecyclePlugin.ShutdownCount);
         Assert.HasCount(1, _sink.WarningMessages);
         Assert.Contains("Skipped load for plugin", _sink.WarningMessages[0]);
+    }
+
+    /// <summary>
+    /// Verifies that a second <see cref="PluginHost{TPlugin}"/> instance for the same plugin type
+    /// is blocked by the mutex while the first host is loaded, and that it succeeds after the first
+    /// host has unloaded.
+    /// </summary>
+    [TestMethod]
+    public void Load_WhenSeparateHostForSamePluginTypeIsLoaded_ReturnsFalseUntilFirstUnloads()
+    {
+        // Arrange
+        var firstHost  = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+        var secondHost = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        // Act
+        var firstLoad         = firstHost.Load();
+        var secondLoadBlocked = secondHost.Load();
+        firstHost.Unload();
+        var secondLoadAfter   = secondHost.Load();
+        secondHost.Unload();
+
+        // Assert
+        Assert.IsTrue(firstLoad);
+        Assert.IsFalse(secondLoadBlocked);
+        Assert.IsTrue(secondLoadAfter);
+        Assert.AreEqual(2, LifecyclePlugin.InitializeCount);
+        Assert.AreEqual(2, LifecyclePlugin.ShutdownCount);
+        Assert.HasCount(1, _sink.WarningMessages);
+        Assert.Contains("Skipped load for plugin", _sink.WarningMessages[0]);
+    }
+
+    /// <summary>
+    /// Verifies that the same host instance can be reloaded after it has been unloaded.
+    /// </summary>
+    [TestMethod]
+    public void Load_AfterUnload_Succeeds()
+    {
+        // Arrange
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        // Act
+        var firstLoad = host.Load();
+        host.Unload();
+        var secondLoad = host.Load();
+        host.Unload();
+
+        // Assert
+        Assert.IsTrue(firstLoad);
+        Assert.IsTrue(secondLoad);
+        Assert.AreEqual(2, LifecyclePlugin.InitializeCount);
+        Assert.AreEqual(2, LifecyclePlugin.ShutdownCount);
     }
 
     private sealed class LifecyclePlugin : IUmbraPlugin
@@ -132,6 +184,4 @@ public sealed class PluginHostTests
             PreRendererCount = 0;
         }
     }
-
-    private static class LifecyclePluginHost;
 }
