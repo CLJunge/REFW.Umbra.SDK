@@ -124,11 +124,11 @@ internal sealed class PluginPanelBenchmarkExporter
         try
         {
             _samples.Add(sample);
-            _csvWriter.Write(_runId);
+            _csvWriter.Write(EscapeCsvField(_runId));
             _csvWriter.Write(',');
-            _csvWriter.Write(_benchmarkName);
+            _csvWriter.Write(EscapeCsvField(_benchmarkName));
             _csvWriter.Write(',');
-            _csvWriter.Write(_scenario);
+            _csvWriter.Write(EscapeCsvField(_scenario));
             _csvWriter.Write(',');
             _csvWriter.Write(sample.FrameIndex);
             _csvWriter.Write(',');
@@ -246,6 +246,16 @@ internal sealed class PluginPanelBenchmarkExporter
         _markdownPath = null;
         _samples.Clear();
     }
+
+    /// <summary>
+    /// Returns a RFC 4180-compliant CSV-escaped representation of <paramref name="value"/>.
+    /// </summary>
+    /// <param name="value">The raw string value to escape.</param>
+    /// <returns>
+    /// The value wrapped in double quotes, with any embedded double-quote characters doubled.
+    /// </returns>
+    private static string EscapeCsvField(string value)
+        => "\"" + value.Replace("\"", "\"\"") + "\"";
 
     /// <summary>
     /// JSON-serializable export document written at the end of each benchmark run.
