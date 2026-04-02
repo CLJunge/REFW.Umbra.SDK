@@ -38,10 +38,11 @@ public sealed class PluginHostTests
     }
 
     /// <summary>
-    /// Verifies that the host loads, dispatches callbacks, and unloads the live plugin instance.
+    /// Verifies that the host loads, dispatches runtime callbacks, and unloads the live plugin
+    /// instance.
     /// </summary>
     [TestMethod]
-    public void Load_PreDrawAndUnload_DispatchToLivePluginInstance()
+    public void Load_PreUpdatePreDrawPreRendererAndUnload_DispatchToLivePluginInstance()
     {
         // Arrange
         var host = new PluginHost<LifecyclePlugin>(
@@ -50,13 +51,17 @@ public sealed class PluginHostTests
 
         // Act
         var loaded = host.Load();
+        host.OnPreUpdateBehavior();
         host.OnPreImGuiDrawUI();
+        host.OnPreImGuiRenderer();
         host.Unload();
 
         // Assert
         Assert.IsTrue(loaded);
         Assert.AreEqual(1, LifecyclePlugin.InitializeCount);
+        Assert.AreEqual(1, LifecyclePlugin.PreUpdateCount);
         Assert.AreEqual(1, LifecyclePlugin.PreDrawCount);
+        Assert.AreEqual(1, LifecyclePlugin.PreRendererCount);
         Assert.AreEqual(1, LifecyclePlugin.ShutdownCount);
     }
 
@@ -97,7 +102,10 @@ public sealed class PluginHostTests
 
         internal static int InitializeCount;
         internal static int ShutdownCount;
+        internal static int PreUpdateCount;
         internal static int PreDrawCount;
+        internal static int PreRendererCount;
+
 
         public void Initialize()
         {
@@ -111,13 +119,19 @@ public sealed class PluginHostTests
             _log.Info("Shutdown.");
         }
 
+        public void OnPreUpdateBehavior() => PreUpdateCount++;
+
         public void OnPreImGuiDrawUI() => PreDrawCount++;
+
+        public void OnPreImGuiRenderer() => PreRendererCount++;
 
         internal static void Reset()
         {
             InitializeCount = 0;
             ShutdownCount = 0;
+            PreUpdateCount = 0;
             PreDrawCount = 0;
+            PreRendererCount = 0;
         }
     }
 
