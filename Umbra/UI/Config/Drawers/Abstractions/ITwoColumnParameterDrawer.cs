@@ -17,7 +17,7 @@ namespace Umbra.UI.Config.Drawers;
 /// complete layout control (custom label rendering, non-standard row structure), use
 /// <see cref="IParameterDrawer"/> with
 /// <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/>
-/// (<c>[UmbraCustomDrawer&lt;TDrawer&gt;]</c>) instead.
+/// (<c>[UmbraDrawer&lt;TDrawer&gt;]</c>) instead.
 /// </para>
 /// <para>
 /// When <see cref="Draw"/> is called, <see cref="ImGui.SetNextItemWidth(float)"/> has already been applied

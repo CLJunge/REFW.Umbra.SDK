@@ -9,7 +9,7 @@ namespace Umbra.Config.Attributes;
 /// If this attribute is absent from the root config type passed to
 /// <see cref="SettingsStore{TConfig}.Load()"/>, no parameters are discovered
 /// and the returned instance will hold only its property default values.
-/// Nested group types exposed via <c>UmbraSettingsParameterAttribute</c> properties must also
+/// Nested group types exposed via <see cref="UmbraParameterAttribute"/> properties must also
 /// carry this attribute to be traversed.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
