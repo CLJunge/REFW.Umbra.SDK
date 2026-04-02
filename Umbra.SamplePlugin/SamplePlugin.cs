@@ -75,6 +75,12 @@ public sealed class SamplePlugin : UmbraPlugin
         Log.Info("Unloaded.");
     }
 
+    /// <summary>
+    /// Performs pre-update logic for the behavior, including handling debug key input.
+    /// </summary>
+    /// <remarks>In debug builds, this method checks for the Ctrl+Shift+F12 key combination and launches the
+    /// debugger if detected. This allows for convenient debugging during development.
+    /// </remarks>
     public override void OnPreUpdateBehavior()
     {
 #if DEBUG
