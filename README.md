@@ -197,7 +197,9 @@ using REFrameworkNET.Callbacks;
 using Umbra.Config;
 using Umbra.Logging;
 using Umbra.Runtime;
+using Umbra.UI.Config;
 using Umbra.UI.Panel;
+using Umbra.UI.Panel.Benchmark;
 
 // Instance class — owns all per-plugin state and behavior.
 public sealed class MyPlugin : UmbraPlugin
@@ -247,9 +249,11 @@ public sealed class MyPlugin : UmbraPlugin
     public override void OnPreImGuiDrawUI()
     {
         if (API.IsDrawingUI())
+        {
             _panel?.Draw();
+        }
 
-            _saveController?.Tick();
+        _saveController?.Tick();
     }
 
     // Override OnPreImGuiRenderer() here if the plugin needs an in-game overlay.
@@ -279,3 +283,88 @@ public static class MyPluginHost
 ```
 
 For a fuller reference, see `Umbra.SamplePlugin`, which now organizes the sample config into nested groups for booleans, numeric sliders and drags, strings, enums, custom drawers, nested-group drawers, and nested-type presentation tests alongside deferred saving.
+
+### Plugin panel benchmarking
+
+`PluginPanelBenchmark` provides a reusable ImGui benchmark window for measuring one duplicate
+`PluginPanel.Draw()` call per frame and exporting CSV, JSON, and Markdown artifacts.
+
+When the benchmark target is a config-backed panel, use the convenience factory
+`PluginPanelBenchmark.CreateForConfig(...)` to generate and own the duplicate benchmark panel:
+
+```csharp
+using REFrameworkNET;
+using Umbra.Config;
+using Umbra.Logging;
+using Umbra.Runtime;
+using Umbra.UI.Config;
+using Umbra.UI.Panel;
+using Umbra.UI.Panel.Benchmark;
+
+public sealed class MyPlugin : UmbraPlugin
+{
+    private static readonly PluginLogger _log = new("MyPlugin");
+
+    private PluginPanel? _panel;
+    private PluginPanelBenchmark? _panelBenchmark;
+    private SettingsStore<MyConfig>? _store;
+    private DeferredSaveController<MyConfig>? _saveController;
+
+    public MyPlugin() : base(_log) { }
+
+    public override void Initialize()
+    {
+        var pluginDir = API.GetPluginDirectory(GetType().Assembly);
+        var configPath = Path.Combine(pluginDir, "data", "MyPlugin", "config.json");
+        var benchmarkDirectory = Path.Combine(pluginDir, "data", "MyPlugin", "artifacts", "perf", "runtime", "panel-draw");
+
+        _store = new SettingsStore<MyConfig>(configPath);
+        var config = _store.Load();
+        _saveController = new DeferredSaveController<MyConfig>(_store);
+
+        _panel = new PluginPanel("MyPlugin.RuntimePanel")
+            .Add(new ConfigSection<MyConfig>(config, "MyPlugin.RuntimeConfigSection"));
+
+        _panelBenchmark = PluginPanelBenchmark.CreateForConfig(
+            "MyPlugin Panel Benchmark",
+            config,
+            "MyPlugin.BenchmarkPanel",
+            benchmarkDirectory,
+            sectionIdScope: "MyPlugin.BenchmarkConfigSection");
+    }
+
+    public override void Shutdown()
+    {
+        _panelBenchmark?.CompleteActiveRun("PluginUnload");
+        _panelBenchmark?.Dispose();
+        _panelBenchmark = null;
+
+        _saveController?.Flush();
+        _saveController?.Dispose();
+        _saveController = null;
+
+        _store?.Save();
+        _store?.Dispose();
+        _store = null;
+
+        _panel?.Dispose();
+        _panel = null;
+    }
+
+    public override void OnPreImGuiDrawUI()
+    {
+        if (API.IsDrawingUI())
+        {
+            if (_panelBenchmark is null || !_panelBenchmark.ShouldSuppressRuntimePanel)
+                _panel?.Draw();
+
+            _panelBenchmark?.DrawWindow();
+        }
+
+        _saveController?.Tick();
+    }
+}
+```
+
+Use the constructor overload instead when the benchmark target panel is assembled manually from
+custom `IPanelSection` implementations and should remain caller-owned.
