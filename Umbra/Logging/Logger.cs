@@ -17,6 +17,10 @@ namespace Umbra.Logging;
 /// during benchmarks, tests, or other measurement-sensitive runs.
 /// </para>
 /// <para>
+/// Low-level sink replacement and lazy default-sink creation are delegated to
+/// <see cref="LoggerSinkRegistry"/> so this type can remain focused on enablement and write dispatch.
+/// </para>
+/// <para>
 /// Both <see cref="Logger"/> and <see cref="PluginLogger"/> honor <see cref="Enabled"/> and
 /// <see cref="Suppress"/>, so callers can disable all SDK and plugin-prefixed output through one
 /// process-wide switch.
@@ -26,7 +30,6 @@ public static class Logger
 {
     private static int _enabled = 1;
     private static int _suppressionDepth;
-    private static ILogSink? _logSink;
 
     /// <summary>
     /// Gets or sets whether Umbra logging is globally enabled.
@@ -58,11 +61,7 @@ public static class Logger
     /// </remarks>
     /// <param name="sink">The sink that should receive future log writes.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="sink"/> is <see langword="null"/>.</exception>
-    internal static void SetLogSink(ILogSink sink)
-    {
-        ArgumentNullException.ThrowIfNull(sink);
-        Interlocked.Exchange(ref _logSink, sink);
-    }
+    internal static void SetLogSink(ILogSink sink) => LoggerSinkRegistry.Set(sink);
 
     /// <summary>
     /// Restores the default REFramework-backed log sink.
@@ -71,7 +70,7 @@ public static class Logger
     /// The next enabled write recreates the default sink lazily so disabled paths remain free from
     /// host-specific logging calls.
     /// </remarks>
-    internal static void ResetLogSink() => Interlocked.Exchange(ref _logSink, null);
+    internal static void ResetLogSink() => LoggerSinkRegistry.Reset();
 
     /// <summary>
     /// Enables all Umbra logging.
@@ -221,20 +220,10 @@ public static class Logger
     }
 
     /// <summary>
-    /// Returns the currently active low-level sink, creating the default REFramework-backed sink on
-    /// first use.
+    /// Returns the currently active low-level sink through <see cref="LoggerSinkRegistry"/>.
     /// </summary>
     /// <returns>The sink that should receive enabled log writes.</returns>
-    internal static ILogSink GetLogSink()
-    {
-        var sink = Volatile.Read(ref _logSink);
-        if (sink != null)
-            return sink;
-
-        sink = new REFrameworkLogSink();
-        var existing = Interlocked.CompareExchange(ref _logSink, sink, null);
-        return existing ?? sink;
-    }
+    internal static ILogSink GetLogSink() => LoggerSinkRegistry.Get();
 
     private sealed class SuppressionScope : IDisposable
     {

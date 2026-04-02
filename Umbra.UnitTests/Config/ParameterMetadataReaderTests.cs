@@ -473,4 +473,3 @@ public class ParameterMetadataReaderTests
     private class TestDrawer { }
     private class TestTwoColumnDrawer { }
 }
-

@@ -1,14 +1,17 @@
 using System.Collections.Concurrent;
-using System.Linq.Expressions;
 using System.Reflection;
 using Umbra.Config.Attributes;
 
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Caches all class-level metadata consulted by <see cref="ConfigDrawerBuilder.Collect"/>
-/// in a single <see cref="MemberInfo.GetCustomAttributes(bool)"/> pass per type.
+/// Stores cached config-draw metadata for one reflected type.
 /// </summary>
+/// <remarks>
+/// This type now owns the immutable metadata shape and the shared per-type cache consulted by
+/// <see cref="ConfigDrawerBuilder.Collect"/>. Reflection scanning and property-getter construction are
+/// delegated to <see cref="TypeDrawMetadataFactory"/> and <see cref="PropertyGetterFactory"/>.
+/// </remarks>
 internal sealed class TypeDrawMetadata
 {
     private static readonly ConcurrentDictionary<Type, TypeDrawMetadata> s_cache = new();
@@ -79,7 +82,7 @@ internal sealed class TypeDrawMetadata
     internal bool IsAutoRegisterSettings { get; }
     internal PropertyDrawMetadata[] Properties { get; }
 
-    private TypeDrawMetadata(
+    internal TypeDrawMetadata(
         string? category,
         string? settingsPrefix,
         UmbraIndentAttribute? indentAttr,
@@ -99,122 +102,10 @@ internal sealed class TypeDrawMetadata
         Properties = properties;
     }
 
-    internal static TypeDrawMetadata For(Type type) => s_cache.GetOrAdd(type, Build);
-
-    private static TypeDrawMetadata Build(Type type)
-    {
-        string? category = null;
-        string? settingsPrefix = null;
-        UmbraIndentAttribute? indentAttr = null;
-        UmbraCollapseAsTreeAttribute? collapseAttr = null;
-        UmbraLabelMarginAttribute? labelMarginAttr = null;
-        INestedDrawerAttribute? nestedDrawerAttr = null;
-        var isAutoRegister = false;
-
-        foreach (var a in type.GetCustomAttributes(inherit: true))
-        {
-            if (a is UmbraCategoryAttribute cat) { category = cat.Name; continue; }
-            if (a is UmbraPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
-            if (a is UmbraIndentAttribute ind) { indentAttr = ind; continue; }
-            if (a is UmbraCollapseAsTreeAttribute col) { collapseAttr = col; continue; }
-            if (a is UmbraLabelMarginAttribute lm) { labelMarginAttr = lm; continue; }
-            if (a is INestedDrawerAttribute nd) { nestedDrawerAttr = nd; continue; }
-            if (a is UmbraAutoRegisterAttribute) isAutoRegister = true;
-        }
-
-        var rawProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        var properties = new PropertyDrawMetadata[rawProperties.Length];
-        for (var i = 0; i < rawProperties.Length; i++)
-            properties[i] = BuildPropertyMetadata(rawProperties[i]);
-
-        return new TypeDrawMetadata(category, settingsPrefix, indentAttr, collapseAttr, labelMarginAttr, nestedDrawerAttr, isAutoRegister, properties);
-    }
-
     /// <summary>
-    /// Reads and caches all property-level UI metadata consulted during config drawer assembly.
+    /// Returns the cached metadata snapshot for <paramref name="type"/>, building it once on first use.
     /// </summary>
-    /// <remarks>
-    /// The returned metadata also carries a compiled boxed getter delegate so
-    /// <see cref="ConfigDrawerBuilder.CollectInto(ConfigDrawScope, object, Type)"/> can traverse the
-    /// live config object graph without paying <see cref="PropertyInfo.GetValue(object?)"/> reflection
-    /// overhead for each property on every draw-tree build.
-    /// </remarks>
-    private static PropertyDrawMetadata BuildPropertyMetadata(PropertyInfo property)
-    {
-        var propertyType = property.PropertyType;
-        var getValue = BuildGetter(property);
-        var isParameter = propertyType.IsGenericType
-            && propertyType.GetGenericTypeDefinition() == typeof(Umbra.Config.Parameter<>);
-
-        string? category = null;
-        string? settingsPrefix = null;
-        string? settingsParameterKeyOverride = null;
-        UmbraIndentAttribute? indentAttr = null;
-        UmbraCollapseAsTreeAttribute? collapseAttr = null;
-        UmbraLabelMarginAttribute? labelMarginAttr = null;
-        INestedDrawerAttribute? nestedDrawerAttr = null;
-        IHideIfAttribute? hideIf = null;
-        var order = int.MaxValue;
-        var spacingBefore = 0;
-        var spacingAfter = 0;
-
-        foreach (var attribute in property.GetCustomAttributes(inherit: false))
-        {
-            if (attribute is UmbraCategoryAttribute cat) { category = cat.Name; continue; }
-            if (attribute is UmbraPrefixAttribute prefix) { settingsPrefix = prefix.Prefix; continue; }
-            if (attribute is UmbraParameterAttribute settingsParameter) { settingsParameterKeyOverride = settingsParameter.KeyOverride; continue; }
-            if (attribute is UmbraIndentAttribute indent) { indentAttr = indent; continue; }
-            if (attribute is UmbraCollapseAsTreeAttribute collapse) { collapseAttr = collapse; continue; }
-            if (attribute is UmbraLabelMarginAttribute labelMargin) { labelMarginAttr = labelMargin; continue; }
-            if (attribute is INestedDrawerAttribute nestedDrawer) { nestedDrawerAttr = nestedDrawer; continue; }
-            if (attribute is IHideIfAttribute propertyHideIf) { hideIf = propertyHideIf; continue; }
-            if (attribute is UmbraParameterOrderAttribute parameterOrder) { order = parameterOrder.Order; continue; }
-            if (attribute is UmbraSpacingBeforeAttribute before) { spacingBefore = before.Count; continue; }
-            if (attribute is UmbraSpacingAfterAttribute after) { spacingAfter = after.Count; }
-        }
-
-        return new PropertyDrawMetadata(
-            property,
-            propertyType,
-            getValue,
-            isParameter,
-            category,
-            indentAttr,
-            collapseAttr,
-            labelMarginAttr,
-            nestedDrawerAttr,
-            hideIf,
-            order,
-            spacingBefore,
-            spacingAfter,
-            settingsPrefix,
-            settingsParameterKeyOverride);
-    }
-
-    /// <summary>
-    /// Builds the cached boxed getter used during config-object traversal for a reflected property.
-    /// </summary>
-    /// <remarks>
-    /// Expression compilation is performed once per cached property. If the expression path cannot be
-    /// compiled, the metadata falls back to <see cref="PropertyInfo.GetValue(object?)"/> so config UI
-    /// construction remains functional.
-    /// </remarks>
-    /// <param name="property">The reflected property whose getter should be cached.</param>
-    /// <returns>A delegate that reads the property's current value from a boxed owner instance.</returns>
-    private static Func<object, object?> BuildGetter(PropertyInfo property)
-    {
-        try
-        {
-            var ownerParameter = Expression.Parameter(typeof(object), "owner");
-            var typedOwner = Expression.Convert(ownerParameter, property.DeclaringType!);
-            var propertyAccess = Expression.Property(typedOwner, property);
-            var boxedValue = Expression.Convert(propertyAccess, typeof(object));
-
-            return Expression.Lambda<Func<object, object?>>(boxedValue, ownerParameter).Compile();
-        }
-        catch
-        {
-            return property.GetValue;
-        }
-    }
+    /// <param name="type">The reflected config type whose draw metadata should be retrieved.</param>
+    /// <returns>The cached metadata snapshot for <paramref name="type"/>.</returns>
+    internal static TypeDrawMetadata For(Type type) => s_cache.GetOrAdd(type, TypeDrawMetadataFactory.Build);
 }
