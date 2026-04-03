@@ -1,4 +1,6 @@
-namespace Umbra.Runtime.Plugin;
+using Umbra.Runtime;
+
+namespace Umbra;
 
 /// <summary>
 /// Owns a single live plugin instance and coordinates its mutex, startup, shutdown, and callback

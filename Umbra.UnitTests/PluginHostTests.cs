@@ -1,9 +1,8 @@
 using Umbra.Logging;
 using Umbra.Logging.UnitTests;
 using Umbra.Runtime;
-using Umbra.Runtime.Plugin;
 
-namespace Umbra.UnitTests.Runtime.Plugin;
+namespace Umbra.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="PluginHost{TPlugin}"/>.

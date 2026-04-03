@@ -1,9 +1,8 @@
 using System.Runtime.CompilerServices;
 using Umbra.Logging;
 using Umbra.Logging.UnitTests;
-using Umbra.Runtime.Plugin;
 
-namespace Umbra.UnitTests.Runtime.Plugin;
+namespace Umbra.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="PluginInstanceGuard"/>.

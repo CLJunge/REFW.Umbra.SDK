@@ -1,4 +1,4 @@
-namespace Umbra.Runtime.Plugin;
+namespace Umbra;
 
 /// <summary>
 /// Represents an active single-instance claim held by a plugin within the current AppDomain.
