@@ -1,3 +1,4 @@
+#if BENCHMARK
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -281,3 +282,4 @@ internal sealed class PluginPanelBenchmarkExporter
         public List<PluginPanelBenchmarkSample> Samples { get; init; } = [];
     }
 }
+#endif

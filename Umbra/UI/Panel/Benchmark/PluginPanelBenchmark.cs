@@ -1,3 +1,4 @@
+#if BENCHMARK
 using System.Diagnostics;
 using Hexa.NET.ImGui;
 using Umbra.UI.Config;
@@ -380,3 +381,4 @@ public sealed class PluginPanelBenchmark : IDisposable
     /// </summary>
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(PluginPanelBenchmark));
 }
+#endif

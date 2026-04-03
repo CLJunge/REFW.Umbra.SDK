@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using REFrameworkNET;
 using Umbra.Config;
 using Umbra.Logging;
@@ -6,14 +5,16 @@ using Umbra.Runtime;
 using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
 using Umbra.UI.Panel;
+#if BENCHMARK
 using Umbra.UI.Panel.Benchmark;
+#endif
 
 namespace Umbra.SamplePlugin;
 
 /// <summary>
 /// Sample REFramework.NET plugin instance that demonstrates Umbra settings registration,
-/// automatic deferred persistence, panel-based ImGui rendering, and reusable plugin-panel
-/// benchmarking.
+/// automatic deferred persistence, panel-based ImGui rendering, and optional reusable
+/// plugin-panel benchmarking in <c>BENCHMARK</c> builds.
 /// </summary>
 /// <remarks>
 /// This type is fully instance based. Static REFramework entry points and callbacks live in
@@ -25,13 +26,17 @@ public sealed class SamplePlugin : UmbraPlugin
 {
     private const string _runtimePanelScope = "SamplePlugin.RuntimePanel";
     private const string _runtimeSectionScope = "SamplePlugin.RuntimeConfigSection";
+#if BENCHMARK
     private const string _benchmarkPanelScope = "SamplePlugin.BenchmarkPanel";
     private const string _benchmarkSectionScope = "SamplePlugin.BenchmarkConfigSection";
+#endif
 
     private static readonly PluginLogger _log = new("SamplePlugin");
     private PluginPanel? _panel;
+#if BENCHMARK
     private PluginPanel? _benchmarkPanel;
     private PluginPanelBenchmark? _panelBenchmark;
+#endif
     private SettingsStore<PluginConfig>? _store;
     private DeferredSaveController<PluginConfig>? _saveController;
     private PluginConfig? _config;
@@ -58,11 +63,13 @@ public sealed class SamplePlugin : UmbraPlugin
 
         _saveController = new DeferredSaveController<PluginConfig>(_store);
         _panel = CreateRuntimePanel(_config);
+#if BENCHMARK
         _benchmarkPanel = CreateBenchmarkPanel(_config);
         _panelBenchmark = new PluginPanelBenchmark(
             "Sample Plugin Panel Benchmark",
             _benchmarkPanel,
             GetBenchmarkDirectoryPath());
+#endif
 
         Log.Info("Loaded successfully.");
     }
@@ -74,12 +81,14 @@ public sealed class SamplePlugin : UmbraPlugin
     {
         Log.Info("Unloading...");
 
+#if BENCHMARK
         _panelBenchmark?.CompleteActiveRun("PluginUnload");
         _panelBenchmark?.Dispose();
         _panelBenchmark = null;
 
         _benchmarkPanel?.Dispose();
         _benchmarkPanel = null;
+#endif
 
         _panel?.Dispose();
         _panel = null;
@@ -113,7 +122,7 @@ public sealed class SamplePlugin : UmbraPlugin
             && capturedKey == (int)Hexa.NET.ImGui.ImGuiKey.F12)
         {
             Log.Info("Ctrl + Shift + F12 detected, attaching debugger...");
-            Debugger.Launch();
+            System.Diagnostics.Debugger.Launch();
         }
 #endif
     }
@@ -145,8 +154,10 @@ public sealed class SamplePlugin : UmbraPlugin
     /// The absolute path to the panel benchmark artifact directory under the sample plugin's data
     /// folder.
     /// </returns>
+#if BENCHMARK
     private string GetBenchmarkDirectoryPath()
         => Path.Combine(GetConfigDirectoryPath(), "artifacts", "perf", "runtime", "panel-draw");
+#endif
 
     /// <summary>
     /// Resolves the absolute path to the sample plugin's configuration directory and ensures it exists.
@@ -192,9 +203,11 @@ public sealed class SamplePlugin : UmbraPlugin
     /// </remarks>
     /// <param name="config">The loaded config instance shared by the benchmark section.</param>
     /// <returns>The benchmark panel.</returns>
+#if BENCHMARK
     private static PluginPanel CreateBenchmarkPanel(PluginConfig config)
         => new PluginPanel(_benchmarkPanelScope)
             .Add(new ConfigSection<PluginConfig>(config, _benchmarkSectionScope));
+#endif
 
     /// <summary>
     /// Draws the runtime panel and the reusable benchmark host window only while the REFramework UI
@@ -205,10 +218,14 @@ public sealed class SamplePlugin : UmbraPlugin
         if (!API.IsDrawingUI())
             return;
 
+#if BENCHMARK
         if (_panelBenchmark is null || !_panelBenchmark.ShouldSuppressRuntimePanel)
             _panel?.Draw();
 
         _panelBenchmark?.DrawWindow();
+#else
+        _panel?.Draw();
+#endif
     }
 
     /// <summary>

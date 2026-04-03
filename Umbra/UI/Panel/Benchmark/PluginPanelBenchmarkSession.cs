@@ -1,3 +1,4 @@
+#if BENCHMARK
 using System.Diagnostics;
 
 namespace Umbra.UI.Panel.Benchmark;
@@ -244,3 +245,4 @@ internal sealed class PluginPanelBenchmarkSession
     private static double TicksToMilliseconds(long ticks)
         => ticks * 1000d / Stopwatch.Frequency;
 }
+#endif

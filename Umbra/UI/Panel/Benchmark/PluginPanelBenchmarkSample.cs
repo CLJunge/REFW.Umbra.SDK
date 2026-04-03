@@ -1,3 +1,4 @@
+#if BENCHMARK
 using System.Diagnostics;
 
 namespace Umbra.UI.Panel.Benchmark;
@@ -27,3 +28,4 @@ internal readonly record struct PluginPanelBenchmarkSample(
     internal static PluginPanelBenchmarkSample Create(long frameIndex, bool isWarmup, long elapsedTicks)
         => new(frameIndex, isWarmup, elapsedTicks, elapsedTicks * 1000d / Stopwatch.Frequency);
 }
+#endif
