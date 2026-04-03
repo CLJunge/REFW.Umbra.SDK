@@ -45,7 +45,7 @@
     <Import Project="Umbra.Local.props" Condition="Exists('Umbra.Local.props')" />
 
     <ItemGroup>
-      <None Remove="game-metadata.json" />
+      <None Remove="Runtime\game-metadata.json" />
     </ItemGroup>
 
     <ItemGroup>
