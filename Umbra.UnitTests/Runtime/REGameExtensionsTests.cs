@@ -1,6 +1,4 @@
-using Umbra.Runtime;
-
-namespace Umbra.UnitTests.Runtime;
+namespace Umbra.Runtime.UnitTests;
 
 
 /// <summary>

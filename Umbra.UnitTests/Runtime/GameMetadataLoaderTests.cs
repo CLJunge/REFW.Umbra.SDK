@@ -1,6 +1,4 @@
-using Umbra.Runtime;
-
-namespace Umbra.UnitTests.Runtime;
+namespace Umbra.Runtime.UnitTests;
 
 
 
@@ -56,7 +54,8 @@ public sealed class GameMetadataLoaderTests
         for (var i = 0; i < metadata.Length; i++)
         {
             var entry = metadata[i];
-            Assert.AreEqual(entry.CompatibleTarget.GetDisplayName(), entry.DisplayName);
+            var displayName = entry.CompatibleTarget.GetDisplayName();
+            Assert.AreEqual(displayName, entry.DisplayName);
         }
     }
 }
