@@ -17,6 +17,10 @@ namespace Umbra.Logging;
 /// during benchmarks, tests, or other measurement-sensitive runs.
 /// </para>
 /// <para>
+/// Low-level sink replacement and lazy default-sink creation are delegated to
+/// <see cref="LoggerSinkRegistry"/> so this type can remain focused on enablement and write dispatch.
+/// </para>
+/// <para>
 /// Both <see cref="Logger"/> and <see cref="PluginLogger"/> honor <see cref="Enabled"/> and
 /// <see cref="Suppress"/>, so callers can disable all SDK and plugin-prefixed output through one
 /// process-wide switch.
@@ -26,7 +30,22 @@ public static class Logger
 {
     private static int _enabled = 1;
     private static int _suppressionDepth;
-    private static ILogSink? _logSink;
+
+    [ThreadStatic]
+    private static bool _reportingFailure;
+
+    /// <summary>
+    /// Gets or sets an optional observer that receives exceptions suppressed internally by
+    /// <see cref="Logger"/> and <see cref="PluginLogger"/>.
+    /// </summary>
+    /// <remarks>
+    /// This hook is intended for opt-in diagnostics in tests, benchmarks, or advanced debugging
+    /// sessions where callers want visibility into failures that Umbra normally swallows to protect
+    /// the game process. The first argument identifies the write path that failed, such as
+    /// <c>"Logger.Info"</c> or <c>"PluginLogger.Error(format)"</c>. Exceptions thrown by the
+    /// observer itself are swallowed as well.
+    /// </remarks>
+    public static Action<string, Exception>? SuppressedFailureObserver { get; set; }
 
     /// <summary>
     /// Gets or sets whether Umbra logging is globally enabled.
@@ -58,11 +77,7 @@ public static class Logger
     /// </remarks>
     /// <param name="sink">The sink that should receive future log writes.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="sink"/> is <see langword="null"/>.</exception>
-    internal static void SetLogSink(ILogSink sink)
-    {
-        ArgumentNullException.ThrowIfNull(sink);
-        Interlocked.Exchange(ref _logSink, sink);
-    }
+    internal static void SetLogSink(ILogSink sink) => LoggerSinkRegistry.Set(sink);
 
     /// <summary>
     /// Restores the default REFramework-backed log sink.
@@ -71,7 +86,7 @@ public static class Logger
     /// The next enabled write recreates the default sink lazily so disabled paths remain free from
     /// host-specific logging calls.
     /// </remarks>
-    internal static void ResetLogSink() => Interlocked.Exchange(ref _logSink, null);
+    internal static void ResetLogSink() => LoggerSinkRegistry.Reset();
 
     /// <summary>
     /// Enables all Umbra logging.
@@ -107,7 +122,8 @@ public static class Logger
     public static void Info(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Info(message); } catch { }
+        try { GetLogSink().Info(message); }
+        catch (Exception ex) { ReportSuppressedFailure("Logger.Info", ex); }
     }
 
     /// <summary>
@@ -124,7 +140,13 @@ public static class Logger
     {
         if (!IsEnabled) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            ReportSuppressedFailure("Logger.Info(format)", ex);
+            return;
+        }
+
         Info(message);
     }
 
@@ -135,7 +157,8 @@ public static class Logger
     public static void Warning(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Warning(message); } catch { }
+        try { GetLogSink().Warning(message); }
+        catch (Exception ex) { ReportSuppressedFailure("Logger.Warning", ex); }
     }
 
     /// <summary>
@@ -152,7 +175,13 @@ public static class Logger
     {
         if (!IsEnabled) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            ReportSuppressedFailure("Logger.Warning(format)", ex);
+            return;
+        }
+
         Warning(message);
     }
 
@@ -163,7 +192,8 @@ public static class Logger
     public static void Error(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Error(message); } catch { }
+        try { GetLogSink().Error(message); }
+        catch (Exception ex) { ReportSuppressedFailure("Logger.Error", ex); }
     }
 
     /// <summary>
@@ -180,7 +210,13 @@ public static class Logger
     {
         if (!IsEnabled) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            ReportSuppressedFailure("Logger.Error(format)", ex);
+            return;
+        }
+
         Error(message);
     }
 
@@ -197,7 +233,10 @@ public static class Logger
         {
             GetLogSink().Error($"{message}\nException: {ex.GetType().Name}: {ex.Message}\nStack Trace:\n{ex.StackTrace}");
         }
-        catch { }
+        catch (Exception sinkException)
+        {
+            ReportSuppressedFailure("Logger.Exception", sinkException);
+        }
     }
 
     /// <summary>
@@ -216,24 +255,50 @@ public static class Logger
     {
         if (!IsEnabled) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception formatException)
+        {
+            ReportSuppressedFailure("Logger.Exception(format)", formatException);
+            return;
+        }
+
         Exception(ex, message);
     }
 
     /// <summary>
-    /// Returns the currently active low-level sink, creating the default REFramework-backed sink on
-    /// first use.
+    /// Returns the currently active low-level sink through <see cref="LoggerSinkRegistry"/>.
     /// </summary>
     /// <returns>The sink that should receive enabled log writes.</returns>
-    internal static ILogSink GetLogSink()
-    {
-        var sink = Volatile.Read(ref _logSink);
-        if (sink != null)
-            return sink;
+    internal static ILogSink GetLogSink() => LoggerSinkRegistry.Get();
 
-        sink = new REFrameworkLogSink();
-        var existing = Interlocked.CompareExchange(ref _logSink, sink, null);
-        return existing ?? sink;
+    /// <summary>
+    /// Reports a suppressed internal logging failure to the optional observer.
+    /// </summary>
+    /// <remarks>
+    /// A per-thread re-entrancy guard prevents infinite recursion when the observer itself
+    /// triggers a suppressed logging failure (e.g., by calling <see cref="Logger"/> methods
+    /// while the sink is still throwing). Re-entrant calls are silently dropped.
+    /// </remarks>
+    /// <param name="operation">The Logger or PluginLogger operation that suppressed the exception.</param>
+    /// <param name="exception">The suppressed exception.</param>
+    internal static void ReportSuppressedFailure(string operation, Exception exception)
+    {
+        var observer = SuppressedFailureObserver;
+        if (observer is null || _reportingFailure)
+            return;
+
+        _reportingFailure = true;
+        try
+        {
+            observer(operation, exception);
+        }
+        catch
+        {
+        }
+        finally
+        {
+            _reportingFailure = false;
+        }
     }
 
     private sealed class SuppressionScope : IDisposable

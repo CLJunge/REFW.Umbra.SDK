@@ -33,33 +33,23 @@ internal static class ParameterNodeComposer
         float? classLabelMarginPixels)
     {
         var meta = parameter.Metadata;
-        if (classLabelMarginPixels.HasValue)
+        if (classLabelMarginPixels.HasValue && alignmentGroup.Margin != classLabelMarginPixels.Value)
             alignmentGroup.Margin = classLabelMarginPixels.Value;
 
         var (draw, resource) = ControlFactory.BuildDrawAction(parameter, meta.ResolvedLabel, alignmentGroup);
 
         var indentAmount = meta.Indent ?? classIndentAmount;
-        if (indentAmount.HasValue)
-        {
-            var amount = indentAmount.Value;
-            var inner = draw;
-            draw = () =>
-            {
-                Hexa.NET.ImGui.ImGui.Indent(amount);
-                try
-                {
-                    inner();
-                }
-                finally
-                {
-                    Hexa.NET.ImGui.ImGui.Unindent(amount);
-                }
-            };
-        }
+        if (meta.HideIf is null)
+            return (
+                new ParameterNode(
+                    draw,
+                    meta.Order ?? int.MaxValue,
+                    meta.SpacingBefore,
+                    meta.SpacingAfter,
+                    indentAmount),
+                resource);
 
-        var isVisible = meta.HideIf is not null
-            ? VisibilityPredicateResolver.Build(meta.HideIf, owner)
-            : static () => true;
+        var isVisible = VisibilityPredicateResolver.Build(meta.HideIf, owner);
 
         return (
             new ParameterNode(
@@ -67,7 +57,8 @@ internal static class ParameterNodeComposer
                 draw,
                 meta.Order ?? int.MaxValue,
                 meta.SpacingBefore,
-                meta.SpacingAfter),
+                meta.SpacingAfter,
+                indentAmount),
             resource);
     }
 }

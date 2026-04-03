@@ -13,10 +13,14 @@ namespace Umbra.Config;
 /// Metadata is populated by <see cref="ParameterMetadataReader"/> via reflection and is
 /// consumed by the settings UI to render appropriate labels, tooltips, sliders,
 /// and input constraints without requiring each parameter to carry that information
-/// itself. All properties are optional; absent values are represented as
-/// <see langword="null"/>.
+/// itself. Public properties expose the descriptive configuration contract, while Umbra keeps
+/// derived render-cache values internal so UI implementation details are not part of the public
+/// package surface. All properties are optional; absent values are represented as
+/// <see langword="null"/>. Debugger-only summary formatting is delegated to
+/// <see cref="ParameterMetadataDebuggerDisplayFormatter"/> so this type stays focused on immutable
+/// metadata storage.
 /// </remarks>
-[DebuggerDisplay("{GetDebuggerDisplay()}")]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class ParameterMetadata
 {
     /// <summary>
@@ -39,7 +43,7 @@ public sealed class ParameterMetadata
     /// Pre-computed by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to
     /// avoid repeated <see cref="System.Text.StringBuilder"/> allocations at draw-tree construction time.
     /// </summary>
-    public string ResolvedLabel { get; init; } = string.Empty;
+    internal string ResolvedLabel { get; init; } = string.Empty;
 
     /// <summary>
     /// Gets the descriptive text for the parameter, typically rendered as a tooltip
@@ -178,7 +182,7 @@ public sealed class ParameterMetadata
     /// Sourced from <see cref="UmbraDrawerAttribute{TDrawer}"/> via a single attribute scan in
     /// <see cref="ParameterMetadataReader"/>.
     /// </summary>
-    public Type? DrawerType { get; init; }
+    internal Type? DrawerType { get; init; }
 
     /// <summary>
     /// Gets the concrete <see cref="Umbra.UI.Config.Drawers.ITwoColumnParameterDrawer"/> type
@@ -189,7 +193,7 @@ public sealed class ParameterMetadata
     /// Sourced from <see cref="UmbraTwoColumnDrawerAttribute{TDrawer}"/> via a single attribute scan in
     /// <see cref="ParameterMetadataReader"/>.
     /// </summary>
-    public Type? TwoColumnDrawerType { get; init; }
+    internal Type? TwoColumnDrawerType { get; init; }
 
     /// <summary>
     /// Gets the cached hide-condition data sourced from <see cref="UmbraHideIfAttribute{T}"/> on this
@@ -197,7 +201,7 @@ public sealed class ParameterMetadata
     /// Consumed by <see cref="Umbra.UI.Config.VisibilityPredicateResolver"/> to compile the per-frame visibility predicate
     /// without requiring a second attribute scan at draw-tree construction time.
     /// </summary>
-    public IHideIfAttribute? HideIf { get; init; }
+    internal IHideIfAttribute? HideIf { get; init; }
 
     /// <summary>
     /// Gets the fully resolved printf format string used by float and double ImGui controls.
@@ -208,7 +212,7 @@ public sealed class ParameterMetadata
     /// <see cref="SettingsStore{TConfig}.Load()"/> to eliminate <c>Number.FormatFloat</c> overhead at
     /// draw-tree construction time.
     /// </summary>
-    public string InferredFloatFormat { get; init; } = "%.2f";
+    internal string InferredFloatFormat { get; init; } = "%.2f";
 
     /// <summary>
     /// Gets the pre-computed hidden ImGui control label (<c>"##" + Key</c>) for this parameter,
@@ -216,42 +220,10 @@ public sealed class ParameterMetadata
     /// Cached by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to avoid
     /// a <c>string.Concat</c> allocation per parameter per <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/> construction.
     /// </summary>
-    public string? HiddenLabel { get; init; }
+    internal string? HiddenLabel { get; init; }
 
     /// <summary>
-    /// Returns a concise, human-readable summary of all non-null metadata fields,
-    /// used by the debugger via <see cref="DebuggerDisplayAttribute"/>.
+    /// Gets the concise debugger summary used by <see cref="DebuggerDisplayAttribute"/>.
     /// </summary>
-    /// <returns>
-    /// A comma-separated string of key-value pairs for each metadata property that
-    /// has a non-null, non-empty value, with no trailing comma or whitespace.
-    /// </returns>
-    private string GetDebuggerDisplay()
-    {
-        var parts = new List<string>();
-
-        if (!string.IsNullOrEmpty(Category)) parts.Add($"Category: {Category}");
-        if (!string.IsNullOrEmpty(DisplayName)) parts.Add($"DisplayName: {DisplayName}");
-        if (!string.IsNullOrEmpty(Description)) parts.Add($"Description: {Description}");
-        if (MaxLength.HasValue) parts.Add($"MaxLength: {MaxLength.Value}");
-        if (Min.HasValue) parts.Add($"Min: {Min.Value}");
-        if (Max.HasValue) parts.Add($"Max: {Max.Value}");
-        if (Step.HasValue) parts.Add($"Step: {Step.Value}");
-        if (!string.IsNullOrEmpty(Format)) parts.Add($"Format: {Format}");
-        if (ButtonStyle.HasValue) parts.Add($"ButtonStyle: {ButtonStyle.Value}");
-        if (CustomButtonColors.HasValue) parts.Add($"CustomButtonColors: N={CustomButtonColors.Value.Normal} H={CustomButtonColors.Value.Hovered} A={CustomButtonColors.Value.Active}");
-        if (ControlWidth.HasValue) parts.Add($"ControlWidth: {ControlWidth.Value}");
-        if (MultilineLines.HasValue) parts.Add($"MultilineLines: {MultilineLines.Value}");
-        if (Order.HasValue) parts.Add($"Order: {Order.Value}");
-        if (SpacingBefore > 0) parts.Add($"SpacingBefore: {SpacingBefore}");
-        if (SpacingAfter > 0) parts.Add($"SpacingAfter: {SpacingAfter}");
-        if (Indent.HasValue) parts.Add($"Indent: {Indent.Value}");
-        if (DrawerType is not null) parts.Add($"Drawer: {DrawerType.Name}");
-        if (TwoColumnDrawerType is not null) parts.Add($"TwoColumnDrawer: {TwoColumnDrawerType.Name}");
-        if (HideIf is not null) parts.Add($"HideIf: {HideIf.MemberName}");
-        if (InferredFloatFormat != "%.2f") parts.Add($"InferredFloatFormat: {InferredFloatFormat}");
-        if (HiddenLabel is not null) parts.Add($"HiddenLabel: {HiddenLabel}");
-
-        return string.Join(", ", parts);
-    }
+    internal string DebuggerDisplay => ParameterMetadataDebuggerDisplayFormatter.Format(this);
 }

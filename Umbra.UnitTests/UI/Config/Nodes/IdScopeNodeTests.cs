@@ -6,8 +6,8 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 [TestClass]
 public sealed class IdScopeNodeTests
 {
-    private static readonly int[] expectedSingleElement = [1];
-    private static readonly int[] expectedThreeElements = [1, 2, 3];
+    private static readonly int[] _expectedSingleElement = [1];
+    private static readonly int[] _expectedThreeElements = [1, 2, 3];
 
     /// <summary>
     /// Verifies that an action throws the expected exception type and returns the captured exception.
@@ -48,7 +48,7 @@ public sealed class IdScopeNodeTests
 
         node.Draw();
 
-        CollectionAssert.AreEqual(expectedThreeElements, calls);
+        CollectionAssert.AreEqual(_expectedThreeElements, calls);
         Assert.HasCount(1, renderer.PushedIds);
         Assert.AreEqual("scope", renderer.PushedIds[0]);
         Assert.AreEqual(1, renderer.PopCount);
@@ -100,7 +100,7 @@ public sealed class IdScopeNodeTests
 
         Assert.IsNotNull(exception);
         Assert.AreEqual("boom", exception.Message);
-        CollectionAssert.AreEqual(expectedSingleElement, calls);
+        CollectionAssert.AreEqual(_expectedSingleElement, calls);
         Assert.HasCount(1, renderer.PushedIds);
         Assert.AreEqual(1, renderer.PopCount);
     }

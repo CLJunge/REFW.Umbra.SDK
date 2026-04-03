@@ -14,9 +14,11 @@ namespace Umbra.UI.Config;
 /// Labels are registered at draw-tree build time via <see cref="Register"/> without requiring
 /// an active ImGui context. On the first draw frame, <see cref="EnsureSeeded"/> measures all
 /// registered labels in a single <see cref="ImGui.CalcTextSize(string)"/> batch, commits the
-/// maximum to <see cref="LabelWidth"/>, and marks the group as permanently seeded. All
-/// subsequent calls to <see cref="EnsureSeeded"/> are no-ops: the committed width is never
-/// recomputed and never decreases, so hiding parameters via
+/// maximum to <see cref="LabelWidth"/>, and marks the group as permanently seeded. If no current
+/// ImGui context exists yet, <see cref="EnsureSeeded"/> returns immediately and leaves the group
+/// unseeded so a later call during a valid frame can perform the measurement safely. After a
+/// successful seed, subsequent calls are no-ops: the committed width is never recomputed and
+/// never decreases, so hiding parameters via
 /// <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> cannot narrow the column.
 /// </para>
 /// <para>
@@ -32,7 +34,7 @@ namespace Umbra.UI.Config;
 [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
 internal sealed class LabelAlignmentGroup
 {
-    private readonly List<(string label, bool hasDescription)> _entries = [];
+    private readonly List<string> _labels = [];
     private float _committedMax;
     private bool _seeded;
 
@@ -66,44 +68,63 @@ internal sealed class LabelAlignmentGroup
     /// <param name="label">The visible label text for the parameter row.</param>
     /// <param name="hasDescription">
     /// <see langword="true"/> when the parameter carries
-    /// <see cref="Umbra.Config.Attributes.UmbraDescriptionAttribute"/> (<c>[UmbraDescription]</c>) and
-    /// a <c>(?)</c> help marker will be drawn inline. The marker width plus item spacing is
-    /// included in the width measurement so the column accounts for the marker.
+    /// <see cref="Umbra.Config.Attributes.UmbraDescriptionAttribute"/> (<c>[UmbraDescription]</c>).
+    /// Descriptions render as hover tooltips on the label itself, so this flag is accepted for API
+    /// compatibility but does not change width measurement.
     /// </param>
     internal void Register(string label, bool hasDescription)
     {
+        _ = hasDescription;
         if (_seeded)
         {
             // Late registration after seeding: measure immediately so the column still widens
             // to accommodate the new label rather than silently using a stale narrower width.
-            var w2 = ImGui.CalcTextSize(label).X;
-            if (hasDescription)
-                w2 += ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize("(?)").X;
-            if (w2 > _committedMax) _committedMax = w2;
+            var width = MeasureLabelWidth(label);
+            if (width > _committedMax) _committedMax = width;
             return;
         }
-        _entries.Add((label, hasDescription));
+
+        _labels.Add(label);
     }
 
     /// <summary>
     /// Measures all registered labels in a single batch and commits the maximum width to
-    /// <see cref="LabelWidth"/>. Must be called from within an active ImGui frame.
+    /// <see cref="LabelWidth"/> when an ImGui context is available.
     /// Called by <see cref="ControlLayout.Pre"/> on the first draw frame; all subsequent
-    /// calls are immediate no-ops.
+    /// calls are immediate no-ops after a successful seed.
     /// </summary>
     internal void EnsureSeeded()
     {
         if (_seeded) return;
+        if (ImGui.GetCurrentContext().IsNull) return;
+
+        CommitMeasuredMax(_labels);
+
+        _labels.Clear();
         _seeded = true;
-        foreach (var (label, hasDesc) in _entries)
-        {
-            var w = ImGui.CalcTextSize(label).X;
-            if (hasDesc)
-                w += ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize("(?)").X;
-            if (w > _committedMax) _committedMax = w;
-        }
-        _entries.Clear();
     }
+
+    /// <summary>
+    /// Measures each pending label in <paramref name="labels"/> and folds the maximum width into
+    /// <see cref="LabelWidth"/>.
+    /// </summary>
+    /// <param name="labels">The pending labels to measure.</param>
+    private void CommitMeasuredMax(List<string> labels)
+    {
+        for (var i = 0; i < labels.Count; i++)
+        {
+            var width = ImGui.CalcTextSize(labels[i]).X;
+            if (width > _committedMax)
+                _committedMax = width;
+        }
+    }
+
+    /// <summary>
+    /// Measures one label using the current ImGui font.
+    /// </summary>
+    /// <param name="label">The label text to measure.</param>
+    /// <returns>The measured width used for label-column alignment.</returns>
+    private static float MeasureLabelWidth(string label) => ImGui.CalcTextSize(label).X;
 
     /// <summary>Builds a human-readable summary string for debugger visualizers.</summary>
     /// <returns>

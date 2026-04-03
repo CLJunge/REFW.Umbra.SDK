@@ -1,4 +1,9 @@
 <Project>
+    <PropertyGroup>
+        <RunLocalDevBuildHooks Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(ContinuousIntegrationBuild)' != 'true'">true</RunLocalDevBuildHooks>
+        <RunLocalDevBuildHooks Condition="'$(RunLocalDevBuildHooks)' == ''">false</RunLocalDevBuildHooks>
+    </PropertyGroup>
+
     <!--
     Developer-only local build hooks. These targets are intentionally kept here, outside of
     the individual project files, to avoid polluting the SDK and plugin .csproj files with
@@ -9,17 +14,17 @@
     the script paths used directly in this file to the solution root. Each participating
     project sets $(UmbraDeployScript) to an absolute path via $(MSBuildProjectDirectory),
     so deployment works regardless of how the build is invoked.
-  -->
+    -->
 
-    <!-- Terminate the game process before any Debug build so that locked DLLs can be replaced. -->
+    <!-- Terminate the game process before any build in Visual Studio so that locked DLLs can be replaced. -->
     <Target Name="PreBuild_KillGame"
             BeforeTargets="PreBuildEvent"
-            Condition="'$(Configuration)' == 'Debug' And Exists('$(MSBuildThisFileDirectory)scripts\kill_re9.bat')">
+            Condition="'$(RunLocalDevBuildHooks)' == 'true' And Exists('$(MSBuildThisFileDirectory)scripts\kill_re9.bat')">
         <Exec Command="call &quot;$(MSBuildThisFileDirectory)scripts\kill_re9.bat&quot;" />
     </Target>
 
     <!--
-    Deploy build output to the local game directory after a successful Debug build.
+    Deploy build output to the local game directory after a successful build in Visual Studio.
 
     Each participating project sets $(UmbraDeployScript) in its own PropertyGroup to the
     absolute path of the appropriate deployment batch file. Projects that leave the property
@@ -27,18 +32,18 @@
     -->
     <Target Name="PostBuild_DeployLocal"
             AfterTargets="PostBuildEvent"
-            Condition="'$(Configuration)' == 'Debug' And '$(UmbraDeployScript)' != '' And Exists('$(UmbraDeployScript)')">
+            Condition="'$(RunLocalDevBuildHooks)' == 'true' And '$(UmbraDeployScript)' != '' And Exists('$(UmbraDeployScript)')">
         <Exec Command="call &quot;$(UmbraDeployScript)&quot; &quot;$(TargetDir)$(TargetName)*&quot;" />
     </Target>
 
     <!--
-    Upload the generated NuGet package to a private feed after packing a Debug build. This is used
+    Upload the generated NuGet package to a private feed after packing a build in Visual Studio. This is used
     to facilitate local testing of the SDK and plugin packages in other projects without needing to manually copy .nupkg files around
     or require the package to be published to 'nuget.org' first.
     -->
     <Target Name="PostPack_UploadToPrivateNugetFeed"
             AfterTargets="Pack"
-            Condition="'$(Configuration)' == 'Debug' And '$(UmbraUploadToFeedScript)' != '' And Exists('$(UmbraUploadToFeedScript)')">
+            Condition="'$(RunLocalDevBuildHooks)' == 'true' And '$(UmbraUploadToFeedScript)' != '' And Exists('$(UmbraUploadToFeedScript)')">
         <Exec Command="call &quot;$(UmbraUploadToFeedScript)&quot;" />
     </Target>
 </Project>

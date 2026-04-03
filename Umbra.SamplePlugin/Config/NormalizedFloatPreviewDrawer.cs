@@ -29,7 +29,7 @@ public sealed class NormalizedFloatPreviewDrawer : IParameterDrawer
         ImGui.Text($"{label}: {percentage:F0}%");
         ImGui.TextDisabled("This row is rendered by a full custom parameter drawer.");
 
-        var widgetLabel = parameter.Metadata.HiddenLabel ?? $"##{parameter.Key}";
+        var widgetLabel = $"##{parameter.Key}";
         if (ImGui.SliderFloat(widgetLabel, ref value, 0f, 1f, "%.2f"))
             typed.Value = value;
     }

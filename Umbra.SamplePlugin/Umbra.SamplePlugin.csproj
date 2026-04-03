@@ -9,6 +9,7 @@
         <AssemblyName>REFW.$(MSBuildProjectName)</AssemblyName>
         <!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
         <UmbraDeployScript>$(MSBuildProjectDirectory)\..\scripts\deploy_reframework_plugin.bat</UmbraDeployScript>
+        <Configurations>Debug;Release;Benchmark</Configurations>
     </PropertyGroup>
 
     <ItemGroup>

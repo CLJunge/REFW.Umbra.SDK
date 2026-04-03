@@ -6,7 +6,7 @@ namespace Umbra;
 /// Provides reflection extension methods for inspecting custom attributes on
 /// <see cref="MemberInfo"/> and <see cref="PropertyInfo"/> instances.
 /// </summary>
-public static class ReflectionExtensions
+internal static class ReflectionExtensions
 {
     /// <summary>
     /// Searches the custom attributes on <paramref name="member"/> for an attribute whose
@@ -19,7 +19,7 @@ public static class ReflectionExtensions
     /// <returns>
     /// The first matching attribute instance, or <see langword="null"/> when no match is found.
     /// </returns>
-    public static Attribute? GetCustomGenericAttribute(this MemberInfo member, Type genericType)
+    internal static Attribute? GetCustomGenericAttribute(this MemberInfo member, Type genericType)
     {
         foreach (var a in member.GetCustomAttributes(false))
         {
@@ -46,7 +46,7 @@ public static class ReflectionExtensions
     /// The first attribute instance that is assignable to <typeparamref name="T"/>,
     /// or <see langword="null"/> when no such attribute is present.
     /// </returns>
-    public static T? GetDrawerAttribute<T>(this PropertyInfo property) where T : class
+    internal static T? GetDrawerAttribute<T>(this PropertyInfo property) where T : class
     {
         foreach (var a in property.GetCustomAttributes(false))
         {
@@ -72,7 +72,7 @@ public static class ReflectionExtensions
     /// The first attribute instance that is assignable to <typeparamref name="T"/>,
     /// or <see langword="null"/> when no such attribute is present.
     /// </returns>
-    public static T? GetDrawerAttribute<T>(this Type type) where T : class
+    internal static T? GetDrawerAttribute<T>(this Type type) where T : class
     {
         foreach (var a in type.GetCustomAttributes(false))
         {

@@ -14,6 +14,17 @@ public static class ManagedObjectResolver
     private static IManagedObjectBridge? _bridge;
 
     /// <summary>
+    /// Gets or sets an optional observer that receives exceptions swallowed by
+    /// <see cref="TryResolve{T}(ulong, out T)"/>.
+    /// </summary>
+    /// <remarks>
+    /// This hook is intended for opt-in diagnostics when callers need visibility into bridge
+    /// failures that Umbra still suppresses to keep game-facing code on a simple failure path.
+    /// Exceptions thrown by the observer itself are swallowed as well.
+    /// </remarks>
+    public static Action<Exception>? SuppressedResolutionFailureObserver { get; set; }
+
+    /// <summary>
     /// Resolves the native game object at <paramref name="address"/> to a
     /// strongly-typed managed reference, or <see langword="null"/> on failure.
     /// </summary>
@@ -95,7 +106,9 @@ public static class ManagedObjectResolver
     ///   <item><description>
     ///     The underlying bridge throws — for example when <paramref name="address"/> is otherwise
     ///     invalid or the runtime host is unavailable — and the exception is swallowed so the
-    ///     game-facing call site can stay on a simple failure path.
+    ///     game-facing call site can stay on a simple failure path. Callers that need diagnostic
+    ///     visibility into those suppressed exceptions can opt into
+    ///     <see cref="SuppressedResolutionFailureObserver"/>.
     ///   </description></item>
     /// </list>
     /// </para>
@@ -128,10 +141,30 @@ public static class ManagedObjectResolver
         {
             return GetBridge().TryResolve(address, out value);
         }
-        catch
+        catch (Exception ex)
         {
+            ReportSuppressedResolutionFailure(ex);
             value = null;
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Reports a suppressed bridge exception to the optional observer.
+    /// </summary>
+    /// <param name="exception">The suppressed exception.</param>
+    private static void ReportSuppressedResolutionFailure(Exception exception)
+    {
+        var observer = SuppressedResolutionFailureObserver;
+        if (observer is null)
+            return;
+
+        try
+        {
+            observer(exception);
+        }
+        catch
+        {
         }
     }
 }

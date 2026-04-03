@@ -1871,6 +1871,7 @@ public sealed class PluginLoggerTests
     [TestCleanup]
     public void TestCleanup()
     {
+        Logger.SuppressedFailureObserver = null;
         Logger.ResetLogSink();
         Logger.Enabled = _originalLoggerEnabled;
     }
@@ -3471,6 +3472,34 @@ public sealed class PluginLoggerTests
         };
 
         logger.Info("Value: {0}", new ThrowingToStringValue());
+    }
+
+    /// <summary>
+    /// Tests that <see cref="PluginLogger"/> reports swallowed sink failures through
+    /// <see cref="Logger.SuppressedFailureObserver"/>.
+    /// </summary>
+    [TestMethod]
+    public void Info_WhenSinkThrows_ReportsSuppressedFailureToObserver()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+        string? operation = null;
+        Exception? captured = null;
+        Logger.SuppressedFailureObserver = (op, ex) =>
+        {
+            operation = op;
+            captured = ex;
+        };
+
+        var logger = new PluginLogger("TestPlugin")
+        {
+            MinLevel = LogLevel.Info
+        };
+
+        logger.Info("Hello");
+
+        Assert.AreEqual("PluginLogger.Info", operation);
+        Assert.IsNotNull(captured);
+        Assert.AreEqual("sink failed", captured.Message);
     }
 
     /// <summary>

@@ -11,15 +11,8 @@ namespace Umbra.UI.Config;
 /// numeric controls are delegated to <see cref="NumericControlBuilder"/>, text controls are
 /// delegated to <see cref="TextControlBuilder"/>, <see cref="Parameter{T}"/> values of type
 /// <see cref="Action"/> default to <see cref="Drawers.ButtonDrawer"/>, and enum or nullable-enum
-/// controls are delegated to <see cref="EnumControlBuilder"/>. This type now focuses on dispatch
-/// and shared layout creation.
-/// All controls use a two-column text-label layout unconditionally: the parameter label (and
-/// optional <c>(?)</c> help marker) is rendered on the left; the editing widget is placed on
-/// the right at the column x position determined by <see cref="LabelAlignmentGroup"/>. Labels
-/// are registered with the group at build time and measured once on the first draw frame via
-/// <see cref="LabelAlignmentGroup.EnsureSeeded"/>; no per-frame measurement occurs after that.
-/// The widget width defaults to fill-to-right-edge (<c>SetNextItemWidth(-1f)</c>) and can be
-/// fixed with <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(px)]</c>).
+/// controls are delegated to <see cref="EnumControlBuilder"/>. Shared two-column layout creation is
+/// delegated to <see cref="ControlLayoutFactory"/>, so this type remains focused on control dispatch.
 /// </remarks>
 internal static class ControlFactory
 {
@@ -103,60 +96,20 @@ internal static class ControlFactory
 
     /// <summary>
     /// Constructs a <see cref="ControlLayout"/> capturing the pre-computed layout state for a
-    /// single parameter row. All rows use a two-column layout: the visible label (and optional
-    /// <c>(?)</c> help marker) on the left; the editing widget on the right at the column x
-    /// position determined by <paramref name="alignGroup"/>.
+    /// single parameter row.
     /// </summary>
     /// <remarks>
     /// Shared by built-in controls in <see cref="ControlFactory"/>,
     /// <see cref="NumericControlBuilder"/>, <see cref="TextControlBuilder"/>,
     /// <see cref="EnumControlBuilder"/>, and two-column custom drawers resolved by
-    /// <see cref="ParameterDrawerResolver"/>.
-    /// <list type="bullet">
-    ///   <item>
-    ///     <term>Column alignment</term>
-    ///     <description>
-    ///       Each <see cref="ControlLayout"/> registers its label with the shared
-    ///       <see cref="LabelAlignmentGroup"/> at construction time via
-    ///       <see cref="LabelAlignmentGroup.Register"/>. On the first draw frame,
-    ///       <see cref="ControlLayout.Pre"/> triggers <see cref="LabelAlignmentGroup.EnsureSeeded"/>,
-    ///       which measures all registered labels in one <see cref="ImGui.CalcTextSize(string)"/>
-    ///       batch and commits the maximum. <see cref="ImGui.SetCursorPosX(float)"/> then advances
-    ///       the cursor to
-    ///       <c>startX + <see cref="LabelAlignmentGroup.LabelWidth"/> +
-    ///       <see cref="LabelAlignmentGroup.Margin"/> + spacing</c> before the widget call.
-    ///       The cursor is never moved backward: if a label is wider than the committed group
-    ///       maximum (possible on frame 1), the control is placed immediately after the label
-    ///       with no overlap. After seeding the committed maximum is frozen and never decreases,
-    ///       so hiding parameters via
-    ///       <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>)
-    ///       cannot narrow the column.
-    ///     </description>
-    ///   </item>
-    ///   <item>
-    ///     <term>Widget width</term>
-    ///     <description>
-    ///       <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(px)]</c>)
-    ///       fixes the widget to the specified number of pixels via <c>SetNextItemWidth</c>.
-    ///       When no <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth]</c>)
-    ///       is present, <c>-1f</c> is used, which fills to the right content-region edge.
-    ///     </description>
-    ///   </item>
-    /// </list>
+    /// <see cref="ParameterDrawerResolver"/>. Layout-value construction is delegated to
+    /// <see cref="ControlLayoutFactory"/>.
     /// </remarks>
     /// <param name="label">The display label resolved for the parameter.</param>
-    /// <param name="parameter">The parameter being rendered; its <see cref="IParameter.Key"/> is used as the hidden ImGui label fallback when <see cref="ParameterMetadata.HiddenLabel"/> is <see langword="null"/>.</param>
+    /// <param name="parameter">The parameter being rendered.</param>
     /// <param name="alignGroup">The shared alignment group for the owning category or root scope.</param>
-    /// <returns>
-    /// A <see cref="ControlLayout"/> value capturing the label, description, alignment group,
-    /// and pre-computed hidden ImGui label for the row. Callers must invoke <see cref="ControlLayout.Pre"/>
-    /// immediately before the ImGui widget call to set up layout and alignment state.
-    /// </returns>
+    /// <returns>The precomputed row layout.</returns>
     internal static ControlLayout CreateControlLayout(
         string label, IParameter parameter, LabelAlignmentGroup alignGroup)
-    {
-        var meta = parameter.Metadata;
-        var hiddenLabel = meta.HiddenLabel ?? string.Concat("##", parameter.Key);
-        return new ControlLayout(label, meta.Description, alignGroup, meta.ControlWidth ?? -1f, hiddenLabel);
-    }
+        => ControlLayoutFactory.Create(label, parameter, alignGroup);
 }

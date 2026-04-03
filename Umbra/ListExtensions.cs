@@ -5,7 +5,7 @@ namespace Umbra;
 /// </summary>
 internal static class ListExtensions
 {
-    private const int StableInsertionSortThreshold = 32;
+    private const int _stableInsertionSortThreshold = 32;
 
     /// <summary>
     /// Sorts <paramref name="list"/> in place, ordered ascending by the integer key returned by
@@ -24,7 +24,7 @@ internal static class ListExtensions
         if (list.Count < 2)
             return;
 
-        if (list.Count <= StableInsertionSortThreshold)
+        if (list.Count <= _stableInsertionSortThreshold)
         {
             StableInsertionSortBy(list, keySelector);
             return;

@@ -96,17 +96,17 @@ public sealed class LiveStateSectionTests
     /// </summary>
     private sealed class TestDrawer : ILiveStateSectionDrawer<TestState>, IDisposable
     {
-        private static int s_disposeCallCount;
+        private static int _disposeCallCount;
 
         /// <summary>
         /// Gets the number of times Dispose has been called across all instances.
         /// </summary>
-        public static int DisposeCallCount => s_disposeCallCount;
+        public static int DisposeCallCount => _disposeCallCount;
 
         /// <summary>
         /// Resets the dispose call counter.
         /// </summary>
-        public static void Reset() => s_disposeCallCount = 0;
+        public static void Reset() => _disposeCallCount = 0;
 
         /// <inheritdoc/>
         public void Draw(TestState state)
@@ -115,7 +115,7 @@ public sealed class LiveStateSectionTests
         }
 
         /// <inheritdoc/>
-        public void Dispose() => s_disposeCallCount++;
+        public void Dispose() => _disposeCallCount++;
     }
 
     /// <summary>
@@ -285,6 +285,49 @@ public sealed class LiveStateSectionTests
     }
 
     /// <summary>
+    /// Tests that the explicit-context constructor works even when the state type does not expose a
+    /// public parameterless constructor.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_ExplicitContextWithoutParameterlessConstructor_CreatesInstanceSuccessfully()
+    {
+        var context = new StateWithoutParameterlessConstructor(42);
+
+        using var section = new LiveStateSection<StateWithoutParameterlessConstructor>(context);
+
+        Assert.IsNotNull(section);
+        Assert.AreEqual(typeof(StateWithoutParameterlessConstructor).FullName ?? typeof(StateWithoutParameterlessConstructor).Name, section.SectionId);
+    }
+
+    /// <summary>
+    /// Tests that the parameterless section constructor throws a clear exception when the state type
+    /// lacks a public parameterless constructor.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_ParameterlessSectionWithoutParameterlessStateConstructor_ThrowsInvalidOperationException()
+    {
+        var exception = AssertThrows<InvalidOperationException>(() => _ = new LiveStateSection<StateWithoutParameterlessConstructor>());
+
+        Assert.Contains(nameof(StateWithoutParameterlessConstructor), exception.Message);
+        Assert.IsNotNull(exception.InnerException);
+        Assert.IsInstanceOfType<MissingMethodException>(exception.InnerException);
+    }
+
+    /// <summary>
+    /// Tests that the parameterless constructor wraps TargetInvocationException in an
+    /// InvalidOperationException with the original constructor exception as the inner exception.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_ParameterlessSectionWhenStateConstructorThrows_ThrowsInvalidOperationExceptionWithOriginalInner()
+    {
+        var exception = AssertThrows<InvalidOperationException>(() => _ = new LiveStateSection<ThrowingState>());
+
+        Assert.Contains(nameof(ThrowingState), exception.Message);
+        Assert.IsNotNull(exception.InnerException);
+        Assert.AreEqual("ctor threw", exception.InnerException.Message);
+    }
+
+    /// <summary>
     /// A valid test state type decorated with LiveStateSectionDrawerAttribute
     /// for testing valid constructor scenarios.
     /// </summary>
@@ -292,6 +335,24 @@ public sealed class LiveStateSectionTests
     internal class ValidTestState
     {
         public int Value { get; set; }
+    }
+
+    /// <summary>
+    /// Valid state type without a public parameterless constructor for constructor-path tests.
+    /// </summary>
+    [LiveStateSectionDrawer<StateWithoutParameterlessConstructorDrawer>]
+    private sealed class StateWithoutParameterlessConstructor(int value)
+    {
+        public int Value { get; } = value;
+    }
+
+    /// <summary>
+    /// State type whose parameterless constructor always throws, for testing TargetInvocationException unwrapping.
+    /// </summary>
+    [LiveStateSectionDrawer<ThrowingStateDrawer>]
+    private sealed class ThrowingState
+    {
+        public ThrowingState() => throw new InvalidOperationException("ctor threw");
     }
 
     /// <summary>
@@ -307,6 +368,38 @@ public sealed class LiveStateSectionTests
         public void Dispose()
         {
             // Minimal implementation for testing
+        }
+    }
+
+    /// <summary>
+    /// Minimal drawer for <see cref="StateWithoutParameterlessConstructor"/>.
+    /// </summary>
+    private sealed class StateWithoutParameterlessConstructorDrawer : ILiveStateSectionDrawer<StateWithoutParameterlessConstructor>
+    {
+        public void Draw(StateWithoutParameterlessConstructor state)
+        {
+            // No-op for testing
+        }
+
+        public void Dispose()
+        {
+            // No-op for testing
+        }
+    }
+
+    /// <summary>
+    /// Minimal drawer for <see cref="ThrowingState"/>.
+    /// </summary>
+    private sealed class ThrowingStateDrawer : ILiveStateSectionDrawer<ThrowingState>
+    {
+        public void Draw(ThrowingState state)
+        {
+            // No-op for testing
+        }
+
+        public void Dispose()
+        {
+            // No-op for testing
         }
     }
 

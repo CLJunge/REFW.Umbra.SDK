@@ -41,7 +41,11 @@ public sealed class ManagedObjectResolverTests
     /// Restores the default REFramework-backed bridge after each test.
     /// </summary>
     [TestCleanup]
-    public void TestCleanup() => ManagedObjectResolver.ResetBridge();
+    public void TestCleanup()
+    {
+        ManagedObjectResolver.SuppressedResolutionFailureObserver = null;
+        ManagedObjectResolver.ResetBridge();
+    }
 
     /// <summary>
     /// Verifies that <see cref="ManagedObjectResolver.TryResolve{T}(ulong, out T)"/> returns
@@ -135,6 +139,43 @@ public sealed class ManagedObjectResolverTests
         Assert.IsFalse(result);
         Assert.IsNull(value);
         Assert.AreEqual(1, _bridge.InvocationCount);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="ManagedObjectResolver.SuppressedResolutionFailureObserver"/>
+    /// receives bridge exceptions that are otherwise swallowed.
+    /// </summary>
+    [TestMethod]
+    public void TryResolve_BridgeThrows_ReportsSuppressedFailureToObserver()
+    {
+        const ulong address = 0x5001;
+        _bridge.SetException<object>(address, new InvalidOperationException("host unavailable"));
+        Exception? captured = null;
+        ManagedObjectResolver.SuppressedResolutionFailureObserver = ex => captured = ex;
+
+        var result = ManagedObjectResolver.TryResolve<object>(address, out var value);
+
+        Assert.IsFalse(result);
+        Assert.IsNull(value);
+        Assert.IsNotNull(captured);
+        Assert.AreEqual("host unavailable", captured.Message);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="ManagedObjectResolver.SuppressedResolutionFailureObserver"/> is not
+    /// invoked for the zero-address fast-failure path.
+    /// </summary>
+    [TestMethod]
+    public void TryResolve_AddressIsZero_DoesNotReportSuppressedFailure()
+    {
+        var called = false;
+        ManagedObjectResolver.SuppressedResolutionFailureObserver = _ => called = true;
+
+        var result = ManagedObjectResolver.TryResolve<object>(0, out var value);
+
+        Assert.IsFalse(result);
+        Assert.IsNull(value);
+        Assert.IsFalse(called);
     }
 
     /// <summary>

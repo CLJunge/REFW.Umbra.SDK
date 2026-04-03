@@ -773,6 +773,28 @@ public class ParameterTests
     }
 
     /// <summary>
+    /// Tests that the public parameter surface exposes registration identity and metadata as
+    /// read-only values while keeping non-public setters available for Umbra internals.
+    /// </summary>
+    [TestMethod]
+    public void RegistrationState_PublicSurfaceIsReadOnly()
+    {
+        // Arrange
+        var interfaceKey = typeof(IParameter).GetProperty(nameof(IParameter.Key))!;
+        var interfaceMetadata = typeof(IParameter).GetProperty(nameof(IParameter.Metadata))!;
+        var concreteKey = typeof(Parameter<int>).GetProperty(nameof(Parameter<int>.Key))!;
+        var concreteMetadata = typeof(Parameter<int>).GetProperty(nameof(Parameter<int>.Metadata))!;
+
+        // Assert
+        Assert.IsFalse(interfaceKey.CanWrite);
+        Assert.IsFalse(interfaceMetadata.CanWrite);
+        Assert.IsNotNull(concreteKey.SetMethod);
+        Assert.IsNotNull(concreteMetadata.SetMethod);
+        Assert.IsFalse(concreteKey.SetMethod.IsPublic);
+        Assert.IsFalse(concreteMetadata.SetMethod.IsPublic);
+    }
+
+    /// <summary>
     /// Tests that the constructor correctly initializes with a nullable int that is null.
     /// </summary>
     [TestMethod]
@@ -1509,6 +1531,91 @@ public class ParameterTests
         parameter.Set(1000);
         Assert.AreEqual(1000, parameter.Value);
         Assert.AreEqual(2, eventCount);
+    }
+
+    /// <summary>
+    /// Tests that TrySet returns false and leaves the current value unchanged when validation fails.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_ValueOutsideMax_ReturnsFalseAndLeavesValueUnchanged()
+    {
+        // Arrange
+        var parameter = new Parameter<int>(50)
+        {
+            Metadata = new ParameterMetadata { Max = 100 }
+        };
+        var eventRaised = false;
+        parameter.ValueChanged += (_, _) => eventRaised = true;
+
+        // Act
+        var result = parameter.TrySet(150);
+
+        // Assert
+        Assert.IsFalse(result);
+        Assert.AreEqual(50, parameter.Value);
+        Assert.IsFalse(eventRaised, "ValueChanged event should not be raised");
+    }
+
+    /// <summary>
+    /// Tests that TrySet returns true and updates the value when validation succeeds.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_ValueWithinRange_ReturnsTrueAndUpdatesValue()
+    {
+        // Arrange
+        var parameter = new Parameter<int>(50)
+        {
+            Metadata = new ParameterMetadata { Min = 10, Max = 100 }
+        };
+        var eventRaised = false;
+        parameter.ValueChanged += (_, _) => eventRaised = true;
+
+        // Act
+        var result = parameter.TrySet(75);
+
+        // Assert
+        Assert.IsTrue(result);
+        Assert.AreEqual(75, parameter.Value);
+        Assert.IsTrue(eventRaised, "ValueChanged event should be raised");
+    }
+
+    /// <summary>
+    /// Tests that SetOrThrow throws when validation fails and leaves the value unchanged.
+    /// </summary>
+    [TestMethod]
+    public void SetOrThrow_ValueOutsideMin_ThrowsAndLeavesValueUnchanged()
+    {
+        // Arrange
+        var parameter = new Parameter<int>(50)
+        {
+            Metadata = new ParameterMetadata { Min = 10 }
+        };
+
+        // Act
+        var exception = AssertThrows<ArgumentOutOfRangeException>(() => parameter.SetOrThrow(5));
+
+        // Assert
+        Assert.AreEqual("value", exception.ParamName);
+        Assert.AreEqual(50, parameter.Value);
+    }
+
+    /// <summary>
+    /// Tests that SetOrThrow updates the value when validation succeeds.
+    /// </summary>
+    [TestMethod]
+    public void SetOrThrow_ValueWithinRange_UpdatesValue()
+    {
+        // Arrange
+        var parameter = new Parameter<int>(50)
+        {
+            Metadata = new ParameterMetadata { Min = 10, Max = 100 }
+        };
+
+        // Act
+        parameter.SetOrThrow(100);
+
+        // Assert
+        Assert.AreEqual(100, parameter.Value);
     }
 
     /// <summary>

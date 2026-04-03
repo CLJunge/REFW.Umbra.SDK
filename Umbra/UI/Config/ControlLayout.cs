@@ -9,10 +9,9 @@ namespace Umbra.UI.Config;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Constructed at draw-tree build time by <see cref="ControlFactory"/>. The constructor
-/// immediately calls <see cref="LabelAlignmentGroup.Register"/> so the label is enrolled in
-/// the group's build-time batch before any ImGui frame is active; no font measurement happens
-/// at this point.
+/// Constructed at draw-tree build time by <see cref="ControlFactory"/> after the label has
+/// already been enrolled in the owning <see cref="LabelAlignmentGroup"/>'s build-time batch.
+/// No font measurement happens during construction.
 /// </para>
 /// <para>
 /// On the first draw frame, <see cref="Pre"/> calls <see cref="LabelAlignmentGroup.EnsureSeeded"/>,
@@ -48,13 +47,12 @@ internal readonly struct ControlLayout
         _alignGroup = alignGroup;
         _controlWidth = controlWidth;
         HiddenLabel = hiddenLabel;
-        alignGroup.Register(label, desc is not null);
     }
 
     /// <summary>
     /// Performs the standard two-column pre-draw step: seeds the shared alignment group on
-    /// the first call, renders the label text (and optional help marker), advances the cursor
-    /// to the shared column x position, and sets the next item width.
+    /// the first call, renders the label text, shows an on-hover tooltip when a description is
+    /// available, advances the cursor to the shared column x position, and sets the next item width.
     /// Must be called immediately before the ImGui widget call in each per-frame draw action.
     /// </summary>
     /// <remarks>
@@ -68,11 +66,7 @@ internal readonly struct ControlLayout
         _alignGroup.EnsureSeeded();
         var startX = ImGui.GetCursorPosX();
         ImGui.Text(_label);
-        if (_desc is not null)
-        {
-            ImGui.SameLine();
-            ImGuiWidgets.DrawHelpMarker(_desc);
-        }
+        if (_desc is not null) ImGuiWidgets.DrawHoverTooltip(_desc);
         ImGui.SameLine();
         // Advance to the shared column position (plus optional per-group margin); never
         // move backward so that on frame 1 (before the committed max is available) labels

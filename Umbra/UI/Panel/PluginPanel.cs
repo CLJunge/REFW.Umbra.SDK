@@ -4,7 +4,7 @@ namespace Umbra.UI.Panel;
 
 /// <summary>
 /// Composes and renders an ordered list of <see cref="IPanelSection"/> instances under a
-/// shared top-level ImGui ID scope, and owns the lifetime of every section it holds.
+/// shared top-level ImGui ID scope.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -24,16 +24,10 @@ namespace Umbra.UI.Panel;
 /// repeated panel construction does not flood the REFramework console.
 /// </para>
 /// <para>
-/// When a root node label is supplied, the entire section list is wrapped inside a single
-/// collapsible <see cref="ImGui.TreeNode(string)"/> at the top of the panel. Individual sections
-/// may additionally declare their own tree node via <see cref="IPanelSection.TreeNodeLabel"/>;
-/// these per-section nodes are rendered inside the root node when one is present.
-/// </para>
-/// <para>
-/// Sections are rendered in ascending <see cref="IPanelSection.Order"/>. The internal
-/// list is re-sorted on each call to <see cref="Add"/>, and equal-order sections preserve
-/// their insertion order because a stable sort is used. Tree-node label validation and sanitization
-/// are delegated to <see cref="PluginPanelTreeNodeLabels"/>.
+/// Section collection responsibilities such as tree-label validation, stable ordering, and section
+/// disposal are delegated to <see cref="PluginPanelSectionCollection"/>. Root-node rendering,
+/// per-section tree-node rendering, and separator placement are delegated to
+/// <see cref="PluginPanelDrawPipeline"/>.
 /// </para>
 /// <para>
 /// Always dispose the panel in the plugin's
@@ -44,12 +38,10 @@ namespace Umbra.UI.Panel;
 public sealed class PluginPanel : IDisposable
 {
     private readonly string _idScope;
-    private readonly string? _rootNodeLabel;
-    private readonly bool _rootNodeDefaultOpen;
-    private readonly bool _drawSeparator;
     private readonly bool _scopeRegistered;
     private readonly IPluginPanelRenderer _renderer;
-    private readonly List<IPanelSection> _sections = [];
+    private readonly PluginPanelSectionCollection _sections = new();
+    private readonly PluginPanelDrawPipeline _drawPipeline;
     private bool _disposed;
 
     /// <summary>
@@ -67,6 +59,8 @@ public sealed class PluginPanel : IDisposable
     /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
     /// <see cref="ImGui.TreeNode(string)"/> with this label. Pass <see langword="null"/>
     /// (the default) to render sections flat with no root-level wrapping node.
+    /// The label should not contain ImGui's <c>"##"</c> separator; when it does, the panel logs a
+    /// developer warning once per active panel scope and strips the suffix at render time.
     /// </param>
     /// <param name="rootNodeDefaultOpen">
     /// When <see langword="true"/>, the root tree node starts in its expanded state.
@@ -100,6 +94,8 @@ public sealed class PluginPanel : IDisposable
     /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
     /// <see cref="ImGui.TreeNode(string)"/> with this label. Pass <see langword="null"/>
     /// to render sections flat with no root-level wrapping node.
+    /// The label should not contain ImGui's <c>"##"</c> separator; when it does, the panel logs a
+    /// developer warning once per active panel scope and strips the suffix at render time.
     /// </param>
     /// <param name="rootNodeDefaultOpen">
     /// When <see langword="true"/>, the root tree node starts in its expanded state.
@@ -127,10 +123,9 @@ public sealed class PluginPanel : IDisposable
 
         _idScope = idScope;
         _scopeRegistered = PluginPanelScopeRegistry.TryRegister(idScope);
-        _rootNodeLabel = rootNodeLabel;
-        _rootNodeDefaultOpen = rootNodeDefaultOpen;
-        _drawSeparator = drawSeparator;
+        PluginPanelTreeNodeLabels.WarnIfInvalid(idScope, rootNodeLabel, $"panel '{idScope}' root node");
         _renderer = renderer;
+        _drawPipeline = new PluginPanelDrawPipeline(rootNodeLabel, rootNodeDefaultOpen, drawSeparator, renderer);
     }
 
     /// <summary>
@@ -144,10 +139,8 @@ public sealed class PluginPanel : IDisposable
     /// <see cref="IPanelSection"/> implementation that overrides <see cref="IPanelSection.Order"/>.
     /// </para>
     /// <para>
-    /// Tree-node label validation is delegated to <see cref="PluginPanelTreeNodeLabels"/>.
-    /// At render time any caller-supplied <c>"##..."</c> suffix is stripped before the
-    /// panel appends its own <c>##{SectionId}</c> disambiguation suffix. Invalid labels warn once
-    /// per section-id/label pair to avoid repeated stack-trace spam during panel rebuilds.
+    /// Tree-node label validation is delegated to <see cref="PluginPanelSectionCollection"/>, which
+    /// uses <see cref="PluginPanelTreeNodeLabels"/> before storing the section.
     /// </para>
     /// </remarks>
     /// <param name="section">The section to add. Must not be <see langword="null"/>.</param>
@@ -160,15 +153,7 @@ public sealed class PluginPanel : IDisposable
     /// </exception>
     public PluginPanel Add(IPanelSection section)
     {
-        ArgumentNullException.ThrowIfNull(section);
-
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(PluginPanel), "Cannot add sections to a disposed panel.");
-
-        PluginPanelTreeNodeLabels.WarnIfInvalid(section);
-
         _sections.Add(section);
-        _sections.SortBy(s => s.Order);
         return this;
     }
 
@@ -182,19 +167,8 @@ public sealed class PluginPanel : IDisposable
     /// even if a section throws while drawing.
     /// </para>
     /// <para>
-    /// When a root node label was supplied at construction, all sections are rendered inside a
-    /// single collapsible <see cref="ImGui.TreeNode(string)"/>; the tree pop is guarded with
-    /// <c>try/finally</c> so ImGui state remains balanced even if a section throws.
-    /// Each section that declares a non-<see langword="null"/>
-    /// <see cref="IPanelSection.TreeNodeLabel"/> is additionally wrapped in its own nested
-    /// tree node rendered inside the root node (or at the top level when no root node is set).
-    /// </para>
-    /// <para>
-    /// When separator drawing was enabled via the constructor parameter (default
-    /// <see langword="true"/>), a horizontal separator is drawn after all sections.
-    /// When a root tree node is present the separator is rendered inside the open node
-    /// (before the tree pop) and is only visible while the node is expanded. When no
-    /// root tree node is used, the separator appears at the end of the panel output.
+    /// Root-node rendering, per-section tree-node wrapping, and separator placement are handled by
+    /// <see cref="PluginPanelDrawPipeline"/> once the shared panel ID scope is active.
     /// </para>
     /// </remarks>
     public void Draw()
@@ -204,24 +178,7 @@ public sealed class PluginPanel : IDisposable
         _renderer.PushId(_idScope);
         try
         {
-            if (_rootNodeLabel is not null)
-            {
-                var flags = _rootNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
-                if (_renderer.TreeNode(_rootNodeLabel, flags))
-                {
-                    try
-                    {
-                        DrawSections();
-                        if (_drawSeparator) _renderer.Separator();
-                    }
-                    finally { _renderer.TreePop(); }
-                }
-            }
-            else
-            {
-                DrawSections();
-                if (_drawSeparator) _renderer.Separator();
-            }
+            _drawPipeline.Draw(_sections.Sections);
         }
         finally
         {
@@ -248,61 +205,8 @@ public sealed class PluginPanel : IDisposable
         if (_scopeRegistered)
             PluginPanelScopeRegistry.Release(_idScope);
 
-        foreach (var section in _sections) section.Dispose();
-        _sections.Clear();
+        _sections.Dispose();
 
         GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Iterates over all sections and renders each one, optionally wrapping it inside a
-    /// per-section <see cref="ImGui.TreeNode(string)"/> when the section declares a
-    /// <see cref="IPanelSection.TreeNodeLabel"/>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// For sections that declare a tree node, <see cref="IPanelSection.SectionId"/> is
-    /// embedded as a <c>##</c> disambiguation suffix in the tree node label — for example
-    /// <c>"General Settings##PluginConfig"</c>. This gives the tree node a unique ImGui
-    /// hash without pushing an additional <see cref="ImGui.PushID(string)"/> scope level before
-    /// it, avoiding a redundant double-push with the <see cref="ImGui.PushID(string)"/> the
-    /// section itself issues internally.
-    /// The resulting widget ID chains for both paths are structurally equivalent:
-    /// <list type="bullet">
-    /// <item><description>Flat: <c>panelScope | SectionId | widget</c></description></item>
-    /// <item><description>Tree node: <c>panelScope | "label##SectionId"(treenode) | SectionId | widget</c></description></item>
-    /// </list>
-    /// </para>
-    /// <para>
-    /// Caller-supplied labels are sanitized through <see cref="PluginPanelTreeNodeLabels"/>
-    /// before the panel appends its own <c>##{SectionId}</c> suffix, ensuring that the suffix is
-    /// not ignored by ImGui.
-    /// </para>
-    /// <para>
-    /// The tree pop is always guarded with <c>try/finally</c> so ImGui state remains balanced
-    /// even if a section throws while drawing.
-    /// </para>
-    /// </remarks>
-    private void DrawSections()
-    {
-        foreach (var section in _sections)
-        {
-            var label = section.TreeNodeLabel;
-            if (label is not null)
-            {
-                label = PluginPanelTreeNodeLabels.Sanitize(label);
-
-                var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
-                if (_renderer.TreeNode($"{label}##{section.SectionId}", flags))
-                {
-                    try { section.Draw(); }
-                    finally { _renderer.TreePop(); }
-                }
-            }
-            else
-            {
-                section.Draw();
-            }
-        }
     }
 }

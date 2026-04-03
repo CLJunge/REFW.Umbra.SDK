@@ -6,8 +6,8 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 [TestClass]
 public sealed class RootTreeNodeTests
 {
-    private static readonly int[] expectedOneElement = new[] { 1 };
-    private static readonly int[] expectedThreeElements = new[] { 1, 2, 3 };
+    private static readonly int[] _expectedOneElement = [1];
+    private static readonly int[] _expectedThreeElements = [1, 2, 3];
 
     /// <summary>
     /// Verifies that an action throws the expected exception type and returns the captured exception.
@@ -72,7 +72,7 @@ public sealed class RootTreeNodeTests
         node.Draw();
 
         // Assert
-        CollectionAssert.AreEqual(expectedThreeElements, calls);
+        CollectionAssert.AreEqual(_expectedThreeElements, calls);
         Assert.HasCount(1, renderer.TreeNodes);
         Assert.AreEqual(("Parent Node", false), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
@@ -130,7 +130,7 @@ public sealed class RootTreeNodeTests
         // Assert
         Assert.IsNotNull(exception);
         Assert.AreEqual("boom", exception.Message);
-        CollectionAssert.AreEqual(expectedOneElement, calls);
+        CollectionAssert.AreEqual(_expectedOneElement, calls);
         Assert.AreEqual(1, renderer.TreePopCount);
     }
 

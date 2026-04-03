@@ -10,9 +10,9 @@ namespace Umbra.Runtime;
 /// methods to keep the plugin class free of manual lease storage and disposal logic.
 /// </para>
 /// <para>
-/// The convenience overloads infer the plugin type from the calling static entry point, acquire the
-/// mutex before running the load callback, release it automatically if initialization fails, and
-/// always release it after the unload callback finishes.
+/// The convenience overloads delegate caller-type inference to <see cref="PluginCallerTypeResolver"/>,
+/// acquire the mutex before running the load callback, release it automatically if initialization
+/// fails, and always release it after the unload callback finishes.
 /// </para>
 /// </remarks>
 public static class PluginBootstrapper
@@ -33,14 +33,10 @@ public static class PluginBootstrapper
     {
         ArgumentNullException.ThrowIfNull(initialize);
 
-        var callerMethod = new System.Diagnostics.StackFrame(1, false).GetMethod()
-            ?? throw new InvalidOperationException(
-                $"Unable to resolve the calling method for {nameof(PluginBootstrapper)}.{nameof(Load)}.");
-
-        var pluginType = callerMethod.DeclaringType
-            ?? throw new InvalidOperationException(
-                $"Calling method '{callerMethod.Name}' does not declare a plugin type. " +
-                $"Use {nameof(Load)}(Type, Action) when caller inference is not available.");
+        var pluginType = PluginCallerTypeResolver.ResolveCallingPluginType(
+            typeof(PluginBootstrapper),
+            nameof(Load),
+            $"{nameof(Load)}(Type, Action)");
 
         return Load(pluginType, initialize);
     }
@@ -92,14 +88,12 @@ public static class PluginBootstrapper
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     public static void Unload(Action cleanup)
     {
-        var callerMethod = new System.Diagnostics.StackFrame(1, false).GetMethod()
-            ?? throw new InvalidOperationException(
-                $"Unable to resolve the calling method for {nameof(PluginBootstrapper)}.{nameof(Unload)}.");
+        ArgumentNullException.ThrowIfNull(cleanup);
 
-        var pluginType = callerMethod.DeclaringType
-            ?? throw new InvalidOperationException(
-                $"Calling method '{callerMethod.Name}' does not declare a plugin type. " +
-                $"Use {nameof(Unload)}(Type, Action) when caller inference is not available.");
+        var pluginType = PluginCallerTypeResolver.ResolveCallingPluginType(
+            typeof(PluginBootstrapper),
+            nameof(Unload),
+            $"{nameof(Unload)}(Type, Action)");
 
         Unload(pluginType, cleanup);
     }
