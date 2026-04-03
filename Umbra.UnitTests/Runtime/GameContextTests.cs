@@ -63,14 +63,10 @@ public sealed class GameContextTests
             _originalMetadata = (GameMetadata?)s_currentGameMetadataField.GetValue(null);
         }
 
-        public void SetCurrentGameMetadata(GameMetadata metadata)
-        {
-            s_currentGameMetadataField.SetValue(null, metadata);
-        }
+#pragma warning disable CA1822 // Mark members as static
+        public void SetCurrentGameMetadata(GameMetadata metadata) => s_currentGameMetadataField.SetValue(null, metadata);
+#pragma warning restore CA1822
 
-        public void Dispose()
-        {
-            s_currentGameMetadataField.SetValue(null, _originalMetadata);
-        }
+        public void Dispose() => s_currentGameMetadataField.SetValue(null, _originalMetadata);
     }
 }
