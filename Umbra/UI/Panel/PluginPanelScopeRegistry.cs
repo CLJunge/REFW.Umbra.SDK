@@ -3,11 +3,10 @@ using Umbra.Logging;
 namespace Umbra.UI.Panel;
 
 /// <summary>
-/// Tracks live <see cref="PluginPanel"/> ID scopes across the shared REFramework AppDomain.
+/// Tracks live <see cref="PluginPanel"/> ID scopes across the shared managed plugin host.
 /// </summary>
 /// <remarks>
-/// This type isolates duplicate-scope registration and release from <see cref="PluginPanel"/> so
-/// the panel can remain focused on section composition and rendering.
+/// This registry isolates duplicate-scope detection and release from <see cref="PluginPanel"/> so the panel can remain focused on section composition and rendering. Scope registration is AppDomain-local and exists to prevent accidental ImGui ID collisions between plugins loaded in the same REFramework process.
 /// </remarks>
 internal static class PluginPanelScopeRegistry
 {
@@ -16,17 +15,13 @@ internal static class PluginPanelScopeRegistry
     private static readonly object _scopeLock = new();
 
     /// <summary>
-    /// Registers <paramref name="idScope"/> and logs a developer warning the first time the same
-    /// active scope is detected as a duplicate.
+    /// Registers <paramref name="idScope"/> and emits a developer warning the first time the same active scope is detected as a duplicate.
     /// </summary>
     /// <remarks>
-    /// The detailed duplicate-scope warning includes a stack trace so plugin authors can identify
-    /// the conflicting panel construction site. To avoid spamming the REFramework console, that
-    /// warning is emitted only once per still-active duplicate scope and is re-armed when the
-    /// original scope is eventually released.
+    /// The duplicate-scope warning includes a stack trace to help locate the conflicting panel construction site. The warning is emitted at most once per still-active duplicate scope and is re-armed when the original scope is released.
     /// </remarks>
     /// <param name="idScope">The globally unique panel scope to register.</param>
-    /// <returns><see langword="true"/> when the scope was newly registered; otherwise <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if the scope was newly registered; otherwise, <see langword="false"/>.</returns>
     internal static bool TryRegister(string idScope)
     {
         bool registered;
@@ -57,8 +52,7 @@ internal static class PluginPanelScopeRegistry
     }
 
     /// <summary>
-    /// Releases a previously registered panel scope and re-arms duplicate diagnostics for any
-    /// future reuse of the same scope.
+    /// Releases a previously registered panel scope and re-arms duplicate diagnostics for future reuse of the same scope.
     /// </summary>
     /// <param name="idScope">The scope to release.</param>
     internal static void Release(string idScope)

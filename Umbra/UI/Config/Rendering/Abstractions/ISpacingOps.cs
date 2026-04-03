@@ -1,7 +1,7 @@
 namespace Umbra.UI.Config.Rendering;
 
 /// <summary>
-/// Defines vertical spacing operations for config UI.
+/// Defines the vertical-spacing operation used by configuration draw nodes.
 /// </summary>
 internal interface ISpacingOps
 {

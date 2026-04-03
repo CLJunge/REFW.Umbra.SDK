@@ -1,18 +1,18 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Sets the visual color style of a button parameter rendered by
-/// <see cref="UI.Config.Drawers.ButtonDrawer"/>.
+/// Declares the built-in button color style used when a parameter is rendered by <see cref="UI.Config.Drawers.ButtonDrawer"/>.
 /// </summary>
 /// <remarks>
-/// When both <see cref="UmbraButtonStyleAttribute"/> (<c>[UmbraButtonStyle]</c>) and
-/// <see cref="UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors]</c>) are present on
-/// the same property, the latter takes priority.
+/// When both this attribute and <see cref="UmbraCustomButtonColorsAttribute"/> are present on the same member, the explicit custom colors take precedence.
 /// </remarks>
-/// <param name="style">The color style to apply to the rendered button.</param>
+/// <param name="style">The built-in button style to apply.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraButtonStyleAttribute(ButtonStyle style) : Attribute
 {
-    /// <summary>Gets the visual color style applied to the button.</summary>
+    /// <summary>
+    /// Gets the built-in button style applied to the annotated member.
+    /// </summary>
+    /// <value>The declared button style.</value>
     public ButtonStyle Style { get; } = style;
 }

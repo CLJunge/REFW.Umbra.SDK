@@ -12,6 +12,6 @@ internal interface ISizedButtonOps
     /// </summary>
     /// <param name="label">The button label.</param>
     /// <param name="size">The requested button size.</param>
-    /// <returns><see langword="true"/> when the button was clicked; otherwise <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if the button was clicked; otherwise, <see langword="false"/>.</returns>
     bool Button(string label, Vector2 size);
 }

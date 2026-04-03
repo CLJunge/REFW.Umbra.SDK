@@ -3,12 +3,10 @@ using Umbra.UI.Config.Rendering;
 namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
-/// Draw node that conditionally invokes a per-frame draw action based on a visibility predicate.
+/// Renders one configuration-row draw action with optional visibility, spacing, and indentation behavior.
 /// </summary>
 /// <remarks>
-/// The default constructor renders spacing through the shared active ImGui context. Unit tests can
-/// replace the low-level renderer through the internal constructor so visibility, spacing, and
-/// optional indentation behavior can be verified without requiring an active ImGui frame.
+/// The default constructors render through the shared ImGui render context. Tests can supply a renderer seam to verify visibility, spacing, and indentation behavior without requiring an active ImGui frame.
 /// </remarks>
 internal sealed class ParameterNode : IDrawNode
 {
@@ -21,7 +19,7 @@ internal sealed class ParameterNode : IDrawNode
     private readonly IParameterNodeRenderer _renderer;
 
     /// <summary>
-    /// Initializes a new <see cref="ParameterNode"/> that renders spacing through the shared active ImGui context.
+    /// Initializes a new always-visible <see cref="ParameterNode"/> that renders through the shared ImGui render context.
     /// </summary>
     internal ParameterNode(
         Action draw,
@@ -34,20 +32,15 @@ internal sealed class ParameterNode : IDrawNode
     }
 
     /// <summary>
-    /// Initializes a new always-visible <see cref="ParameterNode"/> with the specified low-level renderer.
+    /// Initializes a new always-visible <see cref="ParameterNode"/> with the specified renderer seam.
     /// </summary>
     /// <param name="draw">The per-frame draw action to invoke.</param>
     /// <param name="order">The sort key for this node within its local rendered scope.</param>
-    /// <param name="spacingBefore">The number of spacing calls emitted before the draw action.</param>
-    /// <param name="spacingAfter">The number of spacing calls emitted after the draw action.</param>
-    /// <param name="renderer">The renderer used for spacing operations.</param>
-    /// <param name="indentAmount">
-    /// The optional indentation width applied around the draw action, or <see langword="null"/>
-    /// when no indentation is required.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="draw"/> or <paramref name="renderer"/> is <see langword="null"/>.
-    /// </exception>
+    /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
+    /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
+    /// <param name="renderer">The renderer used for spacing and indentation operations.</param>
+    /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="draw"/> or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ParameterNode(
         Action draw,
         int order,
@@ -68,18 +61,8 @@ internal sealed class ParameterNode : IDrawNode
     }
 
     /// <summary>
-    /// Initializes a new <see cref="ParameterNode"/> that conditionally invokes a per-frame draw action
-    /// based on a visibility predicate.
+    /// Initializes a new conditionally visible <see cref="ParameterNode"/> that renders through the shared ImGui render context.
     /// </summary>
-    /// <param name="isVisible">Predicate evaluated each frame to determine visibility.</param>
-    /// <param name="draw">The per-frame draw action to invoke when visible.</param>
-    /// <param name="order">The sort key for this node within its local rendered scope.</param>
-    /// <param name="spacingBefore">The number of spacing calls emitted before the draw action.</param>
-    /// <param name="spacingAfter">The number of spacing calls emitted after the draw action.</param>
-    /// <param name="indentAmount">
-    /// The optional indentation width applied around the draw action, or <see langword="null"/>
-    /// when no indentation is required.
-    /// </param>
     internal ParameterNode(
         Func<bool> isVisible,
         Action draw,
@@ -92,21 +75,16 @@ internal sealed class ParameterNode : IDrawNode
     }
 
     /// <summary>
-    /// Initializes a new <see cref="ParameterNode"/> with the specified low-level renderer.
+    /// Initializes a new conditionally visible <see cref="ParameterNode"/> with the specified renderer seam.
     /// </summary>
-    /// <param name="isVisible">Predicate evaluated each frame to determine visibility.</param>
+    /// <param name="isVisible">The predicate evaluated each frame to determine whether drawing should occur.</param>
     /// <param name="draw">The per-frame draw action to invoke when visible.</param>
     /// <param name="order">The sort key for this node within its local rendered scope.</param>
-    /// <param name="spacingBefore">The number of spacing calls emitted before the draw action.</param>
-    /// <param name="spacingAfter">The number of spacing calls emitted after the draw action.</param>
-    /// <param name="indentAmount">
-    /// The optional indentation width applied around the draw action, or <see langword="null"/>
-    /// when no indentation is required.
-    /// </param>
-    /// <param name="renderer">The renderer used for spacing operations.</param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="isVisible"/>, <paramref name="draw"/>, or <paramref name="renderer"/> is <see langword="null"/>.
-    /// </exception>
+    /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
+    /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
+    /// <param name="renderer">The renderer used for spacing and indentation operations.</param>
+    /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="isVisible"/>, <paramref name="draw"/>, or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ParameterNode(
         Func<bool> isVisible,
         Action draw,
@@ -128,7 +106,9 @@ internal sealed class ParameterNode : IDrawNode
         Order = order;
     }
 
-    /// <summary>Gets the sort key for this node within its local rendered scope.</summary>
+    /// <summary>
+    /// Gets the sort key for this node within its local rendered scope.
+    /// </summary>
     internal int Order { get; }
 
     /// <inheritdoc/>

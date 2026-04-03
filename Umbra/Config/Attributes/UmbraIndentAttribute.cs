@@ -1,15 +1,18 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Indents the decorated parameter control, or all parameter controls within a settings
-/// group class, in the settings UI.
+/// Declares the indentation applied to an annotated parameter or configuration scope in the UI.
 /// </summary>
-/// <param name="amount">
-/// The indentation width in pixels, or <c>0</c> to use ImGui's default indent spacing.
-/// </param>
+/// <remarks>
+/// Applied to a type, this attribute provides the fallback indent for controls inside that scope. Applied to a member, it overrides any inherited indent for that parameter.
+/// </remarks>
+/// <param name="amount">The requested indentation width in pixels, or <c>0f</c> to use ImGui's default indent spacing.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class UmbraIndentAttribute(float amount = 0f) : Attribute
 {
-    /// <summary>Gets the indentation width in pixels. <c>0</c> means use ImGui's default.</summary>
+    /// <summary>
+    /// Gets the requested indentation width.
+    /// </summary>
+    /// <value>The indentation width in pixels, or <c>0f</c> for ImGui's default indent spacing.</value>
     public float Amount { get; } = amount;
 }

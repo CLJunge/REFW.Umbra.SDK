@@ -3,7 +3,7 @@ using Hexa.NET.ImGui;
 namespace Umbra.UI.Panel;
 
 /// <summary>
-/// Renders <see cref="PluginPanel"/> output through the active ImGui frame.
+/// Implements <see cref="IPluginPanelRenderer"/> by forwarding panel operations to the active ImGui frame.
 /// </summary>
 internal sealed class ImGuiPluginPanelRenderer : IPluginPanelRenderer
 {

@@ -5,15 +5,20 @@ using Umbra.Config.Attributes;
 namespace Umbra.Config;
 
 /// <summary>
-/// Provides utility methods for reading <see cref="ParameterMetadata"/> from
-/// reflected <see cref="MemberInfo"/> instances by inspecting the Umbra-prefixed metadata attributes.
+/// Reads <see cref="ParameterMetadata"/> from Umbra configuration attributes on reflected members.
 /// </summary>
+/// <remarks>
+/// This helper centralizes metadata extraction so registration resolves labels, ranges, drawer types, visibility rules, and cached render strings once instead of rediscovering them during UI construction.
+/// </remarks>
 internal static class ParameterMetadataReader
 {
     /// <summary>
-    /// Reads and constructs a <see cref="ParameterMetadata"/> instance from the
-    /// custom attributes applied to the specified <paramref name="member"/>.
+    /// Builds a <see cref="ParameterMetadata"/> instance from the attributes applied to <paramref name="member"/>.
     /// </summary>
+    /// <param name="member">The reflected settings member whose attributes should be read.</param>
+    /// <param name="inheritedCategory">The category inherited from an enclosing settings scope, or <see langword="null"/> when none applies.</param>
+    /// <param name="parameterKey">The fully qualified persisted key, used to precompute cached UI labels when available.</param>
+    /// <returns>The resolved metadata for <paramref name="member"/>.</returns>
     internal static ParameterMetadata ReadFrom(MemberInfo member, string? inheritedCategory = null, string? parameterKey = null)
     {
         var maxLength = member.GetCustomAttribute<UmbraMaxLengthAttribute>();
@@ -76,9 +81,13 @@ internal static class ParameterMetadataReader
     }
 
     /// <summary>
-    /// Derives a printf float format string from the decimal-place count of <paramref name="step"/>.
-    /// Returns <c>"%.2f"</c> when <paramref name="step"/> is <see langword="null"/> or zero.
+    /// Derives the fallback ImGui float format string for a numeric parameter from <paramref name="step"/>.
     /// </summary>
+    /// <param name="step">The configured numeric step value, or <see langword="null"/> when no step is declared.</param>
+    /// <returns>A printf-style float format string.</returns>
+    /// <remarks>
+    /// Returns <c>"%.2f"</c> when <paramref name="step"/> is <see langword="null"/> or zero.
+    /// </remarks>
     private static string FallbackFloatFormat(double? step)
     {
         if (step is null or 0) return "%.2f";

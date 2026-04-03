@@ -4,73 +4,23 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Drives automatic, change-triggered persistence for an <see cref="ISettingsStore{TConfig}"/>.
+/// Coalesces change-triggered saves for a loaded <see cref="ISettingsStore{TConfig}"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>Behaviour</strong><br/>
-/// Changes to non-numeric parameters (booleans, strings, enums) are saved on the next
-/// <see cref="Tick"/> call when no numeric debounce is currently pending.<br/>
-/// Changes to numeric parameters (<see cref="int"/>, <see cref="float"/>, <see cref="double"/>)
-/// are coalesced: the save is deferred until <see cref="DebounceWindow"/> has elapsed since
-/// the last change, so rapid slider interaction produces only one disk write instead of one
-/// per frame. If a non-numeric change arrives while a numeric debounce is already pending,
-/// both changes are flushed together when the debounced save fires.
+/// Non-numeric parameter changes are saved on the next <see cref="Tick"/> call when no numeric debounce is pending. Numeric parameter changes for <see cref="int"/>, <see cref="float"/>, and <see cref="double"/> are coalesced until <see cref="DebounceWindow"/> has elapsed since the last numeric change.
 /// </para>
 /// <para>
-/// <strong>Ordering requirement</strong><br/>
-/// Construct <see cref="DeferredSaveController{TConfig}"/> <em>after</em> calling
-/// <see cref="ISettingsStore{TConfig}.Load"/>. The constructor validates this requirement and
-/// throws <see cref="InvalidOperationException"/> when the supplied store is not yet loaded.
-/// </para>
-/// <para>
-/// <strong>Per-frame driving</strong><br/>
-/// Call <see cref="Tick"/> once per frame from an <c>ImGuiDrawUI</c> callback or equivalent
-/// game-loop hook. <see cref="Tick"/> is a lightweight no-op when there is nothing pending,
-/// so it is safe to call unconditionally every frame.
-/// </para>
-/// <para>
-/// <strong>Unload sequence</strong><br/>
-/// <see cref="Dispose"/> automatically calls <see cref="Flush"/> before unregistering
-/// listeners, so pending changes are not lost if the plugin unloads while a debounce is active.
-/// Call <see cref="Flush"/> explicitly only when you need the save to happen earlier in the
-/// unload sequence or before some other operation. The preferred order is still to dispose this
-/// instance <em>before</em> or <em>alongside</em> the owning <see cref="ISettingsStore{TConfig}"/>
-/// so any pending debounced write can still be persisted. If the store has already been
-/// disposed, controller disposal becomes a safe no-op cleanup path and skips listener removal
-/// because the store has already torn those subscriptions down.
-/// </para>
-/// <para>
-/// <strong>Typical lifecycle</strong>
-/// <code>
-/// // Entry point — always after Load():
-/// _store          = new SettingsStore&lt;PluginConfig&gt;(configPath);
-/// var config      = _store.Load();
-/// _saveController = new DeferredSaveController&lt;PluginConfig&gt;(_store);
-///
-/// // ImGuiDrawUI callback — once per frame:
-/// _saveController.Tick();
-///
-/// // Exit point — Dispose flushes any pending write before removing listeners:
-/// _saveController.Dispose();
-/// _saveController = null;
-/// _store.Save();   // belt-and-suspenders final save
-/// _store.Dispose();
-/// _store = null;
-/// </code>
+/// Construct this controller only after <see cref="ISettingsStore{TConfig}.Load"/> has completed. Call <see cref="Tick"/> once per frame, and dispose the controller before or alongside the owning store so pending writes can still be flushed.
 /// </para>
 /// </remarks>
-/// <typeparam name="TConfig">
-/// The configuration class type, matching the wrapped <see cref="ISettingsStore{TConfig}"/>.
-/// </typeparam>
+/// <typeparam name="TConfig">The configuration type managed by the wrapped store.</typeparam>
 public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig : class, new()
 {
-    /// <summary>Gets the cooldown after the last numeric change before writing to disk.</summary>
-    /// <remarks>
-    /// The timer is reset on every numeric parameter change, so the save only fires once
-    /// the user stops interacting with a slider for this duration.
-    /// Defaults to 1 second when not supplied at construction.
-    /// </remarks>
+    /// <summary>
+    /// Gets the cooldown applied after the last numeric change before the controller writes to disk.
+    /// </summary>
+    /// <value>The debounce window used for numeric parameter changes.</value>
     public TimeSpan DebounceWindow { get; }
 
     private readonly ISettingsStore<TConfig> _store;
@@ -128,27 +78,10 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     }
 
     /// <summary>
-    /// Evaluates pending saves and flushes to disk when appropriate.
-    /// Must be called once per frame, typically from an <c>ImGuiDrawUI</c> callback.
+    /// Evaluates pending changes and flushes to disk when the save policy allows it.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// This method is a lightweight no-op when there are no pending changes, so it is safe
-    /// to call unconditionally every frame.
-    /// </para>
-    /// <para>
-    /// Decision logic per call:
-    /// <list type="bullet">
-    /// <item>If nothing is pending, returns immediately.</item>
-    /// <item>If a non-numeric change is pending (and no numeric change is also pending),
-    ///   calls <see cref="Flush"/> immediately.</item>
-    /// <item>If a numeric change is pending, waits until <see cref="DebounceWindow"/> has
-    ///   elapsed since the last numeric change before calling <see cref="Flush"/>.</item>
-    /// </list>
-    /// </para>
-    /// <para>
-    /// After disposal this method is a permanent no-op.
-    /// </para>
+    /// This method is a lightweight no-op when no changes are pending. After <see cref="Dispose"/> it becomes a permanent no-op.
     /// </remarks>
     public void Tick()
     {
@@ -161,26 +94,15 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         }
         else
         {
-            // Non-slider change (bool, string, enum, …) — save immediately.
             Flush();
         }
     }
 
     /// <summary>
-    /// Forces an immediate save and clears all pending state, regardless of the debounce timer.
+    /// Forces an immediate save attempt for the currently pending changes and clears the pending state.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Use this when you need a pending save to happen immediately rather than waiting for the
-    /// debounce window or the eventual <see cref="Dispose"/> call.
-    /// </para>
-    /// <para>
-    /// If the wrapped <see cref="ISettingsStore{TConfig}"/> has already been disposed, any pending
-    /// save is discarded because there is no live store left to persist through.
-    /// </para>
-    /// <para>
-    /// After disposal this method is a permanent no-op.
-    /// </para>
+    /// If the wrapped store has already been disposed, pending changes are dropped because there is no live store left to persist through. After <see cref="Dispose"/> this method is a permanent no-op.
     /// </remarks>
     public void Flush()
     {
@@ -200,26 +122,15 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     }
 
     /// <summary>
-    /// Unregisters all parameter-change listeners attached at construction time and marks
-    /// this instance as disposed. After disposal, <see cref="Tick"/> and <see cref="Flush"/>
-    /// become permanent no-ops.
+    /// Flushes pending changes, unregisters the controller's listeners, and marks the controller as disposed.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <see cref="Dispose"/> calls <see cref="Flush"/> before unregistering listeners, so any
-    /// debounced write still pending at unload time is persisted automatically.
-    /// </para>
-    /// <para>
-    /// The preferred unload order remains to dispose this instance before or alongside the owning
-    /// <see cref="ISettingsStore{TConfig}"/> so pending debounced writes can still be flushed. If the
-    /// store has already been disposed, this method does not throw; it skips listener removal because
-    /// the store has already removed all registered subscriptions during its own disposal.
-    /// </para>
+    /// Repeated calls after the first one do nothing. If the wrapped store has already been disposed, listener removal is skipped because the store has already torn down its subscriptions.
     /// </remarks>
     public void Dispose()
     {
         if (_disposed) return;
-        Flush();  // guarantee no pending write is dropped before listeners are removed
+        Flush();
         _disposed = true;
 
         if (!_store.IsDisposed)

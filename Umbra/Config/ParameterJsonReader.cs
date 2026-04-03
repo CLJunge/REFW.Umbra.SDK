@@ -4,30 +4,24 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Provides internal utilities for deserializing <see cref="JsonElement"/> values
-/// into the concrete types expected by <see cref="IParameter"/> instances.
+/// Converts persisted JSON values into objects that can be applied to registered <see cref="IParameter"/> instances.
 /// </summary>
+/// <remarks>
+/// <see cref="SettingsPersistence"/> uses this helper while loading a settings file. Values are applied through <see cref="IParameter.SetValueWithoutNotify(object?)"/> so persisted-state restoration does not trigger change notifications.
+/// </remarks>
 internal static class ParameterJsonReader
 {
     /// <summary>
-    /// Reads the value from <paramref name="element"/> and silently applies it to
-    /// <paramref name="param"/> without raising <see cref="IParameter.ValueChanged"/>.
+    /// Converts <paramref name="element"/> to the value type expected by <paramref name="param"/> and applies it silently.
     /// </summary>
+    /// <param name="param">The registered parameter that should receive the converted value.</param>
+    /// <param name="element">The persisted JSON value to restore.</param>
     /// <remarks>
-    /// When <see cref="ConvertElement"/> returns <see langword="null"/> for a non-null JSON element
-    /// (e.g. an unrecognised enum string), the assignment is skipped entirely so the parameter
-    /// retains its default value rather than being overwritten with <see langword="null"/>.
+    /// When <see cref="ConvertElement"/> returns <see langword="null"/> for a non-null JSON element, the assignment is skipped so the parameter keeps its current in-memory value. This preserves declared defaults for stale or unrecognized persisted values such as renamed enum members.
     /// </remarks>
-    /// <param name="param">The parameter to receive the deserialized value.</param>
-    /// <param name="element">
-    /// The <see cref="JsonElement"/> containing the persisted value to restore.
-    /// </param>
     internal static void Apply(IParameter param, JsonElement element)
     {
         var value = ConvertElement(element, param.ValueType);
-        // A null result from ConvertElement for a non-null element means the stored value
-        // was unrecognised (e.g. a stale/renamed enum member). Skip the assignment so the
-        // parameter keeps its in-memory default instead of being set to null.
         if (value is null && element.ValueKind != JsonValueKind.Null) return;
         param.SetValueWithoutNotify(value);
     }

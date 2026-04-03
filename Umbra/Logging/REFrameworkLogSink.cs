@@ -3,12 +3,10 @@ using REFrameworkNET;
 namespace Umbra.Logging;
 
 /// <summary>
-/// Emits Umbra log messages through the REFramework managed host.
+/// Forwards Umbra log messages to the active REFramework managed host.
 /// </summary>
 /// <remarks>
-/// This is the production sink used at runtime inside the game process. Unit tests can replace it
-/// through <see cref="Logger.SetLogSink(ILogSink)"/> with an in-memory sink that does not depend on
-/// the REFramework host being active.
+/// This is the production sink used for in-process plugin logging. Tests can replace it through <see cref="Logger.SetLogSink(ILogSink)"/> with a sink that does not depend on REFramework host APIs.
 /// </remarks>
 internal sealed class REFrameworkLogSink : ILogSink
 {

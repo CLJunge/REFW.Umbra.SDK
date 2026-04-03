@@ -4,21 +4,18 @@ using Umbra.Runtime;
 namespace Umbra;
 
 /// <summary>
-/// Provides a convenience base class for instance-based Umbra plugins.
+/// Provides a base implementation of <see cref="IUmbraPlugin"/> for instance-based plugins that need a per-plugin <see cref="PluginLogger"/>.
 /// </summary>
 /// <remarks>
-/// This base class supplies the plugin-scoped <see cref="PluginLogger"/> dependency and surfaces the
-/// core Umbra lifecycle defined by the <see cref="IUmbraPlugin"/> contract. Derived plugins are free
-/// to implement any additional REFramework callbacks they require on their own types.
-/// Single-instance coordination still belongs on the assembly-facing static host class, not on the
-/// instance plugin type.
+/// This base class stores the logger supplied by the concrete plugin and leaves all lifecycle methods as overridable no-ops. It is typically paired with <see cref="PluginHost{TPlugin}"/> or another assembly-facing static host that satisfies REFramework's static entry-point requirements.
 /// </remarks>
 public abstract class UmbraPlugin : IUmbraPlugin
 {
     /// <summary>
-    /// Initialises a new plugin base with the logger supplied by the plugin instance.
+    /// Initializes a new instance of the <see cref="UmbraPlugin"/> class.
     /// </summary>
-    /// <param name="log">The plugin-specific logger.</param>
+    /// <param name="log">The logger scoped to the derived plugin instance.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="log"/> is <see langword="null"/>.</exception>
     protected UmbraPlugin(PluginLogger log)
     {
         ArgumentNullException.ThrowIfNull(log);
@@ -26,8 +23,9 @@ public abstract class UmbraPlugin : IUmbraPlugin
     }
 
     /// <summary>
-    /// Gets the plugin-specific logger supplied by the plugin instance.
+    /// Gets the logger scoped to this plugin instance.
     /// </summary>
+    /// <value>The logger supplied to the constructor.</value>
     protected PluginLogger Log { get; }
 
     /// <inheritdoc/>

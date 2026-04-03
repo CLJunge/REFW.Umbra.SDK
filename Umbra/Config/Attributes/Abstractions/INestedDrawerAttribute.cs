@@ -3,19 +3,16 @@ using Umbra.UI.Config.Drawers;
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Non-generic marker interface implemented by <see cref="UmbraNestedDrawerAttribute{TDrawer}"/>.
-/// Allows nested-group custom-drawer detection on either a parent property declaration or the
-/// nested group type itself without runtime generic type inspection.
+/// Exposes the nested-group drawer type declared by <see cref="UmbraNestedDrawerAttribute{TDrawer}"/> without requiring generic attribute inspection.
 /// </summary>
 /// <remarks>
-/// Intended for use by framework-internal machinery such as <see cref="Umbra.UI.Config.ConfigDrawerBuilder"/>
-/// and <see cref="Umbra.UI.Config.TypeDrawMetadata"/>. Plugin authors should not implement or
-/// reference this interface directly; it is considered internal-use-only even though it is publicly
-/// visible so that <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Reflection.PropertyInfo)"/>
-/// and <see cref="ReflectionExtensions.GetDrawerAttribute{T}(System.Type)"/> can use it as a generic type argument.
+/// Umbra's configuration-drawer builder uses this marker to discover nested-group drawers declared either on the parent property or on the nested-group type itself. Plugin authors do not implement this interface directly.
 /// </remarks>
 internal interface INestedDrawerAttribute
 {
-    /// <summary>Gets the concrete <see cref="INestedDrawer{T}"/> type used to render the nested group instance.</summary>
+    /// <summary>
+    /// Gets the concrete <see cref="INestedDrawer{TGroup}"/> type declared for the annotated nested-group scope.
+    /// </summary>
+    /// <value>The drawer type used to render the nested group.</value>
     Type DrawerType { get; }
 }

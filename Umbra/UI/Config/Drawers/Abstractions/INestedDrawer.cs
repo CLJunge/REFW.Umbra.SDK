@@ -5,50 +5,24 @@ namespace Umbra.UI.Config.Drawers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Prefer applying
-/// <see cref="Umbra.Config.Attributes.UmbraNestedDrawerAttribute{TDrawer}"/>
-/// (<c>[UmbraNestedDrawer&lt;TDrawer&gt;]</c>) to the parent property that exposes the nested
-/// configuration group, keeping group-specific UI behaviour co-located with the property
-/// declaration. Applying the attribute to the nested configuration class itself is supported
-/// for backward compatibility and acts as a fallback when the parent property carries no drawer
-/// attribute. When <see cref="ConfigDrawer{TConfig}"/> encounters the attribute (on either the
-/// property or the type), it bypasses the default recursive parameter expansion and hands the
-/// group instance directly to this drawer each frame.
+/// Prefer applying <see cref="Umbra.Config.Attributes.UmbraNestedDrawerAttribute{TDrawer}"/> to the parent property that exposes the nested group. When <see cref="ConfigDrawer{TConfig}"/> encounters the attribute on the property or, as a fallback, on the nested type, it bypasses the default recursive expansion and hands the group instance directly to this drawer each frame.
 /// </para>
 /// <para>
-/// The drawer has complete ImGui layout control; no label or column-alignment row is emitted by
-/// the factory. Property-level wrapper attributes such as
-/// <see cref="Umbra.Config.Attributes.UmbraCategoryAttribute"/> (<c>[UmbraCategory]</c>),
-/// <see cref="Umbra.Config.Attributes.UmbraCollapseAsTreeAttribute"/> (<c>[UmbraCollapseAsTree]</c>),
-/// <see cref="Umbra.Config.Attributes.UmbraSpacingBeforeAttribute"/> (<c>[UmbraSpacingBefore]</c>),
-/// <see cref="Umbra.Config.Attributes.UmbraSpacingAfterAttribute"/> (<c>[UmbraSpacingAfter]</c>), and
-/// <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>) on the parent
-/// property are still honoured around the drawer output. When the parent property declares a
-/// category, that category becomes the visible container for the drawer output.
-/// </para>
-/// <para>
-/// Implements <see cref="IDisposable"/> so drawers that hold per-instance state (e.g. cached
-/// textures, capture counters) can clean up when the owning
-/// <see cref="ConfigDrawer{TConfig}"/> is disposed.
+/// The drawer has full ImGui layout control. Property-level wrapper attributes such as category, collapse, spacing, and hide rules are still honored around the drawer output by the surrounding configuration-drawer pipeline.
 /// </para>
 /// </remarks>
-/// <typeparam name="T">The concrete nested configuration group type this drawer renders.</typeparam>
+/// <typeparam name="T">The nested configuration-group type rendered by the drawer.</typeparam>
 public interface INestedDrawer<T> : IDisposable
 {
     /// <summary>
-    /// Renders ImGui controls for the provided nested configuration group instance.
+    /// Renders ImGui content for the provided nested configuration-group instance.
     /// </summary>
-    /// <remarks>
-    /// The instance is guaranteed to be non-<see langword="null"/> when this method is called.
-    /// </remarks>
-    /// <param name="groupInstance">The strongly-typed nested configuration group instance to render.</param>
+    /// <param name="groupInstance">The non-null nested group instance to render.</param>
     void Draw(T groupInstance);
 
     /// <inheritdoc cref="IDisposable.Dispose"/>
     /// <remarks>
-    /// Default implementation calls <see cref="GC.SuppressFinalize"/> to prevent a redundant
-    /// finalizer call. Override when the drawer holds state that must be released on plugin
-    /// unload (e.g. a capture-mode counter or a cached resource handle).
+    /// The default implementation calls <see cref="GC.SuppressFinalize(object)"/>. Override it when the drawer owns resources that must be released on plugin unload.
     /// </remarks>
     void IDisposable.Dispose() => GC.SuppressFinalize(this);
 }

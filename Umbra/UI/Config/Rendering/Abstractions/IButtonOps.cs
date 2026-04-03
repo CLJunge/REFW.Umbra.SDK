@@ -1,7 +1,7 @@
 namespace Umbra.UI.Config.Rendering;
 
 /// <summary>
-/// Defines button operations that use the host's default sizing.
+/// Defines button operations that use the host's default sizing behavior.
 /// </summary>
 internal interface IButtonOps
 {
@@ -9,6 +9,6 @@ internal interface IButtonOps
     /// Renders a button and reports whether it was clicked.
     /// </summary>
     /// <param name="label">The button label.</param>
-    /// <returns><see langword="true"/> when the button was clicked; otherwise <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if the button was clicked; otherwise, <see langword="false"/>.</returns>
     bool Button(string label);
 }

@@ -8,9 +8,11 @@ using Umbra.Logging;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Resolves <see cref="UmbraHideIfAttribute{T}"/> declarations into per-frame visibility
-/// predicates. Keeps HideIf logic isolated from both tree traversal and control rendering.
+/// Resolves <see cref="UmbraHideIfAttribute{T}"/> declarations into per-frame visibility predicates.
 /// </summary>
+/// <remarks>
+/// This helper caches member accessors per owner-type and member-name pair so visibility checks can reuse compiled accessors across configuration drawer builds.
+/// </remarks>
 internal static class VisibilityPredicateResolver
 {
     private static readonly ConcurrentDictionary<HideIfAccessorCacheKey, HideIfAccessorBinding> s_accessorCache = new();
@@ -35,43 +37,11 @@ internal static class VisibilityPredicateResolver
     }
 
     /// <summary>
-    /// Resolves a cached <see cref="IHideIfAttribute"/> into a <see cref="Func{Boolean}"/> that
-    /// returns <see langword="true"/> when the parameter should be visible (i.e. the hide
-    /// condition is NOT met).
+    /// Builds the visibility predicate for the supplied cached hide condition and configuration owner instance.
     /// </summary>
-    /// <remarks>
-    /// The raw property or field accessor is compiled once per owner-type/member-name pair and
-    /// cached in <see cref="s_accessorCache"/> so repeated config UI builds do not pay expression
-    /// compilation or <see cref="PropertyInfo.GetValue(object)"/> reflection costs. The cached
-    /// accessor is then bound to the closed-over <paramref name="owner"/> instance.
-    /// <para>
-    /// Callers that have already determined <paramref name="hideIf"/> is
-    /// <see langword="null"/> should short-circuit with <c>static () =&gt; true</c> and skip
-    /// this call entirely to avoid the function-call overhead for the common no-condition case.
-    /// </para>
-    /// <para>
-    /// When an explicit comparison value is present, equality is evaluated with
-    /// <see cref="object.Equals(object?, object?)"/> against the boxed runtime value returned by
-    /// the accessor. This keeps the comparison path simple and works for the primitive, string,
-    /// enum, and nullable values typically used by config-backed
-    /// <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>) conditions.
-    /// </para>
-    /// <para>
-    /// Invalid <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> (<c>[UmbraHideIf]</c>)
-    /// bindings are warned only once per owner-type/member-name pair.
-    /// This avoids repeating the same warning every time a panel or drawer is rebuilt while still
-    /// surfacing the configuration issue to the developer.
-    /// </para>
-    /// </remarks>
-    /// <param name="hideIf">
-    /// The pre-cached hide-condition data from <see cref="ParameterMetadata.HideIf"/>, or
-    /// <see langword="null"/> when the parameter carries no hide condition.
-    /// </param>
-    /// <param name="owner">The configuration object instance that owns the parameter.</param>
-    /// <returns>
-    /// A predicate that returns <see langword="true"/> when the control should be rendered;
-    /// always returns <see langword="true"/> when <paramref name="hideIf"/> is <see langword="null"/>.
-    /// </returns>
+    /// <param name="hideIf">The cached hide-condition metadata, or <see langword="null"/> when no hide rule applies.</param>
+    /// <param name="owner">The configuration object that owns the annotated parameter.</param>
+    /// <returns>A predicate that returns <see langword="true"/> when the parameter should be rendered; otherwise, <see langword="false"/>.</returns>
     internal static Func<bool> Build(IHideIfAttribute? hideIf, object owner)
     {
         if (hideIf is null) return static () => true;
@@ -93,7 +63,6 @@ internal static class VisibilityPredicateResolver
 
         var getValue = accessor.GetValue;
 
-        // No explicit value: treat member as bool — visible while NOT true.
         if (!hasValue) return () => getValue(owner) is not true;
 
         return () => !Equals(getValue(owner), compareValue);

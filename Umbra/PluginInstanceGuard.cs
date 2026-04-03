@@ -5,16 +5,10 @@ using Umbra.Logging;
 namespace Umbra;
 
 /// <summary>
-/// Coordinates AppDomain-local single-instance enforcement for plugin identity types.
+/// Tracks active single-instance leases for plugin identity types inside the current managed plugin host.
 /// </summary>
 /// <remarks>
-/// This registry is process-local to the current managed plugin host. The preferred entry point for
-/// plugin authors is <see cref="PluginBootstrapper"/>, which owns both acquisition and release.
-/// <see cref="PluginInstanceLease"/> remains available for advanced or test-oriented scenarios where
-/// explicit lease handling is desirable. Mutex keys are derived from the supplied plugin type's
-/// assembly identity, so only the first successful acquisition for a given assembly key is allowed
-/// to proceed. The convenience overload delegates caller-type inference to
-/// <see cref="PluginCallerTypeResolver"/>.
+/// <see cref="PluginBootstrapper"/> is the preferred entry point for plugin authors because it owns both acquisition and release. This registry is process-local to the current AppDomain, and mutex keys are derived from the supplied plugin type's assembly identity with type-name fallbacks when the assembly name is unavailable.
 /// </remarks>
 internal static class PluginInstanceGuard
 {
@@ -24,27 +18,14 @@ internal static class PluginInstanceGuard
 #pragma warning restore IDE0028
 
     /// <summary>
-    /// Attempts to acquire the single-instance mutex for the decorated host type that owns the
-    /// calling entry-point method.
+    /// Attempts to acquire the single-instance mutex for the plugin type that owns the calling entry-point method.
     /// </summary>
     /// <remarks>
-    /// This overload is intended for direct use inside a plugin's <c>[PluginEntryPoint]</c> method.
-    /// It delegates caller-type inference to <see cref="PluginCallerTypeResolver"/>, then applies the
-    /// same class validation and mutex-key resolution as
-    /// <see cref="TryAcquire(Type, out PluginInstanceLease?)"/>.
+    /// This overload delegates caller-type inference to <see cref="PluginCallerTypeResolver"/>, then applies the same class validation and mutex-key resolution as <see cref="TryAcquire(Type, out PluginInstanceLease?)"/>.
     /// </remarks>
-    /// <param name="lease">
-    /// Receives the acquired lease when the method returns <see langword="true"/>; otherwise
-    /// <see langword="null"/>.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> when the caller's plugin mutex key was acquired successfully;
-    /// otherwise <see langword="false"/> when another plugin instance already holds that key.
-    /// </returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when the caller cannot be resolved to a declaring plugin type, when that type is not a
-    /// class, or when a mutex key cannot be derived from the supplied type.
-    /// </exception>
+    /// <param name="lease">When this method returns, contains the acquired lease if the method returned <see langword="true"/>; otherwise, <see langword="null"/>. This parameter is treated as uninitialized.</param>
+    /// <returns><see langword="true"/> if the caller's plugin mutex key was acquired; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="InvalidOperationException">The caller cannot be resolved to a declaring plugin type, the resolved type is not a class, or no mutex key can be derived from that type.</exception>
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool TryAcquire([NotNullWhen(true)] out PluginInstanceLease? lease)
     {
@@ -59,21 +40,11 @@ internal static class PluginInstanceGuard
     /// <summary>
     /// Attempts to acquire the single-instance mutex declared by <paramref name="pluginType"/>.
     /// </summary>
-    /// <param name="pluginType">
-    /// The plugin identity type whose assembly contributes the mutex key.
-    /// </param>
-    /// <param name="lease">
-    /// Receives the acquired lease when the method returns <see langword="true"/>; otherwise
-    /// <see langword="null"/>.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> when the mutex key was acquired successfully; otherwise
-    /// <see langword="false"/> when another plugin instance already holds that key.
-    /// </returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="pluginType"/> is not a class or when a mutex key cannot be
-    /// derived from the supplied type.
-    /// </exception>
+    /// <param name="pluginType">The plugin identity type whose assembly contributes the mutex key.</param>
+    /// <param name="lease">When this method returns, contains the acquired lease if the method returned <see langword="true"/>; otherwise, <see langword="null"/>. This parameter is treated as uninitialized.</param>
+    /// <returns><see langword="true"/> if the mutex key was acquired; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="pluginType"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="pluginType"/> is not a class or no mutex key can be derived from it.</exception>
     public static bool TryAcquire(Type pluginType, [NotNullWhen(true)] out PluginInstanceLease? lease)
     {
         ArgumentNullException.ThrowIfNull(pluginType);
@@ -99,7 +70,7 @@ internal static class PluginInstanceGuard
     /// <summary>
     /// Releases an active lease when the owning plugin unloads.
     /// </summary>
-    /// <param name="lease">The lease to release.</param>
+    /// <param name="lease">The lease to remove if it still matches the registry entry for its mutex key.</param>
     internal static void Release(PluginInstanceLease lease)
     {
         lock (_sync)
@@ -116,12 +87,10 @@ internal static class PluginInstanceGuard
     /// Releases any active lease held by <paramref name="pluginType"/>.
     /// </summary>
     /// <remarks>
-    /// This is the release primitive used by <see cref="PluginBootstrapper"/> so plugin authors do
-    /// not need to store or dispose a lease object in their own code.
+    /// <see cref="PluginBootstrapper"/> uses this overload so plugin authors do not need to store or dispose a <see cref="PluginInstanceLease"/> themselves.
     /// </remarks>
-    /// <param name="pluginType">
-    /// The plugin identity type whose assembly contributes the mutex key.
-    /// </param>
+    /// <param name="pluginType">The plugin identity type whose assembly contributes the mutex key.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pluginType"/> is <see langword="null"/>.</exception>
     internal static void Release(Type pluginType)
     {
         ArgumentNullException.ThrowIfNull(pluginType);
@@ -138,7 +107,7 @@ internal static class PluginInstanceGuard
     /// Clears all active leases.
     /// </summary>
     /// <remarks>
-    /// This exists for unit tests that need deterministic isolation between test methods.
+    /// This method exists for unit tests that need deterministic isolation between runs.
     /// </remarks>
     internal static void Reset()
     {
@@ -149,9 +118,9 @@ internal static class PluginInstanceGuard
     /// <summary>
     /// Emits the duplicate-load warning through the global logger.
     /// </summary>
-    /// <param name="pluginName">The plugin name used in the warning.</param>
+    /// <param name="pluginName">The plugin name shown in the warning.</param>
     /// <param name="mutexKey">The mutex key that is already held.</param>
-    /// <param name="ownerName">The plugin type currently holding the mutex key.</param>
+    /// <param name="ownerName">The plugin type currently holding <paramref name="mutexKey"/>.</param>
     private static void WarnDuplicateLoad(string pluginName, string mutexKey, string ownerName)
     {
         Logger.Warning(
@@ -192,7 +161,7 @@ internal static class PluginInstanceGuard
     /// Returns a stable display name for diagnostic messages.
     /// </summary>
     /// <param name="pluginType">The plugin type to format.</param>
-    /// <returns>The fully-qualified type name when available; otherwise the simple type name.</returns>
+    /// <returns>The fully qualified type name when available; otherwise, the simple type name.</returns>
     private static string GetTypeDisplayName(Type pluginType)
         => pluginType.FullName ?? pluginType.Name;
 }

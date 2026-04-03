@@ -3,44 +3,21 @@ using System.Linq.Expressions;
 namespace Umbra.UI.LiveState;
 
 /// <summary>
-/// Reads the <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/> from a live state type,
-/// instantiates the declared <see cref="ILiveStateSectionDrawer{T}"/>, and compiles a
-/// zero-overhead <see cref="Action"/> delegate that invokes <c>Draw(T)</c> each frame.
+/// Resolves the drawer declared on a live-state type and compiles the delegate used to invoke it each frame.
 /// </summary>
 /// <remarks>
-/// The compilation pass runs once at <see cref="LiveStateSection{T}"/> construction time.
-/// Per-frame cost is a single delegate invocation with no reflection overhead.
+/// This resolution pass runs once when <see cref="LiveStateSection{T}"/> is constructed. The returned delegate captures the instantiated drawer and bound context so per-frame rendering avoids reflection.
 /// </remarks>
 internal static class LiveStateSectionDrawerResolver
 {
     /// <summary>
-    /// Resolves the drawer declared on <paramref name="stateType"/> and compiles a draw
-    /// delegate bound to <paramref name="context"/>.
+    /// Resolves the drawer declared on <paramref name="stateType"/> and binds it to <paramref name="context"/>.
     /// </summary>
-    /// <param name="stateType">
-    /// The live state <see cref="Type"/> decorated with
-    /// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
-    /// </param>
-    /// <param name="context">
-    /// The live state instance that will be passed to the drawer on every
-    /// <see cref="Action"/> invocation.
-    /// </param>
-    /// <param name="disposable">
-    /// Set to the instantiated drawer cast to <see cref="IDisposable"/>. Because
-    /// <see cref="ILiveStateSectionDrawer{T}"/> extends <see cref="IDisposable"/>, this is always
-    /// non-<see langword="null"/> when the method returns successfully.
-    /// </param>
-    /// <returns>
-    /// A compiled <see cref="Action"/> that invokes <c>drawer.Draw(context)</c> with no
-    /// per-frame reflection cost.
-    /// </returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="stateType"/> is not decorated with
-    /// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>, when the declared drawer type
-    /// does not implement <see cref="ILiveStateSectionDrawer{T}"/> with a generic argument
-    /// compatible with <paramref name="stateType"/>, or when the drawer cannot be
-    /// instantiated.
-    /// </exception>
+    /// <param name="stateType">The live-state type decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.</param>
+    /// <param name="context">The live-state instance passed to the resolved drawer on every invocation.</param>
+    /// <param name="disposable">When this method returns, contains the instantiated drawer as an <see cref="IDisposable"/>. This parameter is treated as uninitialized.</param>
+    /// <returns>A compiled <see cref="Action"/> that invokes <c>Draw</c> on the resolved drawer for <paramref name="context"/>.</returns>
+    /// <exception cref="InvalidOperationException"><paramref name="stateType"/> is not decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>, the declared drawer type does not implement a compatible <see cref="ILiveStateSectionDrawer{T}"/>, or the drawer cannot be instantiated.</exception>
     internal static Action Resolve(Type stateType, object context, out IDisposable disposable)
     {
         var attr = stateType.GetDrawerAttribute<ILiveStateSectionDrawerAttribute>() ?? throw new InvalidOperationException(

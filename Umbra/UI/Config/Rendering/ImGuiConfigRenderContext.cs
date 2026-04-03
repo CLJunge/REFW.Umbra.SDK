@@ -7,12 +7,10 @@ using Umbra.UI.Config.Nodes;
 namespace Umbra.UI.Config.Rendering;
 
 /// <summary>
-/// Provides the shared ImGui-backed rendering operations used by config drawers and draw nodes.
+/// Provides the shared ImGui-backed implementation of the rendering seams used by configuration drawers and draw nodes.
 /// </summary>
 /// <remarks>
-/// A single production instance centralizes the direct <see cref="ImGui"/> and
-/// <see cref="ImGuiWidgets"/> calls while the consumer-facing interfaces remain narrow for unit
-/// tests.
+/// A single production instance centralizes direct <see cref="ImGui"/> and <see cref="ImGuiWidgets"/> calls while the consumer-facing interfaces remain narrow and test-friendly.
 /// </remarks>
 internal sealed class ImGuiConfigRenderContext :
     IButtonDrawerRenderer,
@@ -24,6 +22,9 @@ internal sealed class ImGuiConfigRenderContext :
     IConfigDrawerScope,
     IButtonStyleColorSink
 {
+    /// <summary>
+    /// Gets the shared production render context instance.
+    /// </summary>
     internal static ImGuiConfigRenderContext Instance { get; } = new();
 
     private ImGuiConfigRenderContext()

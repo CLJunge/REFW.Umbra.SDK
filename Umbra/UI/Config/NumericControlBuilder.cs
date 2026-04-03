@@ -4,19 +4,15 @@ using Umbra.Config;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Builds per-frame ImGui draw actions for built-in numeric parameter types.
+/// Builds the built-in numeric control draw actions used by Umbra's configuration UI.
 /// </summary>
 /// <remarks>
-/// This type isolates slider/drag composition for <see cref="int"/>, <see cref="float"/>, and
-/// <see cref="double"/> parameters from <see cref="ControlFactory"/>. Double-valued controls use
-/// ImGui's scalar APIs with <see cref="ImGuiDataType.Double"/> so values are edited at native
-/// double precision rather than being narrowed through <see cref="float"/>.
+/// This helper chooses between slider and drag controls based on whether <see cref="ParameterMetadata.Min"/> and <see cref="ParameterMetadata.Max"/> are both present. Double-valued parameters use ImGui scalar APIs so editing stays at native double precision.
 /// </remarks>
 internal static class NumericControlBuilder
 {
     /// <summary>
-    /// Builds a per-frame draw action that renders either a <c>SliderInt</c> or an unconstrained
-    /// <c>DragInt</c> for an <see cref="int"/> parameter.
+    /// Builds the per-frame draw action for an <see cref="int"/> parameter.
     /// </summary>
     internal static Action BuildInt(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
@@ -47,8 +43,7 @@ internal static class NumericControlBuilder
     }
 
     /// <summary>
-    /// Builds a per-frame draw action that renders either a <c>SliderFloat</c> or an unconstrained
-    /// <c>DragFloat</c> for a <see cref="float"/> parameter.
+    /// Builds the per-frame draw action for a <see cref="float"/> parameter.
     /// </summary>
     internal static Action BuildFloat(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
@@ -79,8 +74,7 @@ internal static class NumericControlBuilder
     }
 
     /// <summary>
-    /// Builds a per-frame draw action that renders either a double-precision scalar slider or an
-    /// unconstrained scalar drag control for a <see cref="double"/> parameter.
+    /// Builds the per-frame draw action for a <see cref="double"/> parameter.
     /// </summary>
     internal static Action BuildDouble(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {

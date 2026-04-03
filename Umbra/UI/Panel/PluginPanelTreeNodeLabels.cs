@@ -3,12 +3,10 @@ using Umbra.Logging;
 namespace Umbra.UI.Panel;
 
 /// <summary>
-/// Validates and sanitizes panel section tree-node labels.
+/// Validates and sanitizes tree-node labels used by <see cref="PluginPanel"/>.
 /// </summary>
 /// <remarks>
-/// This type isolates ImGui label/ID separator handling from <see cref="PluginPanel"/>.
-/// Invalid labels are warned once per owner-id/label pair so repeated panel construction does
-/// not flood the REFramework console with identical stack-trace diagnostics.
+/// This type isolates ImGui label and ID separator handling from panel composition code. Invalid labels are warned once per owner and label pair so repeated panel construction does not flood the REFramework console with identical diagnostics.
 /// </remarks>
 internal static class PluginPanelTreeNodeLabels
 {
@@ -16,24 +14,20 @@ internal static class PluginPanelTreeNodeLabels
     private static readonly object _warningLock = new();
 
     /// <summary>
-    /// Logs a developer warning when the section's tree-node label contains ImGui's label/ID
-    /// separator token.
+    /// Emits a developer warning when the section's tree-node label contains ImGui's label and ID separator token.
     /// </summary>
     /// <remarks>
-    /// The warning is emitted only once per owner-id/label pair. The panel still sanitizes the
-    /// label at render time on every draw.
+    /// The warning is emitted at most once per section identifier and label pair. Rendering still sanitizes the label on every draw.
     /// </remarks>
     /// <param name="section">The section being added to the panel.</param>
     internal static void WarnIfInvalid(IPanelSection section)
         => WarnIfInvalid(section.SectionId, section.TreeNodeLabel, $"section '{section.SectionId}'");
 
     /// <summary>
-    /// Logs a developer warning when the supplied root or section tree-node label contains ImGui's
-    /// label/ID separator token.
+    /// Emits a developer warning when the supplied root or section tree-node label contains ImGui's label and ID separator token.
     /// </summary>
     /// <remarks>
-    /// The warning is emitted only once per owner-id/label pair. The panel still sanitizes the
-    /// label at render time on every draw.
+    /// The warning is emitted at most once per owner and label pair. Rendering still sanitizes the label on every draw.
     /// </remarks>
     /// <param name="ownerId">The stable panel or section identifier associated with the label.</param>
     /// <param name="treeLabel">The root or section tree-node label to validate.</param>
@@ -68,14 +62,10 @@ internal static class PluginPanelTreeNodeLabels
     }
 
     /// <summary>
-    /// Removes any caller-supplied ImGui label/ID suffix so the panel can append its own stable
-    /// <c>##{SectionId}</c> disambiguation suffix.
+    /// Removes any caller-supplied ImGui label suffix so the panel can append its own stable ID suffix.
     /// </summary>
     /// <param name="label">The caller-supplied tree-node label.</param>
-    /// <returns>
-    /// The sanitized label text with everything from the first <c>##</c> separator token onwards
-    /// removed, matching ImGui's label/ID separator semantics.
-    /// </returns>
+    /// <returns>The label text up to, but not including, the first <c>##</c> token, or an empty string when <paramref name="label"/> is <see langword="null"/> or empty.</returns>
     internal static string Sanitize(string? label)
     {
         if (string.IsNullOrEmpty(label))

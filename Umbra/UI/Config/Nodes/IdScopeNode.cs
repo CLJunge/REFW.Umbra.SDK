@@ -3,16 +3,10 @@ using Umbra.UI.Config.Rendering;
 namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
-/// Draw node that wraps a subtree in a stable ImGui ID scope.
+/// Wraps a subtree of configuration draw nodes in a stable ImGui ID scope.
 /// </summary>
 /// <remarks>
-/// The scope ID is typically a dot-separated structural path derived from the owning nested
-/// settings-group property and its configured prefix. This keeps repeated local widget labels and
-/// custom nested-group drawer IDs isolated across sibling branches of the configuration tree.
-/// The default constructor renders through the shared active ImGui context. Unit tests can replace the
-/// low-level renderer through the internal constructor so scope cleanup can be verified without a
-/// live ImGui context. The pop operation is guaranteed to run even if a child node throws while
-/// drawing.
+/// The scope ID is typically derived from the structural settings path of a nested group so repeated local widget labels remain isolated across sibling branches of the configuration tree. The pop operation always runs even if a child node throws while drawing.
 /// </remarks>
 internal sealed class IdScopeNode : IDrawNode
 {
@@ -21,22 +15,22 @@ internal sealed class IdScopeNode : IDrawNode
     private readonly IIdScopeNodeRenderer _renderer;
 
     /// <summary>
-    /// Initializes a new <see cref="IdScopeNode"/> that renders through the shared active ImGui context.
+    /// Initializes a new <see cref="IdScopeNode"/> that renders through the shared ImGui render context.
     /// </summary>
     /// <param name="scopeId">The stable ImGui ID pushed before drawing the subtree.</param>
-    /// <param name="children">The child nodes that should render inside the pushed ID scope.</param>
+    /// <param name="children">The child nodes rendered inside the pushed scope.</param>
     internal IdScopeNode(string scopeId, List<IDrawNode> children)
         : this(scopeId, children, ImGuiConfigRenderContext.Instance)
     {
     }
 
     /// <summary>
-    /// Initializes a new <see cref="IdScopeNode"/> with the specified low-level renderer.
+    /// Initializes a new <see cref="IdScopeNode"/> with the specified renderer seam.
     /// </summary>
     /// <param name="scopeId">The stable ImGui ID pushed before drawing the subtree.</param>
-    /// <param name="children">The child nodes that should render inside the pushed ID scope.</param>
-    /// <param name="renderer">The renderer used for ID-scope push/pop operations.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="children"/> or <paramref name="renderer"/> is <see langword="null"/>.</exception>
+    /// <param name="children">The child nodes rendered inside the pushed scope.</param>
+    /// <param name="renderer">The renderer used for ID-scope push and pop operations.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="children"/> or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal IdScopeNode(string scopeId, List<IDrawNode> children, IIdScopeNodeRenderer renderer)
     {
         ArgumentNullException.ThrowIfNull(children);

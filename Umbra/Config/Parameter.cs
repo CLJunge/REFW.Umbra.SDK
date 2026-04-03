@@ -3,14 +3,12 @@ using System.Diagnostics;
 namespace Umbra.Config;
 
 /// <summary>
-/// A strongly-typed configuration parameter that holds a value of type <typeparamref name="T"/>
-/// and notifies listeners when that value changes.
+/// Stores one typed configuration value together with its default value, resolved metadata, and change notifications.
 /// </summary>
 /// <remarks>
-/// The parameter's resolved <see cref="Key"/> and <see cref="Metadata"/> are assigned by Umbra's
-/// internal registration pipeline. Public consumers can read those values but cannot replace them.
+/// Umbra's registration pipeline assigns the resolved <see cref="Key"/> and <see cref="Metadata"/> after the parameter is discovered in a settings object. Public code can then read those values, observe changes, and mutate the current value through the typed or untyped APIs.
 /// </remarks>
-/// <typeparam name="T">The type of value stored by this parameter.</typeparam>
+/// <typeparam name="T">The value type stored by the parameter.</typeparam>
 [DebuggerDisplay("{Key}: {Value} (Default: {DefaultValue}, Modified: {IsModified})")]
 public class Parameter<T> : IParameter, IParameterRegistration
 {
@@ -25,17 +23,13 @@ public class Parameter<T> : IParameter, IParameterRegistration
     private Action? _interfaceValueChanged;
 
     /// <summary>
-    /// Raised when the parameter's value changes, providing both the previous and new values.
+    /// Occurs when the parameter value changes through the typed notifying mutation paths.
     /// </summary>
     /// <remarks>
-    /// This event is not raised when the value is updated silently via
-    /// <see cref="SetWithoutNotify"/> or <see cref="IParameter.SetValueWithoutNotify"/>.
-    /// It can also be raised by <see cref="Reset(bool)"/> when <c>raiseEvent</c> is
-    /// <see langword="true"/> and the reset actually changes the current value.
+    /// This event is not raised by <see cref="SetWithoutNotify"/> or <see cref="IParameter.SetValueWithoutNotify(object?)"/>. It can also be raised by <see cref="Reset(bool)"/> when <c>raiseEvent</c> is <see langword="true"/> and resetting changes the current value.
     /// </remarks>
     public event Action<T?, T?>? ValueChanged;
 
-    /// <inheritdoc/>
     event Action? IParameter.ValueChanged
     {
         add => _interfaceValueChanged += value;
@@ -49,74 +43,59 @@ public class Parameter<T> : IParameter, IParameterRegistration
     public ParameterMetadata Metadata { get; internal set; } = new();
 
     /// <summary>
-    /// Gets the default value assigned to this parameter at construction time.
-    /// Used by <see cref="Reset"/> to restore the parameter to its original state.
+    /// Gets the default value captured when this parameter instance was constructed.
     /// </summary>
+    /// <value>The original value restored by <see cref="Reset(bool)"/>.</value>
     public T? DefaultValue { get; }
 
     /// <inheritdoc/>
     public Type ValueType => typeof(T);
 
     /// <summary>
-    /// Gets a value indicating whether the current <see cref="Value"/> differs from
-    /// <see cref="DefaultValue"/>.
+    /// Gets a value indicating whether the current <see cref="Value"/> differs from <see cref="DefaultValue"/>.
     /// </summary>
+    /// <value><see langword="true"/> if the current value differs from the default value; otherwise, <see langword="false"/>.</value>
     /// <remarks>
-    /// This value is computed on demand rather than tracked separately, so it always reflects
-    /// changes made through <see cref="Value"/>, <see cref="Set"/>, <see cref="SetWithoutNotify"/>,
-    /// <see cref="IParameter.SetValue"/>, <see cref="IParameter.SetValueWithoutNotify"/>, and
-    /// <see cref="Reset"/>.
+    /// This value is computed on demand, so it always reflects changes made through the typed and untyped mutation APIs.
     /// </remarks>
     public bool IsModified => !EqualityComparer<T?>.Default.Equals(_value, DefaultValue);
 
     /// <summary>
-    /// Gets or sets the current value of this parameter.
-    /// Setting this property raises <see cref="ValueChanged"/> if the value changes
-    /// and passes validation defined by <see cref="ParameterMetadata.Min"/> and
-    /// <see cref="ParameterMetadata.Max"/>.
+    /// Gets or sets the current parameter value through the validating, notifying mutation path.
     /// </summary>
+    /// <value>The current parameter value.</value>
     /// <remarks>
-    /// Assignments that fail metadata validation are ignored silently so UI-driven code can attempt
-    /// updates without exception handling. Use <see cref="TrySet"/> or <see cref="SetOrThrow"/>
-    /// when the caller needs an explicit success/failure signal.
+    /// Assignments that fail metadata validation are ignored silently so UI-driven code can attempt updates without exception handling. Use <see cref="TrySet"/> or <see cref="SetOrThrow"/> when the caller needs an explicit success or failure signal.
     /// </remarks>
     public T? Value { get => _value; set => SetValue(value); }
 
     /// <summary>
-    /// Initializes a new instance of <see cref="Parameter{T}"/> with <see langword="default"/>
-    /// as both the current value and the <see cref="DefaultValue"/>.
+    /// Initializes a new instance of the <see cref="Parameter{T}"/> class.
     /// </summary>
+    /// <remarks>
+    /// The current value and <see cref="DefaultValue"/> are both initialized to <see langword="default"/>.
+    /// </remarks>
     public Parameter()
     {
         (_value, DefaultValue) = (default, default);
     }
 
     /// <summary>
-    /// Initializes a new instance of <see cref="Parameter{T}"/> with the specified default value.
+    /// Initializes a new instance of the <see cref="Parameter{T}"/> class.
     /// </summary>
-    /// <param name="defaultValue">
-    /// The initial and default value for this parameter.
-    /// </param>
+    /// <param name="defaultValue">The initial value and default value for the parameter.</param>
     public Parameter(T? defaultValue)
     {
         (_value, DefaultValue) = (defaultValue, defaultValue);
     }
 
     /// <summary>
-    /// Resets the value to its default state, optionally raising the value changed event.
+    /// Resets the current value to <see cref="DefaultValue"/>.
     /// </summary>
+    /// <param name="raiseEvent"><see langword="true"/> to raise change notifications when resetting changes the current value; otherwise, <see langword="false"/>.</param>
     /// <remarks>
-    /// <para>
-    /// If <paramref name="raiseEvent"/> is <see langword="false"/>, the value is reset without
-    /// notifying listeners of the change.
-    /// </para>
-    /// <para>
-    /// Validation is intentionally bypassed during reset so that <see cref="IsModified"/> is
-    /// guaranteed to be <see langword="false"/> after this call, regardless of the current
-    /// <see cref="ParameterMetadata.Min"/>/<see cref="ParameterMetadata.Max"/> bounds.
-    /// </para>
+    /// Reset bypasses metadata validation so <see cref="IsModified"/> always becomes <see langword="false"/> after the call.
     /// </remarks>
-    /// <param name="raiseEvent">true to raise the value changed event after resetting; otherwise, false.</param>
     public void Reset(bool raiseEvent = true)
     {
         var oldValue = _value;
@@ -130,45 +109,31 @@ public class Parameter<T> : IParameter, IParameterRegistration
     }
 
     /// <summary>
-    /// Sets the parameter's value without raising <see cref="ValueChanged"/>.
-    /// Useful for initializing or restoring persisted values without triggering side effects.
+    /// Sets the current value without raising change notifications.
     /// </summary>
-    /// <remarks>
-    /// This silent path intentionally bypasses the min/max validation performed by
-    /// <see cref="Value"/> and <see cref="Set(T)"/>.
-    /// </remarks>
     /// <param name="value">The value to assign silently.</param>
+    /// <remarks>
+    /// This method intentionally bypasses the metadata validation performed by <see cref="Value"/>, <see cref="Set(T)"/>, <see cref="TrySet"/>, and <see cref="SetOrThrow"/>.
+    /// </remarks>
     public void SetWithoutNotify(T? value) => _value = value;
 
     /// <summary>
-    /// Sets the parameter's value, raising <see cref="ValueChanged"/> if the value changes
-    /// and passes validation. Convenience alias for assigning to <see cref="Value"/> directly;
-    /// prefer this form when the calling site already holds the typed parameter reference
-    /// (e.g. inside <c>INestedGroupDrawer&lt;T&gt;.Draw</c>) to avoid the double-<c>.Value</c>
-    /// repetition of <c>parameter.Value.Value = x</c>.
+    /// Sets the current value through the validating, notifying mutation path.
     /// </summary>
-    /// <remarks>
-    /// Invalid values are ignored silently. Use <see cref="TrySet"/> or <see cref="SetOrThrow"/>
-    /// when invalid writes must be observed explicitly.
-    /// </remarks>
     /// <param name="value">The new value to assign.</param>
+    /// <remarks>
+    /// This is a convenience alias for assigning to <see cref="Value"/> directly. Invalid values are ignored silently.
+    /// </remarks>
     public void Set(T? value) => Value = value;
 
     /// <summary>
-    /// Attempts to set the parameter's value while reporting whether the supplied value satisfies
-    /// metadata validation.
+    /// Attempts to set the current value while reporting whether metadata validation succeeded.
     /// </summary>
-    /// <remarks>
-    /// Returns <see langword="false"/> only when <paramref name="value"/> violates the current
-    /// <see cref="ParameterMetadata.Min"/> and/or <see cref="ParameterMetadata.Max"/> constraints.
-    /// A valid value that matches the current value still returns <see langword="true"/> even though
-    /// no event is raised and no state changes.
-    /// </remarks>
     /// <param name="value">The candidate value to assign.</param>
-    /// <returns>
-    /// <see langword="true"/> when <paramref name="value"/> satisfies metadata validation;
-    /// otherwise <see langword="false"/>.
-    /// </returns>
+    /// <returns><see langword="true"/> if <paramref name="value"/> satisfies the current metadata constraints; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// A valid value that equals the current value still returns <see langword="true"/> even though no state changes and no event is raised.
+    /// </remarks>
     public bool TrySet(T? value)
     {
         if (!Validate(value, out _))
@@ -179,13 +144,10 @@ public class Parameter<T> : IParameter, IParameterRegistration
     }
 
     /// <summary>
-    /// Sets the parameter's value or throws when the supplied value violates metadata validation.
+    /// Sets the current value or throws when metadata validation fails.
     /// </summary>
     /// <param name="value">The candidate value to assign.</param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when <paramref name="value"/> falls outside the configured
-    /// <see cref="ParameterMetadata.Min"/> and/or <see cref="ParameterMetadata.Max"/> bounds.
-    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> falls outside the configured <see cref="ParameterMetadata.Min"/> and or <see cref="ParameterMetadata.Max"/> bounds.</exception>
     public void SetOrThrow(T? value)
     {
         if (!Validate(value, out var failureReason))
@@ -329,14 +291,8 @@ public class Parameter<T> : IParameter, IParameterRegistration
     }
 
     /// <summary>
-    /// Returns the string representation of the current <see cref="Value"/>, or
-    /// <see langword="null"/> when <see cref="Value"/> is <see langword="null"/>.
-    /// This ensures that string interpolation and <c>ToString()</c> calls produce
-    /// the same result as the implicit <typeparamref name="T"/> conversion operator.
+    /// Returns the string representation of the current <see cref="Value"/>.
     /// </summary>
-    /// <returns>
-    /// <c>Value?.ToString()</c>, or <see langword="null"/> if <see cref="Value"/> is
-    /// <see langword="null"/>.
-    /// </returns>
+    /// <returns><c>Value?.ToString()</c>, or <see langword="null"/> if <see cref="Value"/> is <see langword="null"/>.</returns>
     public override string? ToString() => Value?.ToString();
 }

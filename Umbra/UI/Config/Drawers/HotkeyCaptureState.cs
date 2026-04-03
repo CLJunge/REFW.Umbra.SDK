@@ -1,21 +1,15 @@
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
-/// Shared mutable state for all hotkey-capture drawers in this assembly.
-/// Tracks the total number of drawer instances currently in capture-waiting state
-/// so that <see cref="HotkeyDrawer"/> and <see cref="TwoColumnHotkeyDrawer"/>
-/// instances mutually exclude one another — only one key capture can be active at a time.
+/// Stores the shared capture-state count used by the hotkey drawers in this assembly.
 /// </summary>
 /// <remarks>
-/// ImGui runs single-threaded; the count never exceeds 1 in normal usage.
-/// <see cref="HotkeyCaptureController"/> instances are responsible for keeping this counter
-/// accurate: increment when entering capture mode, decrement when leaving it or when
-/// <see cref="IDisposable.Dispose"/> is called while capture is still active.
+/// <see cref="HotkeyCaptureController"/> instances keep this counter synchronized so <see cref="HotkeyDrawer"/> and <see cref="TwoColumnHotkeyDrawer"/> mutually exclude one another and only one capture workflow is active at a time.
 /// </remarks>
 internal static class HotkeyCaptureState
 {
     /// <summary>
-    /// The number of hotkey-capture drawers currently waiting for a key press.
+    /// Gets or sets the number of hotkey drawers currently waiting for a key press.
     /// </summary>
     internal static int WaitingCount;
 }

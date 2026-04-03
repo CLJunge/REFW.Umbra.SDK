@@ -1,12 +1,18 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Specifies the drag speed for an unconstrained numeric settings parameter.
+/// Declares the numeric step value used for unconstrained numeric controls.
 /// </summary>
-/// <param name="step">The drag speed for unconstrained numeric controls.</param>
+/// <remarks>
+/// Umbra also uses this value when inferring fallback float-format precision if <see cref="UmbraFormatAttribute"/> is absent.
+/// </remarks>
+/// <param name="step">The declared numeric step value.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraStepAttribute(double step) : Attribute
 {
-    /// <summary>Gets the drag speed for the parameter.</summary>
+    /// <summary>
+    /// Gets the declared numeric step value.
+    /// </summary>
+    /// <value>The step value used for unconstrained numeric controls.</value>
     public double Step { get; } = step;
 }

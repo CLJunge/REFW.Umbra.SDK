@@ -3,36 +3,17 @@ using Hexa.NET.ImGui;
 namespace Umbra.UI.Panel;
 
 /// <summary>
-/// Composes and renders an ordered list of <see cref="IPanelSection"/> instances under a
-/// shared top-level ImGui ID scope.
+/// Composes and renders an ordered list of <see cref="IPanelSection"/> instances under one shared top-level ImGui ID scope.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <see cref="PluginPanel"/> is the recommended top-level UI type for plugins that need to
-/// display both configuration settings and live game state in a single panel.
-/// For plugins that only require a settings panel, <see cref="Config.ConfigDrawer{TConfig}"/>
-/// may be used directly.
+/// <see cref="PluginPanel"/> is the recommended top-level UI type for plugins that need to display both configuration settings and live game state in a single panel. For plugins that only require a settings panel, <see cref="Config.ConfigDrawer{TConfig}"/> can be used directly.
 /// </para>
 /// <para>
-/// The constructor-supplied ID scope string is the sole mechanism that separates this panel's
-/// ImGui widget IDs from every other panel rendered into the same REFramework window. All
-/// managed plugins
-/// share one AppDomain and one ImGui context; duplicate-scope detection and release are handled by
-/// <see cref="PluginPanelScopeRegistry"/>. Use a value that is guaranteed unique across all plugins,
-/// such as <c>nameof(MyPlugin)</c> or <c>typeof(MyPlugin).FullName</c>.
-/// The registry emits at most one detailed warning per still-active duplicate scope so accidental
-/// repeated panel construction does not flood the REFramework console.
+/// The constructor-supplied ID scope is the sole separator between this panel's widget IDs and every other panel rendered into the same REFramework ImGui context. Duplicate-scope detection and release are delegated to <see cref="PluginPanelScopeRegistry"/>.
 /// </para>
 /// <para>
-/// Section collection responsibilities such as tree-label validation, stable ordering, and section
-/// disposal are delegated to <see cref="PluginPanelSectionCollection"/>. Root-node rendering,
-/// per-section tree-node rendering, and separator placement are delegated to
-/// <see cref="PluginPanelDrawPipeline"/>.
-/// </para>
-/// <para>
-/// Always dispose the panel in the plugin's
-/// <see cref="REFrameworkNET.Attributes.PluginExitPoint"/> (<c>[PluginExitPoint]</c>)
-/// to release all section drawers and their captured state.
+/// Section collection concerns such as tree-label validation, stable ordering, and section disposal are delegated to <see cref="PluginPanelSectionCollection"/>. Root-node rendering, per-section tree-node wrapping, and separator placement are delegated to <see cref="PluginPanelDrawPipeline"/>.
 /// </para>
 /// </remarks>
 public sealed class PluginPanel : IDisposable
@@ -129,28 +110,15 @@ public sealed class PluginPanel : IDisposable
     }
 
     /// <summary>
-    /// Appends a section to the panel and re-sorts the section list by <see cref="IPanelSection.Order"/>.
+    /// Appends <paramref name="section"/> to the panel and re-sorts the section list by <see cref="IPanelSection.Order"/>.
     /// </summary>
+    /// <param name="section">The section to add.</param>
+    /// <returns>This panel instance.</returns>
     /// <remarks>
-    /// <para>
-    /// Sections are rendered in ascending <see cref="IPanelSection.Order"/> order. Equal-order
-    /// sections preserve their insertion order (stable sort). To control ordering, apply
-    /// <see cref="UmbraSectionOrderAttribute"/> to the state or config type, or pass a custom
-    /// <see cref="IPanelSection"/> implementation that overrides <see cref="IPanelSection.Order"/>.
-    /// </para>
-    /// <para>
-    /// Tree-node label validation is delegated to <see cref="PluginPanelSectionCollection"/>, which
-    /// uses <see cref="PluginPanelTreeNodeLabels"/> before storing the section.
-    /// </para>
+    /// Equal-order sections preserve insertion order through the section collection's stable ordering behavior.
     /// </remarks>
-    /// <param name="section">The section to add. Must not be <see langword="null"/>.</param>
-    /// <returns>This <see cref="PluginPanel"/> instance, enabling fluent chaining.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="section"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="ObjectDisposedException">
-    /// Thrown when the panel has already been disposed.
-    /// </exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="section"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when the panel has already been disposed.</exception>
     public PluginPanel Add(IPanelSection section)
     {
         _sections.Add(section);
@@ -158,18 +126,10 @@ public sealed class PluginPanel : IDisposable
     }
 
     /// <summary>
-    /// Renders all sections in order. Must be called from within an active ImGui window or
-    /// child window, typically from the plugin's ImGui pre-draw callback each frame.
+    /// Renders all sections in order for the current ImGui frame.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The pushed top-level ImGui ID scope is always popped before this method returns,
-    /// even if a section throws while drawing.
-    /// </para>
-    /// <para>
-    /// Root-node rendering, per-section tree-node wrapping, and separator placement are handled by
-    /// <see cref="PluginPanelDrawPipeline"/> once the shared panel ID scope is active.
-    /// </para>
+    /// The shared top-level ImGui ID scope is always popped before this method returns, even if a section throws while drawing. After <see cref="Dispose"/>, this method becomes a silent no-op.
     /// </remarks>
     public void Draw()
     {
@@ -187,15 +147,10 @@ public sealed class PluginPanel : IDisposable
     }
 
     /// <summary>
-    /// Disposes all sections, clears the section list, and releases this panel's ID scope
-    /// through <see cref="PluginPanelScopeRegistry"/> so a reloaded plugin can register the same
-    /// scope without a spurious duplicate warning.
+    /// Disposes all owned sections and releases this panel's registered ID scope.
     /// </summary>
     /// <remarks>
-    /// Call this in the plugin's
-    /// <see cref="REFrameworkNET.Attributes.PluginExitPoint"/> (<c>[PluginExitPoint]</c>)
-    /// before nulling the panel reference.
-    /// After disposal, calls to <see cref="Draw"/> are silent no-ops.
+    /// Releasing the scope through <see cref="PluginPanelScopeRegistry"/> prevents spurious duplicate-scope warnings when a plugin reloads and recreates the panel with the same scope. After disposal, calls to <see cref="Draw"/> are silent no-ops.
     /// </remarks>
     public void Dispose()
     {

@@ -5,17 +5,16 @@ using Umbra.Config;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Builds per-frame ImGui draw actions for built-in text parameter types.
+/// Builds the built-in text-input draw actions used by Umbra's configuration UI.
 /// </summary>
-/// <remarks>
-/// This type isolates string input control composition from <see cref="ControlFactory"/>.
-/// </remarks>
 internal static class TextControlBuilder
 {
     /// <summary>
-    /// Builds a per-frame draw action that renders an <c>InputText</c> or
-    /// <c>InputTextMultiline</c> field for a <see cref="string"/> parameter.
+    /// Builds the per-frame draw action for a <see cref="string"/> parameter.
     /// </summary>
+    /// <remarks>
+    /// When <see cref="ParameterMetadata.MultilineLines"/> is present, the returned action renders a multi-line text input; otherwise, it renders the standard single-line text input.
+    /// </remarks>
     internal static Action BuildString(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
         var p = (Parameter<string>)parameter;

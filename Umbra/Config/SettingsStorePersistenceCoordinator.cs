@@ -3,17 +3,10 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Encapsulates settings-file load, save, and recovery policy for one <see cref="SettingsStore{TConfig}"/>.
+/// Coordinates load, save, and unreadable-file recovery behavior for one <see cref="SettingsStore{TConfig}"/> instance.
 /// </summary>
 /// <remarks>
-/// <para>
-/// This type isolates persistence orchestration from <see cref="SettingsStore{TConfig}"/> so the
-/// store can remain focused on public lifecycle, parameter ownership, and value operations.
-/// </para>
-/// <para>
-/// The coordinator owns unreadable-file recovery behavior, save suppression after unrecoverable
-/// load failures, and the one-time blocked-save warning policy.
-/// </para>
+/// This type isolates persistence orchestration from <see cref="SettingsStore{TConfig}"/> so the store can remain focused on public lifecycle and parameter ownership. It also owns save suppression after unrecoverable load failures and the one-time blocked-save warning policy.
 /// </remarks>
 internal sealed class SettingsStorePersistenceCoordinator<TConfig>
     where TConfig : class, new()
@@ -38,7 +31,7 @@ internal sealed class SettingsStorePersistenceCoordinator<TConfig>
     }
 
     /// <summary>
-    /// Persists the current parameter values unless saves have been suppressed by a prior load failure.
+    /// Persists the current registered parameter values unless saves have been blocked by a prior unrecoverable load failure.
     /// </summary>
     internal void Save()
     {
@@ -52,13 +45,10 @@ internal sealed class SettingsStorePersistenceCoordinator<TConfig>
     }
 
     /// <summary>
-    /// Creates a fresh registered config instance, then applies persisted values or recovery policy.
+    /// Creates a fresh registered configuration instance, then applies persisted values or the configured recovery policy.
     /// </summary>
-    /// <param name="createRegisteredDefaults">
-    /// A callback that creates a new <typeparamref name="TConfig"/> instance and repopulates the
-    /// shared parameter map with that instance's declared defaults.
-    /// </param>
-    /// <returns>The loaded config instance for the current store session.</returns>
+    /// <param name="createRegisteredDefaults">The callback that creates a new <typeparamref name="TConfig"/> instance and repopulates the shared parameter map with declared defaults.</param>
+    /// <returns>The configuration instance for the current store session.</returns>
     internal TConfig Load(Func<TConfig> createRegisteredDefaults)
     {
         ArgumentNullException.ThrowIfNull(createRegisteredDefaults);

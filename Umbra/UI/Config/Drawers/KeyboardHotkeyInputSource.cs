@@ -3,7 +3,7 @@ using Umbra.Input;
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
-/// Retrieves key names and captured keys through <see cref="KeyboardInput"/>.
+/// Implements <see cref="IHotkeyInputSource"/> by delegating to <see cref="KeyboardInput"/>.
 /// </summary>
 internal sealed class KeyboardHotkeyInputSource : IHotkeyInputSource
 {

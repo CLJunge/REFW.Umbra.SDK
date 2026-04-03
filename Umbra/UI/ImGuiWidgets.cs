@@ -3,22 +3,19 @@ using Hexa.NET.ImGui;
 namespace Umbra.UI;
 
 /// <summary>
-/// Provides reusable ImGui widget helpers for use inside plugin settings panels and live
-/// section drawers.
+/// Provides reusable ImGui helper widgets used across Umbra UI components.
 /// </summary>
 /// <remarks>
-/// All methods in this class are stateless and safe to call from any ImGui draw callback.
-/// They must be called from within an active ImGui window or child window.
+/// These helpers are stateless and are intended to be called from within an active ImGui window or child window during the current frame.
 /// </remarks>
 public static class ImGuiWidgets
 {
     private const string _helpMarkerText = "(?)";
 
     /// <summary>
-    /// Renders a tooltip containing <paramref name="description"/> when the previously submitted
-    /// ImGui item is hovered.
+    /// Renders a tooltip containing <paramref name="description"/> when the previously submitted ImGui item is hovered.
     /// </summary>
-    /// <param name="description">The tooltip text to display while the item is hovered.</param>
+    /// <param name="description">The tooltip text to display while the previous item is hovered.</param>
     public static void DrawHoverTooltip(string description)
     {
         if (!ImGui.IsItemHovered()) return;
@@ -30,11 +27,12 @@ public static class ImGuiWidgets
     }
 
     /// <summary>
-    /// Renders an inline <c>(?)</c> marker that shows a tooltip containing
-    /// <paramref name="description"/> when hovered.
-    /// Call this after <see cref="ImGui.SameLine()"/> so it appears on the same row as its control.
+    /// Renders an inline help marker that shows <paramref name="description"/> in a tooltip when hovered.
     /// </summary>
-    /// <param name="description">The tooltip text to display on hover.</param>
+    /// <param name="description">The tooltip text displayed by the help marker.</param>
+    /// <remarks>
+    /// Call this after <see cref="ImGui.SameLine()"/> when the marker should appear on the same row as its associated control.
+    /// </remarks>
     public static void DrawHelpMarker(string description)
     {
         ImGui.TextDisabled(_helpMarkerText);

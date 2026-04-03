@@ -5,12 +5,10 @@ using Umbra.Runtime.Models;
 namespace Umbra.Runtime;
 
 /// <summary>
-/// Provides functionality for loading game metadata from an embedded JSON resource.
+/// Loads supported-game metadata from Umbra's embedded runtime JSON resource.
 /// </summary>
 /// <remarks>
-/// This static class is responsible for retrieving and deserializing the 'game-metadata.json' file
-/// embedded within the assembly. It is intended for internal use to supply metadata about supported games to other
-/// components.
+/// This helper reads the embedded <c>game-metadata.json</c> resource from the Umbra assembly and deserializes it into <see cref="GameMetadata"/> records used by <see cref="GameContext"/>.
 /// </remarks>
 internal static class GameMetadataLoader
 {
@@ -24,12 +22,10 @@ internal static class GameMetadataLoader
     };
 
     /// <summary>
-    /// Loads game metadata from the embedded JSON resource.
+    /// Loads and deserializes the embedded game-metadata resource.
     /// </summary>
-    /// <remarks>The method retrieves the 'game-metadata.json' file embedded in the assembly and deserializes
-    /// its contents. The returned array will contain all available game metadata entries.</remarks>
-    /// <returns>An array of <see cref="GameMetadata"/> objects deserialized from the embedded resource.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the embedded game metadata resource cannot be loaded or deserialized.</exception>
+    /// <returns>An array containing every embedded <see cref="GameMetadata"/> entry.</returns>
+    /// <exception cref="InvalidOperationException">The embedded metadata resource could not be opened or deserialized.</exception>
     internal static GameMetadata[] Load()
     {
         using var stream = typeof(GameMetadataLoader).Assembly.GetManifestResourceStream("Umbra.Runtime.game-metadata.json")

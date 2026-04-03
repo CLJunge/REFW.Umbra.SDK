@@ -1,21 +1,18 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Sets the pixel width of a settings control's editing widget.
+/// Declares the width hint used for a parameter's editing widget in the configuration UI.
 /// </summary>
 /// <remarks>
-/// For button parameters, the same attribute value is applied via <c>ImGui.Button</c>'s size
-/// vector rather than <c>SetNextItemWidth</c>, so <c>0f</c> means auto-size-to-label for buttons
-/// but means ImGui's default item width for other controls.
+/// For non-button controls, Umbra applies this value through ImGui item-width semantics. For button parameters rendered by <see cref="UI.Config.Drawers.ButtonDrawer"/>, the same value is interpreted using button-size semantics instead.
 /// </remarks>
-/// <param name="width">
-/// The pixel width: <c>0f</c> = type-default, negative = fill available, positive = fixed px.
-/// </param>
+/// <param name="width">The requested width hint: <c>0f</c> for type-default behavior, a negative value to fill available width, or a positive value for fixed pixels.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraControlWidthAttribute(float width) : Attribute
 {
     /// <summary>
-    /// Gets the pixel width for the control's editing widget.
+    /// Gets the declared width hint.
     /// </summary>
+    /// <value>The control-width hint associated with the annotated member.</value>
     public float Width { get; } = width;
 }

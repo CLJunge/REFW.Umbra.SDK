@@ -1,25 +1,19 @@
 namespace Umbra.Runtime;
 
 /// <summary>
-/// Provides display-name helpers for <see cref="REGame"/> values.
+/// Provides user-facing display-name helpers for <see cref="REGame"/> values.
 /// </summary>
 /// <remarks>
-/// This type converts supported concrete game identifiers into user-facing titles.
-/// It is commonly used with <see cref="GameContext.CurrentGame"/>, but callers must handle
-/// <see cref="REGame.Unknown"/> before calling these helpers because detection can legitimately
-/// return that fallback value when the current process does not match the embedded metadata.
+/// These helpers convert supported concrete game identifiers into display titles. Callers should handle <see cref="REGame.Unknown"/> before using them because runtime detection can legitimately return that fallback value.
 /// </remarks>
 public static class REGameExtensions
 {
     /// <summary>
-    /// Gets the user-facing title for a supported concrete RE Engine game value.
+    /// Returns the user-facing title for a supported concrete <see cref="REGame"/> value.
     /// </summary>
     /// <param name="game">The game identifier to convert.</param>
-    /// <returns>The display name associated with <paramref name="game"/>.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when <paramref name="game"/> is <see cref="REGame.Unknown"/> or any other value
-    /// that is not mapped by this method.
-    /// </exception>
+    /// <returns>The display title associated with <paramref name="game"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="game"/> is <see cref="REGame.Unknown"/> or any other unmapped value.</exception>
     public static string GetDisplayName(this REGame game)
     {
         return game switch
