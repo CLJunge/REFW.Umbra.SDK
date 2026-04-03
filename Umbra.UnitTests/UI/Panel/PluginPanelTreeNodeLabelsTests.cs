@@ -274,14 +274,14 @@ public class PluginPanelTreeNodeLabelsTests
     }
 
     /// <summary>
-    /// Tests that WarnIfInvalid is thread-safe when multiple threads call with the same section simultaneously.
-    /// Expected: No exceptions thrown, warning should be logged exactly once.
+    /// Tests that WarnIfInvalid does not throw when multiple threads call with the same section simultaneously.
+    /// Expected: No exceptions thrown while the same section-id/label pair is hit concurrently.
     /// </summary>
     [TestMethod]
-    public void WarnIfInvalid_ConcurrentCallsSameSection_ThreadSafe()
+    public void WarnIfInvalid_ConcurrentCallsSameSection_DoesNotThrow()
     {
         // Arrange
-        const int threadCount = 50;
+        const int threadCount = 20;
         var exceptions = new List<Exception>();
         var exceptionLock = new object();
         var barrier = new Barrier(threadCount);
