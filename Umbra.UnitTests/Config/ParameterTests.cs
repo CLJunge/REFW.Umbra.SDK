@@ -7,25 +7,6 @@ namespace Umbra.Config.UnitTests;
 [TestClass]
 public class ParameterTests
 {
-    /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
     #region IsModified Tests - Initial State
 
     /// <summary>
@@ -1592,7 +1573,7 @@ public class ParameterTests
         };
 
         // Act
-        var exception = AssertThrows<ArgumentOutOfRangeException>(() => parameter.SetOrThrow(5));
+        var exception = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => parameter.SetOrThrow(5));
 
         // Assert
         Assert.AreEqual("value", exception.ParamName);

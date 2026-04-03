@@ -10,25 +10,6 @@ public sealed class RootTreeNodeTests
     private static readonly int[] _expectedThreeElements = [1, 2, 3];
 
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Tests that a closed root tree node does not draw children or pop the tree node.
     /// </summary>
     [TestMethod]
@@ -171,7 +152,7 @@ public sealed class RootTreeNodeTests
     {
         var renderer = new TestRootTreeNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, null!, renderer));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, null!, renderer));
 
         Assert.AreEqual("children", exception.ParamName);
     }
@@ -182,7 +163,7 @@ public sealed class RootTreeNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, [], null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, [], null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

@@ -9,25 +9,6 @@ namespace Umbra.UI.Config.UnitTests;
 public sealed class ConfigDrawerTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> on a disposed instance silently
     /// skips rendering work.
     /// </summary>
@@ -439,7 +420,7 @@ public sealed class ConfigDrawerTests
     [TestMethod]
     public void Constructor_NullConfig_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleConfig>(null!, "TestScope"));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleConfig>(null!, "TestScope"));
 
         Assert.AreEqual("config", exception.ParamName);
     }
@@ -450,7 +431,7 @@ public sealed class ConfigDrawerTests
     [TestMethod]
     public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
     {
-        var exception = AssertThrows<ArgumentException>(() => _ = new ConfigDrawer<SimpleConfig>(new SimpleConfig(), "   "));
+        var exception = Assert.ThrowsExactly<ArgumentException>(() => _ = new ConfigDrawer<SimpleConfig>(new SimpleConfig(), "   "));
 
         Assert.AreEqual("idScope", exception.ParamName);
     }
@@ -461,7 +442,7 @@ public sealed class ConfigDrawerTests
     [TestMethod]
     public void Constructor_InternalNullNodes_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", null!, [], new TestConfigDrawerScope()));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", null!, [], new TestConfigDrawerScope()));
 
         Assert.AreEqual("nodes", exception.ParamName);
     }
@@ -472,7 +453,7 @@ public sealed class ConfigDrawerTests
     [TestMethod]
     public void Constructor_InternalNullDisposables_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", [], null!, new TestConfigDrawerScope()));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleTestConfig>("TestScope", [], null!, new TestConfigDrawerScope()));
 
         Assert.AreEqual("disposables", exception.ParamName);
     }

@@ -14,25 +14,6 @@ namespace Umbra.UI.Config.UnitTests;
 public sealed class NestedDrawerBinderTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Verifies that a compatible drawer produces a draw action bound to the provided group instance.
     /// </summary>
     [TestMethod]
@@ -135,7 +116,7 @@ public sealed class NestedDrawerBinderTests
         var attribute = new TestNestedDrawerAttribute(typeof(CompatibleDrawerWithoutParameterlessConstructor));
         var group = new TestGroup();
 
-        AssertThrows<MissingMethodException>(() => NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out _));
+        Assert.ThrowsExactly<MissingMethodException>(() => NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out _));
     }
 
     /// <summary>

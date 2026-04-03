@@ -314,25 +314,6 @@ public partial class SettingsRegistrarTests
     }
 
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Tests that Register throws when two parameters resolve to the same fully-qualified key.
     /// </summary>
     [TestMethod]
@@ -340,7 +321,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithDuplicateKeys();
 
-        var exception = AssertThrows<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => SettingsRegistrar.Register(config));
 
         Assert.Contains("Duplicate settings key 'enabled'", exception.Message);
         Assert.Contains(nameof(ConfigWithDuplicateKeys.Enabled1), exception.Message);
@@ -383,7 +364,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithEmptyKeyOverride();
 
-        var exception = AssertThrows<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => SettingsRegistrar.Register(config));
 
         Assert.Contains("empty string", exception.Message);
         Assert.Contains(nameof(ConfigWithEmptyKeyOverride.Enabled), exception.Message);
@@ -397,7 +378,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithEmptyNestedPropertyPrefix();
 
-        var exception = AssertThrows<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => SettingsRegistrar.Register(config));
 
         Assert.Contains("empty string", exception.Message);
         Assert.Contains(nameof(ConfigWithEmptyNestedPropertyPrefix.Nested), exception.Message);
@@ -411,7 +392,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithEmptyNestedTypePrefix();
 
-        var exception = AssertThrows<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => SettingsRegistrar.Register(config));
 
         Assert.Contains("empty string", exception.Message);
         Assert.Contains(nameof(EmptyPrefixNestedGroup), exception.Message);

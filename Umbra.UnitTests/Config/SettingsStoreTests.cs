@@ -872,28 +872,9 @@ public partial class SettingsStoreTests
     [TestMethod]
     public void Constructor_WhitespaceFilePath_ThrowsArgumentException()
     {
-        var exception = AssertThrows<ArgumentException>(() => _ = new SettingsStore<TestConfig>("   "));
+        var exception = Assert.ThrowsExactly<ArgumentException>(() => _ = new SettingsStore<TestConfig>("   "));
 
         Assert.AreEqual("filePath", exception.ParamName);
-    }
-
-    /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
     }
 
     /// <summary>
@@ -908,7 +889,7 @@ public partial class SettingsStoreTests
             var store = new SettingsStore<TestConfig>(tempPath);
             _ = store.Load();
 
-            AssertThrows<InvalidOperationException>(() => store.Load());
+            Assert.ThrowsExactly<InvalidOperationException>(() => store.Load());
         }
         finally
         {
@@ -928,7 +909,7 @@ public partial class SettingsStoreTests
         {
             var store = new SettingsStore<DuplicateKeyConfig>(tempPath);
 
-            AssertThrows<InvalidOperationException>(() => store.Load());
+            Assert.ThrowsExactly<InvalidOperationException>(() => store.Load());
             Assert.IsFalse(store.IsLoaded);
         }
         finally
@@ -949,7 +930,7 @@ public partial class SettingsStoreTests
         {
             var store = new SettingsStore<TestConfig>(tempPath);
 
-            AssertThrows<InvalidOperationException>(() => store.Save());
+            Assert.ThrowsExactly<InvalidOperationException>(() => store.Save());
         }
         finally
         {
@@ -970,7 +951,7 @@ public partial class SettingsStoreTests
             var store = new SettingsStore<TestConfig>(tempPath);
             _ = store.Load();
 
-            AssertThrows<ArgumentNullException>(() => store.CopyValuesTo(null!));
+            Assert.ThrowsExactly<ArgumentNullException>(() => store.CopyValuesTo(null!));
         }
         finally
         {
@@ -993,7 +974,7 @@ public partial class SettingsStoreTests
             var target = new SettingsStore<TestConfig>(targetPath);
             _ = source.Load();
 
-            AssertThrows<InvalidOperationException>(() => source.CopyValuesTo(target));
+            Assert.ThrowsExactly<InvalidOperationException>(() => source.CopyValuesTo(target));
         }
         finally
         {
@@ -1019,7 +1000,7 @@ public partial class SettingsStoreTests
             _ = source.Load();
             var unsupportedTarget = new UnsupportedSettingsStoreTarget();
 
-            var exception = AssertThrows<InvalidOperationException>(() => source.CopyValuesTo(unsupportedTarget));
+            var exception = Assert.ThrowsExactly<InvalidOperationException>(() => source.CopyValuesTo(unsupportedTarget));
 
             Assert.Contains("supports Umbra parameter-map copy operations", exception.Message);
             source.Dispose();

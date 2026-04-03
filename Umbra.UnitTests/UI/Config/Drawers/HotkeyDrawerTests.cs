@@ -13,25 +13,6 @@ public sealed class HotkeyDrawerTests
     private TestHotkeyInputSource _inputSource = null!;
 
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Resets the shared capture state and creates deterministic test doubles before each test.
     /// </summary>
     [TestInitialize]
@@ -327,7 +308,7 @@ public sealed class HotkeyDrawerTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new HotkeyDrawer(null!, new TestHotkeyInputSource()));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new HotkeyDrawer(null!, new TestHotkeyInputSource()));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }
@@ -338,7 +319,7 @@ public sealed class HotkeyDrawerTests
     [TestMethod]
     public void Constructor_NullInputSource_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new HotkeyDrawer(new TestHotkeyDrawerRenderer(), null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new HotkeyDrawer(new TestHotkeyDrawerRenderer(), null!));
 
         Assert.AreEqual("inputSource", exception.ParamName);
     }

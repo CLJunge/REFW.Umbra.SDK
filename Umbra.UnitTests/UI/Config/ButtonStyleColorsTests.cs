@@ -13,25 +13,6 @@ public sealed class ButtonStyleColorsTests
     private TestButtonStyleColorSink _colorSink = null!;
 
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Installs a recording color sink before each test.
     /// </summary>
     [TestInitialize]
@@ -202,7 +183,7 @@ public sealed class ButtonStyleColorsTests
     [TestMethod]
     public void SetColorSink_Null_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => ButtonStyleColors.SetColorSink(null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => ButtonStyleColors.SetColorSink(null!));
 
         Assert.AreEqual("colorSink", exception.ParamName);
     }
