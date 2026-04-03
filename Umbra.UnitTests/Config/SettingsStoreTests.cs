@@ -75,6 +75,41 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
+    /// Unsupported settings-store implementation used to verify the interface-based copy contract.
+    /// </summary>
+    private sealed class UnsupportedSettingsStoreTarget : ISettingsStore<TestConfig>
+    {
+        public bool IsLoaded => true;
+
+        public bool IsDisposed => false;
+
+        public TestConfig Load() => throw new NotSupportedException();
+
+        public void Save() => throw new NotSupportedException();
+
+        public void CopyValuesTo(ISettingsStore<TestConfig> target, bool setWithoutNotifying = false)
+            => throw new NotSupportedException();
+
+        public void AddListenerToAll(Action listener) => throw new NotSupportedException();
+
+        public void AddListenerToAll<T>(Action<T?, T?> listener) => throw new NotSupportedException();
+
+        public void AddListenerToAll(Func<IParameter, bool> predicate, Action listener) => throw new NotSupportedException();
+
+        public void RemoveListenerFromAll(Action listener) => throw new NotSupportedException();
+
+        public void RemoveListenerFromAll<T>(Action<T?, T?> listener) => throw new NotSupportedException();
+
+        public void RemoveListenerFromAll(Func<IParameter, bool> predicate, Action listener) => throw new NotSupportedException();
+
+        public void ResetAll() => throw new NotSupportedException();
+
+        public void Dispose()
+        {
+        }
+    }
+
+    /// <summary>
     /// Tests that Dispose sets IsDisposed to true on first call.
     /// </summary>
     [TestMethod]
@@ -966,6 +1001,33 @@ public partial class SettingsStoreTests
                 File.Delete(sourcePath);
             if (File.Exists(targetPath))
                 File.Delete(targetPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="ISettingsStore{TConfig}.CopyValuesTo(ISettingsStore{TConfig}, bool)"/>
+    /// rejects target implementations that do not participate in Umbra's internal copy-target contract.
+    /// </summary>
+    [TestMethod]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
+    public void CopyValuesTo_InterfaceTargetWithoutCopyContract_ThrowsInvalidOperationException()
+    {
+        var sourcePath = Path.Combine(Path.GetTempPath(), $"source_{Guid.NewGuid()}.json");
+        try
+        {
+            ISettingsStore<TestConfig> source = new SettingsStore<TestConfig>(sourcePath);
+            _ = source.Load();
+            var unsupportedTarget = new UnsupportedSettingsStoreTarget();
+
+            var exception = AssertThrows<InvalidOperationException>(() => source.CopyValuesTo(unsupportedTarget));
+
+            Assert.Contains("supports Umbra parameter-map copy operations", exception.Message);
+            source.Dispose();
+        }
+        finally
+        {
+            if (File.Exists(sourcePath))
+                File.Delete(sourcePath);
         }
     }
 

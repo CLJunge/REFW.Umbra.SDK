@@ -39,7 +39,15 @@ public interface ISettingsStore<TConfig> : IDisposable
     /// When <see langword="true"/>, values are applied without raising
     /// <see cref="IParameter.ValueChanged"/> events on the target store.
     /// </param>
-    void CopyValuesTo(SettingsStore<TConfig> target, bool setWithoutNotifying = false);
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ObjectDisposedException">
+    /// Thrown when this store or <paramref name="target"/> has been disposed.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when this store or <paramref name="target"/> has not completed <see cref="Load"/> yet,
+    /// or when <paramref name="target"/> does not support Umbra's copy-target contract.
+    /// </exception>
+    void CopyValuesTo(ISettingsStore<TConfig> target, bool setWithoutNotifying = false);
 
     /// <summary>
     /// Subscribes a callback to every registered parameter.

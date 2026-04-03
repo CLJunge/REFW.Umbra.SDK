@@ -15,7 +15,7 @@ namespace Umbra.Config;
 /// The configuration class type. Must have a public parameterless constructor.
 /// </typeparam>
 [DebuggerDisplay("SettingsStore for {typeof(TConfig).Name}, Parameters: {_parameters.Count}")]
-public class SettingsStore<TConfig> : ISettingsStore<TConfig>
+public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCopyTarget<TConfig>
     where TConfig : class, new()
 {
     private readonly Dictionary<string, IParameter> _parameters = [];
@@ -23,6 +23,8 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
     private readonly SettingsStorePersistenceCoordinator<TConfig> _persistenceCoordinator;
     private bool _loaded;
     private bool _disposed;
+
+    IReadOnlyDictionary<string, IParameter> ISettingsStoreCopyTarget<TConfig>.Parameters => _parameters;
 
     /// <summary>
     /// Initializes a new instance of <see cref="SettingsStore{TConfig}"/> with the specified file path.
@@ -155,7 +157,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
     /// Copies all parameter values from this store into the corresponding parameters of
     /// <paramref name="target"/>, matched by key.
     /// </summary>
-    /// <param name="target">The destination <see cref="SettingsStore{TConfig}"/> to copy values into.</param>
+    /// <param name="target">The destination settings store to copy values into.</param>
     /// <param name="setWithoutNotifying">
     /// When <see langword="true"/>, values are applied without raising <see cref="IParameter.ValueChanged"/> events.
     /// This uses <see cref="IParameter.SetValueWithoutNotify(object?)"/>, so metadata-based validation is also bypassed.
@@ -166,23 +168,30 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>
     /// Thrown when this instance or <paramref name="target"/> has been disposed.
     /// </exception>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when this instance or <paramref name="target"/> has not completed <see cref="Load"/> yet.
+    /// Thrown when this instance or <paramref name="target"/> has not completed <see cref="Load"/> yet,
+    /// or when <paramref name="target"/> does not support Umbra's internal copy-target contract.
     /// </exception>
-    public void CopyValuesTo(SettingsStore<TConfig> target, bool setWithoutNotifying = false)
+    public void CopyValuesTo(ISettingsStore<TConfig> target, bool setWithoutNotifying = false)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
         ArgumentNullException.ThrowIfNull(target);
-        ObjectDisposedException.ThrowIf(target._disposed, target);
-        if (!target._loaded)
+        ObjectDisposedException.ThrowIf(target.IsDisposed, target);
+        if (!target.IsLoaded)
         {
             throw new InvalidOperationException(
                 $"SettingsStore<{typeof(TConfig).Name}>.CopyValuesTo() requires a target store that has already completed Load().");
         }
 
+        if (target is not ISettingsStoreCopyTarget<TConfig> copyTarget)
+        {
+            throw new InvalidOperationException(
+                $"SettingsStore<{typeof(TConfig).Name}>.CopyValuesTo() requires a target store implementation that supports Umbra parameter-map copy operations.");
+        }
+
         foreach (var (key, param) in _parameters)
         {
-            if (!target._parameters.TryGetValue(key, out var dest))
+            if (!copyTarget.Parameters.TryGetValue(key, out var dest))
                 continue;
 
             if (setWithoutNotifying)
