@@ -7,7 +7,7 @@ namespace Umbra.Runtime;
 /// This enumeration is used to identify the target game when working with REFramework-based plugins or
 /// tools. Each value corresponds to a specific game title supported by REFramework.
 /// <para>
-/// The "Unknown" value serves as a default for cases where the game cannot be determined or is not supported./
+/// The "Unknown" value serves as a default for cases where the game cannot be determined or is not supported.
 /// </para>
 /// </remarks>
 public enum REGame
