@@ -29,7 +29,7 @@ public static class SamplePluginHost
         System.Diagnostics.Debugger.Launch();
 #endif
 
-        if (GameContext.GetCurrentGame() != REGame.RE9)
+        if (GameContext.CurrentGame != REGame.RE9)
         {
             Logger.Warning("SamplePlugin is only compatible with RE9, skipping load.");
             return;
