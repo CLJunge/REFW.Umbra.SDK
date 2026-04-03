@@ -59,6 +59,8 @@ public sealed class PluginPanel : IDisposable
     /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
     /// <see cref="ImGui.TreeNode(string)"/> with this label. Pass <see langword="null"/>
     /// (the default) to render sections flat with no root-level wrapping node.
+    /// The label should not contain ImGui's <c>"##"</c> separator; when it does, the panel logs a
+    /// developer warning once per active panel scope and strips the suffix at render time.
     /// </param>
     /// <param name="rootNodeDefaultOpen">
     /// When <see langword="true"/>, the root tree node starts in its expanded state.
@@ -92,6 +94,8 @@ public sealed class PluginPanel : IDisposable
     /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
     /// <see cref="ImGui.TreeNode(string)"/> with this label. Pass <see langword="null"/>
     /// to render sections flat with no root-level wrapping node.
+    /// The label should not contain ImGui's <c>"##"</c> separator; when it does, the panel logs a
+    /// developer warning once per active panel scope and strips the suffix at render time.
     /// </param>
     /// <param name="rootNodeDefaultOpen">
     /// When <see langword="true"/>, the root tree node starts in its expanded state.
@@ -119,6 +123,7 @@ public sealed class PluginPanel : IDisposable
 
         _idScope = idScope;
         _scopeRegistered = PluginPanelScopeRegistry.TryRegister(idScope);
+        PluginPanelTreeNodeLabels.WarnIfInvalid(idScope, rootNodeLabel, $"panel '{idScope}' root node");
         _renderer = renderer;
         _drawPipeline = new PluginPanelDrawPipeline(rootNodeLabel, rootNodeDefaultOpen, drawSeparator, renderer);
     }

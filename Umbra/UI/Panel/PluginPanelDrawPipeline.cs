@@ -19,7 +19,11 @@ internal sealed class PluginPanelDrawPipeline
     /// <summary>
     /// Initializes a new draw pipeline for one panel configuration.
     /// </summary>
-    /// <param name="rootNodeLabel">The optional root node label wrapping the full section list.</param>
+    /// <param name="rootNodeLabel">
+    /// The optional root node label wrapping the full section list.
+    /// When the label contains ImGui's <c>"##"</c> separator, the caller-supplied suffix is stripped
+    /// before rendering so the panel retains full control over tree-node identity semantics.
+    /// </param>
     /// <param name="rootNodeDefaultOpen">Whether the optional root node starts expanded.</param>
     /// <param name="drawSeparator">Whether a trailing separator should be rendered after the sections.</param>
     /// <param name="renderer">The low-level renderer used for tree-node and separator operations.</param>
@@ -27,7 +31,10 @@ internal sealed class PluginPanelDrawPipeline
     {
         ArgumentNullException.ThrowIfNull(renderer);
 
-        _rootNodeLabel = rootNodeLabel;
+        _rootNodeLabel = rootNodeLabel is null
+            ? null
+            : PluginPanelTreeNodeLabels.Sanitize(rootNodeLabel);
+
         _rootNodeDefaultOpen = rootNodeDefaultOpen;
         _drawSeparator = drawSeparator;
         _renderer = renderer;
