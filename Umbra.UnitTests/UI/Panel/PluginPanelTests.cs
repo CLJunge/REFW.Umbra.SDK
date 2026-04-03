@@ -117,6 +117,28 @@ public sealed class PluginPanelTests_Draw
     }
 
     /// <summary>
+    /// Tests that the panel sanitizes any caller-supplied ImGui ID suffix from the root node label
+    /// before rendering it.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WithRootNodeLabelContainingSeparator_SanitizesRootLabel()
+    {
+        // Arrange
+        var renderer = new TestPluginPanelRenderer();
+        renderer.TreeNodeResults.Enqueue(false);
+        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Settings##IgnoredSuffix", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
+
+        // Act
+        panel.Draw();
+
+        // Assert
+        Assert.HasCount(1, renderer.TreeNodes);
+        Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
+        Assert.AreEqual(0, renderer.TreePopCount);
+        Assert.AreEqual(1, renderer.PopIdCount);
+    }
+
+    /// <summary>
     /// Tests that a section tree node uses the sanitized label and section ID suffix and skips the
     /// section body when the tree is closed.
     /// </summary>

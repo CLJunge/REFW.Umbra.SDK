@@ -11,6 +11,21 @@ namespace Umbra.Config.UnitTests;
 public class ParameterMetadataReaderTests
 {
     /// <summary>
+    /// Tests that derived render-cache members on <see cref="ParameterMetadata"/> are not part of
+    /// the public package surface.
+    /// </summary>
+    [TestMethod]
+    public void ParameterMetadata_RenderCacheMembers_AreNonPublic()
+    {
+        Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.ResolvedLabel)));
+        Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.DrawerType)));
+        Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.TwoColumnDrawerType)));
+        Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.HideIf)));
+        Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.InferredFloatFormat)));
+        Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.HiddenLabel)));
+    }
+
+    /// <summary>
     /// Tests that ReadFrom returns a ParameterMetadata with default values when the member has no attributes.
     /// Input: MemberInfo with no custom attributes, null inheritedCategory, null parameterKey.
     /// Expected: ParameterMetadata with null/default values, ResolvedLabel from member name, SpacingBefore/After = 0, InferredFloatFormat = "%.2f".

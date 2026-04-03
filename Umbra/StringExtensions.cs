@@ -5,7 +5,7 @@ namespace Umbra;
 /// <summary>
 /// Provides extension methods for working with strings.
 /// </summary>
-public static class StringExtensions
+internal static class StringExtensions
 {
     /// <summary>
     /// Converts the first character of the string to lowercase, returning a camelCase form.
@@ -18,7 +18,7 @@ public static class StringExtensions
     /// or the original string if it is <see langword="null"/>, empty, or already starts with
     /// a lowercase character.
     /// </returns>
-    public static string? ToCamelCase(this string? value)
+    internal static string? ToCamelCase(this string? value)
     {
         if (string.IsNullOrEmpty(value) || char.IsLower(value[0]))
             return value;
@@ -37,7 +37,7 @@ public static class StringExtensions
     /// </summary>
     /// <param name="name">The raw identifier to convert (e.g. <c>"FieldOfView"</c>).</param>
     /// <returns>The human-readable display name (e.g. <c>"Field Of View"</c>).</returns>
-    public static string ToDisplayName(this string name)
+    internal static string ToDisplayName(this string name)
     {
         var sb = new StringBuilder(name.Length + 4);
         for (var i = 0; i < name.Length; i++)

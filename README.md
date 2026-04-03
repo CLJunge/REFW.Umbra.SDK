@@ -199,7 +199,6 @@ using Umbra.Logging;
 using Umbra.Runtime;
 using Umbra.UI.Config;
 using Umbra.UI.Panel;
-using Umbra.UI.Panel.Benchmark;
 
 // Instance class — owns all per-plugin state and behavior.
 public sealed class MyPlugin : UmbraPlugin
@@ -285,6 +284,9 @@ public static class MyPluginHost
 For a fuller reference, see `Umbra.SamplePlugin`, which now organizes the sample config into nested groups for booleans, numeric sliders and drags, strings, enums, custom drawers, nested-group drawers, and nested-type presentation tests alongside deferred saving.
 
 ### Plugin panel benchmarking
+
+`PluginPanelBenchmark` and related benchmark types are only compiled when `BENCHMARK`
+is defined. Normal package builds do not expose the benchmark API.
 
 `PluginPanelBenchmark` provides a reusable ImGui benchmark window for measuring one duplicate
 `PluginPanel.Draw()` call per frame and exporting CSV, JSON, and Markdown artifacts.

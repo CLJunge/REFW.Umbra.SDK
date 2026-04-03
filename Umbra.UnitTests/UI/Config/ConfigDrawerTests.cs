@@ -1,8 +1,5 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.Logging;
-using Umbra.Logging.UnitTests;
-
 namespace Umbra.UI.Config.UnitTests;
 
 /// <summary>
@@ -11,9 +8,6 @@ namespace Umbra.UI.Config.UnitTests;
 [TestClass]
 public sealed class ConfigDrawerTests
 {
-    private TestLogSink _logSink = null!;
-    private bool _originalLoggingEnabled;
-
     /// <summary>
     /// Verifies that an action throws the expected exception type and returns the captured exception.
     /// </summary>
@@ -34,33 +28,11 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Installs a recording log sink before each test.
-    /// </summary>
-    [TestInitialize]
-    public void TestInitialize()
-    {
-        _logSink = new TestLogSink();
-        _originalLoggingEnabled = Logger.Enabled;
-        Logger.SetLogSink(_logSink);
-        Logger.EnableAll();
-    }
-
-    /// <summary>
-    /// Restores the default logger state after each test.
-    /// </summary>
-    [TestCleanup]
-    public void TestCleanup()
-    {
-        Logger.ResetLogSink();
-        Logger.Enabled = _originalLoggingEnabled;
-    }
-
-    /// <summary>
-    /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> on a disposed instance logs a
-    /// warning and skips rendering work.
+    /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> on a disposed instance silently
+    /// skips rendering work.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenDisposed_LogsWarningAndSkipsRendering()
+    public void Draw_WhenDisposed_SkipsRendering()
     {
         // Arrange
         var scope = new TestConfigDrawerScope();
@@ -79,8 +51,6 @@ public sealed class ConfigDrawerTests
         Assert.IsEmpty(scope.PushedIds);
         Assert.AreEqual(0, scope.PopCount);
         Assert.AreEqual(0, node.DrawCount);
-        Assert.HasCount(1, _logSink.WarningMessages);
-        Assert.Contains("disposed instance", _logSink.WarningMessages[0]);
     }
 
     /// <summary>
@@ -174,7 +144,7 @@ public sealed class ConfigDrawerTests
     /// Tests that <see cref="ConfigDrawer{TConfig}.Draw"/> remains safe after multiple dispose calls.
     /// </summary>
     [TestMethod]
-    public void Draw_AfterMultipleDisposes_StillLogsWarningWithoutRendering()
+    public void Draw_AfterMultipleDisposes_StillSkipsRendering()
     {
         // Arrange
         var scope = new TestConfigDrawerScope();
@@ -195,7 +165,6 @@ public sealed class ConfigDrawerTests
         Assert.AreEqual(0, node.DrawCount);
         Assert.IsEmpty(scope.PushedIds);
         Assert.AreEqual(0, scope.PopCount);
-        Assert.HasCount(2, _logSink.WarningMessages);
     }
 
     #region Helper Types
@@ -222,6 +191,23 @@ public sealed class ConfigDrawerTests
 
         // Act
         using var drawer = new ConfigDrawer<SimpleConfig>(config, idScope);
+
+        // Assert
+        Assert.IsNotNull(drawer);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigDrawer{TConfig}"/> does not require the config type to expose a
+    /// public parameterless constructor when the caller already supplies the config instance.
+    /// </summary>
+    [TestMethod]
+    public void ConfigDrawer_ConfigWithoutParameterlessConstructor_ConstructsSuccessfully()
+    {
+        // Arrange
+        var config = new ConfigWithoutParameterlessConstructor(new Parameter<bool>(true));
+
+        // Act
+        using var drawer = new ConfigDrawer<ConfigWithoutParameterlessConstructor>(config, "TestPlugin");
 
         // Assert
         Assert.IsNotNull(drawer);
@@ -288,6 +274,18 @@ public sealed class ConfigDrawerTests
     {
         [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
+    }
+
+    /// <summary>
+    /// Configuration class without a public parameterless constructor.
+    /// Used to verify that <see cref="ConfigDrawer{TConfig}"/> can still be constructed when the
+    /// caller supplies the config instance explicitly.
+    /// </summary>
+    [UmbraAutoRegister]
+    private sealed class ConfigWithoutParameterlessConstructor(Parameter<bool> enabled)
+    {
+        [UmbraParameter]
+        public Parameter<bool> Enabled { get; } = enabled;
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+#if BENCHMARK
 namespace Umbra.UI.Panel.Benchmark;
 
 /// <summary>
@@ -27,3 +28,4 @@ public enum PluginPanelBenchmarkScenario
     /// </summary>
     Interactive
 }
+#endif

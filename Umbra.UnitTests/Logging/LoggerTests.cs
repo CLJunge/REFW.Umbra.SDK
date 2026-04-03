@@ -2645,6 +2645,7 @@ public sealed class LoggerTests
     [TestCleanup]
     public void Cleanup()
     {
+        Logger.SuppressedFailureObserver = null;
         Logger.EnableAll();
         Logger.ResetLogSink();
     }
@@ -3443,6 +3444,73 @@ public sealed class LoggerTests
     /// </summary>
     [TestMethod]
     public void Error_WhenArgumentToStringThrows_DoesNotThrow() => Logger.Error("Value: {0}", new ThrowingToStringValue());
+
+    /// <summary>
+    /// Verifies that <see cref="Logger.SuppressedFailureObserver"/> receives sink failures that are
+    /// otherwise swallowed.
+    /// </summary>
+    [TestMethod]
+    public void Info_WhenSinkThrows_ReportsSuppressedFailureToObserver()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+        string? operation = null;
+        Exception? captured = null;
+        Logger.SuppressedFailureObserver = (op, ex) =>
+        {
+            operation = op;
+            captured = ex;
+        };
+
+        Logger.Info("message");
+
+        Assert.AreEqual("Logger.Info", operation);
+        Assert.IsNotNull(captured);
+        Assert.AreEqual("sink failed", captured.Message);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="Logger.SuppressedFailureObserver"/> receives formatting failures
+    /// that are otherwise swallowed.
+    /// </summary>
+    [TestMethod]
+    public void Error_WhenArgumentToStringThrows_ReportsSuppressedFailureToObserver()
+    {
+        string? operation = null;
+        Exception? captured = null;
+        Logger.SuppressedFailureObserver = (op, ex) =>
+        {
+            operation = op;
+            captured = ex;
+        };
+
+        Logger.Error("Value: {0}", new ThrowingToStringValue());
+
+        Assert.AreEqual("Logger.Error(format)", operation);
+        Assert.IsNotNull(captured);
+        Assert.AreEqual("ToString failed", captured.Message);
+    }
+
+    /// <summary>
+    /// Verifies that a re-entrant call to <see cref="Logger.ReportSuppressedFailure"/> from within the
+    /// <see cref="Logger.SuppressedFailureObserver"/> is silently dropped and does not recurse.
+    /// </summary>
+    [TestMethod]
+    public void ReportSuppressedFailure_WhenObserverTriggersNestedSuppressedFailure_DoesNotRecurse()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+        int callCount = 0;
+        Logger.SuppressedFailureObserver = (op, ex) =>
+        {
+            callCount++;
+            // This call re-enters ReportSuppressedFailure; the guard must drop it.
+            Logger.Info("recursive trigger");
+        };
+
+        Logger.Info("initial");
+
+        // Only the outermost call must be delivered; the nested one is dropped.
+        Assert.AreEqual(1, callCount);
+    }
 
     /// <summary>
     /// Sink that throws for every write path.

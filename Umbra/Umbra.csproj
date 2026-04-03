@@ -39,6 +39,7 @@
         <!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
         <UmbraDeployScript>$(MSBuildProjectDirectory)\..\scripts\deploy_reframework_deps.bat</UmbraDeployScript>
         <Title>REFW.Umbra</Title>
+        <Configurations>Debug;Release;Benchmark</Configurations>
     </PropertyGroup>
 
     <Import Project="Umbra.Local.props" Condition="Exists('Umbra.Local.props')" />

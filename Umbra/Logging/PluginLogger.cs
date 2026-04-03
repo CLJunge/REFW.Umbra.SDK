@@ -30,6 +30,10 @@ namespace Umbra.Logging;
 /// <see cref="Logger.Suppress()"/> controls, allowing benchmarks and tests to silence all Umbra
 /// logging without mutating each plugin's <see cref="MinLevel"/>.
 /// </para>
+/// <para>
+/// When callers need visibility into failures that are still intentionally swallowed for process
+/// safety, they can opt into <see cref="Logger.SuppressedFailureObserver"/>.
+/// </para>
 /// </remarks>
 public sealed class PluginLogger
 {
@@ -79,7 +83,8 @@ public sealed class PluginLogger
     public void Info(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Info) return;
-        try { Logger.GetLogSink().Info(FormatMessage(message)); } catch { }
+        try { Logger.GetLogSink().Info(FormatMessage(message)); }
+        catch (Exception ex) { Logger.ReportSuppressedFailure("PluginLogger.Info", ex); }
     }
 
     /// <summary>
@@ -97,7 +102,13 @@ public sealed class PluginLogger
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Info) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            Logger.ReportSuppressedFailure("PluginLogger.Info(format)", ex);
+            return;
+        }
+
         Info(message);
     }
 
@@ -108,7 +119,8 @@ public sealed class PluginLogger
     public void Warning(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Warning) return;
-        try { Logger.GetLogSink().Warning(FormatMessage(message)); } catch { }
+        try { Logger.GetLogSink().Warning(FormatMessage(message)); }
+        catch (Exception ex) { Logger.ReportSuppressedFailure("PluginLogger.Warning", ex); }
     }
 
     /// <summary>
@@ -126,7 +138,13 @@ public sealed class PluginLogger
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Warning) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            Logger.ReportSuppressedFailure("PluginLogger.Warning(format)", ex);
+            return;
+        }
+
         Warning(message);
     }
 
@@ -137,7 +155,8 @@ public sealed class PluginLogger
     public void Error(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
-        try { Logger.GetLogSink().Error(FormatMessage(message)); } catch { }
+        try { Logger.GetLogSink().Error(FormatMessage(message)); }
+        catch (Exception ex) { Logger.ReportSuppressedFailure("PluginLogger.Error", ex); }
     }
 
     /// <summary>
@@ -155,7 +174,13 @@ public sealed class PluginLogger
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            Logger.ReportSuppressedFailure("PluginLogger.Error(format)", ex);
+            return;
+        }
+
         Error(message);
     }
 
@@ -173,7 +198,10 @@ public sealed class PluginLogger
             var logMessage = $"{FormatMessage(message)}\nException: {ex.GetType().Name}: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
             Logger.GetLogSink().Error(logMessage);
         }
-        catch { }
+        catch (Exception sinkException)
+        {
+            Logger.ReportSuppressedFailure("PluginLogger.Exception", sinkException);
+        }
     }
 
     /// <summary>
@@ -193,7 +221,13 @@ public sealed class PluginLogger
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception formatException)
+        {
+            Logger.ReportSuppressedFailure("PluginLogger.Exception(format)", formatException);
+            return;
+        }
+
         Exception(ex, message);
     }
 
