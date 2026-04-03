@@ -28,7 +28,7 @@ internal sealed class PluginPanelSectionCollection : IDisposable
         ArgumentNullException.ThrowIfNull(section);
 
         if (_disposed)
-            throw new ObjectDisposedException(nameof(PluginPanel), "Cannot add sections to a disposed panel.");
+            throw new ObjectDisposedException(nameof(PluginPanelSectionCollection), "Cannot add sections to a disposed collection.");
 
         PluginPanelTreeNodeLabels.WarnIfInvalid(section);
         _sections.Add(section);
