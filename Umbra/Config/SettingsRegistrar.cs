@@ -148,7 +148,7 @@ internal static class SettingsRegistrar
         {
             throw new InvalidOperationException(
                 $"Duplicate settings key '{key}' detected while registering '{origin}'. " +
-                $"The key is already used by '{existingOrigin}'. Ensure every [UmbraSettingsParameter] resolves to a unique key.");
+                $"The key is already used by '{existingOrigin}'. Ensure every [UmbraParameter] resolves to a unique key.");
         }
 
         if (parameter is not IParameterRegistration registration)
