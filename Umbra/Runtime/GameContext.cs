@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Umbra.Logging;
 using Umbra.Runtime.Models;
 
 namespace Umbra.Runtime;
@@ -17,15 +18,23 @@ public static class GameContext
 
     static GameContext()
     {
-        var metadata = GameMetadataLoader.Load();
-        var processName = Process.GetCurrentProcess().ProcessName;
-        foreach (var entry in metadata)
+        try
         {
-            if (string.Compare(entry.ExecutableName, processName) == 0)
+            var metadata = GameMetadataLoader.Load();
+            var processName = Process.GetCurrentProcess().ProcessName;
+            foreach (var entry in metadata)
             {
-                _currentGameMetadata = entry;
-                return;
+                if (string.Equals(entry.ExecutableName, processName,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    _currentGameMetadata = entry;
+                    return;
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            Logger.Exception(ex, "Failed to load game metadata or detect current game.");
         }
     }
 
