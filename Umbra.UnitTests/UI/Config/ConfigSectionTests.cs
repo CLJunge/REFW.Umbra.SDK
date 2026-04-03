@@ -270,6 +270,20 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
+    /// Tests that <see cref="ConfigSection{TConfig}"/> does not require the config type to expose a
+    /// public parameterless constructor when the caller already supplies the config instance.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_ConfigWithoutParameterlessConstructor_ConstructsSuccessfully()
+    {
+        var config = new ConfigWithoutParameterlessConstructor(new Parameter<bool>(true));
+
+        using var section = new ConfigSection<ConfigWithoutParameterlessConstructor>(config);
+
+        Assert.IsNotNull(section);
+    }
+
+    /// <summary>
     /// Tests that an explicit tree-node label also controls the default-open flag.
     /// </summary>
     [TestMethod]
@@ -309,6 +323,16 @@ public sealed class ConfigSectionTests
     [UmbraAutoRegister]
     internal sealed class SimpleConfig
     {
+    }
+
+    /// <summary>
+    /// Test configuration type without a public parameterless constructor for constraint tests.
+    /// </summary>
+    [UmbraAutoRegister]
+    internal sealed class ConfigWithoutParameterlessConstructor(Parameter<bool> enabled)
+    {
+        [UmbraParameter]
+        public Parameter<bool> Enabled { get; } = enabled;
     }
 
     /// <summary>

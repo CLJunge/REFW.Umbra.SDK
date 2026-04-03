@@ -228,6 +228,23 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
+    /// Tests that <see cref="ConfigDrawer{TConfig}"/> does not require the config type to expose a
+    /// public parameterless constructor when the caller already supplies the config instance.
+    /// </summary>
+    [TestMethod]
+    public void ConfigDrawer_ConfigWithoutParameterlessConstructor_ConstructsSuccessfully()
+    {
+        // Arrange
+        var config = new ConfigWithoutParameterlessConstructor(new Parameter<bool>(true));
+
+        // Act
+        using var drawer = new ConfigDrawer<ConfigWithoutParameterlessConstructor>(config, "TestPlugin");
+
+        // Assert
+        Assert.IsNotNull(drawer);
+    }
+
+    /// <summary>
     /// Tests that the constructor succeeds when suppressRootNode is explicitly set to true.
     /// </summary>
     [TestMethod]

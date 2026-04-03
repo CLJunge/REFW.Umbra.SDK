@@ -285,6 +285,35 @@ public sealed class LiveStateSectionTests
     }
 
     /// <summary>
+    /// Tests that the explicit-context constructor works even when the state type does not expose a
+    /// public parameterless constructor.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_ExplicitContextWithoutParameterlessConstructor_CreatesInstanceSuccessfully()
+    {
+        var context = new StateWithoutParameterlessConstructor(42);
+
+        using var section = new LiveStateSection<StateWithoutParameterlessConstructor>(context);
+
+        Assert.IsNotNull(section);
+        Assert.AreEqual(typeof(StateWithoutParameterlessConstructor).FullName ?? typeof(StateWithoutParameterlessConstructor).Name, section.SectionId);
+    }
+
+    /// <summary>
+    /// Tests that the parameterless section constructor throws a clear exception when the state type
+    /// lacks a public parameterless constructor.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_ParameterlessSectionWithoutParameterlessStateConstructor_ThrowsInvalidOperationException()
+    {
+        var exception = AssertThrows<InvalidOperationException>(() => _ = new LiveStateSection<StateWithoutParameterlessConstructor>());
+
+        Assert.Contains(nameof(StateWithoutParameterlessConstructor), exception.Message);
+        Assert.IsNotNull(exception.InnerException);
+        Assert.IsInstanceOfType<MissingMethodException>(exception.InnerException);
+    }
+
+    /// <summary>
     /// A valid test state type decorated with LiveStateSectionDrawerAttribute
     /// for testing valid constructor scenarios.
     /// </summary>
@@ -292,6 +321,15 @@ public sealed class LiveStateSectionTests
     internal class ValidTestState
     {
         public int Value { get; set; }
+    }
+
+    /// <summary>
+    /// Valid state type without a public parameterless constructor for constructor-path tests.
+    /// </summary>
+    [LiveStateSectionDrawer<StateWithoutParameterlessConstructorDrawer>]
+    private sealed class StateWithoutParameterlessConstructor(int value)
+    {
+        public int Value { get; } = value;
     }
 
     /// <summary>
@@ -307,6 +345,22 @@ public sealed class LiveStateSectionTests
         public void Dispose()
         {
             // Minimal implementation for testing
+        }
+    }
+
+    /// <summary>
+    /// Minimal drawer for <see cref="StateWithoutParameterlessConstructor"/>.
+    /// </summary>
+    private sealed class StateWithoutParameterlessConstructorDrawer : ILiveStateSectionDrawer<StateWithoutParameterlessConstructor>
+    {
+        public void Draw(StateWithoutParameterlessConstructor state)
+        {
+            // No-op for testing
+        }
+
+        public void Dispose()
+        {
+            // No-op for testing
         }
     }
 

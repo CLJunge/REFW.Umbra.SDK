@@ -32,10 +32,10 @@ namespace Umbra.UI.LiveState;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">
-/// The live state type. Must be a reference type with a public parameterless constructor
-/// and be decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
+/// The live state type. Must be a reference type decorated with
+/// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
 /// </typeparam>
-public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
+public sealed class LiveStateSection<T> : IPanelSection where T : class
 {
     private readonly string? _idScope;
     private readonly string? _treeNodeLabel;
@@ -126,6 +126,12 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
     /// Use this overload when the section owns the state and no external writer needs a
     /// reference to that instance — for example, when the drawer queries game state directly.
     /// </summary>
+    /// <remarks>
+    /// This overload requires <typeparamref name="T"/> to expose a public parameterless
+    /// constructor. When that constructor is absent, use
+    /// <see cref="LiveStateSection{T}(T,string?,string?,bool)"/> and supply the state instance
+    /// explicitly.
+    /// </remarks>
     /// <param name="idScope">
     /// Optional ImGui ID sub-scope. See the primary constructor for details.
     /// When omitted, <c>typeof(<typeparamref name="T"/>).FullName</c> (falling back to
@@ -139,12 +145,12 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
     /// Whether the tree node starts expanded. See the primary constructor for details.
     /// </param>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when <typeparamref name="T"/> is not decorated with
-    /// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
+    /// Thrown when <typeparamref name="T"/> does not expose a public parameterless constructor,
+    /// or when it is not decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
     /// </exception>
     public LiveStateSection(string? idScope = null,
         string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
-        : this(new T(), idScope, treeNodeLabel, treeNodeDefaultOpen) { }
+        : this(CreateOwnedContext(), idScope, treeNodeLabel, treeNodeDefaultOpen) { }
 
     /// <inheritdoc/>
     public void Draw()
@@ -169,5 +175,27 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class, new()
         _disposed = true;
         _drawerDisposable.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Creates the internally owned state instance for the parameterless constructor.
+    /// </summary>
+    /// <returns>A new <typeparamref name="T"/> instance.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <typeparamref name="T"/> does not expose a public parameterless constructor.
+    /// </exception>
+    private static T CreateOwnedContext()
+    {
+        try
+        {
+            return Activator.CreateInstance<T>();
+        }
+        catch (MissingMethodException ex)
+        {
+            throw new InvalidOperationException(
+                $"LiveStateSection<{typeof(T).Name}> requires a public parameterless constructor when using the parameterless section constructor. " +
+                $"Use {nameof(LiveStateSection<T>)}(T, string?, string?, bool) to supply the state instance explicitly.",
+                ex);
+        }
     }
 }

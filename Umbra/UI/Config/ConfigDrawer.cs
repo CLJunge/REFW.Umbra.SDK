@@ -40,9 +40,8 @@ namespace Umbra.UI.Config;
 /// </remarks>
 /// <typeparam name="TConfig">
 /// The configuration class type, following the SDK settings attribute conventions.
-/// Must have a public parameterless constructor.
 /// </typeparam>
-public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class, new()
+public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
 {
     private readonly List<IDrawNode> _nodes;
     private readonly List<IDisposable> _disposables;

@@ -26,9 +26,9 @@ namespace Umbra.UI.Config;
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">
-/// The configuration class type. Must have a public parameterless constructor.
+/// The configuration class type.
 /// </typeparam>
-public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class, new()
+public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 {
     private readonly ConfigDrawer<TConfig> _drawer;
     private readonly string _sectionId;
