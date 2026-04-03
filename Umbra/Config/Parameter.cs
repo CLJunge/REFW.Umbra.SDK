@@ -75,6 +75,11 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// and passes validation defined by <see cref="ParameterMetadata.Min"/> and
     /// <see cref="ParameterMetadata.Max"/>.
     /// </summary>
+    /// <remarks>
+    /// Assignments that fail metadata validation are ignored silently so UI-driven code can attempt
+    /// updates without exception handling. Use <see cref="TrySet"/> or <see cref="SetOrThrow"/>
+    /// when the caller needs an explicit success/failure signal.
+    /// </remarks>
     public T? Value { get => _value; set => SetValue(value); }
 
     /// <summary>
@@ -142,8 +147,52 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// (e.g. inside <c>INestedGroupDrawer&lt;T&gt;.Draw</c>) to avoid the double-<c>.Value</c>
     /// repetition of <c>parameter.Value.Value = x</c>.
     /// </summary>
+    /// <remarks>
+    /// Invalid values are ignored silently. Use <see cref="TrySet"/> or <see cref="SetOrThrow"/>
+    /// when invalid writes must be observed explicitly.
+    /// </remarks>
     /// <param name="value">The new value to assign.</param>
     public void Set(T? value) => Value = value;
+
+    /// <summary>
+    /// Attempts to set the parameter's value while reporting whether the supplied value satisfies
+    /// metadata validation.
+    /// </summary>
+    /// <remarks>
+    /// Returns <see langword="false"/> only when <paramref name="value"/> violates the current
+    /// <see cref="ParameterMetadata.Min"/> and/or <see cref="ParameterMetadata.Max"/> constraints.
+    /// A valid value that matches the current value still returns <see langword="true"/> even though
+    /// no event is raised and no state changes.
+    /// </remarks>
+    /// <param name="value">The candidate value to assign.</param>
+    /// <returns>
+    /// <see langword="true"/> when <paramref name="value"/> satisfies metadata validation;
+    /// otherwise <see langword="false"/>.
+    /// </returns>
+    public bool TrySet(T? value)
+    {
+        if (!Validate(value, out _))
+            return false;
+
+        SetValueCore(value);
+        return true;
+    }
+
+    /// <summary>
+    /// Sets the parameter's value or throws when the supplied value violates metadata validation.
+    /// </summary>
+    /// <param name="value">The candidate value to assign.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="value"/> falls outside the configured
+    /// <see cref="ParameterMetadata.Min"/> and/or <see cref="ParameterMetadata.Max"/> bounds.
+    /// </exception>
+    public void SetOrThrow(T? value)
+    {
+        if (!Validate(value, out var failureReason))
+            throw new ArgumentOutOfRangeException(nameof(value), value, failureReason);
+
+        SetValueCore(value);
+    }
 
     /// <inheritdoc/>
     object? IParameter.GetValue() => Value;
@@ -200,12 +249,16 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// <see cref="ParameterMetadata.Max"/> constraints defined in <see cref="Metadata"/>.
     /// </summary>
     /// <param name="value">The candidate value to validate.</param>
+    /// <param name="failureReason">
+    /// Receives a human-readable explanation when validation fails; otherwise <see langword="null"/>.
+    /// </param>
     /// <returns>
     /// <see langword="true"/> if the value is within the allowed range or no constraints are
     /// defined; <see langword="false"/> if the value falls outside the configured bounds.
     /// </returns>
-    private bool Validate(T? value)
+    private bool Validate(T? value, out string? failureReason)
     {
+        failureReason = null;
         if (value == null || Metadata.Min == null && Metadata.Max == null)
             return true;
 
@@ -214,9 +267,16 @@ public class Parameter<T> : IParameter, IParameterRegistration
             try
             {
                 if (Metadata.Min != null && c.CompareTo(Convert.ChangeType(Metadata.Min.Value, typeof(T))) < 0)
+                {
+                    failureReason = $"Value must be greater than or equal to {Metadata.Min.Value}.";
                     return false;
+                }
+
                 if (Metadata.Max != null && c.CompareTo(Convert.ChangeType(Metadata.Max.Value, typeof(T))) > 0)
+                {
+                    failureReason = $"Value must be less than or equal to {Metadata.Max.Value}.";
                     return false;
+                }
             }
             catch (InvalidCastException)
             {
@@ -237,8 +297,17 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// <param name="newValue">The new value to assign.</param>
     private void SetValue(T? newValue)
     {
+        if (!Validate(newValue, out _)) return;
+        SetValueCore(newValue);
+    }
+
+    /// <summary>
+    /// Applies <paramref name="newValue"/> to the parameter when validation has already succeeded.
+    /// </summary>
+    /// <param name="newValue">The new value to assign.</param>
+    private void SetValueCore(T? newValue)
+    {
         if (EqualityComparer<T?>.Default.Equals(_value, newValue)) return;
-        if (!Validate(newValue)) return;
 
         var oldValue = _value;
         _value = newValue;

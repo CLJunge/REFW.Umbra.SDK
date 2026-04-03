@@ -1534,6 +1534,91 @@ public class ParameterTests
     }
 
     /// <summary>
+    /// Tests that TrySet returns false and leaves the current value unchanged when validation fails.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_ValueOutsideMax_ReturnsFalseAndLeavesValueUnchanged()
+    {
+        // Arrange
+        var parameter = new Parameter<int>(50)
+        {
+            Metadata = new ParameterMetadata { Max = 100 }
+        };
+        var eventRaised = false;
+        parameter.ValueChanged += (_, _) => eventRaised = true;
+
+        // Act
+        var result = parameter.TrySet(150);
+
+        // Assert
+        Assert.IsFalse(result);
+        Assert.AreEqual(50, parameter.Value);
+        Assert.IsFalse(eventRaised, "ValueChanged event should not be raised");
+    }
+
+    /// <summary>
+    /// Tests that TrySet returns true and updates the value when validation succeeds.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_ValueWithinRange_ReturnsTrueAndUpdatesValue()
+    {
+        // Arrange
+        var parameter = new Parameter<int>(50)
+        {
+            Metadata = new ParameterMetadata { Min = 10, Max = 100 }
+        };
+        var eventRaised = false;
+        parameter.ValueChanged += (_, _) => eventRaised = true;
+
+        // Act
+        var result = parameter.TrySet(75);
+
+        // Assert
+        Assert.IsTrue(result);
+        Assert.AreEqual(75, parameter.Value);
+        Assert.IsTrue(eventRaised, "ValueChanged event should be raised");
+    }
+
+    /// <summary>
+    /// Tests that SetOrThrow throws when validation fails and leaves the value unchanged.
+    /// </summary>
+    [TestMethod]
+    public void SetOrThrow_ValueOutsideMin_ThrowsAndLeavesValueUnchanged()
+    {
+        // Arrange
+        var parameter = new Parameter<int>(50)
+        {
+            Metadata = new ParameterMetadata { Min = 10 }
+        };
+
+        // Act
+        var exception = AssertThrows<ArgumentOutOfRangeException>(() => parameter.SetOrThrow(5));
+
+        // Assert
+        Assert.AreEqual("value", exception.ParamName);
+        Assert.AreEqual(50, parameter.Value);
+    }
+
+    /// <summary>
+    /// Tests that SetOrThrow updates the value when validation succeeds.
+    /// </summary>
+    [TestMethod]
+    public void SetOrThrow_ValueWithinRange_UpdatesValue()
+    {
+        // Arrange
+        var parameter = new Parameter<int>(50)
+        {
+            Metadata = new ParameterMetadata { Min = 10, Max = 100 }
+        };
+
+        // Act
+        parameter.SetOrThrow(100);
+
+        // Assert
+        Assert.AreEqual(100, parameter.Value);
+    }
+
+    /// <summary>
     /// Tests that Set maintains IsModified state correctly when setting different values.
     /// </summary>
     [TestMethod]
