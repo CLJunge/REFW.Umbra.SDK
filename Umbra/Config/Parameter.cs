@@ -6,9 +6,13 @@ namespace Umbra.Config;
 /// A strongly-typed configuration parameter that holds a value of type <typeparamref name="T"/>
 /// and notifies listeners when that value changes.
 /// </summary>
+/// <remarks>
+/// The parameter's resolved <see cref="Key"/> and <see cref="Metadata"/> are assigned by Umbra's
+/// internal registration pipeline. Public consumers can read those values but cannot replace them.
+/// </remarks>
 /// <typeparam name="T">The type of value stored by this parameter.</typeparam>
 [DebuggerDisplay("{Key}: {Value} (Default: {DefaultValue}, Modified: {IsModified})")]
-public class Parameter<T> : IParameter
+public class Parameter<T> : IParameter, IParameterRegistration
 {
     /// <summary>
     /// Cached flag indicating whether <typeparamref name="T"/> is a non-nullable value type.
@@ -39,10 +43,10 @@ public class Parameter<T> : IParameter
     }
 
     /// <inheritdoc/>
-    public string Key { get; set; } = "";
+    public string Key { get; internal set; } = "";
 
     /// <inheritdoc/>
-    public ParameterMetadata Metadata { get; set; } = new();
+    public ParameterMetadata Metadata { get; internal set; } = new();
 
     /// <summary>
     /// Gets the default value assigned to this parameter at construction time.
@@ -143,6 +147,10 @@ public class Parameter<T> : IParameter
 
     /// <inheritdoc/>
     object? IParameter.GetValue() => Value;
+
+    string IParameterRegistration.Key { set => Key = value; }
+
+    ParameterMetadata IParameterRegistration.Metadata { set => Metadata = value; }
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentException">

@@ -15,15 +15,23 @@ public interface IParameter
     event Action? ValueChanged;
 
     /// <summary>
-    /// Gets or sets the unique key that identifies this parameter within its settings group.
+    /// Gets the unique key that identifies this parameter within its settings group.
     /// </summary>
-    string Key { get; set; }
+    /// <remarks>
+    /// The key is assigned by Umbra's registration pipeline and remains stable for the lifetime of
+    /// the registered parameter instance.
+    /// </remarks>
+    string Key { get; }
 
     /// <summary>
-    /// Gets or sets the metadata associated with this parameter, such as its display
-    /// name, description, and ordering information.
+    /// Gets the metadata associated with this parameter, such as its display name, description,
+    /// and ordering information.
     /// </summary>
-    ParameterMetadata Metadata { get; set; }
+    /// <remarks>
+    /// Metadata is populated by Umbra during registration and is exposed read-only to public
+    /// consumers so identity and UI behavior remain stable after load.
+    /// </remarks>
+    ParameterMetadata Metadata { get; }
 
     /// <summary>
     /// Gets the <see cref="Type"/> of the value held by this parameter.

@@ -132,7 +132,8 @@ internal static class SettingsRegistrar
     /// <param name="declaringProperty">The property that exposed the parameter.</param>
     /// <param name="currentCategory">The resolved category context applied to the parameter metadata.</param>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="key"/> is already registered by a different parameter.
+    /// Thrown when <paramref name="key"/> is already registered by a different parameter, or when
+    /// <paramref name="parameter"/> does not support Umbra's registration-time identity assignment.
     /// </exception>
     private static void RegisterParameter(
         Dictionary<string, IParameter> parameters,
@@ -150,8 +151,14 @@ internal static class SettingsRegistrar
                 $"The key is already used by '{existingOrigin}'. Ensure every [UmbraSettingsParameter] resolves to a unique key.");
         }
 
-        parameter.Key = key;
-        parameter.Metadata = ParameterMetadataReader.ReadFrom(declaringProperty, currentCategory, key);
+        if (parameter is not IParameterRegistration registration)
+        {
+            throw new InvalidOperationException(
+                $"Parameter instance '{parameter.GetType().FullName ?? parameter.GetType().Name}' does not support Umbra registration.");
+        }
+
+        registration.Key = key;
+        registration.Metadata = ParameterMetadataReader.ReadFrom(declaringProperty, currentCategory, key);
         parameters.Add(key, parameter);
         parameterOrigins.Add(key, origin);
     }

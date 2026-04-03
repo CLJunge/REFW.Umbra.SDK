@@ -773,6 +773,28 @@ public class ParameterTests
     }
 
     /// <summary>
+    /// Tests that the public parameter surface exposes registration identity and metadata as
+    /// read-only values while keeping non-public setters available for Umbra internals.
+    /// </summary>
+    [TestMethod]
+    public void RegistrationState_PublicSurfaceIsReadOnly()
+    {
+        // Arrange
+        var interfaceKey = typeof(IParameter).GetProperty(nameof(IParameter.Key))!;
+        var interfaceMetadata = typeof(IParameter).GetProperty(nameof(IParameter.Metadata))!;
+        var concreteKey = typeof(Parameter<int>).GetProperty(nameof(Parameter<int>.Key))!;
+        var concreteMetadata = typeof(Parameter<int>).GetProperty(nameof(Parameter<int>.Metadata))!;
+
+        // Assert
+        Assert.IsFalse(interfaceKey.CanWrite);
+        Assert.IsFalse(interfaceMetadata.CanWrite);
+        Assert.IsNotNull(concreteKey.SetMethod);
+        Assert.IsNotNull(concreteMetadata.SetMethod);
+        Assert.IsFalse(concreteKey.SetMethod.IsPublic);
+        Assert.IsFalse(concreteMetadata.SetMethod.IsPublic);
+    }
+
+    /// <summary>
     /// Tests that the constructor correctly initializes with a nullable int that is null.
     /// </summary>
     [TestMethod]
