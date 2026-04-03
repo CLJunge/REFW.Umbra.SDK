@@ -13,7 +13,9 @@ namespace Umbra.Config;
 /// Metadata is populated by <see cref="ParameterMetadataReader"/> via reflection and is
 /// consumed by the settings UI to render appropriate labels, tooltips, sliders,
 /// and input constraints without requiring each parameter to carry that information
-/// itself. All properties are optional; absent values are represented as
+/// itself. Public properties expose the descriptive configuration contract, while Umbra keeps
+/// derived render-cache values internal so UI implementation details are not part of the public
+/// package surface. All properties are optional; absent values are represented as
 /// <see langword="null"/>. Debugger-only summary formatting is delegated to
 /// <see cref="ParameterMetadataDebuggerDisplayFormatter"/> so this type stays focused on immutable
 /// metadata storage.
@@ -41,7 +43,7 @@ public sealed class ParameterMetadata
     /// Pre-computed by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to
     /// avoid repeated <see cref="System.Text.StringBuilder"/> allocations at draw-tree construction time.
     /// </summary>
-    public string ResolvedLabel { get; init; } = string.Empty;
+    internal string ResolvedLabel { get; init; } = string.Empty;
 
     /// <summary>
     /// Gets the descriptive text for the parameter, typically rendered as a tooltip
@@ -180,7 +182,7 @@ public sealed class ParameterMetadata
     /// Sourced from <see cref="UmbraDrawerAttribute{TDrawer}"/> via a single attribute scan in
     /// <see cref="ParameterMetadataReader"/>.
     /// </summary>
-    public Type? DrawerType { get; init; }
+    internal Type? DrawerType { get; init; }
 
     /// <summary>
     /// Gets the concrete <see cref="Umbra.UI.Config.Drawers.ITwoColumnParameterDrawer"/> type
@@ -191,7 +193,7 @@ public sealed class ParameterMetadata
     /// Sourced from <see cref="UmbraTwoColumnDrawerAttribute{TDrawer}"/> via a single attribute scan in
     /// <see cref="ParameterMetadataReader"/>.
     /// </summary>
-    public Type? TwoColumnDrawerType { get; init; }
+    internal Type? TwoColumnDrawerType { get; init; }
 
     /// <summary>
     /// Gets the cached hide-condition data sourced from <see cref="UmbraHideIfAttribute{T}"/> on this
@@ -199,7 +201,7 @@ public sealed class ParameterMetadata
     /// Consumed by <see cref="Umbra.UI.Config.VisibilityPredicateResolver"/> to compile the per-frame visibility predicate
     /// without requiring a second attribute scan at draw-tree construction time.
     /// </summary>
-    public IHideIfAttribute? HideIf { get; init; }
+    internal IHideIfAttribute? HideIf { get; init; }
 
     /// <summary>
     /// Gets the fully resolved printf format string used by float and double ImGui controls.
@@ -210,7 +212,7 @@ public sealed class ParameterMetadata
     /// <see cref="SettingsStore{TConfig}.Load()"/> to eliminate <c>Number.FormatFloat</c> overhead at
     /// draw-tree construction time.
     /// </summary>
-    public string InferredFloatFormat { get; init; } = "%.2f";
+    internal string InferredFloatFormat { get; init; } = "%.2f";
 
     /// <summary>
     /// Gets the pre-computed hidden ImGui control label (<c>"##" + Key</c>) for this parameter,
@@ -218,7 +220,7 @@ public sealed class ParameterMetadata
     /// Cached by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to avoid
     /// a <c>string.Concat</c> allocation per parameter per <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/> construction.
     /// </summary>
-    public string? HiddenLabel { get; init; }
+    internal string? HiddenLabel { get; init; }
 
     /// <summary>
     /// Gets the concise debugger summary used by <see cref="DebuggerDisplayAttribute"/>.
