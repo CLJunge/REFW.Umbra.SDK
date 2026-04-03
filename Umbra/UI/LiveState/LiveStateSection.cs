@@ -1,3 +1,4 @@
+using System.Reflection;
 using Hexa.NET.ImGui;
 using Umbra.UI.Panel;
 
@@ -146,7 +147,8 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
     /// </param>
     /// <exception cref="InvalidOperationException">
     /// Thrown when <typeparamref name="T"/> does not expose a public parameterless constructor,
-    /// or when it is not decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
+    /// when that constructor throws during activation, or when activation fails for any other
+    /// reason — or when it is not decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
     /// </exception>
     public LiveStateSection(string? idScope = null,
         string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
@@ -182,7 +184,9 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
     /// </summary>
     /// <returns>A new <typeparamref name="T"/> instance.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when <typeparamref name="T"/> does not expose a public parameterless constructor.
+    /// Thrown when <typeparamref name="T"/> does not expose a public parameterless constructor,
+    /// when the constructor throws during activation, or when activation fails for any other reason
+    /// (e.g., the type is abstract or the constructor is inaccessible).
     /// </exception>
     private static T CreateOwnedContext()
     {
@@ -194,6 +198,20 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
         {
             throw new InvalidOperationException(
                 $"LiveStateSection<{typeof(T).Name}> requires a public parameterless constructor when using the parameterless section constructor. " +
+                $"Use {nameof(LiveStateSection<T>)}(T, string?, string?, bool) to supply the state instance explicitly.",
+                ex);
+        }
+        catch (TargetInvocationException ex)
+        {
+            throw new InvalidOperationException(
+                $"LiveStateSection<{typeof(T).Name}> state constructor threw an exception during activation. " +
+                $"Use {nameof(LiveStateSection<T>)}(T, string?, string?, bool) to supply a pre-constructed instance.",
+                ex.InnerException ?? ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"LiveStateSection<{typeof(T).Name}> could not activate the state type ({ex.GetType().Name}). " +
                 $"Use {nameof(LiveStateSection<T>)}(T, string?, string?, bool) to supply the state instance explicitly.",
                 ex);
         }

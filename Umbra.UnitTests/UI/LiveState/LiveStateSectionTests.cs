@@ -314,6 +314,20 @@ public sealed class LiveStateSectionTests
     }
 
     /// <summary>
+    /// Tests that the parameterless constructor wraps TargetInvocationException in an
+    /// InvalidOperationException with the original constructor exception as the inner exception.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_ParameterlessSectionWhenStateConstructorThrows_ThrowsInvalidOperationExceptionWithOriginalInner()
+    {
+        var exception = AssertThrows<InvalidOperationException>(() => _ = new LiveStateSection<ThrowingState>());
+
+        Assert.Contains(nameof(ThrowingState), exception.Message);
+        Assert.IsNotNull(exception.InnerException);
+        Assert.AreEqual("ctor threw", exception.InnerException.Message);
+    }
+
+    /// <summary>
     /// A valid test state type decorated with LiveStateSectionDrawerAttribute
     /// for testing valid constructor scenarios.
     /// </summary>
@@ -330,6 +344,15 @@ public sealed class LiveStateSectionTests
     private sealed class StateWithoutParameterlessConstructor(int value)
     {
         public int Value { get; } = value;
+    }
+
+    /// <summary>
+    /// State type whose parameterless constructor always throws, for testing TargetInvocationException unwrapping.
+    /// </summary>
+    [LiveStateSectionDrawer<ThrowingStateDrawer>]
+    private sealed class ThrowingState
+    {
+        public ThrowingState() => throw new InvalidOperationException("ctor threw");
     }
 
     /// <summary>
@@ -354,6 +377,22 @@ public sealed class LiveStateSectionTests
     private sealed class StateWithoutParameterlessConstructorDrawer : ILiveStateSectionDrawer<StateWithoutParameterlessConstructor>
     {
         public void Draw(StateWithoutParameterlessConstructor state)
+        {
+            // No-op for testing
+        }
+
+        public void Dispose()
+        {
+            // No-op for testing
+        }
+    }
+
+    /// <summary>
+    /// Minimal drawer for <see cref="ThrowingState"/>.
+    /// </summary>
+    private sealed class ThrowingStateDrawer : ILiveStateSectionDrawer<ThrowingState>
+    {
+        public void Draw(ThrowingState state)
         {
             // No-op for testing
         }
