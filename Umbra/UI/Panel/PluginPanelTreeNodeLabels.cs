@@ -7,7 +7,7 @@ namespace Umbra.UI.Panel;
 /// </summary>
 /// <remarks>
 /// This type isolates ImGui label/ID separator handling from <see cref="PluginPanel"/>.
-/// Invalid labels are warned once per section-id/label pair so repeated panel construction does
+/// Invalid labels are warned once per owner-id/label pair so repeated panel construction does
 /// not flood the REFramework console with identical stack-trace diagnostics.
 /// </remarks>
 internal static class PluginPanelTreeNodeLabels
@@ -20,7 +20,7 @@ internal static class PluginPanelTreeNodeLabels
     /// separator token.
     /// </summary>
     /// <remarks>
-    /// The warning is emitted only once per section-id/label pair. The panel still sanitizes the
+    /// The warning is emitted only once per owner-id/label pair. The panel still sanitizes the
     /// label at render time on every draw.
     /// </remarks>
     /// <param name="section">The section being added to the panel.</param>
