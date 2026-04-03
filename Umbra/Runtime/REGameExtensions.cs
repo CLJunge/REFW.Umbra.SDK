@@ -3,9 +3,11 @@ namespace Umbra.Runtime;
 /// <summary>
 /// Provides extension methods for working with REFramework game enumeration values.
 /// </summary>
-/// <remarks>This class contains utility methods that extend the REGame enumeration, enabling retrieval
+/// <remarks>
+/// This class contains utility methods that extend the REGame enumeration, enabling retrieval
 /// of user-friendly display names and other game-specific information. All methods are static and intended for use with
-/// REFramework game identifiers.</remarks>
+/// REFramework game identifiers.
+/// </remarks>
 public static class REGameExtensions
 {
     /// <summary>

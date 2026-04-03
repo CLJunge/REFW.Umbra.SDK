@@ -7,9 +7,11 @@ namespace Umbra.Runtime;
 /// <summary>
 /// Provides functionality for loading game metadata from an embedded JSON resource.
 /// </summary>
-/// <remarks>This static class is responsible for retrieving and deserializing the 'game-metadata.json' file
+/// <remarks>
+/// This static class is responsible for retrieving and deserializing the 'game-metadata.json' file
 /// embedded within the assembly. It is intended for internal use to supply metadata about supported games to other
-/// components.</remarks>
+/// components.
+/// </remarks>
 internal static class GameMetadataLoader
 {
     private static readonly JsonSerializerOptions _jsonOptions = new()

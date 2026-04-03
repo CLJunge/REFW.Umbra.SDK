@@ -4,8 +4,13 @@ using Umbra.Runtime.Models;
 namespace Umbra.Runtime;
 
 /// <summary>
-/// Provides access to the current game context via compile-time preprocessor symbols.
+/// Provides information about the currently detected RE Engine game for the running process.
 /// </summary>
+/// <remarks
+/// >Use this class to determine which RE Engine game is active, allowing plugins or mods to implement
+/// game-specific logic or compatibility checks. The detection is based on the process name and available game
+/// metadata.
+/// </remarks>
 public static class GameContext
 {
     private static readonly GameMetadata? _currentGameMetadata;
