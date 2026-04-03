@@ -9,25 +9,6 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 public sealed class CategoryNodeTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Tests that drawing a flat category without indentation renders a separator and draws all
     /// children once.
     /// </summary>
@@ -218,7 +199,7 @@ public sealed class CategoryNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new CategoryNode("Label", null, null, null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new CategoryNode("Label", null, null, null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

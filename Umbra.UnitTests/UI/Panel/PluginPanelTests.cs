@@ -232,25 +232,6 @@ public sealed class PluginPanelTests_Draw
 public sealed class PluginPanelTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Tests that Add returns the same PluginPanel instance for fluent chaining.
     /// </summary>
     [TestMethod]
@@ -460,7 +441,7 @@ public sealed class PluginPanelTests
     {
         using var panel = new PluginPanel($"NullSection_{Guid.NewGuid()}");
 
-        var exception = AssertThrows<ArgumentNullException>(() => panel.Add(null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => panel.Add(null!));
 
         Assert.AreEqual("section", exception.ParamName);
     }
@@ -477,7 +458,7 @@ public sealed class PluginPanelTests
         mockSection.Setup(s => s.SectionId).Returns("Section");
         panel.Dispose();
 
-        AssertThrows<ObjectDisposedException>(() => panel.Add(mockSection.Object));
+        Assert.ThrowsExactly<ObjectDisposedException>(() => panel.Add(mockSection.Object));
     }
 
     /// <summary>

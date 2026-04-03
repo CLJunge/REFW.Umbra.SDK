@@ -8,25 +8,6 @@ namespace Umbra.UI.LiveState.UnitTests;
 public sealed class LiveStateSectionTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Tests that TreeNodeLabel returns the value provided to the primary constructor
     /// when a non-null tree node label is supplied.
     /// </summary>
@@ -268,7 +249,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_NullContext_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new LiveStateSection<TestState>((TestState)null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new LiveStateSection<TestState>((TestState)null!));
 
         Assert.AreEqual("context", exception.ParamName);
     }
@@ -279,7 +260,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
     {
-        var exception = AssertThrows<ArgumentException>(() => _ = new LiveStateSection<TestState>(new TestState(), idScope: "   "));
+        var exception = Assert.ThrowsExactly<ArgumentException>(() => _ = new LiveStateSection<TestState>(new TestState(), idScope: "   "));
 
         Assert.AreEqual("idScope", exception.ParamName);
     }
@@ -306,7 +287,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_ParameterlessSectionWithoutParameterlessStateConstructor_ThrowsInvalidOperationException()
     {
-        var exception = AssertThrows<InvalidOperationException>(() => _ = new LiveStateSection<StateWithoutParameterlessConstructor>());
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => _ = new LiveStateSection<StateWithoutParameterlessConstructor>());
 
         Assert.Contains(nameof(StateWithoutParameterlessConstructor), exception.Message);
         Assert.IsNotNull(exception.InnerException);
@@ -320,7 +301,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_ParameterlessSectionWhenStateConstructorThrows_ThrowsInvalidOperationExceptionWithOriginalInner()
     {
-        var exception = AssertThrows<InvalidOperationException>(() => _ = new LiveStateSection<ThrowingState>());
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => _ = new LiveStateSection<ThrowingState>());
 
         Assert.Contains(nameof(ThrowingState), exception.Message);
         Assert.IsNotNull(exception.InnerException);
@@ -352,7 +333,10 @@ public sealed class LiveStateSectionTests
     [LiveStateSectionDrawer<ThrowingStateDrawer>]
     private sealed class ThrowingState
     {
-        public ThrowingState() => throw new InvalidOperationException("ctor threw");
+        public ThrowingState()
+        {
+            throw new InvalidOperationException("ctor threw");
+        }
     }
 
     /// <summary>

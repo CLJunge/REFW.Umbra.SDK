@@ -7,25 +7,6 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 public sealed class ParameterNodeTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Verifies that when <c>isVisible</c> returns <see langword="false"/>, the <see cref="ParameterNode.Draw"/>
     /// method returns immediately without invoking the draw action or spacing calls.
     /// </summary>
@@ -300,7 +281,7 @@ public sealed class ParameterNodeTests
     {
         var renderer = new TestParameterNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(null!, static () => { }, int.MaxValue, 0, 0, renderer));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ParameterNode(null!, static () => { }, int.MaxValue, 0, 0, renderer));
 
         Assert.AreEqual("isVisible", exception.ParamName);
     }
@@ -313,7 +294,7 @@ public sealed class ParameterNodeTests
     {
         var renderer = new TestParameterNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, null!, int.MaxValue, 0, 0, renderer));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ParameterNode(static () => true, null!, int.MaxValue, 0, 0, renderer));
 
         Assert.AreEqual("draw", exception.ParamName);
     }
@@ -324,7 +305,7 @@ public sealed class ParameterNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, static () => { }, int.MaxValue, 0, 0, renderer: null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ParameterNode(static () => true, static () => { }, int.MaxValue, 0, 0, renderer: null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

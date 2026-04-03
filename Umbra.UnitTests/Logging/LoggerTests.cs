@@ -3371,29 +3371,10 @@ public sealed class LoggerTests
     }
 
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Verifies that <see cref="Logger.SetLogSink(ILogSink)"/> rejects null sinks.
     /// </summary>
     [TestMethod]
-    public void SetLogSink_Null_ThrowsArgumentNullException() => AssertThrows<ArgumentNullException>(() => Logger.SetLogSink(null!));
+    public void SetLogSink_Null_ThrowsArgumentNullException() => Assert.ThrowsExactly<ArgumentNullException>(() => Logger.SetLogSink(null!));
 
     /// <summary>
     /// Verifies that <see cref="Logger.Info(string)"/> swallows sink exceptions.
@@ -3498,7 +3479,7 @@ public sealed class LoggerTests
     public void ReportSuppressedFailure_WhenObserverTriggersNestedSuppressedFailure_DoesNotRecurse()
     {
         Logger.SetLogSink(new ThrowingLogSink());
-        int callCount = 0;
+        var callCount = 0;
         Logger.SuppressedFailureObserver = (op, ex) =>
         {
             callCount++;

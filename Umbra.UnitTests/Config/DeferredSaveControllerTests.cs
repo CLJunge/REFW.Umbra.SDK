@@ -23,31 +23,13 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Verifies that the constructor rejects a null settings store.
     /// </summary>
     [TestMethod]
     public void Constructor_WhenStoreIsNull_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new DeferredSaveController<TestConfig>(null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new DeferredSaveController<TestConfig>(null!));
+        //var exception = AssertThrows<ArgumentNullException>(() => _ = new DeferredSaveController<TestConfig>(null!));
 
         Assert.AreEqual("store", exception.ParamName);
     }
@@ -61,7 +43,7 @@ public sealed partial class DeferredSaveControllerTests
         var storeMock = new Mock<ISettingsStore<TestConfig>>(MockBehavior.Strict);
         storeMock.SetupGet(s => s.IsDisposed).Returns(true);
 
-        AssertThrows<ObjectDisposedException>(() => _ = new DeferredSaveController<TestConfig>(storeMock.Object));
+        Assert.ThrowsExactly<ObjectDisposedException>(() => _ = new DeferredSaveController<TestConfig>(storeMock.Object));
     }
 
     /// <summary>
@@ -74,7 +56,7 @@ public sealed partial class DeferredSaveControllerTests
         storeMock.SetupGet(s => s.IsDisposed).Returns(false);
         storeMock.SetupGet(s => s.IsLoaded).Returns(false);
 
-        AssertThrows<InvalidOperationException>(() => _ = new DeferredSaveController<TestConfig>(storeMock.Object));
+        Assert.ThrowsExactly<InvalidOperationException>(() => _ = new DeferredSaveController<TestConfig>(storeMock.Object));
     }
 
     /// <summary>

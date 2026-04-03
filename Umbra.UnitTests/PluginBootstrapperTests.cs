@@ -88,7 +88,7 @@ public sealed class PluginBootstrapperTests
         Assert.IsTrue(PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { }));
 
         // Act
-        var exception = AssertThrows<InvalidOperationException>(() =>
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() =>
             PluginBootstrapper.Unload(typeof(BootstrapPlugin), () => throw new InvalidOperationException("boom")));
 
         var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { });
@@ -105,7 +105,7 @@ public sealed class PluginBootstrapperTests
     public void Load_InitializationThrows_ReleasesMutex()
     {
         // Act
-        var exception = AssertThrows<InvalidOperationException>(() =>
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() =>
             PluginBootstrapper.Load(typeof(BootstrapPlugin), () => throw new InvalidOperationException("load failed")));
 
         var reloaded = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => { });
@@ -114,25 +114,5 @@ public sealed class PluginBootstrapperTests
         Assert.AreEqual("load failed", exception.Message);
         Assert.IsTrue(reloaded);
     }
-
-    /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
     private static class BootstrapPlugin;
 }

@@ -176,7 +176,7 @@ public class NestedScopePathResolverTests
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
         // Act
-        var exception = AssertThrowsInvalidOperationException(
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(
             () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
 
         // Assert
@@ -199,7 +199,7 @@ public class NestedScopePathResolverTests
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: "typePrefix");
 
         // Assert
-        AssertThrowsInvalidOperationException(
+        Assert.ThrowsExactly<InvalidOperationException>(
             () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
     }
 
@@ -218,7 +218,7 @@ public class NestedScopePathResolverTests
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: "");
 
         // Assert
-        AssertThrowsInvalidOperationException(
+        Assert.ThrowsExactly<InvalidOperationException>(
             () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
     }
 
@@ -237,23 +237,8 @@ public class NestedScopePathResolverTests
         var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
 
         // Assert
-        AssertThrowsInvalidOperationException(
+        Assert.ThrowsExactly<InvalidOperationException>(
             () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
-    }
-
-    private static InvalidOperationException AssertThrowsInvalidOperationException(Action action)
-    {
-        try
-        {
-            action();
-            Assert.Fail("Expected InvalidOperationException.");
-        }
-        catch (InvalidOperationException exception)
-        {
-            return exception;
-        }
-
-        throw new InvalidOperationException("Unreachable");
     }
 
     /// <summary>

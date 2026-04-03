@@ -588,7 +588,7 @@ public partial class ParameterJsonReaderTests
         using var doc = JsonDocument.Parse("2147483648");
         var element = doc.RootElement;
 
-        AssertThrows<FormatException>(() => ParameterJsonReader.Apply(mockParam.Object, element));
+        Assert.ThrowsExactly<FormatException>(() => ParameterJsonReader.Apply(mockParam.Object, element));
     }
 
     /// <summary>
@@ -659,27 +659,8 @@ public partial class ParameterJsonReaderTests
         using var doc = JsonDocument.Parse("256");
         var element = doc.RootElement;
 
-        AssertThrows<FormatException>(() => ParameterJsonReader.Apply(mockParam.Object, element));
+        Assert.ThrowsExactly<FormatException>(() => ParameterJsonReader.Apply(mockParam.Object, element));
 
-    }
-
-    /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
     }
 
     /// <summary>

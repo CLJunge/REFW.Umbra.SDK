@@ -17,25 +17,6 @@ public sealed class ButtonDrawerTests
     private bool _originalLoggingEnabled;
 
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Installs a recording renderer and logger sink before each test.
     /// </summary>
     [TestInitialize]
@@ -344,7 +325,7 @@ public sealed class ButtonDrawerTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ButtonDrawer(null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ButtonDrawer(null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

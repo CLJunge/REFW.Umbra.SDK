@@ -11,25 +11,6 @@ namespace Umbra.UI.Config.UnitTests;
 public sealed class ConfigSectionTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Test configuration class used for testing <see cref="ConfigSection{TConfig}"/>.
     /// </summary>
     [UmbraAutoRegister]
@@ -253,7 +234,7 @@ public sealed class ConfigSectionTests
     [TestMethod]
     public void Constructor_NullConfig_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ConfigSection<TestConfig>(null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ConfigSection<TestConfig>(null!));
 
         Assert.AreEqual("config", exception.ParamName);
     }
@@ -264,7 +245,7 @@ public sealed class ConfigSectionTests
     [TestMethod]
     public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
     {
-        var exception = AssertThrows<ArgumentException>(() => _ = new ConfigSection<TestConfig>(new TestConfig(), idScope: "   "));
+        var exception = Assert.ThrowsExactly<ArgumentException>(() => _ = new ConfigSection<TestConfig>(new TestConfig(), idScope: "   "));
 
         Assert.AreEqual("idScope", exception.ParamName);
     }
