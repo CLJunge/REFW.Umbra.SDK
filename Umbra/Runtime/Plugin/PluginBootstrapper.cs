@@ -1,4 +1,4 @@
-namespace Umbra.Runtime;
+namespace Umbra.Runtime.Plugin;
 
 /// <summary>
 /// Provides a higher-level plugin lifecycle wrapper that owns single-instance mutex acquisition and

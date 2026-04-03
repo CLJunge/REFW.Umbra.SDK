@@ -1,6 +1,6 @@
 using Umbra.Logging;
 
-namespace Umbra.Runtime;
+namespace Umbra.Runtime.Plugin;
 
 /// <summary>
 /// Provides a convenience base class for instance-based Umbra plugins.

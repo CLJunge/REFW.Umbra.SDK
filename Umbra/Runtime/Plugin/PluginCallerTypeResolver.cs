@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace Umbra.Runtime;
+namespace Umbra.Runtime.Plugin;
 
 /// <summary>
 /// Resolves the plugin identity type from the immediate caller of a convenience runtime API.

@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Umbra.Logging;
 
-namespace Umbra.Runtime;
+namespace Umbra.Runtime.Plugin;
 
 /// <summary>
 /// Coordinates AppDomain-local single-instance enforcement for plugin identity types.
