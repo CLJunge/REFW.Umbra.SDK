@@ -277,6 +277,18 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
+    /// Configuration class without a public parameterless constructor.
+    /// Used to verify that <see cref="ConfigDrawer{TConfig}"/> can still be constructed when the
+    /// caller supplies the config instance explicitly.
+    /// </summary>
+    [UmbraAutoRegister]
+    private sealed class ConfigWithoutParameterlessConstructor(Parameter<bool> enabled)
+    {
+        [UmbraParameter]
+        public Parameter<bool> Enabled { get; } = enabled;
+    }
+
+    /// <summary>
     /// Configuration class with a nested settings group.
     /// </summary>
     [UmbraAutoRegister]
