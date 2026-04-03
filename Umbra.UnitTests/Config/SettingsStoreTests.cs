@@ -1008,6 +1008,43 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
+    /// Verifies that <see cref="ISettingsStore{TConfig}.CopyValuesTo"/> is available and usable
+    /// through the public interface surface.
+    /// </summary>
+    [TestMethod]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
+    public void CopyValuesTo_ThroughInterface_CopiesValuesToTargetStore()
+    {
+        var sourcePath = Path.Combine(Path.GetTempPath(), $"source_{Guid.NewGuid()}.json");
+        var targetPath = Path.Combine(Path.GetTempPath(), $"target_{Guid.NewGuid()}.json");
+        try
+        {
+            ISettingsStore<TestConfig> source = new SettingsStore<TestConfig>(sourcePath);
+            var target = new SettingsStore<TestConfig>(targetPath);
+            var sourceConfig = source.Load();
+            var targetConfig = target.Load();
+
+            sourceConfig.Value1.Set(321);
+            sourceConfig.Value2.Set("via-interface");
+
+            source.CopyValuesTo(target);
+
+            Assert.AreEqual(321, targetConfig.Value1.Value);
+            Assert.AreEqual("via-interface", targetConfig.Value2.Value);
+
+            source.Dispose();
+            target.Dispose();
+        }
+        finally
+        {
+            if (File.Exists(sourcePath))
+                File.Delete(sourcePath);
+            if (File.Exists(targetPath))
+                File.Delete(targetPath);
+        }
+    }
+
+    /// <summary>
     /// Verifies that <see cref="SettingsStore{TConfig}.ResetAll"/> skips delegate-backed parameters.
     /// </summary>
     [TestMethod]

@@ -31,6 +31,17 @@ public interface ISettingsStore<TConfig> : IDisposable
     void Save();
 
     /// <summary>
+    /// Copies all registered parameter values from this store into the corresponding parameters of
+    /// <paramref name="target"/>, matched by key.
+    /// </summary>
+    /// <param name="target">The destination store to copy values into.</param>
+    /// <param name="setWithoutNotifying">
+    /// When <see langword="true"/>, values are applied without raising
+    /// <see cref="IParameter.ValueChanged"/> events on the target store.
+    /// </param>
+    void CopyValuesTo(SettingsStore<TConfig> target, bool setWithoutNotifying = false);
+
+    /// <summary>
     /// Subscribes a callback to every registered parameter.
     /// </summary>
     /// <param name="listener">The callback to invoke whenever any parameter value changes.</param>
