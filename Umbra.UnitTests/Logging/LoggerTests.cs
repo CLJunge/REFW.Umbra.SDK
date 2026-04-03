@@ -3491,6 +3491,28 @@ public sealed class LoggerTests
     }
 
     /// <summary>
+    /// Verifies that a re-entrant call to <see cref="Logger.ReportSuppressedFailure"/> from within the
+    /// <see cref="Logger.SuppressedFailureObserver"/> is silently dropped and does not recurse.
+    /// </summary>
+    [TestMethod]
+    public void ReportSuppressedFailure_WhenObserverTriggersNestedSuppressedFailure_DoesNotRecurse()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+        int callCount = 0;
+        Logger.SuppressedFailureObserver = (op, ex) =>
+        {
+            callCount++;
+            // This call re-enters ReportSuppressedFailure; the guard must drop it.
+            Logger.Info("recursive trigger");
+        };
+
+        Logger.Info("initial");
+
+        // Only the outermost call must be delivered; the nested one is dropped.
+        Assert.AreEqual(1, callCount);
+    }
+
+    /// <summary>
     /// Sink that throws for every write path.
     /// </summary>
     private sealed class ThrowingLogSink : ILogSink

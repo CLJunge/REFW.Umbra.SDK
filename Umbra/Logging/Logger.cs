@@ -31,6 +31,9 @@ public static class Logger
     private static int _enabled = 1;
     private static int _suppressionDepth;
 
+    [ThreadStatic]
+    private static bool _reportingFailure;
+
     /// <summary>
     /// Gets or sets an optional observer that receives exceptions suppressed internally by
     /// <see cref="Logger"/> and <see cref="PluginLogger"/>.
@@ -271,20 +274,30 @@ public static class Logger
     /// <summary>
     /// Reports a suppressed internal logging failure to the optional observer.
     /// </summary>
+    /// <remarks>
+    /// A per-thread re-entrancy guard prevents infinite recursion when the observer itself
+    /// triggers a suppressed logging failure (e.g., by calling <see cref="Logger"/> methods
+    /// while the sink is still throwing). Re-entrant calls are silently dropped.
+    /// </remarks>
     /// <param name="operation">The Logger or PluginLogger operation that suppressed the exception.</param>
     /// <param name="exception">The suppressed exception.</param>
     internal static void ReportSuppressedFailure(string operation, Exception exception)
     {
         var observer = SuppressedFailureObserver;
-        if (observer is null)
+        if (observer is null || _reportingFailure)
             return;
 
+        _reportingFailure = true;
         try
         {
             observer(operation, exception);
         }
         catch
         {
+        }
+        finally
+        {
+            _reportingFailure = false;
         }
     }
 
