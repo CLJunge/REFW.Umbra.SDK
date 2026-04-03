@@ -29,7 +29,6 @@ public sealed partial class DeferredSaveControllerTests
     public void Constructor_WhenStoreIsNull_ThrowsArgumentNullException()
     {
         var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new DeferredSaveController<TestConfig>(null!));
-        //var exception = AssertThrows<ArgumentNullException>(() => _ = new DeferredSaveController<TestConfig>(null!));
 
         Assert.AreEqual("store", exception.ParamName);
     }
