@@ -11,7 +11,7 @@ The repository contains three projects:
 ## Features
 
 - Attribute-driven settings registration with `SettingsStore<TConfig>` and `Parameter<T>`
-- JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, nullable enum, and `Action`-backed button parameters where applicable to UI rendering
+- JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable enum parameters
 - Deferred auto-save with `DeferredSaveController<TConfig>`
 - Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
@@ -101,7 +101,7 @@ REFW.Umbra
 ├─ Umbra
 │  ├─ Config
 │  │  ├─ Parameter<T>, IParameter, ParameterMetadata
-│  │  ├─ SettingsStore<TConfig>, SettingsPersistence, SettingsRegistrar
+│  │  ├─ SettingsStore<TConfig>, SettingsStorePersistenceCoordinator<TConfig>, SettingsRegistrar
 │  │  ├─ DeferredSaveController<TConfig>
 │  │  └─ settings/UI metadata attributes
 │  ├─ UI
@@ -330,7 +330,7 @@ For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested conf
 
 `PluginPanelBenchmark` can measure one duplicate `PluginPanel.Draw()` call per frame and export CSV, JSON, and Markdown artifacts.
 
-When the benchmark target is a config-backed panel, use `PluginPanelBenchmark.CreateForConfig(...)`:
+When the benchmark target is a config-backed panel, you can either use `PluginPanelBenchmark.CreateForConfig(...)` or manually construct a duplicate benchmark panel and pass it to the `PluginPanelBenchmark` constructor. `Umbra.SamplePlugin` currently demonstrates the manual duplicate-panel constructor path:
 
 ```csharp
 using REFrameworkNET;
