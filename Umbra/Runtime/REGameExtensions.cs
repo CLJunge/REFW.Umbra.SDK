@@ -1,21 +1,25 @@
 namespace Umbra.Runtime;
 
 /// <summary>
-/// Provides extension methods for working with REFramework game enumeration values.
+/// Provides display-name helpers for <see cref="REGame"/> values.
 /// </summary>
 /// <remarks>
-/// This class contains utility methods that extend the REGame enumeration, enabling retrieval
-/// of user-friendly display names and other game-specific information. All methods are static and intended for use with
-/// REFramework game identifiers.
+/// This type converts supported concrete game identifiers into user-facing titles.
+/// It is commonly used with <see cref="GameContext.CurrentGame"/>, but callers must handle
+/// <see cref="REGame.Unknown"/> before calling these helpers because detection can legitimately
+/// return that fallback value when the current process does not match the embedded metadata.
 /// </remarks>
 public static class REGameExtensions
 {
     /// <summary>
-    /// Gets the user-friendly display name for the specified game.
+    /// Gets the user-facing title for a supported concrete RE Engine game value.
     /// </summary>
-    /// <param name="game">The game for which to retrieve the display name.</param>
-    /// <returns>A string containing the display name of the specified game.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown if the specified game value is not supported.</exception>
+    /// <param name="game">The game identifier to convert.</param>
+    /// <returns>The display name associated with <paramref name="game"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="game"/> is <see cref="REGame.Unknown"/> or any other value
+    /// that is not mapped by this method.
+    /// </exception>
     public static string GetDisplayName(this REGame game)
     {
         return game switch
