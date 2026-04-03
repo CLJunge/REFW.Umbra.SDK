@@ -45,6 +45,10 @@
     <Import Project="Umbra.Local.props" Condition="Exists('Umbra.Local.props')" />
 
     <ItemGroup>
+      <None Remove="game-metadata.json" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Include="..\LICENSE.txt" Pack="true" PackagePath="" Visible="false" />
         <None Include="..\README.md" Pack="true" PackagePath="" Visible="false" />
     </ItemGroup>
@@ -64,6 +68,10 @@
     <ItemGroup>
         <!-- Explicitly opt out of the implicit System.Linq global using to enforce the no-LINQ rule. -->
         <Using Remove="System.Linq" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Runtime\game-metadata.json" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,0 +1,72 @@
+[
+    {
+        "displayName": "Resident Evil 2 (2019)",
+        "compatibleTarget": "RE2",
+        "executableName": "re2"
+    },
+    {
+        "displayName": "Resident Evil 3 (2020)",
+        "compatibleTarget": "RE3",
+        "executableName": "re3"
+    },
+    {
+        "displayName": "Resident Evil 4 (2023)",
+        "compatibleTarget": "RE4",
+        "executableName": "re4"
+    },
+    {
+        "displayName": "Resident Evil 7",
+        "compatibleTarget": "RE7",
+        "executableName": "re7"
+    },
+    {
+        "displayName": "Resident Evil Village",
+        "compatibleTarget": "RE8",
+        "executableName": "re8"
+    },
+    {
+        "displayName": "Resident Evil Requiem",
+        "compatibleTarget": "RE9",
+        "executableName": "re9"
+    },
+    {
+        "displayName": "Devil May Cry 5",
+        "compatibleTarget": "DMC5",
+        "executableName": "DevilMayCry5"
+    },
+    {
+        "displayName": "Street Fighter 6",
+        "compatibleTarget": "SF6",
+        "executableName": "StreetFighter6"
+    },
+    {
+        "displayName": "Monster Hunter Rise",
+        "compatibleTarget": "MHRISE",
+        "executableName": "MonsterHunterRise"
+    },
+    {
+        "displayName": "Monster Hunter Wilds",
+        "compatibleTarget": "MHWILDS",
+        "executableName": "MonsterHunterWilds"
+    },
+    {
+        "displayName": "Monster Hunter Stories 3: Twisted Reflection",
+        "compatibleTarget": "MHSTORIES3",
+        "executableName": "MONSTER_HUNTER_STORIES_3_TWISTED_REFLECTION"
+    },
+    {
+        "displayName": "Dragon's Dogma 2",
+        "compatibleTarget": "DD2",
+        "executableName": "DD2"
+    },
+    {
+        "displayName": "PRAGMATA",
+        "compatibleTarget": "PRAGMATA",
+        "executableName": ""
+    },
+    {
+        "displayName": "Mega Man Star Force Legacy Collection",
+        "compatibleTarget": "STARFORCE",
+        "executableName": "MEGAMAN_STARFORCE_Legacy_Collection"
+    }
+]
