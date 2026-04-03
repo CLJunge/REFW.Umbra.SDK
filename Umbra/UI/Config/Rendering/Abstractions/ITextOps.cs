@@ -1,7 +1,7 @@
 namespace Umbra.UI.Config.Rendering;
 
 /// <summary>
-/// Defines text and inline layout operations shared by multiple config controls.
+/// Defines the text and inline-layout operations shared by multiple configuration controls.
 /// </summary>
 internal interface ITextOps
 {

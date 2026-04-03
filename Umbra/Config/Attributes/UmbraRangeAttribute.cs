@@ -1,16 +1,25 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Defines the minimum and maximum allowable values for a numeric settings parameter.
+/// Declares the numeric bounds applied to an annotated parameter.
 /// </summary>
-/// <param name="min">The minimum allowable value.</param>
-/// <param name="max">The maximum allowable value.</param>
+/// <remarks>
+/// Umbra stores these values in <see cref="ParameterMetadata"/> for both validation and UI rendering decisions.
+/// </remarks>
+/// <param name="min">The inclusive minimum value.</param>
+/// <param name="max">The inclusive maximum value.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraRangeAttribute(double min, double max) : Attribute
 {
-    /// <summary>Gets the minimum allowable value for the parameter.</summary>
+    /// <summary>
+    /// Gets the inclusive minimum value.
+    /// </summary>
+    /// <value>The declared lower bound.</value>
     public double Min { get; } = min;
 
-    /// <summary>Gets the maximum allowable value for the parameter.</summary>
+    /// <summary>
+    /// Gets the inclusive maximum value.
+    /// </summary>
+    /// <value>The declared upper bound.</value>
     public double Max { get; } = max;
 }

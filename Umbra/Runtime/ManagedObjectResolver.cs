@@ -1,62 +1,43 @@
 namespace Umbra.Runtime;
 
 /// <summary>
-/// Provides utilities for resolving native game object addresses into managed
-/// typed references.
+/// Provides the public API for resolving native game object addresses into strongly typed managed references.
 /// </summary>
 /// <remarks>
-/// Production resolution is performed through an internal REFramework-backed bridge. Unit tests can
-/// replace that bridge with a deterministic implementation so the resolver's control flow can be
-/// verified without requiring the game runtime host.
+/// Production resolution is delegated to an internal REFramework-backed bridge. Tests can replace that bridge with a deterministic implementation so resolver control flow can be exercised without the game runtime host.
 /// </remarks>
 public static class ManagedObjectResolver
 {
     private static IManagedObjectBridge? _bridge;
 
     /// <summary>
-    /// Gets or sets an optional observer that receives exceptions swallowed by
-    /// <see cref="TryResolve{T}(ulong, out T)"/>.
+    /// Gets or sets an optional observer that receives exceptions swallowed by <see cref="TryResolve{T}(ulong, out T)"/>.
     /// </summary>
     /// <remarks>
-    /// This hook is intended for opt-in diagnostics when callers need visibility into bridge
-    /// failures that Umbra still suppresses to keep game-facing code on a simple failure path.
-    /// Exceptions thrown by the observer itself are swallowed as well.
+    /// This hook is intended for opt-in diagnostics when callers need visibility into bridge failures that Umbra still suppresses to keep game-facing code on a simple failure path. Exceptions thrown by the observer are swallowed as well.
     /// </remarks>
     public static Action<Exception>? SuppressedResolutionFailureObserver { get; set; }
 
     /// <summary>
-    /// Resolves the native game object at <paramref name="address"/> to a
-    /// strongly-typed managed reference, or <see langword="null"/> on failure.
+    /// Resolves the native object at <paramref name="address"/> to a managed reference compatible with <typeparamref name="T"/>, or returns <see langword="null"/> on failure.
     /// </summary>
+    /// <typeparam name="T">The managed reference type to request.</typeparam>
+    /// <param name="address">The native memory address of the object to resolve.</param>
+    /// <returns>The resolved managed instance, or <see langword="null"/> when resolution fails.</returns>
     /// <remarks>
-    /// This is a convenience wrapper over <see cref="TryResolve{T}(ulong, out T)"/> for call
-    /// sites that prefer a nullable return value over an explicit success flag.
+    /// This is a convenience wrapper over <see cref="TryResolve{T}(ulong, out T)"/> for call sites that prefer a nullable return value over an explicit success flag.
     /// </remarks>
-    /// <typeparam name="T">
-    /// The managed type to cast the resolved object to. Must be a reference type.
-    /// </typeparam>
-    /// <param name="address">
-    /// The native memory address of the game object to resolve.
-    /// </param>
-    /// <returns>
-    /// The resolved instance cast to <typeparamref name="T"/>, or
-    /// <see langword="null"/> if the address is invalid or the object's runtime type
-    /// is incompatible with <typeparamref name="T"/>.
-    /// </returns>
     public static T? Resolve<T>(ulong address) where T : class
         => TryResolve(address, out T? value) ? value : null;
 
     /// <summary>
-    /// Replaces the low-level bridge used to resolve managed objects.
+    /// Replaces the low-level bridge used for future managed-object resolutions.
     /// </summary>
+    /// <param name="bridge">The replacement bridge.</param>
     /// <remarks>
-    /// This exists primarily for unit tests that need to exercise resolver behavior without loading
-    /// the REFramework runtime assemblies or entering the game process.
+    /// This method exists primarily for tests that need to exercise resolver behavior without loading the REFramework runtime assemblies.
     /// </remarks>
-    /// <param name="bridge">The replacement bridge to use for subsequent resolutions.</param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="bridge"/> is <see langword="null"/>.
-    /// </exception>
+    /// <exception cref="ArgumentNullException"><paramref name="bridge"/> is <see langword="null"/>.</exception>
     internal static void SetBridge(IManagedObjectBridge bridge)
     {
         ArgumentNullException.ThrowIfNull(bridge);
@@ -64,15 +45,14 @@ public static class ManagedObjectResolver
     }
 
     /// <summary>
-    /// Restores the default REFramework-backed resolution bridge.
+    /// Restores the default REFramework-backed bridge.
     /// </summary>
     internal static void ResetBridge() => Interlocked.Exchange(ref _bridge, null);
 
     /// <summary>
-    /// Returns the currently active resolution bridge, creating the default REFramework-backed
-    /// bridge on first use.
+    /// Returns the currently active managed-object bridge, creating the default bridge on first use.
     /// </summary>
-    /// <returns>The bridge used for subsequent managed-object resolution.</returns>
+    /// <returns>The bridge used for subsequent resolutions.</returns>
     internal static IManagedObjectBridge GetBridge()
     {
         var bridge = Volatile.Read(ref _bridge);
@@ -85,50 +65,15 @@ public static class ManagedObjectResolver
     }
 
     /// <summary>
-    /// Attempts to resolve the native game object at <paramref name="address"/> to a
-    /// strongly-typed managed reference.
+    /// Attempts to resolve the native object at <paramref name="address"/> to a managed reference compatible with <typeparamref name="T"/>.
     /// </summary>
+    /// <typeparam name="T">The managed reference type to request.</typeparam>
+    /// <param name="address">The native memory address of the object to resolve.</param>
+    /// <param name="value">When this method returns <see langword="true"/>, contains the resolved managed instance; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if the object was resolved and cast successfully; otherwise, <see langword="false"/>.</returns>
     /// <remarks>
-    /// Internally delegates to the active managed-object bridge, which uses
-    /// <see cref="REFrameworkManagedObjectBridge"/> by default inside the game process.
-    /// <para>
-    /// The method returns <see langword="false"/> in three distinct cases:
-    /// <list type="bullet">
-    ///   <item><description>
-    ///     <paramref name="address"/> is zero — returned immediately without entering the
-    ///     exception-handling path.
-    ///   </description></item>
-    ///   <item><description>
-    ///     The underlying bridge returns <see langword="false"/> — for example when the runtime
-    ///     type of the object at <paramref name="address"/> is not compatible with
-    ///     <typeparamref name="T"/>.
-    ///   </description></item>
-    ///   <item><description>
-    ///     The underlying bridge throws — for example when <paramref name="address"/> is otherwise
-    ///     invalid or the runtime host is unavailable — and the exception is swallowed so the
-    ///     game-facing call site can stay on a simple failure path. Callers that need diagnostic
-    ///     visibility into those suppressed exceptions can opt into
-    ///     <see cref="SuppressedResolutionFailureObserver"/>.
-    ///   </description></item>
-    /// </list>
-    /// </para>
-    /// <para>
-    /// This API is useful when callers need to distinguish success from failure without relying on
-    /// a nullable return value alone.
-    /// </para>
+    /// The method returns <see langword="false"/> when <paramref name="address"/> is zero, when the active bridge cannot resolve a compatible object, or when the active bridge throws and the exception is suppressed.
     /// </remarks>
-    /// <typeparam name="T">
-    /// The managed type to cast the resolved object to. Must be a reference type.
-    /// </typeparam>
-    /// <param name="address">The native memory address of the game object to resolve.</param>
-    /// <param name="value">
-    /// Receives the resolved instance cast to <typeparamref name="T"/> when the method returns
-    /// <see langword="true"/>; otherwise <see langword="null"/>.
-    /// </param>
-    /// <returns>
-    /// <see langword="true"/> when the object was resolved and cast successfully; otherwise
-    /// <see langword="false"/>.
-    /// </returns>
     public static bool TryResolve<T>(ulong address, out T? value) where T : class
     {
         if (address == 0)

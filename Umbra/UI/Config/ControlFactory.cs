@@ -4,15 +4,10 @@ using Umbra.Config;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Selects the appropriate per-frame ImGui draw action for a parameter.
+/// Selects the draw action used to render a registered parameter in Umbra's configuration UI.
 /// </summary>
 /// <remarks>
-/// Custom-drawer activation is delegated to <see cref="ParameterDrawerResolver"/>. Built-in
-/// numeric controls are delegated to <see cref="NumericControlBuilder"/>, text controls are
-/// delegated to <see cref="TextControlBuilder"/>, <see cref="Parameter{T}"/> values of type
-/// <see cref="Action"/> default to <see cref="Drawers.ButtonDrawer"/>, and enum or nullable-enum
-/// controls are delegated to <see cref="EnumControlBuilder"/>. Shared two-column layout creation is
-/// delegated to <see cref="ControlLayoutFactory"/>, so this type remains focused on control dispatch.
+/// Custom-drawer resolution is delegated to <see cref="ParameterDrawerResolver"/>. Built-in numeric, text, enum, and button rendering is delegated to specialized builders, while shared two-column row layout comes from <see cref="ControlLayoutFactory"/>.
 /// </remarks>
 internal static class ControlFactory
 {
@@ -29,17 +24,8 @@ internal static class ControlFactory
     };
 
     /// <summary>
-    /// Builds a per-frame draw <see cref="Action"/> for <paramref name="parameter"/>,
-    /// dispatching first to <see cref="ParameterDrawerResolver"/> for any custom drawer recorded in
-    /// <see cref="ParameterMetadata"/>, then to the built-in default-builder table, then to
-    /// <see cref="EnumControlBuilder"/>, and finally to a read-only label.
+    /// Builds the per-frame draw action for <paramref name="parameter"/> together with any disposable resource created while resolving its renderer.
     /// </summary>
-    /// <remarks>
-    /// Custom drawer types are pre-resolved during <c>SettingsStore.Load()</c> by
-    /// <c>ParameterMetadataReader</c> and stored in <see cref="ParameterMetadata.DrawerType"/>
-    /// and <see cref="ParameterMetadata.TwoColumnDrawerType"/>, eliminating the need to scan
-    /// property attributes at draw-tree construction time.
-    /// </remarks>
     internal static (Action draw, IDisposable? resource) BuildDrawAction(
         IParameter parameter, string label, LabelAlignmentGroup alignGroup)
     {
@@ -57,19 +43,12 @@ internal static class ControlFactory
     }
 
     /// <summary>
-    /// Builds a per-frame draw action that renders a push-button for an
-    /// <see cref="Action"/>-typed parameter.
+    /// Builds the per-frame draw action used for an <see cref="Action"/>-typed parameter.
     /// </summary>
     /// <param name="label">The visible button label.</param>
-    /// <param name="parameter">The <see cref="Parameter{T}"/> of type <see cref="Action"/> to render.</param>
-    /// <param name="alignGroup">
-    /// The shared alignment group for the owning category or root scope.
-    /// Unused because <see cref="Drawers.ButtonDrawer"/> owns the full row layout.
-    /// </param>
-    /// <returns>
-    /// An <see cref="Action"/> that renders and invokes the button each frame using a drawer
-    /// instance created once for this parameter during draw-tree construction.
-    /// </returns>
+    /// <param name="parameter">The parameter that supplies the action to invoke.</param>
+    /// <param name="alignGroup">Accepted for signature consistency. Button drawers own their full row layout and do not use the shared two-column alignment group.</param>
+    /// <returns>A draw action that renders the button each frame.</returns>
     private static Action BuildActionDraw(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
         _ = alignGroup;
@@ -77,11 +56,13 @@ internal static class ControlFactory
         return () => drawer.Draw(label, parameter);
     }
 
-    /// <summary>Builds a per-frame draw action that renders a checkbox for a <see cref="bool"/> parameter.</summary>
-    /// <param name="label">The ImGui control label.</param>
-    /// <param name="parameter">The <see cref="Parameter{T}"/> of type <see cref="bool"/> to render.</param>
-    /// <param name="alignGroup">The shared alignment group for the owning category or root scope.</param>
-    /// <returns>An <see cref="Action"/> that renders and updates the parameter each frame.</returns>
+    /// <summary>
+    /// Builds the per-frame draw action used for a <see cref="bool"/> parameter.
+    /// </summary>
+    /// <param name="label">The visible label for the parameter row.</param>
+    /// <param name="parameter">The Boolean parameter being rendered.</param>
+    /// <param name="alignGroup">The shared alignment group for the owning scope.</param>
+    /// <returns>A draw action that renders and updates the checkbox each frame.</returns>
     private static Action BuildBoolDraw(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
         var p = (Parameter<bool>)parameter;
@@ -95,20 +76,8 @@ internal static class ControlFactory
     }
 
     /// <summary>
-    /// Constructs a <see cref="ControlLayout"/> capturing the pre-computed layout state for a
-    /// single parameter row.
+    /// Creates the precomputed two-column layout data used for one parameter row.
     /// </summary>
-    /// <remarks>
-    /// Shared by built-in controls in <see cref="ControlFactory"/>,
-    /// <see cref="NumericControlBuilder"/>, <see cref="TextControlBuilder"/>,
-    /// <see cref="EnumControlBuilder"/>, and two-column custom drawers resolved by
-    /// <see cref="ParameterDrawerResolver"/>. Layout-value construction is delegated to
-    /// <see cref="ControlLayoutFactory"/>.
-    /// </remarks>
-    /// <param name="label">The display label resolved for the parameter.</param>
-    /// <param name="parameter">The parameter being rendered.</param>
-    /// <param name="alignGroup">The shared alignment group for the owning category or root scope.</param>
-    /// <returns>The precomputed row layout.</returns>
     internal static ControlLayout CreateControlLayout(
         string label, IParameter parameter, LabelAlignmentGroup alignGroup)
         => ControlLayoutFactory.Create(label, parameter, alignGroup);

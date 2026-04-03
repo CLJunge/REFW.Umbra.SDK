@@ -4,8 +4,7 @@ namespace Umbra.UI.Panel;
 /// Owns the ordered section list for a <see cref="PluginPanel"/>.
 /// </summary>
 /// <remarks>
-/// This type isolates section collection responsibilities from <see cref="PluginPanel"/>, including
-/// tree-label validation, stable ordering, and section disposal.
+/// This type isolates section collection responsibilities from <see cref="PluginPanel"/>, including tree-label validation, stable ordering, and section disposal.
 /// </remarks>
 internal sealed class PluginPanelSectionCollection : IDisposable
 {
@@ -15,14 +14,15 @@ internal sealed class PluginPanelSectionCollection : IDisposable
     /// <summary>
     /// Gets the ordered sections currently held by the collection.
     /// </summary>
+    /// <value>The live ordered section list used by the owning panel.</value>
     internal IReadOnlyList<IPanelSection> Sections => _sections;
 
     /// <summary>
     /// Appends <paramref name="section"/> and re-sorts the collection by <see cref="IPanelSection.Order"/>.
     /// </summary>
     /// <param name="section">The section to add.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="section"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ObjectDisposedException">Thrown when the collection has already been disposed.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="section"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ObjectDisposedException">The collection has already been disposed.</exception>
     internal void Add(IPanelSection section)
     {
         ArgumentNullException.ThrowIfNull(section);
@@ -38,6 +38,9 @@ internal sealed class PluginPanelSectionCollection : IDisposable
     /// <summary>
     /// Disposes all sections in their current ordered sequence and clears the collection.
     /// </summary>
+    /// <remarks>
+    /// Repeated calls after the first one do nothing.
+    /// </remarks>
     public void Dispose()
     {
         if (_disposed)

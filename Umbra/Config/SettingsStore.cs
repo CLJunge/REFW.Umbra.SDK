@@ -4,12 +4,10 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Owns the public lifecycle and parameter set of a typed settings store.
+/// Owns the public lifecycle and registered parameter set of a typed settings store.
 /// </summary>
 /// <remarks>
-/// Persistence orchestration is delegated to <see cref="SettingsStorePersistenceCoordinator{TConfig}"/>
-/// and listener bookkeeping is delegated to <see cref="SettingsStoreListenerRegistry"/>, keeping this
-/// type focused on store state, public API guards, and parameter-level operations.
+/// Persistence orchestration is delegated to <see cref="SettingsStorePersistenceCoordinator{TConfig}"/>, and listener bookkeeping is delegated to <see cref="SettingsStoreListenerRegistry"/>. This type remains responsible for public lifecycle guards, the shared registered parameter map, and parameter-level operations over that map.
 /// </remarks>
 /// <typeparam name="TConfig">
 /// The configuration class type. Must have a public parameterless constructor.
@@ -64,17 +62,13 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     public bool IsDisposed => _disposed;
 
     /// <summary>
-    /// Persists the current parameter values to the configured file path.
+    /// Persists the current registered parameter values to the configured file path.
     /// </summary>
     /// <remarks>
-    /// This method requires <see cref="Load"/> to have completed successfully so the store has a
-    /// stable registered parameter set to persist.
-    /// If a previous <see cref="Load"/> attempt encountered an unreadable config file that could
-    /// not be backed up safely, saves are suppressed for the lifetime of this store instance so the
-    /// original file is not overwritten later in the same session.
+    /// This method requires <see cref="Load"/> to have completed successfully so the store has a stable registered parameter set to persist. If a previous <see cref="Load"/> attempt encountered an unreadable config file that could not be backed up safely, saves are suppressed for the lifetime of this store instance so the original file is not overwritten later in the same session.
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet completed successfully.</exception>
     public void Save()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -83,63 +77,25 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     }
 
     /// <summary>
-    /// Creates a new instance of <typeparamref name="TConfig"/>, registers all of its parameters,
-    /// and loads persisted values from disk if the settings file exists.
-    /// If no file exists, the defaults are saved immediately.
+    /// Creates, registers, and loads a fresh <typeparamref name="TConfig"/> instance for this store.
     /// </summary>
-    /// <returns>
-    /// A fully initialized <typeparamref name="TConfig"/> instance with values populated from disk or defaults.
-    /// </returns>
+    /// <returns>A fully initialized <typeparamref name="TConfig"/> instance populated from persisted values or declared defaults.</returns>
     /// <remarks>
     /// <para>
-    /// <typeparamref name="TConfig"/> must be decorated with
-    /// <see cref="Attributes.UmbraAutoRegisterAttribute"/>; if the attribute is absent,
-    /// no parameters are discovered and the returned instance will hold only its property default values.
-    /// Nested settings group types exposed as <see cref="Attributes.UmbraParameterAttribute"/>
-    /// properties must also carry the attribute.
+    /// <typeparamref name="TConfig"/> must be decorated with <see cref="Attributes.UmbraAutoRegisterAttribute"/> for Umbra to discover its public instance properties marked with <see cref="Attributes.UmbraParameterAttribute"/>. Nested settings-group properties must expose types that are also decorated with that attribute.
     /// </para>
     /// <para>
-    /// The built-in registration pipeline reflects only public instance properties marked with
-    /// <see cref="Attributes.UmbraParameterAttribute"/>. Fields are ignored by
-    /// <see cref="SettingsRegistrar"/> even though some metadata attributes permit field targets.
+    /// Persisted values are matched by exact fully qualified key during load. Changing key derivation, such as by changing an <see cref="Attributes.UmbraPrefixAttribute"/>, effectively renames the persisted entries and does not migrate existing JSON automatically.
     /// </para>
     /// <para>
-    /// Persisted values are matched by exact fully-qualified key during load. Changing a
-    /// <see cref="Attributes.UmbraPrefixAttribute"/> value, or otherwise changing how a
-    /// parameter key resolves, effectively renames those persisted keys. Old JSON entries are not
-    /// migrated automatically and will no longer load unless the file is updated to the new names.
+    /// If the existing JSON file is unreadable, Umbra attempts to move it aside to a timestamped backup and rewrite declared defaults. When that backup step fails, the current session is rebuilt from fresh declared defaults and later <see cref="Save"/> calls on the same store instance are suppressed so the original unreadable file is preserved.
     /// </para>
     /// <para>
-    /// If the existing JSON file is unreadable, Umbra attempts to move it aside to a timestamped
-    /// <c>.invalid-*.json</c> backup and immediately rewrites a fresh defaults file at the original
-    /// path. If the unreadable file cannot be backed up, the original file is left untouched and
-    /// the returned config instance retains its in-memory defaults for the current session only.
-    /// In that failure case, subsequent <see cref="Save"/> calls on the same store instance are
-    /// suppressed so the original unreadable file is not overwritten later in the session.
-    /// Any parameter values that may have been applied before the load failed are discarded by
-    /// rebuilding the store from a fresh config instance, so the current session always continues
-    /// from true declared defaults after an unreadable-file failure.
-    /// </para>
-    /// <para>
-    /// On the first run, when no settings file exists yet, the default save path's parent
-    /// directory is created automatically before defaults are written.
-    /// </para>
-    /// <para>
-    /// This method must only be called once per <see cref="SettingsStore{TConfig}"/> instance.
-    /// Calling it a second time would register duplicate <see cref="IParameter"/> instances and
-    /// disconnect all previously registered event listeners from the returned config object.
-    /// </para>
-    /// <para>
-    /// The store transitions to the loaded state only after parameter discovery succeeds. If
-    /// discovery fails — for example due to duplicate fully-qualified keys — the instance remains
-    /// unloaded so the failure does not leave behind a partially initialized store state.
+    /// This method is single-use per store instance. The store transitions to the loaded state only after parameter discovery and load orchestration complete successfully.
     /// </para>
     /// </remarks>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <see cref="Load"/> has already been called on this instance, or when two
-    /// discovered settings parameters resolve to the same fully-qualified key.
-    /// </exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has already been called on this instance, or when registration fails such as from duplicate fully qualified keys.</exception>
     public TConfig Load()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -154,23 +110,16 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     }
 
     /// <summary>
-    /// Copies all parameter values from this store into the corresponding parameters of
-    /// <paramref name="target"/>, matched by key.
+    /// Copies this store's registered parameter values into the corresponding parameters of <paramref name="target"/>, matched by key.
     /// </summary>
     /// <param name="target">The destination settings store to copy values into.</param>
-    /// <param name="setWithoutNotifying">
-    /// When <see langword="true"/>, values are applied without raising <see cref="IParameter.ValueChanged"/> events.
-    /// This uses <see cref="IParameter.SetValueWithoutNotify(object?)"/>, so metadata-based validation is also bypassed.
-    /// When <see langword="false"/>, normal change notification is triggered.
-    /// </param>
+    /// <param name="setWithoutNotifying"><see langword="true"/> to apply copied values through the target store's silent mutation path; otherwise, <see langword="false"/>.</param>
+    /// <remarks>
+    /// Both stores must already be loaded so their registered parameter maps are stable. Parameters that exist in this store but not in <paramref name="target"/> are ignored. When <paramref name="setWithoutNotifying"/> is <see langword="true"/>, copied values bypass both change notification and metadata-based validation on the target parameters.
+    /// </remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ObjectDisposedException">
-    /// Thrown when this instance or <paramref name="target"/> has been disposed.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when this instance or <paramref name="target"/> has not completed <see cref="Load"/> yet,
-    /// or when <paramref name="target"/> does not support Umbra's internal copy-target contract.
-    /// </exception>
+    /// <exception cref="ObjectDisposedException">Thrown when this instance or <paramref name="target"/> has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when this instance or <paramref name="target"/> has not completed <see cref="Load"/>, or when <paramref name="target"/> does not support Umbra's internal copy-target contract.</exception>
     public void CopyValuesTo(ISettingsStore<TConfig> target, bool setWithoutNotifying = false)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -277,9 +226,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     /// This method requires <see cref="Load"/> to have completed so there is a stable registered
     /// parameter set to subscribe to.
     /// </remarks>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="predicate"/> or <paramref name="listener"/> is <see langword="null"/>.
-    /// </exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="listener"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet been called.</exception>
     public void AddListenerToAll(Func<IParameter, bool> predicate, Action listener)
@@ -397,9 +344,11 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     }
 
     /// <summary>
-    /// Releases all resources used by this <see cref="SettingsStore{TConfig}"/>,
-    /// including removing all remaining tracked event listeners through the internal listener registry.
+    /// Releases this store's remaining listener registrations and marks the instance as disposed.
     /// </summary>
+    /// <remarks>
+    /// Repeated calls after the first one do nothing. This method does not persist settings automatically.
+    /// </remarks>
     public void Dispose()
     {
         if (_disposed)
@@ -414,8 +363,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     /// Throws when this store has not successfully completed <see cref="Load"/> yet.
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when <see cref="Load"/> has not completed successfully (for example, it has not been called yet
-    /// or it failed before finishing).
+    /// Thrown when <see cref="Load"/> has not completed successfully, such as when it has not been called yet.
     /// </exception>
     private void ThrowIfNotLoaded()
     {
@@ -427,10 +375,12 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     }
 
     /// <summary>
-    /// Creates a fresh <typeparamref name="TConfig"/> instance and repopulates the shared parameter map
-    /// from that instance's declared defaults.
+    /// Creates a fresh <typeparamref name="TConfig"/> instance and repopulates the shared parameter map from that instance's declared defaults.
     /// </summary>
     /// <returns>A newly created config instance registered into this store.</returns>
+    /// <remarks>
+    /// This method clears the existing shared parameter map before re-registering the newly created instance.
+    /// </remarks>
     private TConfig CreateRegisteredDefaults()
     {
         var instance = new TConfig();

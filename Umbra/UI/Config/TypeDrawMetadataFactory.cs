@@ -4,20 +4,16 @@ using Umbra.Config.Attributes;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Builds uncached <see cref="TypeDrawMetadata"/> instances from reflected config types.
+/// Builds uncached <see cref="TypeDrawMetadata"/> snapshots from reflected configuration types.
 /// </summary>
 /// <remarks>
-/// This type isolates attribute scanning and property metadata assembly from
-/// <see cref="TypeDrawMetadata"/>, leaving that type responsible only for immutable metadata shape
-/// and cache access.
+/// This factory isolates attribute scanning and property metadata assembly from the cache owned by <see cref="TypeDrawMetadata"/>.
 /// </remarks>
 internal static class TypeDrawMetadataFactory
 {
     /// <summary>
     /// Builds the uncached metadata snapshot for <paramref name="type"/>.
     /// </summary>
-    /// <param name="type">The config type whose draw metadata should be scanned.</param>
-    /// <returns>The fully populated uncached metadata snapshot.</returns>
     internal static TypeDrawMetadata Build(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -58,16 +54,8 @@ internal static class TypeDrawMetadataFactory
     }
 
     /// <summary>
-    /// Reads and assembles the property-level metadata consulted during config drawer construction.
+    /// Builds the cached property metadata consulted during configuration drawer construction.
     /// </summary>
-    /// <remarks>
-    /// The returned metadata also carries a cached boxed getter delegate so
-    /// <see cref="ConfigDrawTreeCollector.CollectInto(ConfigDrawScope, object, Type, Action{Nodes.CategoryNode}, List{IDisposable}, Action{List{Nodes.IDrawNode}})"/> can traverse the
-    /// live config object graph without paying <see cref="PropertyInfo.GetValue(object?)"/> reflection
-    /// overhead for each property on every draw-tree build.
-    /// </remarks>
-    /// <param name="property">The reflected property whose metadata should be scanned.</param>
-    /// <returns>The assembled metadata snapshot for one public instance property.</returns>
     private static TypeDrawMetadata.PropertyDrawMetadata BuildPropertyMetadata(PropertyInfo property)
     {
         var propertyType = property.PropertyType;

@@ -4,17 +4,15 @@ using Umbra.Config;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Builds per-frame ImGui draw actions for built-in enum parameter types.
+/// Builds combo-box draw actions for enum and nullable-enum parameters.
 /// </summary>
 /// <remarks>
-/// This type isolates enum combo-box composition from <see cref="ControlFactory"/>.
-/// Nullable enum parameters are also supported: the combo prepends a synthetic <c>&lt;None&gt;</c>
-/// option that maps back to <see langword="null"/>.
+/// Nullable-enum parameters are rendered with an additional synthetic <c>&lt;None&gt;</c> entry that maps back to <see langword="null"/>.
 /// </remarks>
 internal static class EnumControlBuilder
 {
     /// <summary>
-    /// Builds a per-frame draw action that renders a <c>Combo</c> box for an enum or nullable-enum parameter.
+    /// Builds the per-frame draw action for an enum or nullable-enum parameter.
     /// </summary>
     internal static Action Build(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {

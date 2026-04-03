@@ -4,13 +4,10 @@ using System.Runtime.CompilerServices;
 namespace Umbra;
 
 /// <summary>
-/// Resolves the plugin identity type from the immediate caller of a convenience runtime API.
+/// Resolves the external caller type for convenience APIs that infer plugin identity from the call stack.
 /// </summary>
 /// <remarks>
-/// This type centralizes stack-frame-based caller inference so runtime APIs can delegate the
-/// reflection-based resolution step and remain focused on their own lifecycle or mutex behavior.
-/// The resolver skips its own frame and the convenience API frame, then inspects the external caller
-/// that invoked that convenience API.
+/// This helper skips its own frame and the convenience API frame, then inspects the external caller that invoked that API. Umbra uses it for overloads such as <see cref="PluginBootstrapper.Load(Action)"/> so runtime helpers can keep their public surface small without duplicating stack-frame logic.
 /// </remarks>
 internal static class PluginCallerTypeResolver
 {
@@ -21,14 +18,10 @@ internal static class PluginCallerTypeResolver
     /// </summary>
     /// <param name="apiOwner">The runtime API type performing caller inference.</param>
     /// <param name="apiName">The runtime API member name performing caller inference.</param>
-    /// <param name="fallbackSignature">The overload signature callers should use when inference is unavailable.</param>
+    /// <param name="fallbackSignature">The explicit overload signature callers should use when inference is unavailable.</param>
     /// <returns>The declaring type of the external caller.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="apiOwner"/>, <paramref name="apiName"/>, or <paramref name="fallbackSignature"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when the calling method cannot be resolved or does not declare a plugin type.
-    /// </exception>
+    /// <exception cref="ArgumentNullException"><paramref name="apiOwner"/>, <paramref name="apiName"/>, or <paramref name="fallbackSignature"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The calling method cannot be resolved or does not declare a plugin type.</exception>
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static Type ResolveCallingPluginType(Type apiOwner, string apiName, string fallbackSignature)
     {

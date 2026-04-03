@@ -1,22 +1,18 @@
 namespace Umbra.Config;
 
 /// <summary>
-/// Formats a concise debugger display string for <see cref="ParameterMetadata"/>.
+/// Builds the concise debugger summary used for <see cref="ParameterMetadata"/> instances.
 /// </summary>
 /// <remarks>
-/// This type isolates debugger-only presentation logic from <see cref="ParameterMetadata"/>,
-/// leaving that type focused on immutable metadata storage.
+/// This type keeps debugger-only presentation logic out of <see cref="ParameterMetadata"/> so the metadata type remains focused on storing resolved configuration values.
 /// </remarks>
 internal static class ParameterMetadataDebuggerDisplayFormatter
 {
     /// <summary>
-    /// Builds a concise, human-readable summary of the populated fields on <paramref name="metadata"/>.
+    /// Builds a comma-separated summary of the populated fields on <paramref name="metadata"/>.
     /// </summary>
     /// <param name="metadata">The metadata instance to summarize.</param>
-    /// <returns>
-    /// A comma-separated string of key-value pairs for each populated metadata property, with no
-    /// trailing comma or whitespace.
-    /// </returns>
+    /// <returns>A debugger-oriented summary containing only populated metadata fields.</returns>
     internal static string Format(ParameterMetadata metadata)
     {
         ArgumentNullException.ThrowIfNull(metadata);

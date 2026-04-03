@@ -8,8 +8,7 @@ namespace Umbra.UI.Config;
 /// Resolves custom parameter drawers recorded in <see cref="ParameterMetadata"/>.
 /// </summary>
 /// <remarks>
-/// This type isolates custom-drawer activation and error handling from <see cref="ControlFactory"/>
-/// so the factory can remain focused on choosing the appropriate control-building strategy.
+/// This type isolates custom-drawer activation and error handling from <see cref="ControlFactory"/>. Full custom drawers declared through <see cref="ParameterMetadata.DrawerType"/> take priority over two-column custom drawers declared through <see cref="ParameterMetadata.TwoColumnDrawerType"/>.
 /// </remarks>
 internal static class ParameterDrawerResolver
 {
@@ -18,11 +17,11 @@ internal static class ParameterDrawerResolver
     /// </summary>
     /// <param name="parameter">The parameter whose metadata may specify a custom drawer.</param>
     /// <param name="label">The resolved display label for the parameter row.</param>
-    /// <param name="alignGroup">The alignment group for two-column-aware controls.</param>
-    /// <returns>
-    /// A tuple containing the draw action and disposable resource when a custom drawer was resolved;
-    /// otherwise <see langword="null"/>.
-    /// </returns>
+    /// <param name="alignGroup">The alignment group used when a two-column custom drawer is resolved.</param>
+    /// <returns>A tuple containing the draw action and disposable drawer resource when a custom drawer was resolved successfully; otherwise, <see langword="null"/>.</returns>
+    /// <remarks>
+    /// If instantiation of a recorded custom drawer type throws, the exception is logged and resolution falls through to the next supported drawer shape or to the built-in control path in <see cref="ControlFactory"/>.
+    /// </remarks>
     internal static (Action draw, IDisposable? resource)? TryResolve(
         IParameter parameter,
         string label,
@@ -30,7 +29,6 @@ internal static class ParameterDrawerResolver
     {
         var meta = parameter.Metadata;
 
-        // 1. Full custom drawer — explicit opt-in, highest priority.
         if (meta.DrawerType is { } customDrawerType)
         {
             try
@@ -44,7 +42,6 @@ internal static class ParameterDrawerResolver
             }
         }
 
-        // 2. Two-column custom drawer — factory owns layout; drawer renders widget only.
         if (meta.TwoColumnDrawerType is { } twoColumnDrawerType)
         {
             try

@@ -3,21 +3,15 @@ using Umbra.Runtime;
 namespace Umbra;
 
 /// <summary>
-/// Owns a single live plugin instance and coordinates its mutex, startup, shutdown, and callback
-/// dispatch.
+/// Owns one live <typeparamref name="TPlugin"/> instance and coordinates single-instance startup, shutdown, and callback forwarding.
 /// </summary>
-/// <typeparam name="TPlugin">The concrete plugin type.</typeparam>
+/// <typeparam name="TPlugin">The concrete plugin type created by this host.</typeparam>
 /// <remarks>
 /// <para>
-/// This type centralizes the runtime behavior that previously lived in each plugin assembly's static
-/// wrapper class. The assembly-specific wrapper still exists only to satisfy REFramework's static
-/// entry-point requirements; it delegates to this host for all lifecycle and callback behavior.
+/// This type centralizes the runtime behavior that otherwise lives in an assembly-facing static wrapper required by REFramework. The wrapper delegates lifecycle and forwarded callbacks to this host, while the live plugin state remains on the <typeparamref name="TPlugin"/> instance.
 /// </para>
 /// <para>
-/// <typeparamref name="TPlugin"/> is used as the mutex identity type for single-instance
-/// enforcement. The mutex key is derived from the assembly name of <typeparamref name="TPlugin"/>,
-/// so all types from the same assembly share one key. Ensure that the plugin type's assembly name
-/// is stable and unique across all plugins loaded in the same process session.
+/// <typeparamref name="TPlugin"/> is also used as the mutex identity type for <see cref="PluginBootstrapper"/>. The mutex key is derived from the assembly identity of <typeparamref name="TPlugin"/>, so types from the same assembly participate in the same single-instance guard.
 /// </para>
 /// </remarks>
 public sealed class PluginHost<TPlugin>
@@ -27,10 +21,10 @@ public sealed class PluginHost<TPlugin>
     private volatile TPlugin? _instance;
 
     /// <summary>
-    /// Initialises a new host for the specified plugin type, using <typeparamref name="TPlugin"/>
-    /// as the mutex identity type for single-instance enforcement.
+    /// Initializes a new instance of the <see cref="PluginHost{TPlugin}"/> class.
     /// </summary>
-    /// <param name="factory">Creates the plugin instance when load succeeds.</param>
+    /// <param name="factory">The callback that creates the plugin instance after the mutex has been acquired.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
     public PluginHost(Func<TPlugin> factory)
     {
         ArgumentNullException.ThrowIfNull(factory);
@@ -38,15 +32,21 @@ public sealed class PluginHost<TPlugin>
     }
 
     /// <summary>
-    /// Starts the plugin by acquiring its mutex and creating the live instance.
+    /// Acquires the plugin mutex, creates the live instance, and runs <see cref="IUmbraPlugin.Initialize"/>.
     /// </summary>
-    /// <returns><see langword="true"/> when the plugin instance was created and initialised.</returns>
+    /// <remarks>
+    /// If another plugin instance already holds the mutex for <typeparamref name="TPlugin"/>'s assembly, this method returns <see langword="false"/> and does not invoke the factory. If initialization throws, <see cref="PluginBootstrapper"/> releases the acquired mutex before the exception is rethrown.
+    /// </remarks>
+    /// <returns><see langword="true"/> if the plugin instance was created and initialized; otherwise, <see langword="false"/>.</returns>
     public bool Load()
         => PluginBootstrapper.Load(typeof(TPlugin), InitializeInstance);
 
     /// <summary>
-    /// Stops the plugin, runs its shutdown logic, and releases its mutex.
+    /// Runs <see cref="IUmbraPlugin.Shutdown"/> for the live instance and releases its mutex.
     /// </summary>
+    /// <remarks>
+    /// If <see cref="Load"/> has not published an instance, this method does nothing. The cached instance reference is cleared even when shutdown throws so later forwarded callbacks become safe no-ops.
+    /// </remarks>
     public void Unload()
     {
         var instance = _instance;
@@ -64,25 +64,27 @@ public sealed class PluginHost<TPlugin>
     }
 
     /// <summary>
-    /// Invokes the pre-update behavior logic on the underlying instance, if available.
+    /// Forwards <see cref="IUmbraPlugin.OnPreUpdateBehavior"/> to the live plugin instance.
     /// </summary>
-    /// <remarks>This method delegates to the underlying instance's OnPreUpdateBehavior method if the instance
-    /// is not null. Call this method to perform any actions required before the main update behavior is
-    /// executed.</remarks>
+    /// <remarks>
+    /// If no instance is currently loaded, this method does nothing.
+    /// </remarks>
     public void OnPreUpdateBehavior() => _instance?.OnPreUpdateBehavior();
 
     /// <summary>
-    /// Invokes the pre-draw logic for the ImGui UI, if an instance is available.
+    /// Forwards <see cref="IUmbraPlugin.OnPreImGuiDrawUI"/> to the live plugin instance.
     /// </summary>
-    /// <remarks>This method should be called before rendering the ImGui-based user interface to allow any
-    /// necessary setup or state updates. If no instance is present, the method performs no action.</remarks>
+    /// <remarks>
+    /// If no instance is currently loaded, this method does nothing.
+    /// </remarks>
     public void OnPreImGuiDrawUI() => _instance?.OnPreImGuiDrawUI();
 
     /// <summary>
-    /// Invokes the pre-ImGui rendering logic for the current instance, if available.
+    /// Forwards <see cref="IUmbraPlugin.OnPreImGuiRenderer"/> to the live plugin instance.
     /// </summary>
-    /// <remarks>Call this method before rendering ImGui UI elements for an ingame overlay.
-    /// If no instance is set, this method has no effect.</remarks>
+    /// <remarks>
+    /// If no instance is currently loaded, this method does nothing.
+    /// </remarks>
     public void OnPreImGuiRenderer() => _instance?.OnPreImGuiRenderer();
 
     /// <summary>

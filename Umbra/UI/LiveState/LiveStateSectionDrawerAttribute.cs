@@ -1,23 +1,14 @@
 namespace Umbra.UI.LiveState;
 
 /// <summary>
-/// Associates a live state class with the <see cref="ILiveStateSectionDrawer{T}"/> implementation
-/// that renders it within a <see cref="LiveStateSection{T}"/>.
+/// Associates a live-state type with the drawer that renders it inside <see cref="LiveStateSection{T}"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Apply this attribute to the live state class — not to the drawer — so that the type is
-/// self-describing. <see cref="LiveStateSectionDrawerResolver"/> reads the attribute once at
-/// <see cref="LiveStateSection{T}"/> construction time to instantiate the drawer and compile a
-/// zero-overhead per-frame draw delegate.
+/// Apply this attribute to the live-state type, not to the drawer. <see cref="LiveStateSectionDrawerResolver"/> reads the attribute when a <see cref="LiveStateSection{T}"/> is constructed, instantiates the declared drawer, and compiles the delegate used for per-frame drawing.
 /// </para>
 /// <para>
-/// The live state class itself should be a stable object identity for the lifetime of the
-/// owning <see cref="LiveStateSection{T}"/>. Hooks and callbacks may mutate fields on that object,
-/// or the object may expose a field or property that points to an immutable snapshot updated
-/// atomically between frames. Do not replace the bound state object itself unless the section
-/// is also reconstructed, because <see cref="LiveStateSection{T}"/> renders the exact instance it
-/// was created with.
+/// <see cref="LiveStateSection{T}"/> keeps rendering the exact state instance it was constructed with. For hook-driven data, keep that bound instance stable for the section's lifetime and update its contents directly or publish swapped snapshots through members on that stable object.
 /// </para>
 /// <example>
 /// <code>
@@ -30,17 +21,14 @@ namespace Umbra.UI.LiveState;
 /// </code>
 /// </example>
 /// </remarks>
-/// <typeparam name="TDrawer">
-/// The drawer implementation to use. Must provide a public parameterless constructor;
-/// this constraint is enforced at compile time. The additional requirement that
-/// <typeparamref name="TDrawer"/> implements <see cref="ILiveStateSectionDrawer{T}"/> is
-/// validated at runtime by <see cref="LiveStateSectionDrawerResolver"/> when
-/// <see cref="LiveStateSection{T}"/> is constructed.
-/// </typeparam>
+/// <typeparam name="TDrawer">The drawer type to instantiate. It must provide a public parameterless constructor. <see cref="LiveStateSectionDrawerResolver"/> validates at runtime that it also implements a compatible <see cref="ILiveStateSectionDrawer{T}"/>.</typeparam>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class LiveStateSectionDrawerAttribute<TDrawer> : Attribute, ILiveStateSectionDrawerAttribute
     where TDrawer : class, new()
 {
-    /// <summary>Gets the concrete drawer type used to render the live state instance.</summary>
+    /// <summary>
+    /// Gets the concrete drawer type used to render the live-state instance.
+    /// </summary>
+    /// <value>The declared drawer type.</value>
     public Type DrawerType => typeof(TDrawer);
 }

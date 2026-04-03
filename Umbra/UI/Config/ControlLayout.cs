@@ -4,23 +4,10 @@ using Umbra.Config;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Holds the pre-computed layout state for a single parameter row in the two-column
-/// settings UI.
+/// Stores the precomputed two-column layout state for one parameter row.
 /// </summary>
 /// <remarks>
-/// <para>
-/// Constructed at draw-tree build time by <see cref="ControlFactory"/> after the label has
-/// already been enrolled in the owning <see cref="LabelAlignmentGroup"/>'s build-time batch.
-/// No font measurement happens during construction.
-/// </para>
-/// <para>
-/// On the first draw frame, <see cref="Pre"/> calls <see cref="LabelAlignmentGroup.EnsureSeeded"/>,
-/// which measures every registered label in one <see cref="ImGui.CalcTextSize(string)"/> pass,
-/// commits the group maximum, and marks the group as permanently seeded. Subsequent
-/// <see cref="Pre"/> calls skip seeding entirely. Storing this state as a value struct
-/// eliminates one closure-object allocation and one delegate allocation per parameter
-/// per <see cref="ConfigDrawer{TConfig}"/> construction.
-/// </para>
+/// <see cref="ControlLayoutFactory"/> creates this value during draw-tree construction after the label has already been registered with its owning <see cref="LabelAlignmentGroup"/>. On the first draw frame, <see cref="Pre"/> ensures that the shared label-width seed has been committed before positioning the editing widget.
 /// </remarks>
 internal readonly struct ControlLayout
 {
@@ -30,8 +17,7 @@ internal readonly struct ControlLayout
     private readonly float _controlWidth;
 
     /// <summary>
-    /// The hidden ImGui control label (<c>"##" + parameter.Key</c>) pre-computed during
-    /// <see cref="SettingsStore{TConfig}.Load()"/> and stored in <see cref="ParameterMetadata.HiddenLabel"/>.
+    /// Gets the hidden ImGui widget label associated with the parameter row.
     /// </summary>
     internal readonly string HiddenLabel;
 
@@ -50,16 +36,10 @@ internal readonly struct ControlLayout
     }
 
     /// <summary>
-    /// Performs the standard two-column pre-draw step: seeds the shared alignment group on
-    /// the first call, renders the label text, shows an on-hover tooltip when a description is
-    /// available, advances the cursor to the shared column x position, and sets the next item width.
-    /// Must be called immediately before the ImGui widget call in each per-frame draw action.
+    /// Performs the standard pre-widget layout step for one two-column parameter row.
     /// </summary>
     /// <remarks>
-    /// The first call triggers <see cref="LabelAlignmentGroup.EnsureSeeded"/>, which measures
-    /// all registered labels in a single batch and permanently commits the group maximum.
-    /// Every subsequent call is a no-op for seeding and simply uses the already-committed
-    /// <see cref="LabelAlignmentGroup.LabelWidth"/> to position the cursor.
+    /// This method ensures the shared alignment group is seeded, renders the visible label, shows the optional description tooltip, advances to the shared control column, and sets the next item width.
     /// </remarks>
     internal void Pre()
     {
@@ -68,10 +48,6 @@ internal readonly struct ControlLayout
         ImGui.Text(_label);
         if (_desc is not null) ImGuiWidgets.DrawHoverTooltip(_desc);
         ImGui.SameLine();
-        // Advance to the shared column position (plus optional per-group margin); never
-        // move backward so that on frame 1 (before the committed max is available) labels
-        // wider than the current max still place their control immediately to the right
-        // rather than overlapping.
         var columnX = startX + _alignGroup.LabelWidth + _alignGroup.Margin + ImGui.GetStyle().ItemSpacing.X;
         if (ImGui.GetCursorPosX() < columnX)
             ImGui.SetCursorPosX(columnX);

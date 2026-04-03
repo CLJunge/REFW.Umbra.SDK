@@ -4,57 +4,25 @@ using Umbra.Config;
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
-/// Defines a custom parameter widget renderer that participates in the two-column layout.
-/// The factory handles label rendering, optional <c>(?)</c> help-marker placement, column
-/// alignment, and <see cref="ImGui.SetNextItemWidth(float)"/>; the drawer only needs to render the editing widget.
+/// Defines the contract for a custom parameter widget that participates in Umbra's two-column layout.
 /// </summary>
 /// <remarks>
-/// <para>
-/// Use this interface with
-/// <see cref="Umbra.Config.Attributes.UmbraTwoColumnDrawerAttribute{TDrawer}"/>
-/// (<c>[UmbraTwoColumnDrawer&lt;TDrawer&gt;]</c>) when you need a fully custom control but still
-/// want the label aligned with all other parameters in the same category or root scope. For
-/// complete layout control (custom label rendering, non-standard row structure), use
-/// <see cref="IParameterDrawer"/> with
-/// <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/>
-/// (<c>[UmbraDrawer&lt;TDrawer&gt;]</c>) instead.
-/// </para>
-/// <para>
-/// When <see cref="Draw"/> is called, <see cref="ImGui.SetNextItemWidth(float)"/> has already been applied
-/// (honouring any <see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth]</c>)
-/// on the parameter, or <c>-1f</c> fill-to-right-edge by default), and the cursor is positioned
-/// at the shared column x for the owning scope.
-/// The drawer should call its ImGui widget immediately without any additional layout setup.
-/// Use <c>$"##{parameter.Key}"</c> as the ImGui widget ID to avoid label collisions.
-/// </para>
-/// <para>
-/// Implements <see cref="IDisposable"/> so drawers that hold per-instance state (e.g. capture
-/// counters, cached textures) can clean up when the owning
-/// <see cref="ConfigDrawer{TConfig}"/> is disposed.
-/// </para>
+/// The configuration-drawer pipeline renders the label, optional help UI, alignment, and item width before calling <see cref="Draw"/>. Implementations should therefore render only the editing widget itself.
 /// </remarks>
 public interface ITwoColumnParameterDrawer : IDisposable
 {
     /// <summary>
-    /// Renders the editing widget for the parameter. Called each frame after the label
-    /// and optional help marker have been drawn and the cursor positioned at the shared
-    /// column x. <see cref="ImGui.SetNextItemWidth(float)"/> is already set; call the ImGui widget directly.
+    /// Renders the editing widget for the parameter.
     /// </summary>
     /// <remarks>
-    /// All widget IDs are scoped by the owning <see cref="ConfigDrawer{TConfig}"/> via
-    /// <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>. Use <c>$"##{parameter.Key}"</c>
-    /// as the ImGui widget ID; cross-plugin uniqueness is guaranteed without any extra
-    /// effort here.
+    /// All widget IDs are scoped by the owning <see cref="ConfigDrawer{TConfig}"/>. Drawers can therefore use a local ID such as <c>$"##{parameter.Key}"</c> without adding extra cross-plugin uniqueness logic.
     /// </remarks>
-    /// <param name="parameter">The parameter whose value is to be rendered and edited.</param>
+    /// <param name="parameter">The parameter whose value is being rendered and edited.</param>
     void Draw(IParameter parameter);
 
     /// <inheritdoc cref="IDisposable.Dispose"/>
     /// <remarks>
-    /// Default implementation calls <see cref="GC.SuppressFinalize"/> to prevent a redundant
-    /// finalizer call when a concrete class follows the full Dispose pattern. Override when
-    /// the drawer holds shared state that must be released on plugin unload
-    /// (e.g. a capture-mode counter or a cached resource handle).
+    /// The default implementation calls <see cref="GC.SuppressFinalize(object)"/>. Override it when the drawer owns resources that must be released on plugin unload.
     /// </remarks>
     void IDisposable.Dispose() => GC.SuppressFinalize(this);
 }

@@ -3,17 +3,10 @@ using System.Diagnostics;
 namespace Umbra.Config;
 
 /// <summary>
-/// Tracks settings-parameter listener registrations and their corresponding cleanup actions.
+/// Tracks listener subscriptions attached to a store's registered parameter set and the cleanup actions required to remove them.
 /// </summary>
 /// <remarks>
-/// <para>
-/// This type isolates listener subscription bookkeeping from <see cref="SettingsStore{TConfig}"/>
-/// so the store can remain focused on configuration lifecycle and persistence orchestration.
-/// </para>
-/// <para>
-/// Each add call records one cleanup action. When the same listener is added multiple times, each
-/// registration is tracked independently and must be removed independently.
-/// </para>
+/// This registry isolates listener bookkeeping from <see cref="SettingsStore{TConfig}"/> so the store can remain focused on lifecycle and persistence. Each add call records one cleanup action, so repeated registrations of the same listener are tracked independently.
 /// </remarks>
 [DebuggerDisplay("Tracked listener registrations: {_cleanupRegistrations.Count}")]
 internal sealed class SettingsStoreListenerRegistry : IDisposable
@@ -37,7 +30,7 @@ internal sealed class SettingsStoreListenerRegistry : IDisposable
     /// Subscribes <paramref name="listener"/> to every registered parameter.
     /// </summary>
     /// <param name="parameters">The stable registered parameter set.</param>
-    /// <param name="listener">The callback to invoke when any parameter changes.</param>
+    /// <param name="listener">The callback to invoke when any registered parameter changes.</param>
     internal void AddToAll(IReadOnlyDictionary<string, IParameter> parameters, Action listener)
     {
         ArgumentNullException.ThrowIfNull(parameters);
@@ -80,7 +73,7 @@ internal sealed class SettingsStoreListenerRegistry : IDisposable
     /// Subscribes <paramref name="listener"/> to the subset of registered parameters selected by <paramref name="predicate"/>.
     /// </summary>
     /// <param name="parameters">The stable registered parameter set.</param>
-    /// <param name="predicate">The filter used to select parameters at subscription time.</param>
+    /// <param name="predicate">The filter evaluated once at subscription time.</param>
     /// <param name="listener">The callback to invoke when a matching parameter changes.</param>
     internal void AddToAll(IReadOnlyDictionary<string, IParameter> parameters, Func<IParameter, bool> predicate, Action listener)
     {
@@ -106,10 +99,10 @@ internal sealed class SettingsStoreListenerRegistry : IDisposable
     }
 
     /// <summary>
-    /// Removes one previously added untyped listener registration.
+    /// Removes one previously added untyped listener registration from every registered parameter.
     /// </summary>
     /// <param name="parameters">The stable registered parameter set.</param>
-    /// <param name="listener">The callback to remove.</param>
+    /// <param name="listener">The listener callback to remove.</param>
     internal void RemoveFromAll(IReadOnlyDictionary<string, IParameter> parameters, Action listener)
     {
         ArgumentNullException.ThrowIfNull(parameters);
@@ -123,11 +116,11 @@ internal sealed class SettingsStoreListenerRegistry : IDisposable
     }
 
     /// <summary>
-    /// Removes one previously added typed listener registration.
+    /// Removes one previously added typed listener registration from every matching registered parameter.
     /// </summary>
-    /// <typeparam name="T">The parameter value type associated with the listener.</typeparam>
+    /// <typeparam name="T">The parameter value type to match.</typeparam>
     /// <param name="parameters">The stable registered parameter set.</param>
-    /// <param name="listener">The typed callback to remove.</param>
+    /// <param name="listener">The typed listener callback to remove.</param>
     internal void RemoveFromAll<T>(IReadOnlyDictionary<string, IParameter> parameters, Action<T?, T?> listener)
     {
         ArgumentNullException.ThrowIfNull(parameters);
@@ -142,11 +135,11 @@ internal sealed class SettingsStoreListenerRegistry : IDisposable
     }
 
     /// <summary>
-    /// Removes one previously added predicate-filtered listener registration.
+    /// Removes one previously added predicate-based listener registration from the matching registered parameters.
     /// </summary>
     /// <param name="parameters">The stable registered parameter set.</param>
-    /// <param name="predicate">The filter used to select parameters when no tracked registration exists.</param>
-    /// <param name="listener">The callback to remove.</param>
+    /// <param name="predicate">The predicate used to identify matching parameters.</param>
+    /// <param name="listener">The listener callback to remove.</param>
     internal void RemoveFromAll(IReadOnlyDictionary<string, IParameter> parameters, Func<IParameter, bool> predicate, Action listener)
     {
         ArgumentNullException.ThrowIfNull(parameters);
@@ -157,13 +150,20 @@ internal sealed class SettingsStoreListenerRegistry : IDisposable
             return;
 
         foreach (var parameter in parameters.Values)
-            if (predicate(parameter))
-                parameter.ValueChanged -= listener;
+        {
+            if (!predicate(parameter))
+                continue;
+
+            parameter.ValueChanged -= listener;
+        }
     }
 
     /// <summary>
-    /// Executes and clears every tracked cleanup action.
+    /// Executes every tracked cleanup action once and clears the registry.
     /// </summary>
+    /// <remarks>
+    /// Repeated calls after the first one do nothing.
+    /// </remarks>
     public void Dispose()
     {
         if (_disposed)

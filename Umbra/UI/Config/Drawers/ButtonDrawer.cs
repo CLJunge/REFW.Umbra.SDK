@@ -7,63 +7,14 @@ using Umbra.UI.Config.Rendering;
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
-/// An <see cref="IParameterDrawer"/> implementation that renders an ImGui push-button for a
-/// <see cref="Parameter{T}"/> of type <see cref="Action"/>, invoking the stored action on click.
+/// Renders a button for a <see cref="Parameter{T}"/> whose value type is <see cref="Action"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <see cref="Umbra.UI.Config.ControlFactory"/> uses this drawer by default for
-/// <see cref="Parameter{T}"/> values of type <see cref="Action"/>. One <see cref="ButtonDrawer"/>
-/// instance is created per action parameter during draw-tree construction, so warning state remains
-/// local to the parameter and no shared global drawer state is required.
+/// <see cref="Umbra.UI.Config.ControlFactory"/> uses this drawer by default for delegate-valued parameters. One drawer instance is created per parameter during draw-tree construction, so misconfiguration-warning state remains local to that parameter.
 /// </para>
 /// <para>
-/// The button label is sourced from the parameter's <c>DisplayName</c> metadata (set via
-/// <see cref="Umbra.Config.Attributes.UmbraDisplayNameAttribute"/> (<c>[UmbraDisplayName("...")]</c>)).
-/// An optional same-line <c>(?)</c> help marker is shown when
-/// <see cref="Umbra.Config.Attributes.UmbraDescriptionAttribute"/> (<c>[UmbraDescription("...")]</c>)
-/// is also present, consistent with other drawers in this namespace.
-/// </para>
-/// <para>
-/// Appearance is controlled by optional attributes on the parameter property:
-/// <list type="bullet">
-///   <item>
-///     <term><see cref="Umbra.Config.Attributes.UmbraButtonStyleAttribute"/> (<c>[UmbraButtonStyle(ButtonStyle.Danger)]</c>)</term>
-///     <description>
-///       Applies a preset color scheme. See <see cref="ButtonStyle"/> for all variants.
-///       Omit for the default ImGui theme colors. Ignored when
-///       <see cref="Umbra.Config.Attributes.UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors]</c>)
-///       is also present.
-///     </description>
-///   </item>
-///   <item>
-///     <term><see cref="Umbra.Config.Attributes.UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors(r, g, b)]</c> or <c>[UmbraCustomButtonColors(…×12)]</c>)</term>
-///     <description>
-///       Applies fully custom RGBA colors for the normal, hovered, and active button states.
-///       Takes priority over
-///       <see cref="Umbra.Config.Attributes.UmbraButtonStyleAttribute"/> (<c>[UmbraButtonStyle]</c>)
-///       when both are specified.
-///     </description>
-///   </item>
-///   <item>
-///     <term><see cref="Umbra.Config.Attributes.UmbraControlWidthAttribute"/> (<c>[UmbraControlWidth(-1f)]</c>)</term>
-///     <description>
-///       <c>0f</c> (default) = auto-size to label, <c>-1f</c> = fill available width,
-///       positive = fixed pixel width.
-///     </description>
-///   </item>
-/// </list>
-/// </para>
-/// <para>
-/// Using <see cref="ButtonStyle.Custom"/> without
-/// <see cref="Umbra.Config.Attributes.UmbraCustomButtonColorsAttribute"/> (<c>[UmbraCustomButtonColors]</c>)
-/// on the same property is a misconfiguration. The drawer logs a one-time warning and falls back
-/// to <see cref="ButtonStyle.Default"/> rather than throwing, so the game process is never
-/// disrupted by a configuration error in a per-frame draw path.
-/// </para>
-/// <para>
-/// The backing <see cref="Action"/> is intentionally not persisted to JSON; the settings
-/// persistence layer skips all delegate-typed parameters during save and load.
+/// Button appearance comes from the parameter's resolved metadata, including optional button style, custom button colors, description help text, and width hints.
 /// </para>
 /// </remarks>
 public sealed class ButtonDrawer : IParameterDrawer
@@ -72,7 +23,7 @@ public sealed class ButtonDrawer : IParameterDrawer
     private readonly IButtonDrawerRenderer _renderer;
 
     /// <summary>
-    /// Initialises a new <see cref="ButtonDrawer"/> that renders through the shared active ImGui context.
+    /// Initializes a new <see cref="ButtonDrawer"/> that renders through the shared ImGui render context.
     /// </summary>
     public ButtonDrawer()
         : this(ImGuiConfigRenderContext.Instance)
@@ -80,12 +31,10 @@ public sealed class ButtonDrawer : IParameterDrawer
     }
 
     /// <summary>
-    /// Initialises a new <see cref="ButtonDrawer"/> with the specified low-level renderer.
+    /// Initializes a new <see cref="ButtonDrawer"/> with the specified renderer seam.
     /// </summary>
     /// <param name="renderer">The renderer used for button-specific drawing operations.</param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="renderer"/> is <see langword="null"/>.
-    /// </exception>
+    /// <exception cref="ArgumentNullException"><paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ButtonDrawer(IButtonDrawerRenderer renderer)
     {
         ArgumentNullException.ThrowIfNull(renderer);
@@ -106,9 +55,6 @@ public sealed class ButtonDrawer : IParameterDrawer
         var size = new Vector2(meta.ControlWidth ?? 0f, 0f);
         bool colorsPushed;
 
-        // Guard: ButtonStyle.Custom without [UmbraCustomButtonColors] is a misconfiguration.
-        // Log once and fall back to Default rather than throwing from a per-frame draw path,
-        // which would crash the game process on every frame.
         if (style == ButtonStyle.Custom && meta.CustomButtonColors is null)
         {
             if (!_warnedAboutMissingColors)

@@ -3,21 +3,15 @@ using System.Text;
 namespace Umbra;
 
 /// <summary>
-/// Provides extension methods for working with strings.
+/// Provides string helpers used by Umbra naming and configuration key generation code.
 /// </summary>
 internal static class StringExtensions
 {
     /// <summary>
-    /// Converts the first character of the string to lowercase, returning a camelCase form.
-    /// If the string is <see langword="null"/>, empty, or already starts with a lowercase letter,
-    /// it is returned unchanged.
+    /// Converts the first character of <paramref name="value"/> to lowercase to produce a camel-cased identifier.
     /// </summary>
-    /// <param name="value">The string to convert.</param>
-    /// <returns>
-    /// A new string with the first character converted to lowercase,
-    /// or the original string if it is <see langword="null"/>, empty, or already starts with
-    /// a lowercase character.
-    /// </returns>
+    /// <param name="value">The identifier to convert.</param>
+    /// <returns>The original value when it is <see langword="null"/>, empty, or already starts with a lowercase character; otherwise, a new string whose first character has been lowercased.</returns>
     internal static string? ToCamelCase(this string? value)
     {
         if (string.IsNullOrEmpty(value) || char.IsLower(value[0]))
@@ -31,12 +25,13 @@ internal static class StringExtensions
     }
 
     /// <summary>
-    /// Converts a PascalCase or camelCase identifier into a space-separated display name
-    /// by inserting a space before each uppercase letter that follows a non-uppercase letter,
-    /// excluding certain word separator characters.
+    /// Converts an identifier into a space-separated display label by inserting spaces before eligible uppercase transitions.
     /// </summary>
-    /// <param name="name">The raw identifier to convert (e.g. <c>"FieldOfView"</c>).</param>
-    /// <returns>The human-readable display name (e.g. <c>"Field Of View"</c>).</returns>
+    /// <remarks>
+    /// Uppercase characters that follow another uppercase character, or one of the separator characters recognized by <see cref="IsWordSeparator(char)"/>, do not trigger an inserted space.
+    /// </remarks>
+    /// <param name="name">The identifier to convert.</param>
+    /// <returns>A display label built from <paramref name="name"/>.</returns>
     internal static string ToDisplayName(this string name)
     {
         var sb = new StringBuilder(name.Length + 4);

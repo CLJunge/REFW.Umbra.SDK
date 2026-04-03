@@ -4,24 +4,21 @@ using Umbra.Config.Attributes;
 namespace Umbra.Config;
 
 /// <summary>
-/// Discovers and registers all <see cref="IParameter"/> instances declared on a configuration
-/// object by walking its public instance property tree and respecting the Umbra settings attributes.
+/// Discovers and registers the <see cref="IParameter"/> instances exposed by a configuration object graph.
 /// </summary>
 /// <remarks>
-/// Explicit key segments supplied by <see cref="UmbraPrefixAttribute"/> on nested groups and
-/// <see cref="UmbraParameterAttribute.KeyOverride"/> on parameters must be non-empty so the
-/// resulting persisted keys remain structurally unambiguous.
+/// The registrar walks public instance properties marked with <see cref="UmbraParameterAttribute"/>, respects nested-group prefixes and inherited categories, and assigns each discovered parameter its fully qualified persisted key together with resolved <see cref="ParameterMetadata"/>.
 /// </remarks>
 internal static class SettingsRegistrar
 {
     /// <summary>
-    /// Reflects over <paramref name="config"/> and returns a flat dictionary of every
-    /// <see cref="IParameter"/> found, keyed by its fully-qualified dot-separated setting key.
+    /// Walks <paramref name="config"/> and returns a flat map of every discovered parameter keyed by fully qualified persisted name.
     /// </summary>
+    /// <typeparam name="TConfig">The root configuration object type.</typeparam>
+    /// <param name="config">The configuration object to inspect.</param>
+    /// <returns>The registered parameter map.</returns>
     /// <remarks>
-    /// If two parameters resolve to the same fully-qualified key, registration fails with an
-    /// <see cref="InvalidOperationException"/> rather than silently letting the later parameter
-    /// overwrite the earlier one.
+    /// If two parameters resolve to the same fully qualified key, registration fails instead of allowing the later parameter to overwrite the earlier one.
     /// </remarks>
     internal static Dictionary<string, IParameter> Register<TConfig>(TConfig config)
         where TConfig : class

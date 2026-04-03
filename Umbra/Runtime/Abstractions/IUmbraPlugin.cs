@@ -1,49 +1,35 @@
 namespace Umbra.Runtime;
 
 /// <summary>
-/// Defines the lifecycle contract for an Umbra plugin instance.
+/// Defines the instance lifecycle and forwarded frame callbacks consumed by Umbra's plugin-hosting APIs.
 /// </summary>
 /// <remarks>
-/// The managed REFramework host still requires static entry points, but those entry points should
-/// only forward into a plugin instance that implements this interface. Implementations are expected
-/// to keep all mutable plugin state on the instance itself. Plugins may optionally expose additional
-/// REFramework engine callback handlers using an <c>On&lt;CallbackName&gt;()</c> naming convention,
-/// but such callbacks are not defined or required by this interface.
+/// Static REFramework entry points still live on an assembly-facing host type, but they should delegate their work to a plugin instance that implements <see cref="IUmbraPlugin"/>. Single-instance coordination is typically handled by <see cref="global::Umbra.PluginHost{TPlugin}"/> or <see cref="global::Umbra.PluginBootstrapper"/>, while implementations keep mutable plugin state on the instance itself.
 /// </remarks>
 public partial interface IUmbraPlugin
 {
     /// <summary>
-    /// Performs one-time plugin startup work after the host has acquired the plugin mutex.
+    /// Performs one-time startup work after the runtime host has acquired the plugin's single-instance mutex.
     /// </summary>
     void Initialize();
 
     /// <summary>
-    /// Performs plugin shutdown work before the host releases the plugin mutex.
+    /// Performs shutdown work before the runtime host releases the plugin's single-instance mutex.
     /// </summary>
     void Shutdown();
 
     /// <summary>
-    /// Performs custom logic before the behavior update phase of the game loop.
+    /// Runs plugin logic before the game's behavior update phase when the static host forwards that callback.
     /// </summary>
-    /// <remarks>
-    /// Use this callback to implement any custom behavior that should run before the game updates its
-    /// internal behavior state.
-    /// </remarks>
     void OnPreUpdateBehavior();
 
     /// <summary>
-    /// Performs custom logic immediately before the ImGui UI is drawn.
+    /// Runs plugin ImGui UI logic before the REFramework UI draw pass when the static host forwards that callback.
     /// </summary>
-    /// <remarks>
-    /// Use this callback to draw ImGui elements.
-    /// </remarks>
     void OnPreImGuiDrawUI();
 
     /// <summary>
-    /// Performs custom logic immediately before the ImGui renderer executes its draw calls.
+    /// Runs plugin overlay drawing logic before the ImGui renderer submits draw calls when the static host forwards that callback.
     /// </summary>
-    /// <remarks>
-    /// Use this callback to draw an ingame overlay using ImGui elements.
-    /// </remarks>
     void OnPreImGuiRenderer();
 }

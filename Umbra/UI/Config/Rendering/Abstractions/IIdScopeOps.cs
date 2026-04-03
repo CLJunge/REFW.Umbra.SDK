@@ -1,7 +1,7 @@
 namespace Umbra.UI.Config.Rendering;
 
 /// <summary>
-/// Defines ImGui ID-scope push/pop operations.
+/// Defines the ImGui ID-scope push and pop operations used by the configuration UI pipeline.
 /// </summary>
 internal interface IIdScopeOps
 {

@@ -6,40 +6,17 @@ using Umbra.UI.Config.Rendering;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Pre-builds and renders an ImGui settings UI for a typed configuration class.
+/// Builds and renders an ImGui settings panel for a loaded configuration instance.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The draw tree is assembled once at construction time via a single reflection pass;
-/// each subsequent call to <see cref="Draw"/> walks the pre-built list of nodes cheaply
-/// with no per-frame reflection.
+/// The draw tree is assembled once at construction time. Later <see cref="Draw"/> calls walk the cached nodes without performing per-frame reflection.
 /// </para>
 /// <para>
-/// Pass a config instance returned by <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so that
-/// <see cref="Umbra.Config.ParameterMetadata"/> is already populated on every leaf parameter.
-/// Parameter-level presentation such as labels, descriptions, ranges, formats, and custom drawer
-/// bindings is taken from that cached metadata; nested-group wrapper attributes are still read from
-/// the reflected property/type structure during the one-time build pass.
-/// </para>
-/// <para>
-/// For nested settings groups, prefer applying presentation attributes such as
-/// <see cref="UmbraCategoryAttribute"/>, <see cref="UmbraCollapseAsTreeAttribute"/>,
-/// <see cref="UmbraLabelMarginAttribute"/>, and <see cref="UmbraNestedDrawerAttribute{TDrawer}"/>
-/// to the parent property that exposes the group; equivalent type-level declarations remain
-/// supported as backward-compatible fallbacks. Category names are scoped to the group that
-/// declares them, so sibling nested groups may reuse the same category label without colliding.
-/// When a nested-group property declares its own category, that category renders as a real parent
-/// container for the group's uncategorized direct controls and any additional child categories
-/// declared inside the group. Every nested-group subtree also receives its own stable ImGui ID
-/// scope derived from its structural settings path, so custom nested-group drawers can safely
-/// reuse local widget labels in different branches. Apply <see cref="UmbraRootNodeAttribute"/>
-/// to the root config class to wrap the entire panel inside a single top-level
-/// <see cref="ImGui.TreeNode(string)"/>.
+/// Pass a configuration instance returned by <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so each registered parameter already carries resolved <see cref="Umbra.Config.ParameterMetadata"/>. Nested-group wrapper attributes are still read from reflected property and type metadata during the one-time build pass.
 /// </para>
 /// </remarks>
-/// <typeparam name="TConfig">
-/// The configuration class type, following the SDK settings attribute conventions.
-/// </typeparam>
+/// <typeparam name="TConfig">The configuration type rendered by the drawer.</typeparam>
 public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
 {
     private readonly List<IDrawNode> _nodes;
@@ -151,21 +128,10 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     }
 
     /// <summary>
-    /// Renders the full settings UI for one ImGui frame.
-    /// Must be called from within an active ImGui window or child window.
+    /// Renders the cached settings UI for the current ImGui frame.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// All widget IDs rendered during this call are bracketed by
-    /// the configured draw scope's push/pop operations, making every
-    /// <c>##key</c> label unique across plugins without any changes to individual controls or
-    /// custom drawers. The scope is always popped before this method returns, even if a node
-    /// throws while drawing.
-    /// </para>
-    /// <para>
-    /// A silent no-op when the instance has been disposed so a stale render callback in the game
-    /// loop does not raise an unhandled exception in-process.
-    /// </para>
+    /// The configured ID scope is always popped before this method returns, even if a node throws while drawing. After <see cref="Dispose"/>, this method becomes a silent no-op.
     /// </remarks>
     public void Draw()
     {
@@ -185,10 +151,11 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     }
 
     /// <summary>
-    /// Disposes all stateful custom drawers collected during the draw-tree build pass,
-    /// then marks this instance as disposed.
-    /// Subsequent calls to <see cref="Draw"/> become silent no-ops.
+    /// Disposes any stateful resources collected during draw-tree construction and marks the drawer as disposed.
     /// </summary>
+    /// <remarks>
+    /// Repeated calls after the first one do nothing.
+    /// </remarks>
     public void Dispose()
     {
         if (_disposed) return;

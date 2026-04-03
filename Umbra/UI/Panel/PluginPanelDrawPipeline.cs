@@ -3,11 +3,10 @@ using Hexa.NET.ImGui;
 namespace Umbra.UI.Panel;
 
 /// <summary>
-/// Renders the section body of a <see cref="PluginPanel"/> once the shared panel ID scope is active.
+/// Renders a panel's ordered section list once the shared <see cref="PluginPanel"/> ID scope is active.
 /// </summary>
 /// <remarks>
-/// This type isolates root-node rendering, separator placement, and per-section tree-node behavior
-/// from <see cref="PluginPanel"/>, leaving the panel focused on lifetime and scope management.
+/// This type isolates optional root-node rendering, per-section tree-node wrapping, and trailing separator placement from <see cref="PluginPanel"/>, leaving the panel focused on lifetime and top-level scope management.
 /// </remarks>
 internal sealed class PluginPanelDrawPipeline
 {
@@ -17,16 +16,15 @@ internal sealed class PluginPanelDrawPipeline
     private readonly IPluginPanelRenderer _renderer;
 
     /// <summary>
-    /// Initializes a new draw pipeline for one panel configuration.
+    /// Initializes a new instance of the <see cref="PluginPanelDrawPipeline"/> class.
     /// </summary>
-    /// <param name="rootNodeLabel">
-    /// The optional root node label wrapping the full section list.
-    /// When the label contains ImGui's <c>"##"</c> separator, the caller-supplied suffix is stripped
-    /// before rendering so the panel retains full control over tree-node identity semantics.
-    /// </param>
-    /// <param name="rootNodeDefaultOpen">Whether the optional root node starts expanded.</param>
-    /// <param name="drawSeparator">Whether a trailing separator should be rendered after the sections.</param>
-    /// <param name="renderer">The low-level renderer used for tree-node and separator operations.</param>
+    /// <param name="rootNodeLabel">The optional root-node label that wraps the full section list.</param>
+    /// <param name="rootNodeDefaultOpen"><see langword="true"/> to start the optional root node in the open state; otherwise, <see langword="false"/>.</param>
+    /// <param name="drawSeparator"><see langword="true"/> to draw a trailing separator after the section list; otherwise, <see langword="false"/>.</param>
+    /// <param name="renderer">The renderer used for tree-node and separator operations.</param>
+    /// <remarks>
+    /// When <paramref name="rootNodeLabel"/> contains ImGui's <c>"##"</c> separator, <see cref="PluginPanelTreeNodeLabels.Sanitize(string?)"/> strips the suffix before rendering so the panel keeps full control over tree-node identity semantics.
+    /// </remarks>
     internal PluginPanelDrawPipeline(string? rootNodeLabel, bool rootNodeDefaultOpen, bool drawSeparator, IPluginPanelRenderer renderer)
     {
         ArgumentNullException.ThrowIfNull(renderer);
@@ -41,9 +39,10 @@ internal sealed class PluginPanelDrawPipeline
     }
 
     /// <summary>
-    /// Renders the supplied <paramref name="sections"/> using the configured root-node and separator policy.
+    /// Renders the supplied section list using the configured root-node and separator policy.
     /// </summary>
     /// <param name="sections">The ordered sections to draw.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="sections"/> is <see langword="null"/>.</exception>
     internal void Draw(IReadOnlyList<IPanelSection> sections)
     {
         ArgumentNullException.ThrowIfNull(sections);
@@ -74,7 +73,7 @@ internal sealed class PluginPanelDrawPipeline
     }
 
     /// <summary>
-    /// Iterates over all sections and renders each one, optionally wrapping it inside a per-section tree node.
+    /// Renders each section, optionally wrapping it in a section-specific tree node.
     /// </summary>
     /// <param name="sections">The ordered sections to draw.</param>
     private void DrawSections(IReadOnlyList<IPanelSection> sections)

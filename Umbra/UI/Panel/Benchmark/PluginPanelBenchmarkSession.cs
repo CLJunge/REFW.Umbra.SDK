@@ -4,12 +4,10 @@ using System.Diagnostics;
 namespace Umbra.UI.Panel.Benchmark;
 
 /// <summary>
-/// Aggregates per-frame timing samples for an in-game <see cref="PluginPanel"/> draw benchmark.
+/// Aggregates per-frame timing samples for a <see cref="PluginPanel"/> draw benchmark.
 /// </summary>
 /// <remarks>
-/// One measured draw pass is recorded per ImGui frame so the benchmark follows the real
-/// REFramework UI lifecycle. A warmup phase is supported to let ImGui state settle before samples
-/// are recorded.
+/// One panel draw pass is measured per ImGui frame. A warmup phase is supported so the benchmark can skip early frames before recording steady-state samples.
 /// </remarks>
 internal sealed class PluginPanelBenchmarkSession
 {
@@ -28,7 +26,7 @@ internal sealed class PluginPanelBenchmarkSession
     private long _cachedP99Ticks;
 
     /// <summary>
-    /// Gets whether the benchmark is currently recording.
+    /// Gets a value indicating whether the benchmark is currently recording.
     /// </summary>
     internal bool IsRunning { get; private set; }
 
@@ -48,7 +46,7 @@ internal sealed class PluginPanelBenchmarkSession
     internal long WarmupFramesRemaining => _warmupFramesRemaining;
 
     /// <summary>
-    /// Gets the number of recorded samples.
+    /// Gets the number of recorded steady-state samples.
     /// </summary>
     internal long RecordedSampleCount => _recordedSampleCount;
 
@@ -63,7 +61,7 @@ internal sealed class PluginPanelBenchmarkSession
     internal double LastMilliseconds => TicksToMilliseconds(_lastTicks);
 
     /// <summary>
-    /// Gets the average measured frame duration in milliseconds.
+    /// Gets the average recorded frame duration in milliseconds.
     /// </summary>
     internal double AverageMilliseconds
         => _recordedSampleCount == 0
@@ -71,18 +69,13 @@ internal sealed class PluginPanelBenchmarkSession
             : TicksToMilliseconds(_totalTicks) / _recordedSampleCount;
 
     /// <summary>
-    /// Gets the slowest measured frame duration in milliseconds.
+    /// Gets the slowest recorded frame duration in milliseconds.
     /// </summary>
     internal double MaxMilliseconds => TicksToMilliseconds(_maxTicks);
 
     /// <summary>
-    /// Gets the 95th-percentile steady-state frame duration in milliseconds.
+    /// Gets the 95th-percentile recorded frame duration in milliseconds.
     /// </summary>
-    /// <remarks>
-    /// Only recorded samples are included; warmup frames are excluded from the percentile
-    /// calculation. The result is cached and recomputed only when a new sample is added. Returns
-    /// <c>0</c> when no recorded samples exist. The cache is cleared on <see cref="Reset"/>.
-    /// </remarks>
     internal double P95Milliseconds
     {
         get
@@ -93,13 +86,8 @@ internal sealed class PluginPanelBenchmarkSession
     }
 
     /// <summary>
-    /// Gets the 99th-percentile steady-state frame duration in milliseconds.
+    /// Gets the 99th-percentile recorded frame duration in milliseconds.
     /// </summary>
-    /// <remarks>
-    /// Only recorded samples are included; warmup frames are excluded from the percentile
-    /// calculation. The result is cached and recomputed only when a new sample is added. Returns
-    /// <c>0</c> when no recorded samples exist. The cache is cleared on <see cref="Reset"/>.
-    /// </remarks>
     internal double P99Milliseconds
     {
         get
@@ -157,10 +145,7 @@ internal sealed class PluginPanelBenchmarkSession
     /// Records one measured frame.
     /// </summary>
     /// <param name="elapsedTicks">The elapsed stopwatch ticks for the measured draw pass.</param>
-    /// <returns>
-    /// The captured sample when a run is active; otherwise <see langword="null"/> when the frame
-    /// was ignored because the benchmark is not running.
-    /// </returns>
+    /// <returns>The captured sample when a run is active; otherwise, <see langword="null"/>.</returns>
     internal PluginPanelBenchmarkSample? RecordFrame(long elapsedTicks)
     {
         if (!IsRunning)
@@ -192,12 +177,10 @@ internal sealed class PluginPanelBenchmarkSession
     }
 
     /// <summary>
-    /// Ensures the cached P95 and P99 tick values are up to date.
+    /// Ensures the cached percentile tick values are up to date.
     /// </summary>
     /// <remarks>
-    /// Sorts the recorded-ticks list once and caches both percentile values. Subsequent reads
-    /// within the same frame are O(1). The cache is invalidated on every new recorded sample
-    /// and cleared to zero on <see cref="Reset"/> or when no samples have been recorded.
+    /// Only recorded samples are included. Warmup frames are excluded because they are not added to the recorded-ticks list.
     /// </remarks>
     private void EnsurePercentilesUpToDate()
     {
@@ -221,11 +204,10 @@ internal sealed class PluginPanelBenchmarkSession
     }
 
     /// <summary>
-    /// Computes the nearest-rank index for the given percentile over a sorted array of
-    /// <paramref name="count"/> elements.
+    /// Computes the nearest-rank index for the requested percentile over a sorted array.
     /// </summary>
     /// <param name="count">The number of elements in the sorted array.</param>
-    /// <param name="percentile">The percentile as a value between 0 and 1.</param>
+    /// <param name="percentile">The percentile expressed as a value between 0 and 1.</param>
     /// <returns>A valid array index for the requested percentile.</returns>
     private static int GetPercentileRank(int count, double percentile)
     {

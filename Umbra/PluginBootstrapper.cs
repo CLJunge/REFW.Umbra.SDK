@@ -1,33 +1,20 @@
 namespace Umbra;
 
 /// <summary>
-/// Provides a higher-level plugin lifecycle wrapper that owns single-instance mutex acquisition and
-/// release on behalf of plugin authors.
+/// Runs plugin startup and shutdown callbacks under Umbra's AppDomain-local single-instance guard.
 /// </summary>
 /// <remarks>
-/// <para>
-/// Use this helper from a plugin's static <c>[PluginEntryPoint]</c> and <c>[PluginExitPoint]</c>
-/// methods to keep the plugin class free of manual lease storage and disposal logic.
-/// </para>
-/// <para>
-/// The convenience overloads delegate caller-type inference to <see cref="PluginCallerTypeResolver"/>,
-/// acquire the mutex before running the load callback, release it automatically if initialization
-/// fails, and always release it after the unload callback finishes.
-/// </para>
+/// The caller-inference overloads use <see cref="PluginCallerTypeResolver"/> to resolve the plugin identity type from the static entry-point method. Load paths acquire the mutex before invoking the supplied callback, and unload paths release the mutex in a <c>finally</c> block so later reloads are not blocked by a partially failed shutdown.
 /// </remarks>
 public static class PluginBootstrapper
 {
     /// <summary>
-    /// Runs a plugin's initialization code under the single-instance guard inferred from the calling
-    /// entry-point method.
+    /// Runs plugin initialization under the single-instance guard inferred from the calling entry-point type.
     /// </summary>
-    /// <param name="initialize">The plugin initialization callback.</param>
-    /// <returns>
-    /// <see langword="true"/> when the plugin acquired its mutex and the initialization callback ran;
-    /// otherwise <see langword="false"/> when another instance already holds the mutex.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="initialize"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a class-based plugin host type.</exception>
+    /// <param name="initialize">The callback that performs plugin initialization after the mutex has been acquired.</param>
+    /// <returns><see langword="true"/> if the inferred plugin mutex was acquired and <paramref name="initialize"/> ran; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="initialize"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The calling method cannot be resolved to a class-based plugin identity type.</exception>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     public static bool Load(Action initialize)
     {
@@ -42,18 +29,15 @@ public static class PluginBootstrapper
     }
 
     /// <summary>
-    /// Runs a plugin's initialization code under the single-instance guard for <paramref name="pluginType"/>.
+    /// Runs plugin initialization under the single-instance guard for <paramref name="pluginType"/>.
     /// </summary>
-    /// <param name="pluginType">
-    /// The plugin identity type whose assembly contributes the mutex key used for single-instance
-    /// enforcement.
-    /// </param>
-    /// <param name="initialize">The plugin initialization callback.</param>
-    /// <returns>
-    /// <see langword="true"/> when the plugin acquired its mutex and the initialization callback ran;
-    /// otherwise <see langword="false"/> when another instance already holds the mutex.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="pluginType"/> or <paramref name="initialize"/> is <see langword="null"/>.</exception>
+    /// <param name="pluginType">The plugin identity type whose assembly contributes the mutex key.</param>
+    /// <param name="initialize">The callback that performs plugin initialization after the mutex has been acquired.</param>
+    /// <returns><see langword="true"/> if the mutex was acquired and <paramref name="initialize"/> ran; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// If another plugin instance already holds the mutex key, this method returns <see langword="false"/> and does not invoke <paramref name="initialize"/>. If <paramref name="initialize"/> throws after acquisition succeeds, the temporary lease is disposed before the exception is rethrown.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="pluginType"/> or <paramref name="initialize"/> is <see langword="null"/>.</exception>
     public static bool Load(Type pluginType, Action initialize)
     {
         ArgumentNullException.ThrowIfNull(pluginType);
@@ -75,16 +59,14 @@ public static class PluginBootstrapper
     }
 
     /// <summary>
-    /// Runs a plugin's shutdown code and then releases its single-instance mutex inferred from the
-    /// calling entry-point method.
+    /// Runs plugin shutdown and releases the inferred single-instance mutex.
     /// </summary>
-    /// <param name="cleanup">The plugin cleanup callback.</param>
+    /// <param name="cleanup">The callback that performs plugin shutdown before the mutex is released.</param>
     /// <remarks>
-    /// The mutex is released even if <paramref name="cleanup"/> throws, so a later reload is not
-    /// blocked by a partially failed shutdown path.
+    /// The inferred mutex is released even if <paramref name="cleanup"/> throws, so a later reload is not blocked by a partially failed shutdown path.
     /// </remarks>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="cleanup"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when the calling method cannot be resolved to a class-based plugin host type.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="cleanup"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The calling method cannot be resolved to a class-based plugin identity type.</exception>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     public static void Unload(Action cleanup)
     {
@@ -99,18 +81,14 @@ public static class PluginBootstrapper
     }
 
     /// <summary>
-    /// Runs a plugin's shutdown code and then releases its single-instance mutex.
+    /// Runs plugin shutdown and releases the single-instance mutex for <paramref name="pluginType"/>.
     /// </summary>
-    /// <param name="pluginType">
-    /// The plugin identity type whose assembly contributes the mutex key used for single-instance
-    /// enforcement.
-    /// </param>
-    /// <param name="cleanup">The plugin cleanup callback.</param>
+    /// <param name="pluginType">The plugin identity type whose assembly contributes the mutex key.</param>
+    /// <param name="cleanup">The callback that performs plugin shutdown before the mutex is released.</param>
     /// <remarks>
-    /// The mutex is released even if <paramref name="cleanup"/> throws, so a later reload is not
-    /// blocked by a partially failed shutdown path.
+    /// The mutex is released even if <paramref name="cleanup"/> throws, so a later reload is not blocked by a partially failed shutdown path.
     /// </remarks>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="pluginType"/> or <paramref name="cleanup"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="pluginType"/> or <paramref name="cleanup"/> is <see langword="null"/>.</exception>
     public static void Unload(Type pluginType, Action cleanup)
     {
         ArgumentNullException.ThrowIfNull(pluginType);

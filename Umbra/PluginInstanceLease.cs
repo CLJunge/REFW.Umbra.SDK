@@ -1,11 +1,10 @@
 namespace Umbra;
 
 /// <summary>
-/// Represents an active single-instance claim held by a plugin within the current AppDomain.
+/// Represents an active single-instance lease registered for a plugin within the current process.
 /// </summary>
 /// <remarks>
-/// Dispose the lease from the plugin's <c>[PluginExitPoint]</c> method to release the mutex key and
-/// allow a future load to acquire it again. Disposal is idempotent.
+/// <see cref="PluginInstanceGuard"/> creates these leases when acquisition succeeds. Disposing the lease removes its mutex key from the active registry so a later load from the same assembly can proceed. Disposal is idempotent.
 /// </remarks>
 internal sealed class PluginInstanceLease : IDisposable
 {
@@ -18,18 +17,23 @@ internal sealed class PluginInstanceLease : IDisposable
     }
 
     /// <summary>
-    /// Gets the plugin type that owns this lease.
+    /// Gets the plugin identity type that owns this lease.
     /// </summary>
+    /// <value>The plugin identity type used to derive the mutex key.</value>
     public Type PluginType { get; }
 
     /// <summary>
     /// Gets the mutex key reserved by this lease.
     /// </summary>
+    /// <value>The AppDomain-local key currently tracked by <see cref="PluginInstanceGuard"/>.</value>
     public string MutexKey { get; }
 
     /// <summary>
     /// Releases the mutex claim represented by this lease.
     /// </summary>
+    /// <remarks>
+    /// Repeated calls after the first one do nothing.
+    /// </remarks>
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0)

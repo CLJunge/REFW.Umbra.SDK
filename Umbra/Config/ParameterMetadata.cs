@@ -5,35 +5,24 @@ using Umbra.Config.Attributes;
 namespace Umbra.Config;
 
 /// <summary>
-/// Holds descriptive metadata associated with a <see cref="Parameter{T}"/> instance,
-/// sourced from attributes applied to the parameter's declaring member or its
-/// enclosing settings class.
+/// Stores the descriptive and UI metadata resolved for a registered <see cref="Parameter{T}"/>.
 /// </summary>
 /// <remarks>
-/// Metadata is populated by <see cref="ParameterMetadataReader"/> via reflection and is
-/// consumed by the settings UI to render appropriate labels, tooltips, sliders,
-/// and input constraints without requiring each parameter to carry that information
-/// itself. Public properties expose the descriptive configuration contract, while Umbra keeps
-/// derived render-cache values internal so UI implementation details are not part of the public
-/// package surface. All properties are optional; absent values are represented as
-/// <see langword="null"/>. Debugger-only summary formatting is delegated to
-/// <see cref="ParameterMetadataDebuggerDisplayFormatter"/> so this type stays focused on immutable
-/// metadata storage.
+/// <see cref="ParameterMetadataReader"/> builds this object from attributes applied to the parameter's declaring member and containing settings types. The settings UI consumes the resulting values to choose labels, grouping, spacing, validation hints, and drawer behavior without rescanning attributes during rendering.
 /// </remarks>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class ParameterMetadata
 {
     /// <summary>
-    /// Gets the category name used to group related parameters together in the UI.
-    /// Sourced from <see cref="UmbraCategoryAttribute"/> on the parameter's declaring member or its
-    /// enclosing settings group. <see langword="null"/> if no category has been assigned.
+    /// Gets the category name used to group related parameters in the UI.
     /// </summary>
+    /// <value>The resolved category name, or <see langword="null"/> when no category is assigned.</value>
     public string? Category { get; init; }
 
     /// <summary>
-    /// Gets the human-readable display name for the parameter, shown in the UI.
-    /// Sourced from <see cref="UmbraDisplayNameAttribute"/>. <see langword="null"/> if not specified.
+    /// Gets the explicit display name declared for the parameter.
     /// </summary>
+    /// <value>The attribute-supplied display name, or <see langword="null"/> when no explicit display name is declared.</value>
     public string? DisplayName { get; init; }
 
     /// <summary>
@@ -223,7 +212,7 @@ public sealed class ParameterMetadata
     internal string? HiddenLabel { get; init; }
 
     /// <summary>
-    /// Gets the concise debugger summary used by <see cref="DebuggerDisplayAttribute"/>.
+    /// Gets the debugger summary used by <see cref="DebuggerDisplayAttribute"/>.
     /// </summary>
     internal string DebuggerDisplay => ParameterMetadataDebuggerDisplayFormatter.Format(this);
 }

@@ -4,28 +4,22 @@ using Umbra.UI.Config.Nodes;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Walks one configuration object graph into nested <see cref="ConfigDrawScope"/> instances.
+/// Walks a configuration object graph into nested <see cref="ConfigDrawScope"/> instances.
 /// </summary>
 /// <remarks>
-/// This type isolates recursive config-tree traversal from <see cref="ConfigDrawerBuilder"/>,
-/// leaving the builder responsible for top-level orchestration and final ordering.
+/// This collector isolates recursive config-tree traversal from <see cref="ConfigDrawerBuilder"/>. It uses cached metadata and property getters so draw-tree construction avoids repeated reflection-heavy member access.
 /// </remarks>
 internal static class ConfigDrawTreeCollector
 {
     /// <summary>
-    /// Walks one configuration-group object into the specified local layout <paramref name="scope"/>.
+    /// Populates <paramref name="scope"/> from the supplied configuration-group instance.
     /// </summary>
     /// <param name="scope">The local category and alignment scope to populate.</param>
-    /// <param name="obj">The group instance to reflect over.</param>
-    /// <param name="type">The compile-time type of <paramref name="obj"/>.</param>
-    /// <param name="registerCategoryNode">Tracks category nodes for the caller's later sort pass.</param>
-    /// <param name="disposables">Collects stateful resources created during traversal.</param>
-    /// <param name="sortNodesInPlace">Applies the caller's local stable ordering policy.</param>
-    /// <remarks>
-    /// Property values are read through the cached delegates stored in <see cref="TypeDrawMetadata"/>
-    /// so repeated drawer construction walks the object graph without invoking
-    /// <see cref="System.Reflection.PropertyInfo.GetValue(object?)"/> for every property.
-    /// </remarks>
+    /// <param name="obj">The configuration-group instance to traverse.</param>
+    /// <param name="type">The reflected type used for cached metadata lookup.</param>
+    /// <param name="registerCategoryNode">Tracks materialized category nodes for later sorting.</param>
+    /// <param name="disposables">Collects disposable resources created while resolving nodes and drawers.</param>
+    /// <param name="sortNodesInPlace">Applies the caller's stable local ordering policy.</param>
     internal static void CollectInto(
         ConfigDrawScope scope,
         object obj,

@@ -3,11 +3,10 @@ using REFrameworkNET;
 namespace Umbra.Runtime;
 
 /// <summary>
-/// Resolves native RE Engine object addresses through the REFramework.NET managed host.
+/// Implements <see cref="IManagedObjectBridge"/> by resolving native RE Engine objects through REFramework.NET.
 /// </summary>
 /// <remarks>
-/// This is the production bridge used by <see cref="ManagedObjectResolver"/> at runtime inside the
-/// game process. Test code can replace it with a deterministic in-memory bridge.
+/// This is the production bridge used by <see cref="ManagedObjectResolver"/> inside the game process.
 /// </remarks>
 internal sealed class REFrameworkManagedObjectBridge : IManagedObjectBridge
 {

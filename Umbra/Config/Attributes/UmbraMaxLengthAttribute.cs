@@ -1,12 +1,15 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Sets the maximum character length for a <c>string</c> settings parameter's input field.
+/// Declares the maximum character count accepted by a string parameter's text input control.
 /// </summary>
-/// <param name="length">The maximum number of characters the input field will accept.</param>
+/// <param name="length">The maximum character count accepted by the input control.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraMaxLengthAttribute(uint length) : Attribute
 {
-    /// <summary>Gets the maximum number of characters allowed in the input field.</summary>
+    /// <summary>
+    /// Gets the declared maximum character count.
+    /// </summary>
+    /// <value>The maximum number of characters accepted by the input control.</value>
     public uint Length { get; } = length;
 }

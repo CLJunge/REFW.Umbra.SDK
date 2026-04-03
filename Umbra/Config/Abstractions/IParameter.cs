@@ -1,99 +1,77 @@
 namespace Umbra.Config;
 
 /// <summary>
-/// Represents a configuration parameter that holds a typed value and notifies
-/// listeners when that value changes.
+/// Defines the untyped contract for a registered settings parameter.
 /// </summary>
+/// <remarks>
+/// Umbra uses this abstraction to store heterogeneous <see cref="Parameter{T}"/> instances in one registered parameter set, persist their values, and attach cross-parameter listeners through <see cref="SettingsStore{TConfig}"/>.
+/// </remarks>
 public interface IParameter
 {
     /// <summary>
-    /// Raised when the parameter's value changes through <see cref="SetValue(object?)"/>
-    /// or <see cref="Reset(bool)"/> with <c>raiseEvent = true</c>.
-    /// Not raised when the value is updated silently via <see cref="SetValueWithoutNotify(object?)"/>
-    /// or when <see cref="Reset(bool)"/> is called with <c>raiseEvent = false</c>.
+    /// Occurs when the parameter's value changes through the notifying mutation paths.
     /// </summary>
+    /// <remarks>
+    /// This event is raised by <see cref="SetValue(object?)"/> and by <see cref="Reset(bool)"/> when <c>raiseEvent</c> is <see langword="true"/> and the reset changes the current value. It is not raised by <see cref="SetValueWithoutNotify(object?)"/>.
+    /// </remarks>
     event Action? ValueChanged;
 
     /// <summary>
-    /// Gets the unique key that identifies this parameter within its settings group.
+    /// Gets the fully qualified persisted key assigned to this parameter during registration.
     /// </summary>
-    /// <remarks>
-    /// The key is assigned by Umbra's registration pipeline and remains stable for the lifetime of
-    /// the registered parameter instance.
-    /// </remarks>
+    /// <value>The stable key used for persistence and parameter-map lookups.</value>
     string Key { get; }
 
     /// <summary>
-    /// Gets the metadata associated with this parameter, such as its display name, description,
-    /// and ordering information.
+    /// Gets the metadata resolved for this parameter during registration.
     /// </summary>
-    /// <remarks>
-    /// Metadata is populated by Umbra during registration and is exposed read-only to public
-    /// consumers so identity and UI behavior remain stable after load.
-    /// </remarks>
+    /// <value>The read-only descriptive and UI metadata associated with the parameter.</value>
     ParameterMetadata Metadata { get; }
 
     /// <summary>
-    /// Gets the <see cref="Type"/> of the value held by this parameter.
+    /// Gets the CLR type of the value held by this parameter.
     /// </summary>
+    /// <value>The parameter value type.</value>
     Type ValueType { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the current value differs from the parameter's default value.
+    /// Gets a value indicating whether the current value differs from the default value captured at construction time.
     /// </summary>
+    /// <value><see langword="true"/> if the current value differs from the default value; otherwise, <see langword="false"/>.</value>
     bool IsModified { get; }
 
     /// <summary>
-    /// Returns the current value of this parameter as an untyped <see cref="object"/>.
+    /// Returns the current parameter value as an untyped object.
     /// </summary>
-    /// <returns>
-    /// The current value, or <see langword="null"/> if no value has been set.
-    /// </returns>
+    /// <returns>The current value, or <see langword="null"/> if the parameter currently holds no value.</returns>
     object? GetValue();
 
     /// <summary>
-    /// Sets the value of this parameter and raises <see cref="ValueChanged"/> if the
-    /// value differs from the current one.
+    /// Sets the parameter value through the validating, notifying mutation path.
     /// </summary>
+    /// <param name="value">The value to assign.</param>
     /// <remarks>
-    /// Implementations may reject values that violate metadata-defined constraints,
-    /// such as numeric min/max bounds.
+    /// Implementations may reject values that violate metadata-defined constraints such as numeric bounds.
     /// </remarks>
-    /// <param name="value">
-    /// The new value to assign. Must be assignable to <see cref="ValueType"/>.
-    /// <see langword="null"/> is only valid when <see cref="ValueType"/> is a nullable type.
-    /// </param>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="value"/> is not assignable to <see cref="ValueType"/>,
-    /// or when <paramref name="value"/> is <see langword="null"/> and <see cref="ValueType"/>
-    /// is a non-nullable value type.
-    /// </exception>
+    /// <exception cref="ArgumentException"><paramref name="value"/> is not assignable to <see cref="ValueType"/>, or it is <see langword="null"/> for a non-nullable value type.</exception>
     void SetValue(object? value);
 
     /// <summary>
-    /// Resets the parameter to its initial state, optionally raising a change event.
-    /// Validation is bypassed so that <see cref="IsModified"/> is always
-    /// <see langword="false"/> after this call.
+    /// Resets the parameter to its default value.
     /// </summary>
-    /// <param name="raiseEvent">true to raise a change event after resetting; otherwise, false.</param>
+    /// <param name="raiseEvent"><see langword="true"/> to raise <see cref="ValueChanged"/> when the reset changes the current value; otherwise, <see langword="false"/>.</param>
+    /// <remarks>
+    /// Reset bypasses metadata validation so the parameter always returns to the original default state.
+    /// </remarks>
     void Reset(bool raiseEvent = true);
 
     /// <summary>
-    /// Sets the value of this parameter without raising <see cref="ValueChanged"/>.
-    /// Useful for initializing or restoring persisted values without triggering side effects.
+    /// Sets the parameter value without raising <see cref="ValueChanged"/>.
     /// </summary>
+    /// <param name="value">The value to assign.</param>
     /// <remarks>
-    /// This silent path performs type coercion checks but intentionally bypasses any
-    /// metadata-based validation such as numeric min/max bounds.
+    /// This silent path performs type checks but intentionally bypasses metadata-based validation such as numeric bounds.
     /// </remarks>
-    /// <param name="value">
-    /// The new value to assign. Must be assignable to <see cref="ValueType"/>.
-    /// <see langword="null"/> is only valid when <see cref="ValueType"/> is a nullable type.
-    /// </param>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="value"/> is not assignable to <see cref="ValueType"/>,
-    /// or when <paramref name="value"/> is <see langword="null"/> and <see cref="ValueType"/>
-    /// is a non-nullable value type.
-    /// </exception>
+    /// <exception cref="ArgumentException"><paramref name="value"/> is not assignable to <see cref="ValueType"/>, or it is <see langword="null"/> for a non-nullable value type.</exception>
     void SetValueWithoutNotify(object? value);
 }

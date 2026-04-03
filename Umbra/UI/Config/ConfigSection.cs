@@ -4,30 +4,12 @@ using Umbra.UI.Panel;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// A <see cref="IPanelSection"/> that renders a typed configuration object as a settings
-/// panel using <see cref="ConfigDrawer{TConfig}"/>.
+/// Wraps a <see cref="ConfigDrawer{TConfig}"/> as a <see cref="IPanelSection"/> for use inside <see cref="PluginPanel"/>.
 /// </summary>
 /// <remarks>
-/// <para>
-/// When the config type carries <see cref="UmbraRootNodeAttribute"/>, the section
-/// automatically exposes <see cref="IPanelSection.TreeNodeLabel"/> and
-/// <see cref="IPanelSection.TreeNodeDefaultOpen"/> so that the owning
-/// <see cref="PluginPanel"/> renders the tree node. An explicit constructor-supplied tree-node
-/// label overrides the attribute value. Pass <c>suppressTreeNode = true</c> to opt out entirely
-/// even when the attribute is present.
-/// </para>
-/// <para>
-/// The ID scope defaults to the compile-time type argument <c>typeof(<typeparamref name="TConfig"/>).FullName</c>,
-/// falling back to <c>typeof(<typeparamref name="TConfig"/>).Name</c> when the full name is unavailable.
-/// <see cref="PluginPanel"/> pushes a top-level ImGui ID scope before calling <see cref="Draw"/>;
-/// this sub-scope nests inside it, preventing widget ID collisions when two config sections of
-/// the same type appear in the same panel. When an explicit constructor-supplied ID scope is used,
-/// it must not be empty or whitespace.
-/// </para>
+/// When <typeparamref name="TConfig"/> carries <see cref="UmbraRootNodeAttribute"/>, this section surfaces the corresponding tree-node label and default-open state to the owning <see cref="PluginPanel"/>, unless tree-node behavior is explicitly suppressed.
 /// </remarks>
-/// <typeparam name="TConfig">
-/// The configuration class type.
-/// </typeparam>
+/// <typeparam name="TConfig">The configuration type rendered by the section.</typeparam>
 public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 {
     private readonly ConfigDrawer<TConfig> _drawer;
@@ -106,6 +88,9 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     public bool TreeNodeDefaultOpen => _treeNodeDefaultOpen;
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// After <see cref="Dispose"/> has been called, this method becomes a silent no-op.
+    /// </remarks>
     public void Draw()
     {
         if (_disposed) return;
@@ -113,6 +98,9 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Repeated calls after the first one do nothing.
+    /// </remarks>
     public void Dispose()
     {
         if (_disposed) return;
