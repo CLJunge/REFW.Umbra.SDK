@@ -32,6 +32,19 @@ public static class Logger
     private static int _suppressionDepth;
 
     /// <summary>
+    /// Gets or sets an optional observer that receives exceptions suppressed internally by
+    /// <see cref="Logger"/> and <see cref="PluginLogger"/>.
+    /// </summary>
+    /// <remarks>
+    /// This hook is intended for opt-in diagnostics in tests, benchmarks, or advanced debugging
+    /// sessions where callers want visibility into failures that Umbra normally swallows to protect
+    /// the game process. The first argument identifies the write path that failed, such as
+    /// <c>"Logger.Info"</c> or <c>"PluginLogger.Error(format)"</c>. Exceptions thrown by the
+    /// observer itself are swallowed as well.
+    /// </remarks>
+    public static Action<string, Exception>? SuppressedFailureObserver { get; set; }
+
+    /// <summary>
     /// Gets or sets whether Umbra logging is globally enabled.
     /// </summary>
     /// <remarks>
@@ -106,7 +119,8 @@ public static class Logger
     public static void Info(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Info(message); } catch { }
+        try { GetLogSink().Info(message); }
+        catch (Exception ex) { ReportSuppressedFailure("Logger.Info", ex); }
     }
 
     /// <summary>
@@ -123,7 +137,13 @@ public static class Logger
     {
         if (!IsEnabled) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            ReportSuppressedFailure("Logger.Info(format)", ex);
+            return;
+        }
+
         Info(message);
     }
 
@@ -134,7 +154,8 @@ public static class Logger
     public static void Warning(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Warning(message); } catch { }
+        try { GetLogSink().Warning(message); }
+        catch (Exception ex) { ReportSuppressedFailure("Logger.Warning", ex); }
     }
 
     /// <summary>
@@ -151,7 +172,13 @@ public static class Logger
     {
         if (!IsEnabled) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            ReportSuppressedFailure("Logger.Warning(format)", ex);
+            return;
+        }
+
         Warning(message);
     }
 
@@ -162,7 +189,8 @@ public static class Logger
     public static void Error(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Error(message); } catch { }
+        try { GetLogSink().Error(message); }
+        catch (Exception ex) { ReportSuppressedFailure("Logger.Error", ex); }
     }
 
     /// <summary>
@@ -179,7 +207,13 @@ public static class Logger
     {
         if (!IsEnabled) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            ReportSuppressedFailure("Logger.Error(format)", ex);
+            return;
+        }
+
         Error(message);
     }
 
@@ -196,7 +230,10 @@ public static class Logger
         {
             GetLogSink().Error($"{message}\nException: {ex.GetType().Name}: {ex.Message}\nStack Trace:\n{ex.StackTrace}");
         }
-        catch { }
+        catch (Exception sinkException)
+        {
+            ReportSuppressedFailure("Logger.Exception", sinkException);
+        }
     }
 
     /// <summary>
@@ -215,7 +252,13 @@ public static class Logger
     {
         if (!IsEnabled) return;
         string message;
-        try { message = string.Format(format, args); } catch { return; }
+        try { message = string.Format(format, args); }
+        catch (Exception formatException)
+        {
+            ReportSuppressedFailure("Logger.Exception(format)", formatException);
+            return;
+        }
+
         Exception(ex, message);
     }
 
@@ -224,6 +267,26 @@ public static class Logger
     /// </summary>
     /// <returns>The sink that should receive enabled log writes.</returns>
     internal static ILogSink GetLogSink() => LoggerSinkRegistry.Get();
+
+    /// <summary>
+    /// Reports a suppressed internal logging failure to the optional observer.
+    /// </summary>
+    /// <param name="operation">The Logger or PluginLogger operation that suppressed the exception.</param>
+    /// <param name="exception">The suppressed exception.</param>
+    internal static void ReportSuppressedFailure(string operation, Exception exception)
+    {
+        var observer = SuppressedFailureObserver;
+        if (observer is null)
+            return;
+
+        try
+        {
+            observer(operation, exception);
+        }
+        catch
+        {
+        }
+    }
 
     private sealed class SuppressionScope : IDisposable
     {

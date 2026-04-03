@@ -2645,6 +2645,7 @@ public sealed class LoggerTests
     [TestCleanup]
     public void Cleanup()
     {
+        Logger.SuppressedFailureObserver = null;
         Logger.EnableAll();
         Logger.ResetLogSink();
     }
@@ -3443,6 +3444,51 @@ public sealed class LoggerTests
     /// </summary>
     [TestMethod]
     public void Error_WhenArgumentToStringThrows_DoesNotThrow() => Logger.Error("Value: {0}", new ThrowingToStringValue());
+
+    /// <summary>
+    /// Verifies that <see cref="Logger.SuppressedFailureObserver"/> receives sink failures that are
+    /// otherwise swallowed.
+    /// </summary>
+    [TestMethod]
+    public void Info_WhenSinkThrows_ReportsSuppressedFailureToObserver()
+    {
+        Logger.SetLogSink(new ThrowingLogSink());
+        string? operation = null;
+        Exception? captured = null;
+        Logger.SuppressedFailureObserver = (op, ex) =>
+        {
+            operation = op;
+            captured = ex;
+        };
+
+        Logger.Info("message");
+
+        Assert.AreEqual("Logger.Info", operation);
+        Assert.IsNotNull(captured);
+        Assert.AreEqual("sink failed", captured.Message);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="Logger.SuppressedFailureObserver"/> receives formatting failures
+    /// that are otherwise swallowed.
+    /// </summary>
+    [TestMethod]
+    public void Error_WhenArgumentToStringThrows_ReportsSuppressedFailureToObserver()
+    {
+        string? operation = null;
+        Exception? captured = null;
+        Logger.SuppressedFailureObserver = (op, ex) =>
+        {
+            operation = op;
+            captured = ex;
+        };
+
+        Logger.Error("Value: {0}", new ThrowingToStringValue());
+
+        Assert.AreEqual("Logger.Error(format)", operation);
+        Assert.IsNotNull(captured);
+        Assert.AreEqual("ToString failed", captured.Message);
+    }
 
     /// <summary>
     /// Sink that throws for every write path.
