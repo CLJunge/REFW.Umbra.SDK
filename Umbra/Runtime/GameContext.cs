@@ -24,6 +24,12 @@ public static class GameContext
             var processName = Process.GetCurrentProcess().ProcessName;
             foreach (var entry in metadata)
             {
+                if (string.IsNullOrEmpty(entry.ExecutableName))
+                {
+                    Logger.Info($"Skipping game metadata entry with missing executable name: {entry.DisplayName}");
+                    continue;
+                }
+
                 if (string.Equals(entry.ExecutableName, processName,
                     StringComparison.OrdinalIgnoreCase))
                 {
