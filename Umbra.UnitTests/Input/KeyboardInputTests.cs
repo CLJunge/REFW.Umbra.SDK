@@ -47,24 +47,23 @@ public class KeyboardInputTests
     }
 
     /// <summary>
-    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>true</c>
-    /// when the key value is positive.
+    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>false</c>
+    /// for arbitrary positive integers that are not supported keyboard keys.
     /// </summary>
     /// <param name="key">The positive key value to test.</param>
     [TestMethod]
     [DataRow(1)]
     [DataRow(10)]
     [DataRow(50)]
-    [DataRow(100)]
     [DataRow(1000)]
     [DataRow(int.MaxValue)]
-    public void IsValidKey_PositiveKeyValue_ReturnsTrue(int key)
+    public void IsValidKey_ArbitraryPositiveValue_ReturnsFalse(int key)
     {
         // Act
         var result = KeyboardInput.IsValidKey(key);
 
         // Assert
-        Assert.IsTrue(result, $"Expected IsValidKey to return true for positive key value {key}");
+        Assert.IsFalse(result, $"Expected IsValidKey to return false for unsupported key value {key}");
     }
 
     /// <summary>
@@ -148,7 +147,7 @@ public class KeyboardInputTests
     }
 
     /// <summary>
-    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>true</c> for real known ImGui keys.
+    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>true</c> for real known keyboard ImGui keys.
     /// </summary>
     [TestMethod]
     [DataRow(ImGuiKey.A)]
@@ -159,6 +158,22 @@ public class KeyboardInputTests
         var result = KeyboardInput.IsValidKey((int)key);
 
         Assert.IsTrue(result, $"Expected IsValidKey to return true for known ImGui key {key}");
+    }
+
+    /// <summary>
+    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>false</c> for named ImGui keys
+    /// that are not keyboard keys.
+    /// </summary>
+    [TestMethod]
+    [DataRow(ImGuiKey.MouseLeft)]
+    [DataRow(ImGuiKey.MouseWheelY)]
+    [DataRow(ImGuiKey.GamepadFaceDown)]
+    [DataRow(ImGuiKey.ModCtrl)]
+    public void IsValidKey_NonKeyboardImGuiKey_ReturnsFalse(ImGuiKey key)
+    {
+        var result = KeyboardInput.IsValidKey((int)key);
+
+        Assert.IsFalse(result, $"Expected IsValidKey to return false for non-keyboard ImGui key {key}");
     }
 
 }

@@ -8,6 +8,7 @@ namespace Umbra.Input;
 public static class KeyboardInput
 {
     private static readonly IReadOnlyList<ImGuiKey> _keyboardKeys = BuildKeyboardKeyList();
+    private static readonly HashSet<int> _keyboardKeyValues = BuildKeyboardKeyValueSet();
 
     /// <summary>
     /// Attempts to capture a keyboard key that is currently pressed.
@@ -52,15 +53,19 @@ public static class KeyboardInput
     }
 
     /// <summary>
-    /// Determines whether the given key value represents a valid, assigned key.
+    /// Determines whether the given key value represents a supported keyboard key.
     /// </summary>
     /// <param name="key">An <see cref="ImGuiKey"/> value cast to <see cref="int"/>.</param>
     /// <returns>
-    /// <see langword="true"/> if <paramref name="key"/> represents a real key (greater than
-    /// <see cref="ImGuiKey.None"/>); <see langword="false"/> when it is zero
-    /// (<see cref="ImGuiKey.None"/>) or negative.
+    /// <see langword="true"/> when <paramref name="key"/> is one of the keyboard-only
+    /// <see cref="ImGuiKey"/> values that <see cref="TryCaptureKeyboardKey"/> may return;
+    /// otherwise <see langword="false"/>.
     /// </returns>
-    public static bool IsValidKey(int key) => key > (int)ImGuiKey.None;
+    /// <remarks>
+    /// This excludes non-keyboard named keys such as mouse buttons, gamepad inputs, wheel events,
+    /// modifier aliases, and arbitrary positive integers that do not map to a supported keyboard key.
+    /// </remarks>
+    public static bool IsValidKey(int key) => _keyboardKeyValues.Contains(key);
 
     /// <summary>
     /// Gets a value indicating whether the left or right Ctrl key is currently held down.
@@ -107,6 +112,22 @@ public static class KeyboardInput
 
             keys.Add(key);
         }
+
+        return keys;
+    }
+
+    /// <summary>
+    /// Builds a lookup set of supported keyboard key values for fast validity checks.
+    /// </summary>
+    /// <returns>
+    /// A set containing the integer values of every keyboard-only <see cref="ImGuiKey"/> returned
+    /// by <see cref="BuildKeyboardKeyList"/>.
+    /// </returns>
+    private static HashSet<int> BuildKeyboardKeyValueSet()
+    {
+        var keys = new HashSet<int>();
+        foreach (var key in _keyboardKeys)
+            keys.Add((int)key);
 
         return keys;
     }
