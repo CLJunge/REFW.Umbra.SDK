@@ -1,6 +1,5 @@
 using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
-using Umbra.Logging;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Rendering;
 
@@ -164,17 +163,15 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// throws while drawing.
     /// </para>
     /// <para>
-    /// A no-op when the instance has been disposed; logs a warning rather than throwing so
-    /// a stale render callback in the game loop does not raise an unhandled exception in-process.
+    /// A silent no-op when the instance has been disposed so a stale render callback in the game
+    /// loop does not raise an unhandled exception in-process.
     /// </para>
     /// </remarks>
     public void Draw()
     {
         if (_disposed)
-        {
-            Logger.Warning($"ConfigDrawer<{typeof(TConfig).Name}>.Draw called on a disposed instance; skipping.");
             return;
-        }
+
         _scope.PushId(_idScope);
         try
         {
@@ -190,7 +187,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// <summary>
     /// Disposes all stateful custom drawers collected during the draw-tree build pass,
     /// then marks this instance as disposed.
-    /// Subsequent calls to <see cref="Draw"/> will log a warning and return without rendering.
+    /// Subsequent calls to <see cref="Draw"/> become silent no-ops.
     /// </summary>
     public void Dispose()
     {

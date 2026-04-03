@@ -1,8 +1,5 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.Logging;
-using Umbra.Logging.UnitTests;
-
 namespace Umbra.UI.Config.UnitTests;
 
 /// <summary>
@@ -11,9 +8,6 @@ namespace Umbra.UI.Config.UnitTests;
 [TestClass]
 public sealed class ConfigDrawerTests
 {
-    private TestLogSink _logSink = null!;
-    private bool _originalLoggingEnabled;
-
     /// <summary>
     /// Verifies that an action throws the expected exception type and returns the captured exception.
     /// </summary>
@@ -34,33 +28,11 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Installs a recording log sink before each test.
-    /// </summary>
-    [TestInitialize]
-    public void TestInitialize()
-    {
-        _logSink = new TestLogSink();
-        _originalLoggingEnabled = Logger.Enabled;
-        Logger.SetLogSink(_logSink);
-        Logger.EnableAll();
-    }
-
-    /// <summary>
-    /// Restores the default logger state after each test.
-    /// </summary>
-    [TestCleanup]
-    public void TestCleanup()
-    {
-        Logger.ResetLogSink();
-        Logger.Enabled = _originalLoggingEnabled;
-    }
-
-    /// <summary>
-    /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> on a disposed instance logs a
-    /// warning and skips rendering work.
+    /// Tests that calling <see cref="ConfigDrawer{TConfig}.Draw"/> on a disposed instance silently
+    /// skips rendering work.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenDisposed_LogsWarningAndSkipsRendering()
+    public void Draw_WhenDisposed_SkipsRendering()
     {
         // Arrange
         var scope = new TestConfigDrawerScope();
@@ -79,8 +51,6 @@ public sealed class ConfigDrawerTests
         Assert.IsEmpty(scope.PushedIds);
         Assert.AreEqual(0, scope.PopCount);
         Assert.AreEqual(0, node.DrawCount);
-        Assert.HasCount(1, _logSink.WarningMessages);
-        Assert.Contains("disposed instance", _logSink.WarningMessages[0]);
     }
 
     /// <summary>
@@ -174,7 +144,7 @@ public sealed class ConfigDrawerTests
     /// Tests that <see cref="ConfigDrawer{TConfig}.Draw"/> remains safe after multiple dispose calls.
     /// </summary>
     [TestMethod]
-    public void Draw_AfterMultipleDisposes_StillLogsWarningWithoutRendering()
+    public void Draw_AfterMultipleDisposes_StillSkipsRendering()
     {
         // Arrange
         var scope = new TestConfigDrawerScope();
@@ -195,7 +165,6 @@ public sealed class ConfigDrawerTests
         Assert.AreEqual(0, node.DrawCount);
         Assert.IsEmpty(scope.PushedIds);
         Assert.AreEqual(0, scope.PopCount);
-        Assert.HasCount(2, _logSink.WarningMessages);
     }
 
     #region Helper Types
