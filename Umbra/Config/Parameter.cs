@@ -1,14 +1,13 @@
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using Umbra.Config.Validation;
 
 namespace Umbra.Config;
 
 /// <summary>
-/// Stores one typed configuration value together with its default value, resolved metadata, and change notifications.
+/// Stores one typed configuration value together with its default value, resolved metadata, change notifications, and validation error state.
 /// </summary>
 /// <remarks>
-/// Umbra's registration pipeline assigns the resolved <see cref="Key"/> and <see cref="Metadata"/> after the parameter is discovered in a settings object. Public code can then read those values, observe changes, and mutate the current value through the typed or untyped APIs.
+/// Umbra's registration pipeline assigns the resolved <see cref="Key"/> and <see cref="Metadata"/> after the parameter is discovered in a settings object. This type remains responsible for value ownership, mutation semantics, and event dispatch, while metadata-driven rule execution is delegated to <see cref="ParameterValidationPipeline"/> and custom validator instance reuse is delegated to <see cref="ParameterValidatorCache"/>.
 /// </remarks>
 /// <typeparam name="T">The value type stored by the parameter.</typeparam>
 [DebuggerDisplay("{Key}: {Value} (Default: {DefaultValue}, Modified: {IsModified})")]
@@ -25,8 +24,7 @@ public class Parameter<T> : IParameter, IParameterRegistration, IParameterValida
     private Action? _interfaceValueChanged;
     private bool _hasValidationError;
     private string? _validationError;
-    private Type? _cachedValidatorType;
-    private IParameterValidator? _cachedValidator;
+    private readonly ParameterValidatorCache _validatorCache = new();
 
     /// <summary>
     /// Occurs when the parameter value changes through the typed notifying mutation paths.
@@ -104,7 +102,7 @@ public class Parameter<T> : IParameter, IParameterRegistration, IParameterValida
     /// </summary>
     /// <param name="raiseEvent"><see langword="true"/> to raise change notifications when resetting changes the current value; otherwise, <see langword="false"/>.</param>
     /// <remarks>
-    /// Reset bypasses metadata validation so <see cref="IsModified"/> always becomes <see langword="false"/> after the call.
+    /// Reset bypasses metadata validation so <see cref="IsModified"/> always becomes <see langword="false"/> after the call. Any recorded validation error is cleared as part of returning the parameter to its default state.
     /// </remarks>
     public void Reset(bool raiseEvent = true)
     {
@@ -124,7 +122,7 @@ public class Parameter<T> : IParameter, IParameterRegistration, IParameterValida
     /// </summary>
     /// <param name="value">The value to assign silently.</param>
     /// <remarks>
-    /// This method intentionally bypasses the metadata validation performed by <see cref="Value"/>, <see cref="Set(T)"/>, <see cref="TrySet"/>, and <see cref="SetOrThrow"/>.
+    /// This method intentionally bypasses the metadata validation performed by <see cref="Value"/>, <see cref="Set(T)"/>, <see cref="TrySet"/>, and <see cref="SetOrThrow"/>. Any recorded validation error is cleared because the caller has explicitly chosen the silent assignment path.
     /// </remarks>
     public void SetWithoutNotify(T? value)
     {
@@ -236,202 +234,30 @@ public class Parameter<T> : IParameter, IParameterRegistration, IParameterValida
     }
 
     /// <summary>
-    /// Validates <paramref name="value"/> against the <see cref="ParameterMetadata.Min"/> and
-    /// <see cref="ParameterMetadata.Max"/> constraints defined in <see cref="Metadata"/>.
+    /// Validates <paramref name="value"/> against the parameter's built-in metadata rules and
+    /// optional custom validator.
     /// </summary>
     /// <param name="value">The candidate value to validate.</param>
     /// <param name="failureReason">
     /// Receives a human-readable explanation when validation fails; otherwise <see langword="null"/>.
     /// </param>
-    /// <returns>
-    /// <see langword="true"/> if the value is within the allowed range or no constraints are
-    /// defined; <see langword="false"/> if the value falls outside the configured bounds.
-    /// </returns>
+    /// <returns><see langword="true"/> when validation succeeds; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// This method adapts the current parameter state into a <see cref="ParameterValidationContext"/> and delegates rule execution to <see cref="ParameterValidationPipeline"/>.
+    /// </remarks>
     private bool Validate(T? value, out string? failureReason)
     {
+        var result = ParameterValidationPipeline.Validate(
+            new ParameterValidationContext(Key, typeof(T), Metadata, value),
+            _validatorCache);
+        if (!result.IsValid)
+        {
+            failureReason = result.ErrorMessage;
+            return false;
+        }
+
         failureReason = null;
-        if (!ValidateRequired(value, out failureReason))
-            return false;
-
-        if (!ValidateStringLength(value, out failureReason))
-            return false;
-
-        if (!ValidateRegex(value, out failureReason))
-            return false;
-
-        if (!ValidateNumericRange(value, out failureReason))
-            return false;
-
-        if (!ValidateCustom(value, out failureReason))
-            return false;
-
         return true;
-    }
-
-    private bool ValidateRequired(T? value, out string? failureReason)
-    {
-        failureReason = null;
-
-        if (!Metadata.Required)
-            return true;
-
-        if (value is null)
-        {
-            failureReason = "Value is required.";
-            return false;
-        }
-
-        if (value is not string text)
-            return true;
-
-        if (text.Length == 0)
-        {
-            failureReason = "Value is required.";
-            return false;
-        }
-
-        if (!Metadata.AllowWhitespace && string.IsNullOrWhiteSpace(text))
-        {
-            failureReason = "Value cannot be whitespace only.";
-            return false;
-        }
-
-        return true;
-    }
-
-    private bool ValidateStringLength(T? value, out string? failureReason)
-    {
-        failureReason = null;
-
-        if (value is not string text)
-            return true;
-
-        if (Metadata.MinLength is uint minLength && text.Length < minLength)
-        {
-            failureReason = $"Value must be at least {minLength} characters long.";
-            return false;
-        }
-
-        return true;
-    }
-
-    private bool ValidateRegex(T? value, out string? failureReason)
-    {
-        failureReason = null;
-
-        if (Metadata.RegexPattern is null || value is not string text || text.Length == 0)
-            return true;
-
-        try
-        {
-            if (Regex.IsMatch(text, Metadata.RegexPattern, RegexOptions.CultureInvariant))
-                return true;
-        }
-        catch (ArgumentException ex)
-        {
-            failureReason = $"Regex validation could not be evaluated: {ex.Message}";
-            return false;
-        }
-
-        failureReason = Metadata.RegexMessage ?? $"Value must match pattern '{Metadata.RegexPattern}'.";
-        return false;
-    }
-
-    private bool ValidateNumericRange(T? value, out string? failureReason)
-    {
-        failureReason = null;
-
-        if (value == null || Metadata.Min == null && Metadata.Max == null)
-            return true;
-
-        if (value is IComparable c)
-        {
-            try
-            {
-                if (Metadata.Min != null && c.CompareTo(Convert.ChangeType(Metadata.Min.Value, typeof(T))) < 0)
-                {
-                    failureReason = $"Value must be greater than or equal to {Metadata.Min.Value}.";
-                    return false;
-                }
-
-                if (Metadata.Max != null && c.CompareTo(Convert.ChangeType(Metadata.Max.Value, typeof(T))) > 0)
-                {
-                    failureReason = $"Value must be less than or equal to {Metadata.Max.Value}.";
-                    return false;
-                }
-            }
-            catch (InvalidCastException)
-            {
-                // T cannot be converted to the bounds value type (e.g. mismatched numeric types
-                // from runtime metadata); skip bounds validation and treat the value as valid.
-                return true;
-            }
-        }
-
-        return true;
-    }
-
-    private bool ValidateCustom(T? value, out string? failureReason)
-    {
-        failureReason = null;
-
-        var validatorType = Metadata.ValidatorType;
-        if (validatorType is null)
-            return true;
-
-        if (!typeof(IParameterValidator).IsAssignableFrom(validatorType))
-        {
-            failureReason = $"Validator type '{validatorType.FullName ?? validatorType.Name}' must implement IParameterValidator.";
-            return false;
-        }
-
-        if (!TryGetCachedValidator(validatorType, out var validator, out failureReason))
-            return false;
-
-        try
-        {
-            var result = validator.Validate(Key, value, typeof(T), Metadata);
-            if (result.IsValid)
-                return true;
-
-            failureReason = string.IsNullOrWhiteSpace(result.ErrorMessage)
-                ? $"Validator '{validatorType.FullName ?? validatorType.Name}' rejected the value."
-                : result.ErrorMessage;
-            return false;
-        }
-        catch (Exception ex)
-        {
-            failureReason = $"Validator '{validatorType.FullName ?? validatorType.Name}' threw: {ex.Message}";
-            return false;
-        }
-    }
-
-    private bool TryGetCachedValidator(Type validatorType, out IParameterValidator validator, out string? failureReason)
-    {
-        failureReason = null;
-
-        if (_cachedValidator is not null && _cachedValidatorType == validatorType)
-        {
-            validator = _cachedValidator;
-            return true;
-        }
-
-        try
-        {
-            validator = (IParameterValidator)(Activator.CreateInstance(validatorType)
-                ?? throw new InvalidOperationException("Activator.CreateInstance returned null."));
-            _cachedValidator = validator;
-            _cachedValidatorType = validatorType;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _cachedValidator = null;
-            _cachedValidatorType = null;
-            failureReason = $"Validator '{validatorType.FullName ?? validatorType.Name}' could not be created: {ex.Message}";
-            validator = null!;
-            return false;
-        }
     }
 
     /// <summary>
