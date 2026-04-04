@@ -1,5 +1,6 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
+using Umbra.UI.Config.Nodes;
 namespace Umbra.UI.Config.UnitTests;
 
 /// <summary>
@@ -60,6 +61,135 @@ public sealed class ConfigDrawerTests
         Assert.AreEqual(1, scope.PopCount);
         Assert.AreEqual(1, firstNode.DrawCount);
         Assert.AreEqual(1, secondNode.DrawCount);
+    }
+
+    /// <summary>
+    /// Tests that the built-in search UI is not rendered when the feature is disabled.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenSearchBarDisabled_DoesNotRenderSearchControls()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope();
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = false });
+
+        // Act
+        drawer.Draw();
+
+        // Assert
+        Assert.AreEqual(0, renderer.InputTextLabels.Count);
+        Assert.AreEqual(0, renderer.ButtonLabels.Count);
+    }
+
+    /// <summary>
+    /// Tests that the built-in search UI is rendered when the feature is enabled.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenSearchBarEnabled_RendersSearchControls()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope();
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = true });
+
+        // Act
+        drawer.Draw();
+
+        // Assert
+        Assert.AreEqual(1, renderer.InputTextLabels.Count);
+        Assert.AreEqual("Search##ConfigDrawerSearch", renderer.InputTextLabels[0]);
+        Assert.AreEqual(2, renderer.ButtonLabels.Count);
+        Assert.AreEqual("<##ConfigDrawerSearchPrevious", renderer.ButtonLabels[0]);
+        Assert.AreEqual(">##ConfigDrawerSearchNext", renderer.ButtonLabels[1]);
+        Assert.AreEqual(2, renderer.SameLineCount);
+    }
+
+    /// <summary>
+    /// Tests that entering a query filters the drawer through the flat search index and only draws matching results.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenSearchQueryMatchesSingleResult_DrawsOnlyMatchingNode()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope
+        {
+            NextInputTextResult = true,
+            NextInputTextValue = "audio"
+        };
+        var alphaNode = new SearchAwareTestNode("alpha");
+        var betaNode = new SearchAwareTestNode("beta");
+        var searchIndex = new ConfigSearchIndex();
+        searchIndex.AddParameterResult("alpha", "Master Volume", "Adjusts output level.", "Audio", "settings.audio");
+        searchIndex.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "settings.graphics");
+
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [alphaNode, betaNode],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = true },
+            searchIndex);
+
+        // Act
+        drawer.Draw();
+
+        // Assert
+        Assert.AreEqual(1, alphaNode.DrawCount);
+        Assert.AreEqual(0, betaNode.DrawCount);
+        Assert.IsTrue(alphaNode.LastIsMatch);
+        Assert.IsTrue(alphaNode.LastIsFocused);
+        Assert.IsFalse(betaNode.LastWasVisible);
+    }
+
+    /// <summary>
+    /// Tests that the next and previous navigation buttons move focus through the ordered match list.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenNavigationButtonsAreClicked_MovesFocusedResult()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope
+        {
+            NextInputTextResult = true,
+            NextInputTextValue = "ga"
+        };
+        var alphaNode = new SearchAwareTestNode("alpha");
+        var betaNode = new SearchAwareTestNode("beta");
+        var searchIndex = new ConfigSearchIndex();
+        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "settings.graphics");
+        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "settings.gameplay");
+
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [alphaNode, betaNode],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = true },
+            searchIndex);
+
+        // Act
+        drawer.Draw();
+        renderer.ButtonResults.Enqueue(false);
+        renderer.ButtonResults.Enqueue(true);
+        drawer.Draw();
+        var betaFocusedAfterNext = betaNode.LastIsFocused;
+        renderer.ButtonResults.Enqueue(true);
+        renderer.ButtonResults.Enqueue(false);
+        drawer.Draw();
+
+        // Assert
+        Assert.IsTrue(alphaNode.WasFocusedAtLeastOnce);
+        Assert.IsTrue(betaFocusedAfterNext);
+        Assert.IsTrue(alphaNode.LastIsFocused);
     }
 
     /// <summary>
@@ -160,6 +290,42 @@ public sealed class ConfigDrawerTests
 
     #endregion
 
+    private sealed class SearchAwareTestNode(string resultId) : IDrawNode, IConfigSearchNode
+    {
+        public int DrawCount { get; private set; }
+        public bool LastIsMatch { get; private set; }
+        public bool LastIsFocused { get; private set; }
+        public bool LastWasVisible { get; private set; }
+        public bool WasFocusedAtLeastOnce { get; private set; }
+
+        public void Draw()
+        {
+            if (!LastWasVisible)
+                return;
+
+            DrawCount++;
+        }
+
+        public bool ApplySearch(ConfigSearchRenderState? searchState)
+        {
+            if (searchState is null || !searchState.HasActiveQuery)
+            {
+                LastIsMatch = false;
+                LastIsFocused = false;
+                LastWasVisible = true;
+                return true;
+            }
+
+            LastIsMatch = searchState.IsMatch(resultId);
+            LastIsFocused = searchState.IsFocused(resultId);
+            LastWasVisible = LastIsMatch;
+            if (LastIsFocused)
+                WasFocusedAtLeastOnce = true;
+
+            return LastWasVisible;
+        }
+    }
+
     /// <summary>
     /// Tests that the constructor succeeds with valid config and idScope parameters.
     /// </summary>
@@ -175,6 +341,40 @@ public sealed class ConfigDrawerTests
 
         // Assert
         Assert.IsNotNull(drawer);
+    }
+
+    /// <summary>
+    /// Tests that the options-aware constructor succeeds when search-bar support is enabled.
+    /// </summary>
+    [TestMethod]
+    public void ConfigDrawer_WithOptions_ConstructsSuccessfully()
+    {
+        // Arrange
+        var config = new SimpleConfig();
+        var options = new ConfigDrawerOptions { ShowSearchBar = true };
+
+        // Act
+        using var drawer = new ConfigDrawer<SimpleConfig>(config, "TestPlugin", options);
+
+        // Assert
+        Assert.IsNotNull(drawer);
+    }
+
+    /// <summary>
+    /// Tests that the options-aware constructor rejects a null options instance.
+    /// </summary>
+    [TestMethod]
+    public void ConfigDrawer_WithNullOptions_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var config = new SimpleConfig();
+
+        // Act
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(
+            () => _ = new ConfigDrawer<SimpleConfig>(config, "TestPlugin", null!));
+
+        // Assert
+        Assert.AreEqual("options", exception.ParamName);
     }
 
     /// <summary>

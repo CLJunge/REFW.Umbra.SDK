@@ -182,7 +182,10 @@ public sealed class SamplePlugin : UmbraPlugin
     /// <returns>The runtime panel.</returns>
     private static PluginPanel CreateRuntimePanel(PluginConfig config)
         => new PluginPanel(_runtimePanelScope)
-            .Add(new ConfigSection<PluginConfig>(config, _runtimeSectionScope));
+            .Add(new ConfigSection<PluginConfig>(
+                config,
+                new ConfigDrawerOptions() { ShowSearchBar = true },
+                _runtimeSectionScope));
 
     /// <summary>
     /// Builds a duplicate panel for isolated benchmark measurement.

@@ -35,7 +35,8 @@ internal static class ParameterNodeComposer
                     meta.Order ?? int.MaxValue,
                     meta.SpacingBefore,
                     meta.SpacingAfter,
-                    indentAmount),
+                    indentAmount,
+                    parameter.Key),
                 resource);
 
         var isVisible = VisibilityPredicateResolver.Build(meta.HideIf, owner);
@@ -47,7 +48,8 @@ internal static class ParameterNodeComposer
                 meta.Order ?? int.MaxValue,
                 meta.SpacingBefore,
                 meta.SpacingAfter,
-                indentAmount),
+                indentAmount,
+                parameter.Key),
             resource);
     }
 }

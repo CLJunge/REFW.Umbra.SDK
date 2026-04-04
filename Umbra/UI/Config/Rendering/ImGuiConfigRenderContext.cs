@@ -19,7 +19,7 @@ internal sealed class ImGuiConfigRenderContext :
     IRootTreeNodeRenderer,
     IIdScopeNodeRenderer,
     IParameterNodeRenderer,
-    IConfigDrawerScope,
+    IConfigDrawerRenderer,
     IButtonStyleColorSink
 {
     /// <summary>
@@ -53,6 +53,9 @@ internal sealed class ImGuiConfigRenderContext :
     public bool Button(string label, Vector2 size) => ImGui.Button(label, size);
 
     /// <inheritdoc/>
+    public bool InputText(string label, ref string value, uint maxLength) => ImGui.InputText(label, ref value, maxLength);
+
+    /// <inheritdoc/>
     public bool PushButtonColors(ButtonStyle style) => ButtonStyleColors.Push(style);
 
     /// <inheritdoc/>
@@ -71,8 +74,11 @@ internal sealed class ImGuiConfigRenderContext :
     public void SeparatorText(string label) => ImGui.SeparatorText(label);
 
     /// <inheritdoc/>
-    public bool TreeNode(string label, bool defaultOpen)
+    public bool TreeNode(string label, bool defaultOpen, bool forceOpen = false)
     {
+        if (forceOpen)
+            ImGui.SetNextItemOpen(true, ImGuiCond.Always);
+
         var flags = defaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
         return ImGui.TreeNodeEx(label, flags);
     }
@@ -88,6 +94,9 @@ internal sealed class ImGuiConfigRenderContext :
 
     /// <inheritdoc/>
     public void Spacing() => ImGui.Spacing();
+
+    /// <inheritdoc/>
+    public void SetScrollHereY(float centerYRatio) => ImGui.SetScrollHereY(centerYRatio);
 
     /// <inheritdoc/>
     public void PushStyleColor(ImGuiCol color, Vector4 value) => ImGui.PushStyleColor(color, value);

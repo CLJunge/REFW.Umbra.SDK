@@ -1,3 +1,5 @@
+using System.Numerics;
+using Hexa.NET.ImGui;
 using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config.Nodes;
@@ -8,15 +10,29 @@ namespace Umbra.UI.Config.Nodes;
 /// <remarks>
 /// The default constructors render through the shared ImGui render context. Tests can supply a renderer seam to verify visibility, spacing, and indentation behavior without requiring an active ImGui frame.
 /// </remarks>
-internal sealed class ParameterNode : IDrawNode
+internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
 {
+    private static readonly Vector4 MatchTextColor = new(1f, 0.95f, 0.60f, 1f);
+    private static readonly Vector4 MatchFrameColor = new(0.35f, 0.28f, 0.08f, 0.70f);
+    private static readonly Vector4 MatchFrameHoveredColor = new(0.42f, 0.34f, 0.10f, 0.82f);
+    private static readonly Vector4 MatchFrameActiveColor = new(0.48f, 0.40f, 0.12f, 0.90f);
+    private static readonly Vector4 FocusedTextColor = new(1f, 1f, 0.78f, 1f);
+    private static readonly Vector4 FocusedFrameColor = new(0.50f, 0.32f, 0.08f, 0.88f);
+    private static readonly Vector4 FocusedFrameHoveredColor = new(0.58f, 0.38f, 0.10f, 0.94f);
+    private static readonly Vector4 FocusedFrameActiveColor = new(0.66f, 0.44f, 0.12f, 1f);
+
     private readonly Func<bool>? _isVisible;
     private readonly bool _alwaysVisible;
     private readonly Action _draw;
+    private readonly List<IDrawNode>? _children;
     private readonly float? _indentAmount;
     private readonly int _spacingBefore;
     private readonly int _spacingAfter;
+    private readonly string? _resultId;
     private readonly IParameterNodeRenderer _renderer;
+    private bool _searchVisible = true;
+    private bool _scrollIntoView;
+    private SearchMatchVisualState _searchVisualState;
 
     /// <summary>
     /// Initializes a new always-visible <see cref="ParameterNode"/> that renders through the shared ImGui render context.
@@ -26,8 +42,10 @@ internal sealed class ParameterNode : IDrawNode
         int order = int.MaxValue,
         int spacingBefore = 0,
         int spacingAfter = 0,
-        float? indentAmount = null)
-        : this(draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount)
+        float? indentAmount = null,
+        string? resultId = null,
+        List<IDrawNode>? children = null)
+        : this(draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount, resultId, children)
     {
     }
 
@@ -47,15 +65,19 @@ internal sealed class ParameterNode : IDrawNode
         int spacingBefore,
         int spacingAfter,
         IParameterNodeRenderer renderer,
-        float? indentAmount = null)
+        float? indentAmount = null,
+        string? resultId = null,
+        List<IDrawNode>? children = null)
     {
         ArgumentNullException.ThrowIfNull(draw);
         ArgumentNullException.ThrowIfNull(renderer);
         _alwaysVisible = true;
         _draw = draw;
+        _children = children;
         _indentAmount = indentAmount;
         _spacingBefore = spacingBefore;
         _spacingAfter = spacingAfter;
+        _resultId = resultId;
         _renderer = renderer;
         Order = order;
     }
@@ -69,8 +91,10 @@ internal sealed class ParameterNode : IDrawNode
         int order = int.MaxValue,
         int spacingBefore = 0,
         int spacingAfter = 0,
-        float? indentAmount = null)
-        : this(isVisible, draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount)
+        float? indentAmount = null,
+        string? resultId = null,
+        List<IDrawNode>? children = null)
+        : this(isVisible, draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount, resultId, children)
     {
     }
 
@@ -92,16 +116,20 @@ internal sealed class ParameterNode : IDrawNode
         int spacingBefore,
         int spacingAfter,
         IParameterNodeRenderer renderer,
-        float? indentAmount = null)
+        float? indentAmount = null,
+        string? resultId = null,
+        List<IDrawNode>? children = null)
     {
         ArgumentNullException.ThrowIfNull(isVisible);
         ArgumentNullException.ThrowIfNull(draw);
         ArgumentNullException.ThrowIfNull(renderer);
         _isVisible = isVisible;
         _draw = draw;
+        _children = children;
         _indentAmount = indentAmount;
         _spacingBefore = spacingBefore;
         _spacingAfter = spacingAfter;
+        _resultId = resultId;
         _renderer = renderer;
         Order = order;
     }
@@ -114,9 +142,12 @@ internal sealed class ParameterNode : IDrawNode
     /// <inheritdoc/>
     public void Draw()
     {
+        if (!_searchVisible) return;
         if (!_alwaysVisible && !_isVisible!()) return;
+
         for (var i = 0; i < _spacingBefore; i++) _renderer.Spacing();
 
+        var highlightDepth = PushSearchHighlight();
         if (_indentAmount.HasValue)
         {
             var amount = _indentAmount.Value;
@@ -124,6 +155,11 @@ internal sealed class ParameterNode : IDrawNode
             try
             {
                 _draw();
+                if (_scrollIntoView)
+                {
+                    _renderer.SetScrollHereY(0.5f);
+                    _scrollIntoView = false;
+                }
             }
             finally
             {
@@ -133,8 +169,89 @@ internal sealed class ParameterNode : IDrawNode
         else
         {
             _draw();
+            if (_scrollIntoView)
+            {
+                _renderer.SetScrollHereY(0.5f);
+                _scrollIntoView = false;
+            }
         }
 
+        if (highlightDepth > 0)
+            _renderer.PopStyleColor(highlightDepth);
+
         for (var i = 0; i < _spacingAfter; i++) _renderer.Spacing();
+    }
+
+    bool IConfigSearchNode.ApplySearch(ConfigSearchRenderState? searchState)
+    {
+        _scrollIntoView = false;
+
+        if (searchState is null || !searchState.HasActiveQuery)
+        {
+            _searchVisible = true;
+            _searchVisualState = SearchMatchVisualState.None;
+
+            if (_children is null)
+                return true;
+
+            for (var i = 0; i < _children.Count; i++)
+            {
+                if (_children[i] is IConfigSearchNode searchNode)
+                    searchNode.ApplySearch(null);
+            }
+
+            return true;
+        }
+
+        if (_children is not null)
+        {
+            var hasVisibleChild = false;
+            for (var i = 0; i < _children.Count; i++)
+            {
+                if (_children[i] is IConfigSearchNode searchNode && searchNode.ApplySearch(searchState))
+                    hasVisibleChild = true;
+            }
+
+            _searchVisible = hasVisibleChild;
+            _searchVisualState = SearchMatchVisualState.None;
+            return hasVisibleChild;
+        }
+
+        var isMatch = searchState.IsMatch(_resultId);
+        _searchVisible = isMatch;
+        _searchVisualState = !isMatch
+            ? SearchMatchVisualState.None
+            : searchState.IsFocused(_resultId)
+                ? SearchMatchVisualState.FocusedMatch
+                : SearchMatchVisualState.Match;
+
+        if (isMatch && searchState.ShouldScrollIntoView(_resultId))
+        {
+            _scrollIntoView = true;
+            searchState.MarkScrolled(_resultId);
+        }
+
+        return isMatch;
+    }
+
+    private int PushSearchHighlight()
+    {
+        if (_searchVisualState == SearchMatchVisualState.None)
+            return 0;
+
+        if (_searchVisualState == SearchMatchVisualState.FocusedMatch)
+        {
+            _renderer.PushStyleColor(ImGuiCol.Text, FocusedTextColor);
+            _renderer.PushStyleColor(ImGuiCol.FrameBg, FocusedFrameColor);
+            _renderer.PushStyleColor(ImGuiCol.FrameBgHovered, FocusedFrameHoveredColor);
+            _renderer.PushStyleColor(ImGuiCol.FrameBgActive, FocusedFrameActiveColor);
+            return 4;
+        }
+
+        _renderer.PushStyleColor(ImGuiCol.Text, MatchTextColor);
+        _renderer.PushStyleColor(ImGuiCol.FrameBg, MatchFrameColor);
+        _renderer.PushStyleColor(ImGuiCol.FrameBgHovered, MatchFrameHoveredColor);
+        _renderer.PushStyleColor(ImGuiCol.FrameBgActive, MatchFrameActiveColor);
+        return 4;
     }
 }

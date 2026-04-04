@@ -265,6 +265,40 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
+    /// Tests that the options-aware constructor succeeds when search-bar support is enabled.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WithOptions_ConstructsSuccessfully()
+    {
+        // Arrange
+        var config = new TestConfig();
+        var options = new ConfigDrawerOptions { ShowSearchBar = true };
+
+        // Act
+        using var section = new ConfigSection<TestConfig>(config, options, idScope: "search-enabled");
+
+        // Assert
+        Assert.AreEqual("search-enabled", section.SectionId);
+    }
+
+    /// <summary>
+    /// Tests that the options-aware constructor rejects a null options instance.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WithNullOptions_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var config = new TestConfig();
+
+        // Act
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(
+            () => _ = new ConfigSection<TestConfig>(config, options: null!));
+
+        // Assert
+        Assert.AreEqual("options", exception.ParamName);
+    }
+
+    /// <summary>
     /// Tests that an explicit tree-node label also controls the default-open flag.
     /// </summary>
     [TestMethod]

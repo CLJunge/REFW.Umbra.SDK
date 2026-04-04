@@ -309,4 +309,103 @@ public sealed class ParameterNodeTests
 
         Assert.AreEqual("renderer", exception.ParamName);
     }
+
+    /// <summary>
+    /// Verifies that applying a matching search state keeps the node visible and applies match highlighting.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenResultMatches_AppliesMatchHighlight()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        var node = new ParameterNode(static () => true, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
+        var renderState = CreateRenderState(["alpha"], focusedResultId: null, pendingScrollResultId: null);
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsTrue(visible);
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(4, renderer.PushStyleColorCount);
+        Assert.AreEqual(Hexa.NET.ImGui.ImGuiCol.Text, renderer.PushedStyleColors[0].Color);
+        Assert.AreNotEqual(0, renderer.PopStyleColorCount);
+    }
+
+    /// <summary>
+    /// Verifies that applying a focused search state uses the focused highlight and scrolls the node into view once.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenResultIsFocused_AppliesFocusedHighlightAndScrollsIntoView()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        var node = new ParameterNode(static () => true, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
+        var renderState = CreateRenderState(["alpha"], focusedResultId: "alpha", pendingScrollResultId: "alpha");
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsTrue(visible);
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(4, renderer.PushStyleColorCount);
+        Assert.AreEqual(Hexa.NET.ImGui.ImGuiCol.Text, renderer.PushedStyleColors[0].Color);
+        Assert.AreEqual(1, renderer.ScrollHereCount);
+    }
+
+    /// <summary>
+    /// Verifies that applying a non-matching search state hides the node and skips drawing.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenResultDoesNotMatch_HidesNode()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        var node = new ParameterNode(static () => true, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
+        var renderState = CreateRenderState(["beta"], focusedResultId: null, pendingScrollResultId: null);
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsFalse(visible);
+        Assert.AreEqual(0, drawCallCount);
+        Assert.AreEqual(0, renderer.PushStyleColorCount);
+    }
+
+    private static ConfigSearchRenderState CreateRenderState(
+        string[] matchIds,
+        string? focusedResultId,
+        string? pendingScrollResultId)
+    {
+        var searchState = new ConfigDrawerSearchState();
+        searchState.SetQuery("alpha");
+        searchState.SetMatches(matchIds);
+
+        if (focusedResultId is not null && searchState.FocusedResultId != focusedResultId)
+        {
+            for (var i = 0; i < matchIds.Length; i++)
+            {
+                if (searchState.FocusedResultId == focusedResultId)
+                    break;
+
+                searchState.MoveNext();
+            }
+        }
+
+        if (pendingScrollResultId is null && searchState.PendingScrollResultId is not null)
+            searchState.ClearPendingScrollTarget(searchState.PendingScrollResultId);
+
+        return new ConfigSearchRenderState(
+            searchState,
+            new HashSet<string>(matchIds, StringComparer.Ordinal),
+            new HashSet<string>(StringComparer.Ordinal));
+    }
 }

@@ -19,10 +19,15 @@ namespace Umbra.UI.Config;
 /// <typeparam name="TConfig">The configuration type rendered by the drawer.</typeparam>
 public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
 {
+    private const uint SearchBarMaxLength = 256;
+
     private readonly List<IDrawNode> _nodes;
     private readonly List<IDisposable> _disposables;
     private readonly string _idScope;
-    private readonly IConfigDrawerScope _scope;
+    private readonly ConfigDrawerOptions _options;
+    private readonly IConfigDrawerRenderer _renderer;
+    private readonly ConfigSearchIndex _searchIndex;
+    private readonly ConfigDrawerSearchState? _searchState;
     private bool _disposed;
 
     /// <summary>
@@ -51,7 +56,24 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
     public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)
-        : this(config, idScope, ImGuiConfigRenderContext.Instance, suppressRootNode)
+        : this(config, idScope, ConfigDrawerOptions.Default, ImGuiConfigRenderContext.Instance, suppressRootNode)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new <see cref="ConfigDrawer{TConfig}"/> by reflecting over
+    /// <paramref name="config"/> once to build the complete draw tree, using the supplied drawer options.
+    /// </summary>
+    /// <param name="config">The configuration instance whose draw tree should be built.</param>
+    /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
+    /// <param name="options">The optional feature flags that customize drawer behavior.</param>
+    /// <param name="suppressRootNode">
+    /// When <see langword="true"/>, suppresses the root-node-attribute-driven root tree wrapper.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    public ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, bool suppressRootNode = false)
+        : this(config, idScope, options, ImGuiConfigRenderContext.Instance, suppressRootNode)
     {
     }
 
@@ -69,25 +91,31 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="config"/> or <paramref name="scope"/> is <see langword="null"/>.
     /// </exception>
-    internal ConfigDrawer(TConfig config, string idScope, IConfigDrawerScope scope, bool suppressRootNode = false)
+    internal ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, IConfigDrawerRenderer renderer, bool suppressRootNode = false)
     {
         ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(renderer);
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
-        _scope = scope;
+        _options = options;
+        _renderer = renderer;
+        _searchState = options.ShowSearchBar ? new ConfigDrawerSearchState() : null;
         var builder = new ConfigDrawerBuilder();
         builder.Collect(config, typeof(TConfig));
         builder.SortAll();
+        _searchIndex = builder.SearchIndex;
         _disposables = builder.Disposables;
 
         var rootAttr = GetRootNodeMetadata(typeof(TConfig));
         if (rootAttr.HasValue && !suppressRootNode)
         {
             var label = rootAttr.Value.Label ?? typeof(TConfig).Name.ToDisplayName();
-            _nodes = [new RootTreeNode(label, rootAttr.Value.DefaultOpen, builder.Nodes)];
+            var rootBranchId = BuildRootBranchId(_idScope);
+            _searchIndex.PrependRootBranch(rootBranchId);
+            _nodes = [new RootTreeNode(label, rootAttr.Value.DefaultOpen, builder.Nodes, rootBranchId)];
         }
         else
         {
@@ -113,18 +141,21 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.
     /// </exception>
-    internal ConfigDrawer(string idScope, List<IDrawNode> nodes, List<IDisposable> disposables, IConfigDrawerScope scope)
+    internal ConfigDrawer(string idScope, List<IDrawNode> nodes, List<IDisposable> disposables, IConfigDrawerRenderer renderer, ConfigDrawerOptions? options = null, ConfigSearchIndex? searchIndex = null)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(disposables);
-        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(renderer);
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
+        _options = options ?? ConfigDrawerOptions.Default;
+        _searchState = _options.ShowSearchBar ? new ConfigDrawerSearchState() : null;
         _nodes = nodes;
         _disposables = disposables;
-        _scope = scope;
+        _renderer = renderer;
+        _searchIndex = searchIndex ?? new ConfigSearchIndex();
     }
 
     /// <summary>
@@ -138,15 +169,17 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
         if (_disposed)
             return;
 
-        _scope.PushId(_idScope);
+        _renderer.PushId(_idScope);
         try
         {
+            DrawSearchBar();
+            ApplySearchState();
             foreach (var node in _nodes)
                 node.Draw();
         }
         finally
         {
-            _scope.PopId();
+            _renderer.PopId();
         }
     }
 
@@ -171,5 +204,59 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
                 return (prefixed.Label, prefixed.DefaultOpen);
 
         return null;
+    }
+
+    private static string BuildRootBranchId(string idScope) => $"root:{idScope}";
+
+    private void DrawSearchBar()
+    {
+        var searchState = _searchState;
+        if (searchState is null)
+            return;
+
+        var query = searchState.Query;
+        if (_renderer.InputText("Search##ConfigDrawerSearch", ref query, SearchBarMaxLength))
+        {
+            searchState.SetQuery(query);
+            RefreshSearchMatches(searchState);
+        }
+
+        _renderer.SameLine();
+        if (_renderer.Button("<##ConfigDrawerSearchPrevious"))
+            searchState.MovePrevious();
+
+        _renderer.SameLine();
+        if (_renderer.Button(">##ConfigDrawerSearchNext"))
+            searchState.MoveNext();
+    }
+
+    private void RefreshSearchMatches(ConfigDrawerSearchState searchState)
+        => searchState.SetMatches(_searchIndex.FindMatches(searchState.NormalizedQuery));
+
+    private void ApplySearchState()
+    {
+        var searchState = _searchState;
+        ConfigSearchRenderState? renderState = null;
+        if (searchState is not null && searchState.HasActiveQuery)
+        {
+            var matchedResultIds = new HashSet<string>(searchState.MatchIds, StringComparer.Ordinal);
+            var forcedOpenBranchIds = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < searchState.MatchIds.Count; i++)
+            {
+                if (!_searchIndex.TryGetEntry(searchState.MatchIds[i], out var entry))
+                    continue;
+
+                for (var j = 0; j < entry.AncestorBranchIds.Length; j++)
+                    forcedOpenBranchIds.Add(entry.AncestorBranchIds[j]);
+            }
+
+            renderState = new ConfigSearchRenderState(searchState, matchedResultIds, forcedOpenBranchIds);
+        }
+
+        for (var i = 0; i < _nodes.Count; i++)
+        {
+            if (_nodes[i] is IConfigSearchNode searchNode)
+                searchNode.ApplySearch(renderState);
+        }
     }
 }

@@ -36,7 +36,8 @@ internal static class NestedNodeComposer
             },
             order,
             spacingBefore,
-            spacingAfter);
+            spacingAfter,
+            children: nodes);
     }
 
     /// <summary>

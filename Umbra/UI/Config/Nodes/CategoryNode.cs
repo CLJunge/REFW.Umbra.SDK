@@ -11,12 +11,15 @@ namespace Umbra.UI.Config.Nodes;
 /// A category can render either as a flat separator block or as a collapsible tree scope depending on whether <see cref="UmbraCollapseAsTreeAttribute"/> metadata is supplied. The default constructor uses the shared ImGui render context; tests can supply a renderer seam to verify category behavior without an active ImGui frame.
 /// </remarks>
 [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-internal sealed class CategoryNode : IDrawNode
+internal sealed class CategoryNode : IDrawNode, IConfigSearchNode
 {
     private readonly string _label;
+    private readonly string? _branchId;
     private readonly UmbraCollapseAsTreeAttribute? _collapseAttr;
     private readonly UmbraIndentAttribute? _indentAttr;
     private readonly ICategoryNodeRenderer _renderer;
+    private bool _searchVisible = true;
+    private bool _forceOpen;
 
     /// <summary>
     /// Initializes a new <see cref="CategoryNode"/> that renders through the shared ImGui render context.
@@ -26,9 +29,10 @@ internal sealed class CategoryNode : IDrawNode
     /// <param name="indentAttr">Optional indentation metadata applied around the category header and its children.</param>
     internal CategoryNode(
         string label,
+        string? branchId = null,
         UmbraCollapseAsTreeAttribute? collapseAttr = null,
         UmbraIndentAttribute? indentAttr = null)
-        : this(label, collapseAttr, indentAttr, ImGuiConfigRenderContext.Instance)
+        : this(label, branchId, collapseAttr, indentAttr, ImGuiConfigRenderContext.Instance)
     {
     }
 
@@ -42,12 +46,14 @@ internal sealed class CategoryNode : IDrawNode
     /// <exception cref="ArgumentNullException"><paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal CategoryNode(
         string label,
+        string? branchId,
         UmbraCollapseAsTreeAttribute? collapseAttr,
         UmbraIndentAttribute? indentAttr,
         ICategoryNodeRenderer renderer)
     {
         ArgumentNullException.ThrowIfNull(renderer);
         _label = label;
+        _branchId = branchId;
         _collapseAttr = collapseAttr;
         _indentAttr = indentAttr;
         _renderer = renderer;
@@ -66,6 +72,9 @@ internal sealed class CategoryNode : IDrawNode
     /// <inheritdoc/>
     public void Draw()
     {
+        if (!_searchVisible)
+            return;
+
         var hasIndent = _indentAttr != null;
         if (hasIndent) _renderer.Indent(_indentAttr!.Amount);
         try
@@ -94,7 +103,7 @@ internal sealed class CategoryNode : IDrawNode
     /// </summary>
     private void DrawAsTree()
     {
-        var open = _renderer.TreeNode(_label, _collapseAttr!.DefaultOpen);
+        var open = _renderer.TreeNode(_label, _collapseAttr!.DefaultOpen, _forceOpen);
         if (!open) return;
 
         try
@@ -116,5 +125,39 @@ internal sealed class CategoryNode : IDrawNode
             displayString += $" ({Children.Count} child node{(Children.Count > 1 ? "s" : "")})";
 
         return displayString;
+    }
+
+    bool IConfigSearchNode.ApplySearch(ConfigSearchRenderState? searchState)
+    {
+        if (searchState is null || !searchState.HasActiveQuery)
+        {
+            _searchVisible = true;
+            _forceOpen = false;
+            ApplySearchToChildren(null);
+            return true;
+        }
+
+        var hasVisibleChild = ApplySearchToChildren(searchState);
+        _searchVisible = hasVisibleChild;
+        _forceOpen = hasVisibleChild || searchState.IsBranchForcedOpen(_branchId);
+        return hasVisibleChild;
+    }
+
+    private bool ApplySearchToChildren(ConfigSearchRenderState? searchState)
+    {
+        var hasVisibleChild = false;
+        foreach (var child in Children)
+        {
+            if (child is IConfigSearchNode searchNode)
+            {
+                if (searchNode.ApplySearch(searchState))
+                    hasVisibleChild = true;
+                continue;
+            }
+
+            hasVisibleChild = true;
+        }
+
+        return hasVisibleChild;
     }
 }
