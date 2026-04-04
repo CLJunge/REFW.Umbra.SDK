@@ -84,12 +84,6 @@ internal sealed class LabelAlignmentGroup
     /// <param name="label">The label text to measure.</param>
     /// <returns>The measured width used for label-column alignment.</returns>
     private static float MeasureLabelWidth(string label) => ImGui.CalcTextSize(label).X;
-
-    /// <summary>Builds a human-readable summary string for debugger visualizers.</summary>
-    /// <returns>
-    /// A string containing the current <see cref="LabelWidth"/> and, when non-zero,
-    /// the configured <see cref="Margin"/>.
-    /// </returns>
     private string GetDebuggerDisplay()
     {
         var displayString = "LabelAlignmentGroup: LabelWidth=" + LabelWidth;
@@ -98,3 +92,5 @@ internal sealed class LabelAlignmentGroup
         return displayString;
     }
 }
+
+
