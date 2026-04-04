@@ -87,6 +87,11 @@ public partial class SettingsStoreTests
 
         public void Save() => throw new NotSupportedException();
 
+        public void Export(string filePath) => throw new NotSupportedException();
+
+        public SettingsImportReport Import(string filePath, SettingsImportOptions? options = null)
+            => throw new NotSupportedException();
+
         public void CopyValuesTo(ISettingsStore<TestConfig> target, bool setWithoutNotifying = false)
             => throw new NotSupportedException();
 
@@ -129,6 +134,104 @@ public partial class SettingsStoreTests
         {
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.Export(string)"/> requires a successful load first.
+    /// </summary>
+    [TestMethod]
+    public void Export_BeforeLoad_ThrowsInvalidOperationException()
+    {
+        var runtimePath = Path.Combine(Path.GetTempPath(), $"runtime_{Guid.NewGuid()}.json");
+        var exportPath = Path.Combine(Path.GetTempPath(), $"export_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new SettingsStore<TestConfig>(runtimePath);
+
+            Assert.ThrowsExactly<InvalidOperationException>(() => store.Export(exportPath));
+        }
+        finally
+        {
+            if (File.Exists(runtimePath))
+                File.Delete(runtimePath);
+            if (File.Exists(exportPath))
+                File.Delete(exportPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.Import(string, SettingsImportOptions?)"/> requires a successful load first.
+    /// </summary>
+    [TestMethod]
+    public void Import_BeforeLoad_ThrowsInvalidOperationException()
+    {
+        var runtimePath = Path.Combine(Path.GetTempPath(), $"runtime_{Guid.NewGuid()}.json");
+        var importPath = Path.Combine(Path.GetTempPath(), $"import_{Guid.NewGuid()}.json");
+        try
+        {
+            File.WriteAllText(importPath, "{}");
+            var store = new SettingsStore<TestConfig>(runtimePath);
+
+            Assert.ThrowsExactly<InvalidOperationException>(() => store.Import(importPath));
+        }
+        finally
+        {
+            if (File.Exists(runtimePath))
+                File.Delete(runtimePath);
+            if (File.Exists(importPath))
+                File.Delete(importPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.Export(string)"/> rejects calls after disposal.
+    /// </summary>
+    [TestMethod]
+    public void Export_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var runtimePath = Path.Combine(Path.GetTempPath(), $"runtime_{Guid.NewGuid()}.json");
+        var exportPath = Path.Combine(Path.GetTempPath(), $"export_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new SettingsStore<TestConfig>(runtimePath);
+            _ = store.Load();
+            store.Dispose();
+
+            Assert.ThrowsExactly<ObjectDisposedException>(() => store.Export(exportPath));
+        }
+        finally
+        {
+            if (File.Exists(runtimePath))
+                File.Delete(runtimePath);
+            if (File.Exists(exportPath))
+                File.Delete(exportPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.Import(string, SettingsImportOptions?)"/> rejects calls after disposal.
+    /// </summary>
+    [TestMethod]
+    public void Import_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var runtimePath = Path.Combine(Path.GetTempPath(), $"runtime_{Guid.NewGuid()}.json");
+        var importPath = Path.Combine(Path.GetTempPath(), $"import_{Guid.NewGuid()}.json");
+        try
+        {
+            File.WriteAllText(importPath, "{}");
+            var store = new SettingsStore<TestConfig>(runtimePath);
+            _ = store.Load();
+            store.Dispose();
+
+            Assert.ThrowsExactly<ObjectDisposedException>(() => store.Import(importPath));
+        }
+        finally
+        {
+            if (File.Exists(runtimePath))
+                File.Delete(runtimePath);
+            if (File.Exists(importPath))
+                File.Delete(importPath);
         }
     }
 
@@ -936,6 +1039,127 @@ public partial class SettingsStoreTests
         {
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.Import(string, SettingsImportOptions?)"/> rejects envelope documents whose schema identifier does not match the current config type.
+    /// </summary>
+    [TestMethod]
+    public void Import_MismatchedSchemaId_ReturnsFailedReportAndLeavesValuesUnchanged()
+    {
+        var runtimePath = Path.Combine(Path.GetTempPath(), $"runtime_{Guid.NewGuid()}.json");
+        var importPath = Path.Combine(Path.GetTempPath(), $"import_{Guid.NewGuid()}.json");
+        try
+        {
+            File.WriteAllText(importPath, """
+{
+  "formatVersion": 1,
+  "schemaId": "Umbra.Config.UnitTests.OtherConfig",
+  "schemaVersion": 1,
+  "values": {
+    "value1": 123
+  }
+}
+""");
+
+            var store = new SettingsStore<TestConfig>(runtimePath);
+            var config = store.Load();
+
+            var report = store.Import(importPath, new SettingsImportOptions { SaveAfterImport = false });
+
+            Assert.IsFalse(report.Success);
+            Assert.AreEqual(10, config.Value1.Value);
+        }
+        finally
+        {
+            if (File.Exists(runtimePath))
+                File.Delete(runtimePath);
+            if (File.Exists(importPath))
+                File.Delete(importPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="SettingsStore{TConfig}.Import(string, SettingsImportOptions?)"/> rejects newer schema versions before applying any values.
+    /// </summary>
+    [TestMethod]
+    public void Import_NewerSchemaVersion_ReturnsFailedReportAndLeavesValuesUnchanged()
+    {
+        var runtimePath = Path.Combine(Path.GetTempPath(), $"runtime_{Guid.NewGuid()}.json");
+        var importPath = Path.Combine(Path.GetTempPath(), $"import_{Guid.NewGuid()}.json");
+        try
+        {
+            File.WriteAllText(importPath, $$"""
+{
+  "formatVersion": 1,
+  "schemaId": "{{typeof(TestConfig).FullName}}",
+  "schemaVersion": 2,
+  "values": {
+    "value1": 123
+  }
+}
+""");
+
+            var store = new SettingsStore<TestConfig>(runtimePath);
+            var config = store.Load();
+
+            var report = store.Import(importPath, new SettingsImportOptions { SaveAfterImport = false });
+
+            Assert.IsFalse(report.Success);
+            Assert.AreEqual(10, config.Value1.Value);
+        }
+        finally
+        {
+            if (File.Exists(runtimePath))
+                File.Delete(runtimePath);
+            if (File.Exists(importPath))
+                File.Delete(importPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that successful import can persist the accepted final state to the runtime config file.
+    /// </summary>
+    [TestMethod]
+    public void Import_SaveAfterImportEnabled_PersistsAcceptedValues()
+    {
+        var runtimePath = Path.Combine(Path.GetTempPath(), $"runtime_{Guid.NewGuid()}.json");
+        var importPath = Path.Combine(Path.GetTempPath(), $"import_{Guid.NewGuid()}.json");
+        try
+        {
+            File.WriteAllText(importPath, $$"""
+{
+  "formatVersion": 1,
+  "schemaId": "{{typeof(TestConfig).FullName}}",
+  "schemaVersion": 1,
+  "values": {
+    "value1": 123,
+    "value2": "imported"
+  }
+}
+""");
+
+            var store = new SettingsStore<TestConfig>(runtimePath);
+            var config = store.Load();
+
+            var report = store.Import(importPath);
+
+            Assert.IsTrue(report.Success);
+            Assert.IsTrue(report.Saved);
+            Assert.AreEqual(123, config.Value1.Value);
+            Assert.AreEqual("imported", config.Value2.Value);
+
+            using var runtimeDocument = System.Text.Json.JsonDocument.Parse(File.ReadAllText(runtimePath));
+            Assert.AreEqual(123, runtimeDocument.RootElement.GetProperty("value1").GetInt32());
+            Assert.AreEqual("imported", runtimeDocument.RootElement.GetProperty("value2").GetString());
+        }
+        finally
+        {
+            if (File.Exists(runtimePath))
+                File.Delete(runtimePath);
+            if (File.Exists(importPath))
+                File.Delete(importPath);
         }
     }
 

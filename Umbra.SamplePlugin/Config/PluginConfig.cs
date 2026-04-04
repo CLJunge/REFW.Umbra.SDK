@@ -1,3 +1,4 @@
+using System.IO;
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Drawers;
@@ -128,6 +129,15 @@ public record PluginConfig
     public NestedTypeTests NestedTypes { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets the sample config import/export settings.
+    /// </summary>
+    [UmbraParameter]
+    [UmbraCategory("Config Transfer")]
+    [UmbraPrefix("configTransfer")]
+    [UmbraCollapseAsTree]
+    public ConfigTransferSettings ConfigTransfer { get; set; } = new();
+
+    /// <summary>
     /// Initializes a new <see cref="PluginConfig"/> and wires the root-level sample actions.
     /// </summary>
     public PluginConfig()
@@ -206,6 +216,9 @@ public record PluginConfig
             NestedTypes.IndentedLayout.PrimaryScale.Reset();
             NestedTypes.IndentedLayout.SecondaryScale.Reset();
             NestedTypes.IndentedLayout.LayoutNotes.Reset();
+
+            ConfigTransfer.ImportPath.Reset();
+            ConfigTransfer.ExportPath.Reset();
         });
     }
 
@@ -239,6 +252,60 @@ public record PluginConfig
         Stable,
         Preview,
         Nightly
+    }
+
+    /// <summary>
+    /// Sample settings used to demonstrate config import and export actions.
+    /// </summary>
+    [UmbraAutoRegister]
+    public record ConfigTransferSettings
+    {
+        /// <summary>
+        /// Gets or sets the source file path used by the sample import action.
+        /// </summary>
+        [UmbraParameter]
+        [UmbraDisplayName("Import Path")]
+        [UmbraDescription("The JSON file to import into the current sample config.")]
+        [UmbraRequired]
+        public Parameter<string> ImportPath { get; set; } = new(GetDefaultTransferPath("config.import.json"));
+
+        /// <summary>
+        /// Gets or sets the destination file path used by the sample export action.
+        /// </summary>
+        [UmbraParameter]
+        [UmbraDisplayName("Export Path")]
+        [UmbraDescription("The JSON file written by the sample export action.")]
+        [UmbraRequired]
+        public Parameter<string> ExportPath { get; set; } = new(GetDefaultTransferPath("config.export.json"));
+
+        /// <summary>
+        /// Gets the import action button.
+        /// </summary>
+        [UmbraParameter]
+        [UmbraDisplayName("Import Config")]
+        [UmbraDescription("Imports compatible values from the configured JSON file.")]
+        [UmbraButtonStyle(ButtonStyle.Primary)]
+        [UmbraControlWidth(-1f)]
+        [UmbraParameterOrder(0)]
+        public Parameter<Action> ImportConfig { get; init; } = new(static () => { });
+
+        /// <summary>
+        /// Gets the export action button.
+        /// </summary>
+        [UmbraParameter]
+        [UmbraDisplayName("Export Config")]
+        [UmbraDescription("Exports the current sample config to the configured JSON file.")]
+        [UmbraButtonStyle(ButtonStyle.Primary)]
+        [UmbraControlWidth(-1f)]
+        [UmbraParameterOrder(1)]
+        public Parameter<Action> ExportConfig { get; init; } = new(static () => { });
+
+        private static string GetDefaultTransferPath(string fileName)
+        {
+            var assemblyDirectory = Path.GetDirectoryName(typeof(SamplePlugin).Assembly.Location)
+                ?? AppContext.BaseDirectory;
+            return Path.Combine(assemblyDirectory, "data", "Umbra", nameof(SamplePlugin), fileName);
+        }
     }
 
     /// <summary>

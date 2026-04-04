@@ -59,6 +59,8 @@ public sealed class SamplePlugin : UmbraPlugin
         _store = new SettingsStore<PluginConfig>(configPath);
         _config = _store.Load();
         _config.LogTestMessage.Value = () => Log.Info("Sample Plugin is active!");
+        _config.ConfigTransfer.ImportConfig.Value = ImportConfig;
+        _config.ConfigTransfer.ExportConfig.Value = ExportConfig;
 
         _saveController = new DeferredSaveController<PluginConfig>(_store);
         _panel = CreateRuntimePanel(_config);
@@ -227,6 +229,66 @@ public sealed class SamplePlugin : UmbraPlugin
     /// </summary>
     private void TickDeferredSaveController()
         => _saveController?.Tick();
+
+    private void ImportConfig()
+    {
+        var store = _store;
+        var config = _config;
+        if (store is null || config is null)
+        {
+            Log.Warning("Import ignored because the sample settings store is not available.");
+            return;
+        }
+
+        var importPath = config.ConfigTransfer.ImportPath.Value;
+        if (string.IsNullOrWhiteSpace(importPath))
+        {
+            Log.Warning("Import ignored because the configured import path is empty.");
+            return;
+        }
+
+        var report = store.Import(importPath);
+        LogImportReport(importPath, report);
+    }
+
+    private void ExportConfig()
+    {
+        var store = _store;
+        var config = _config;
+        if (store is null || config is null)
+        {
+            Log.Warning("Export ignored because the sample settings store is not available.");
+            return;
+        }
+
+        var exportPath = config.ConfigTransfer.ExportPath.Value;
+        if (string.IsNullOrWhiteSpace(exportPath))
+        {
+            Log.Warning("Export ignored because the configured export path is empty.");
+            return;
+        }
+
+        store.Export(exportPath);
+        Log.Info("Requested sample config export to '{0}'.", exportPath);
+    }
+
+    private void LogImportReport(string importPath, SettingsImportReport report)
+    {
+        if (!report.Success)
+        {
+            Log.Warning("Config import from '{0}' failed: {1}", importPath, report.FailureReason ?? "Unknown failure.");
+            return;
+        }
+
+        Log.Info(
+            "Imported config from '{0}'. Applied={1}, Ignored={2}, Rejected={3}, Saved={4}, Legacy={5}.",
+            importPath,
+            report.AppliedCount,
+            report.IgnoredCount,
+            report.RejectedCount,
+            report.Saved,
+            report.IsLegacyDocument);
+    }
 
 #if BENCHMARK
     private void CompleteActiveBenchmarkRun()

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Umbra.Config.Attributes;
 using Umbra.Logging;
 
 namespace Umbra.Config;
@@ -74,6 +75,47 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
         _persistenceCoordinator.Save();
+    }
+
+    /// <summary>
+    /// Exports the current registered parameter values to a versioned config exchange document.
+    /// </summary>
+    /// <param name="filePath">The destination file path.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet completed successfully.</exception>
+    public void Export(string filePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
+
+        SettingsExchangePersistence.Export(filePath, _parameters, GetSchemaId(), GetSchemaVersion());
+    }
+
+    /// <summary>
+    /// Imports compatible values from a versioned config exchange document or a legacy flat settings file.
+    /// </summary>
+    /// <param name="filePath">The source file path.</param>
+    /// <param name="options">Optional import finalization settings.</param>
+    /// <returns>A structured report describing the import outcome.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet completed successfully.</exception>
+    public SettingsImportReport Import(string filePath, SettingsImportOptions? options = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfNotLoaded();
+
+        options ??= SettingsImportOptions.Default;
+        var report = SettingsExchangePersistence.Import(filePath, _parameters, GetSchemaId(), GetSchemaVersion());
+        if (!report.Success || !options.SaveAfterImport || report.AppliedCount == 0)
+            return report;
+
+        Save();
+        report.Saved = true;
+        return report;
     }
 
     /// <summary>
@@ -392,4 +434,13 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
 
         return instance;
     }
+
+    private static string GetSchemaId()
+        => typeof(TConfig).FullName ?? typeof(TConfig).Name;
+
+    private static int GetSchemaVersion()
+        => typeof(TConfig).GetCustomAttributes(typeof(UmbraConfigVersionAttribute), inherit: true)
+            is [UmbraConfigVersionAttribute attribute, ..]
+                ? attribute.Version
+                : 1;
 }
