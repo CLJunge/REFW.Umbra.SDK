@@ -21,6 +21,8 @@ internal static class ParameterMetadataReader
     /// <returns>The resolved metadata for <paramref name="member"/>.</returns>
     internal static ParameterMetadata ReadFrom(MemberInfo member, string? inheritedCategory = null, string? parameterKey = null)
     {
+        var required = member.GetCustomAttribute<UmbraRequiredAttribute>();
+        var minLength = member.GetCustomAttribute<UmbraMinLengthAttribute>();
         var maxLength = member.GetCustomAttribute<UmbraMaxLengthAttribute>();
         var range = member.GetCustomAttribute<UmbraRangeAttribute>();
         var step = member.GetCustomAttribute<UmbraStepAttribute>();
@@ -28,6 +30,7 @@ internal static class ParameterMetadataReader
         var desc = member.GetCustomAttribute<UmbraDescriptionAttribute>();
         var category = member.GetCustomAttribute<UmbraCategoryAttribute>();
         var format = member.GetCustomAttribute<UmbraFormatAttribute>();
+        var regex = member.GetCustomAttribute<UmbraRegexAttribute>();
         var buttonStyle = member.GetCustomAttribute<UmbraButtonStyleAttribute>();
         var customButtonColors = member.GetCustomAttribute<UmbraCustomButtonColorsAttribute>();
         var controlWidth = member.GetCustomAttribute<UmbraControlWidthAttribute>();
@@ -39,11 +42,13 @@ internal static class ParameterMetadataReader
 
         Type? drawerType = null;
         Type? twoColumnDrawerType = null;
+        Type? validatorType = null;
         IHideIfAttribute? hideIf = null;
         foreach (var attr in member.GetCustomAttributes(inherit: false))
         {
             if (attr is IDrawerAttribute cd) { drawerType = cd.DrawerType; continue; }
             if (attr is ITwoColumnDrawerAttribute tcd) { twoColumnDrawerType = tcd.DrawerType; continue; }
+            if (attr is IValidatorAttribute validator) { validatorType = validator.ValidatorType; continue; }
             if (attr is IHideIfAttribute h) hideIf = h;
         }
 
@@ -54,12 +59,17 @@ internal static class ParameterMetadataReader
             DisplayName = name?.Name,
             ResolvedLabel = name?.Name ?? member.Name.ToDisplayName(),
             Description = desc?.Text,
+            Required = required is not null,
+            AllowWhitespace = required?.AllowWhitespace ?? false,
+            MinLength = minLength?.Length,
             MaxLength = maxLength?.Length,
             Min = range?.Min,
             Max = range?.Max,
             Step = step?.Step,
             Category = category?.Name ?? inheritedCategory,
             Format = format?.Format,
+            RegexPattern = regex?.Pattern,
+            RegexMessage = regex?.Message,
             ButtonStyle = buttonStyle?.Style,
             CustomButtonColors = customButtonColors is null ? null : (
                 new Vector4(customButtonColors.NormalR, customButtonColors.NormalG, customButtonColors.NormalB, customButtonColors.NormalA),
@@ -74,6 +84,7 @@ internal static class ParameterMetadataReader
             Indent = indent?.Amount,
             DrawerType = drawerType,
             TwoColumnDrawerType = twoColumnDrawerType,
+            ValidatorType = validatorType,
             HideIf = hideIf,
             InferredFloatFormat = inferredFloatFormat,
             HiddenLabel = parameterKey is not null ? string.Concat("##", parameterKey) : null,

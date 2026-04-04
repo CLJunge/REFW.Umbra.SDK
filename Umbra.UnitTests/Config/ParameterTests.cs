@@ -1,3 +1,5 @@
+using Umbra.Config.Validation;
+
 namespace Umbra.Config.UnitTests;
 
 
@@ -874,6 +876,24 @@ public class ParameterTests
     }
 
     /// <summary>
+    /// Test validator that rejects one reserved string value.
+    /// </summary>
+    private sealed class RejectBlockedValueValidator : IParameterValidator
+    {
+        public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
+        {
+            _ = parameterKey;
+            _ = valueType;
+            _ = metadata;
+
+            if (value is string text && text == "blocked")
+                return ParameterValidationResult.Invalid("The value 'blocked' is reserved.");
+
+            return ParameterValidationResult.Valid();
+        }
+    }
+
+    /// <summary>
     /// Tests that Reset with raiseEvent=true raises both ValueChanged and IParameter.ValueChanged events
     /// when the current value differs from the default value.
     /// </summary>
@@ -1597,6 +1617,150 @@ public class ParameterTests
 
         // Assert
         Assert.AreEqual(100, parameter.Value);
+    }
+
+    /// <summary>
+    /// Tests that the non-throwing Value setter rejects a missing required value and records the validation error.
+    /// </summary>
+    [TestMethod]
+    public void Value_WhenRequiredValueIsNull_LeavesValueUnchangedAndStoresValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { Required = true }
+        };
+        var validationState = (IParameterValidationState)parameter;
+
+        // Act
+        parameter.Value = null;
+
+        // Assert
+        Assert.AreEqual("valid", parameter.Value);
+        Assert.IsTrue(validationState.HasValidationError);
+        Assert.AreEqual("Value is required.", validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that TrySet rejects values shorter than the configured minimum length and records the failure reason.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_ValueShorterThanMinLength_ReturnsFalseAndStoresValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { MinLength = 5 }
+        };
+        var validationState = (IParameterValidationState)parameter;
+
+        // Act
+        var result = parameter.TrySet("abc");
+
+        // Assert
+        Assert.IsFalse(result);
+        Assert.AreEqual("valid", parameter.Value);
+        Assert.IsTrue(validationState.HasValidationError);
+        Assert.AreEqual("Value must be at least 5 characters long.", validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that SetOrThrow rejects regex mismatches and preserves the specific failure message.
+    /// </summary>
+    [TestMethod]
+    public void SetOrThrow_ValueDoesNotMatchRegex_ThrowsAndStoresValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("ABC")
+        {
+            Metadata = new ParameterMetadata
+            {
+                RegexPattern = "^[A-Z]{3}$",
+                RegexMessage = "Use exactly three uppercase letters."
+            }
+        };
+        var validationState = (IParameterValidationState)parameter;
+
+        // Act
+        var exception = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => parameter.SetOrThrow("ab1"));
+
+        // Assert
+        Assert.AreEqual("value", exception.ParamName);
+        Assert.AreEqual("ABC", parameter.Value);
+        Assert.IsTrue(validationState.HasValidationError);
+        Assert.AreEqual("Use exactly three uppercase letters.", validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that a custom validator can reject a value and report its own failure reason.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_CustomValidatorRejectsValue_ReturnsFalseAndStoresValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { ValidatorType = typeof(RejectBlockedValueValidator) }
+        };
+        var validationState = (IParameterValidationState)parameter;
+
+        // Act
+        var result = parameter.TrySet("blocked");
+
+        // Assert
+        Assert.IsFalse(result);
+        Assert.AreEqual("valid", parameter.Value);
+        Assert.IsTrue(validationState.HasValidationError);
+        Assert.AreEqual("The value 'blocked' is reserved.", validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that a successful set clears a previously recorded validation error.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_WhenValidAfterFailure_ClearsValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { MinLength = 5 }
+        };
+        var validationState = (IParameterValidationState)parameter;
+        var firstResult = parameter.TrySet("abc");
+        Assert.IsFalse(firstResult);
+        Assert.IsTrue(validationState.HasValidationError);
+
+        // Act
+        var secondResult = parameter.TrySet("updated");
+
+        // Assert
+        Assert.IsTrue(secondResult);
+        Assert.AreEqual("updated", parameter.Value);
+        Assert.IsFalse(validationState.HasValidationError);
+        Assert.IsNull(validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that Reset clears any previously recorded validation error.
+    /// </summary>
+    [TestMethod]
+    public void Reset_AfterValidationFailure_ClearsValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { Required = true }
+        };
+        var validationState = (IParameterValidationState)parameter;
+        parameter.Value = null;
+        Assert.IsTrue(validationState.HasValidationError);
+
+        // Act
+        parameter.Reset();
+
+        // Assert
+        Assert.IsFalse(validationState.HasValidationError);
+        Assert.IsNull(validationState.ValidationError);
     }
 
     /// <summary>

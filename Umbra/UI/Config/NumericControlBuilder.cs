@@ -1,5 +1,6 @@
 using Hexa.NET.ImGui;
 using Umbra.Config;
+using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config;
 
@@ -11,6 +12,8 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal static class NumericControlBuilder
 {
+    private static readonly ITextOps _textOps = ImGuiConfigRenderContext.Instance;
+
     /// <summary>
     /// Builds the per-frame draw action for an <see cref="int"/> parameter.
     /// </summary>
@@ -30,6 +33,7 @@ internal static class NumericControlBuilder
                 var v = p.Value;
                 layout.Pre();
                 if (ImGui.SliderInt(layout.HiddenLabel, ref v, iMin, iMax, fmt)) p.Value = v;
+                ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
 
@@ -39,6 +43,7 @@ internal static class NumericControlBuilder
             var v = p.Value;
             layout.Pre();
             if (ImGui.DragInt(layout.HiddenLabel, ref v, step, 0, 0, fmt)) p.Value = v;
+            ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }
 
@@ -61,6 +66,7 @@ internal static class NumericControlBuilder
                 var v = p.Value;
                 layout.Pre();
                 if (ImGui.SliderFloat(layout.HiddenLabel, ref v, fMin, fMax, fmt)) p.Value = v;
+                ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
 
@@ -70,6 +76,7 @@ internal static class NumericControlBuilder
             var v = p.Value;
             layout.Pre();
             if (ImGui.DragFloat(layout.HiddenLabel, ref v, step, 0f, 0f, fmt)) p.Value = v;
+            ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }
 
@@ -92,6 +99,7 @@ internal static class NumericControlBuilder
                 var v = p.Value;
                 layout.Pre();
                 if (SliderDouble(layout.HiddenLabel, ref v, dMin, dMax, fmt)) p.Value = v;
+                ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
 
@@ -101,6 +109,7 @@ internal static class NumericControlBuilder
             var v = p.Value;
             layout.Pre();
             if (DragDouble(layout.HiddenLabel, ref v, step, fmt)) p.Value = v;
+            ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }
 

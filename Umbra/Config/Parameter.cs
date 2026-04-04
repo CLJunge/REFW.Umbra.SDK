@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
+using Umbra.Config.Validation;
 
 namespace Umbra.Config;
 
@@ -10,7 +12,7 @@ namespace Umbra.Config;
 /// </remarks>
 /// <typeparam name="T">The value type stored by the parameter.</typeparam>
 [DebuggerDisplay("{Key}: {Value} (Default: {DefaultValue}, Modified: {IsModified})")]
-public class Parameter<T> : IParameter, IParameterRegistration
+public class Parameter<T> : IParameter, IParameterRegistration, IParameterValidationState
 {
     /// <summary>
     /// Cached flag indicating whether <typeparamref name="T"/> is a non-nullable value type.
@@ -21,6 +23,8 @@ public class Parameter<T> : IParameter, IParameterRegistration
 
     private T? _value;
     private Action? _interfaceValueChanged;
+    private bool _hasValidationError;
+    private string? _validationError;
 
     /// <summary>
     /// Occurs when the parameter value changes through the typed notifying mutation paths.
@@ -41,6 +45,10 @@ public class Parameter<T> : IParameter, IParameterRegistration
 
     /// <inheritdoc/>
     public ParameterMetadata Metadata { get; internal set; } = new();
+
+    bool IParameterValidationState.HasValidationError => _hasValidationError;
+
+    string? IParameterValidationState.ValidationError => _validationError;
 
     /// <summary>
     /// Gets the default value captured when this parameter instance was constructed.
@@ -100,6 +108,7 @@ public class Parameter<T> : IParameter, IParameterRegistration
     {
         var oldValue = _value;
         _value = DefaultValue;
+        ClearValidationError();
 
         if (raiseEvent && !EqualityComparer<T?>.Default.Equals(oldValue, _value))
         {
@@ -115,7 +124,11 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// <remarks>
     /// This method intentionally bypasses the metadata validation performed by <see cref="Value"/>, <see cref="Set(T)"/>, <see cref="TrySet"/>, and <see cref="SetOrThrow"/>.
     /// </remarks>
-    public void SetWithoutNotify(T? value) => _value = value;
+    public void SetWithoutNotify(T? value)
+    {
+        _value = value;
+        ClearValidationError();
+    }
 
     /// <summary>
     /// Sets the current value through the validating, notifying mutation path.
@@ -136,9 +149,13 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// </remarks>
     public bool TrySet(T? value)
     {
-        if (!Validate(value, out _))
+        if (!Validate(value, out var failureReason))
+        {
+            SetValidationError(failureReason);
             return false;
+        }
 
+        ClearValidationError();
         SetValueCore(value);
         return true;
     }
@@ -151,8 +168,12 @@ public class Parameter<T> : IParameter, IParameterRegistration
     public void SetOrThrow(T? value)
     {
         if (!Validate(value, out var failureReason))
+        {
+            SetValidationError(failureReason);
             throw new ArgumentOutOfRangeException(nameof(value), value, failureReason);
+        }
 
+        ClearValidationError();
         SetValueCore(value);
     }
 
@@ -162,6 +183,8 @@ public class Parameter<T> : IParameter, IParameterRegistration
     string IParameterRegistration.Key { set => Key = value; }
 
     ParameterMetadata IParameterRegistration.Metadata { set => Metadata = value; }
+
+    void IParameterValidationState.ClearValidationError() => ClearValidationError();
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentException">
@@ -177,7 +200,11 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// is a non-nullable value type, or when <paramref name="value"/> is non-<see langword="null"/>
     /// and is not assignable to <typeparamref name="T"/>.
     /// </exception>
-    void IParameter.SetValueWithoutNotify(object? value) => _value = CoerceValue(value);
+    void IParameter.SetValueWithoutNotify(object? value)
+    {
+        _value = CoerceValue(value);
+        ClearValidationError();
+    }
 
     /// <summary>
     /// Validates and coerces an untyped <paramref name="value"/> to <typeparamref name="T"/>.
@@ -221,6 +248,97 @@ public class Parameter<T> : IParameter, IParameterRegistration
     private bool Validate(T? value, out string? failureReason)
     {
         failureReason = null;
+        if (!ValidateRequired(value, out failureReason))
+            return false;
+
+        if (!ValidateStringLength(value, out failureReason))
+            return false;
+
+        if (!ValidateRegex(value, out failureReason))
+            return false;
+
+        if (!ValidateNumericRange(value, out failureReason))
+            return false;
+
+        if (!ValidateCustom(value, out failureReason))
+            return false;
+
+        return true;
+    }
+
+    private bool ValidateRequired(T? value, out string? failureReason)
+    {
+        failureReason = null;
+
+        if (!Metadata.Required)
+            return true;
+
+        if (value is null)
+        {
+            failureReason = "Value is required.";
+            return false;
+        }
+
+        if (value is not string text)
+            return true;
+
+        if (text.Length == 0)
+        {
+            failureReason = "Value is required.";
+            return false;
+        }
+
+        if (!Metadata.AllowWhitespace && string.IsNullOrWhiteSpace(text))
+        {
+            failureReason = "Value cannot be whitespace only.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidateStringLength(T? value, out string? failureReason)
+    {
+        failureReason = null;
+
+        if (value is not string text)
+            return true;
+
+        if (Metadata.MinLength is uint minLength && text.Length < minLength)
+        {
+            failureReason = $"Value must be at least {minLength} characters long.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidateRegex(T? value, out string? failureReason)
+    {
+        failureReason = null;
+
+        if (Metadata.RegexPattern is null || value is not string text || text.Length == 0)
+            return true;
+
+        try
+        {
+            if (Regex.IsMatch(text, Metadata.RegexPattern, RegexOptions.CultureInvariant))
+                return true;
+        }
+        catch (ArgumentException ex)
+        {
+            failureReason = $"Regex validation could not be evaluated: {ex.Message}";
+            return false;
+        }
+
+        failureReason = Metadata.RegexMessage ?? $"Value must match pattern '{Metadata.RegexPattern}'.";
+        return false;
+    }
+
+    private bool ValidateNumericRange(T? value, out string? failureReason)
+    {
+        failureReason = null;
+
         if (value == null || Metadata.Min == null && Metadata.Max == null)
             return true;
 
@@ -251,6 +369,50 @@ public class Parameter<T> : IParameter, IParameterRegistration
         return true;
     }
 
+    private bool ValidateCustom(T? value, out string? failureReason)
+    {
+        failureReason = null;
+
+        var validatorType = Metadata.ValidatorType;
+        if (validatorType is null)
+            return true;
+
+        if (!typeof(IParameterValidator).IsAssignableFrom(validatorType))
+        {
+            failureReason = $"Validator type '{validatorType.FullName ?? validatorType.Name}' must implement IParameterValidator.";
+            return false;
+        }
+
+        IParameterValidator validator;
+        try
+        {
+            validator = (IParameterValidator)(Activator.CreateInstance(validatorType)
+                ?? throw new InvalidOperationException("Activator.CreateInstance returned null."));
+        }
+        catch (Exception ex)
+        {
+            failureReason = $"Validator '{validatorType.FullName ?? validatorType.Name}' could not be created: {ex.Message}";
+            return false;
+        }
+
+        try
+        {
+            var result = validator.Validate(Key, value, typeof(T), Metadata);
+            if (result.IsValid)
+                return true;
+
+            failureReason = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                ? $"Validator '{validatorType.FullName ?? validatorType.Name}' rejected the value."
+                : result.ErrorMessage;
+            return false;
+        }
+        catch (Exception ex)
+        {
+            failureReason = $"Validator '{validatorType.FullName ?? validatorType.Name}' threw: {ex.Message}";
+            return false;
+        }
+    }
+
     /// <summary>
     /// Applies <paramref name="newValue"/> to the parameter if it differs from the current
     /// value and passes validation, then raises <see cref="ValueChanged"/> and the untyped
@@ -259,7 +421,13 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// <param name="newValue">The new value to assign.</param>
     private void SetValue(T? newValue)
     {
-        if (!Validate(newValue, out _)) return;
+        if (!Validate(newValue, out var failureReason))
+        {
+            SetValidationError(failureReason);
+            return;
+        }
+
+        ClearValidationError();
         SetValueCore(newValue);
     }
 
@@ -276,6 +444,18 @@ public class Parameter<T> : IParameter, IParameterRegistration
 
         ValueChanged?.Invoke(oldValue, newValue);
         _interfaceValueChanged?.Invoke();
+    }
+
+    private void SetValidationError(string? failureReason)
+    {
+        _hasValidationError = !string.IsNullOrWhiteSpace(failureReason);
+        _validationError = _hasValidationError ? failureReason : null;
+    }
+
+    private void ClearValidationError()
+    {
+        _hasValidationError = false;
+        _validationError = null;
     }
 
     /// <summary>
