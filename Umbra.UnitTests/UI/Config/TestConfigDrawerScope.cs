@@ -6,8 +6,10 @@ namespace Umbra.UI.Config.UnitTests;
 internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
 {
     public List<string> PushedIds { get; } = [];
+    public List<string> RenderedTexts { get; } = [];
     public List<string> InputTextLabels { get; } = [];
     public List<string> ButtonLabels { get; } = [];
+    public List<string> TextWidthRequests { get; } = [];
     public List<string> ButtonWidthRequests { get; } = [];
     public List<float> NextItemWidths { get; } = [];
     public int SameLineCount { get; private set; }
@@ -18,6 +20,7 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public string? NextInputTextValue { get; set; }
     public float AvailableWidth { get; set; } = 300f;
     public float ItemSpacingX { get; set; } = 8f;
+    public Dictionary<string, float> TextWidths { get; } = [];
     public Dictionary<string, float> ButtonWidths { get; } = [];
     public Queue<bool> ButtonResults { get; } = new();
 
@@ -28,6 +31,12 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public float GetAvailableWidth() => AvailableWidth;
 
     public float GetItemSpacingX() => ItemSpacingX;
+
+    public float GetTextWidth(string text)
+    {
+        TextWidthRequests.Add(text);
+        return TextWidths.TryGetValue(text, out var width) ? width : 48f;
+    }
 
     public float GetButtonWidth(string label)
     {
@@ -62,9 +71,7 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
         return ButtonResults.Dequeue();
     }
 
-    public void Text(string text)
-    {
-    }
+    public void Text(string text) => RenderedTexts.Add(text);
 
     public void TextDisabled(string text)
     {

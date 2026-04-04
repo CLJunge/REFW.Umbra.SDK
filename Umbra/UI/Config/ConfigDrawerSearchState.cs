@@ -56,7 +56,7 @@ internal sealed class ConfigDrawerSearchState
     {
         Query = query ?? string.Empty;
         NormalizedQuery = Normalize(Query);
-        ClampFocusedMatchIndex();
+        _focusedMatchIndex = -1;
         SetPendingTargetsToFocusedResult();
     }
 
@@ -134,9 +134,9 @@ internal sealed class ConfigDrawerSearchState
             return;
         }
 
-        if (_focusedMatchIndex < 0)
+        if (_focusedMatchIndex < -1)
         {
-            _focusedMatchIndex = 0;
+            _focusedMatchIndex = -1;
             return;
         }
 

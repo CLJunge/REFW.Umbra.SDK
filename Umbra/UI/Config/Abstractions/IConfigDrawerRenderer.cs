@@ -21,6 +21,13 @@ internal interface IConfigDrawerRenderer : IConfigDrawerScope, IButtonOps, IText
     float GetItemSpacingX();
 
     /// <summary>
+    /// Measures the width of a text label using the current ImGui style.
+    /// </summary>
+    /// <param name="text">The visible text to measure.</param>
+    /// <returns>The rendered text width.</returns>
+    float GetTextWidth(string text);
+
+    /// <summary>
     /// Measures the width of a button with the supplied label using the current ImGui style.
     /// </summary>
     /// <param name="label">The button label.</param>

@@ -59,6 +59,9 @@ internal sealed class ImGuiConfigRenderContext :
     public float GetItemSpacingX() => ImGui.GetStyle().ItemSpacing.X;
 
     /// <inheritdoc/>
+    public float GetTextWidth(string text) => ImGui.CalcTextSize(text).X;
+
+    /// <inheritdoc/>
     public float GetButtonWidth(string label)
         => ImGui.CalcTextSize(label).X + (ImGui.GetStyle().FramePadding.X * 2f);
 

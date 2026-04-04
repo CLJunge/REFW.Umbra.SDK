@@ -86,16 +86,18 @@ public sealed class ConfigDrawerTests
         // Assert
         Assert.AreEqual(0, renderer.InputTextLabels.Count);
         Assert.AreEqual(0, renderer.ButtonLabels.Count);
+        Assert.AreEqual(0, renderer.RenderedTexts.Count);
     }
 
     /// <summary>
-    /// Tests that the built-in search UI is rendered when the feature is enabled.
+    /// Tests that the built-in search UI is rendered with a visible label and a hidden input label when the feature is enabled.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenSearchBarEnabled_RendersSearchControls()
+    public void Draw_WhenSearchBarEnabled_RendersVisibleLabelAndRemainingWidthInput()
     {
         // Arrange
         var renderer = new TestConfigDrawerScope();
+        renderer.TextWidths["Search"] = 36f;
         renderer.ButtonWidths["<##ConfigDrawerSearchPrevious"] = 40f;
         renderer.ButtonWidths[">##ConfigDrawerSearchNext"] = 44f;
         using var drawer = new ConfigDrawer<TestConfig>(
@@ -109,24 +111,27 @@ public sealed class ConfigDrawerTests
         drawer.Draw();
 
         // Assert
+        Assert.AreEqual(1, renderer.RenderedTexts.Count);
+        Assert.AreEqual("Search", renderer.RenderedTexts[0]);
         Assert.AreEqual(1, renderer.InputTextLabels.Count);
-        Assert.AreEqual("Search##ConfigDrawerSearch", renderer.InputTextLabels[0]);
+        Assert.AreEqual("##ConfigDrawerSearch", renderer.InputTextLabels[0]);
         Assert.AreEqual(1, renderer.NextItemWidths.Count);
-        Assert.AreEqual(300f - 40f - 44f - (8f * 2f), renderer.NextItemWidths[0]);
+        Assert.AreEqual(300f - 36f - 40f - 44f - (8f * 3f), renderer.NextItemWidths[0]);
         Assert.AreEqual(2, renderer.ButtonLabels.Count);
         Assert.AreEqual("<##ConfigDrawerSearchPrevious", renderer.ButtonLabels[0]);
         Assert.AreEqual(">##ConfigDrawerSearchNext", renderer.ButtonLabels[1]);
-        Assert.AreEqual(2, renderer.SameLineCount);
+        Assert.AreEqual(3, renderer.SameLineCount);
     }
 
     /// <summary>
-    /// Tests that the search row reuses cached button measurements when the available width is unchanged.
+    /// Tests that the search row reuses cached button and label measurements when the available width is unchanged.
     /// </summary>
     [TestMethod]
     public void Draw_WhenAvailableWidthIsUnchanged_ReusesCachedSearchLayout()
     {
         // Arrange
         var renderer = new TestConfigDrawerScope();
+        renderer.TextWidths["Search"] = 36f;
         renderer.ButtonWidths["<##ConfigDrawerSearchPrevious"] = 40f;
         renderer.ButtonWidths[">##ConfigDrawerSearchNext"] = 44f;
         using var drawer = new ConfigDrawer<TestConfig>(
@@ -141,6 +146,7 @@ public sealed class ConfigDrawerTests
         drawer.Draw();
 
         // Assert
+        Assert.AreEqual(1, renderer.TextWidthRequests.Count);
         Assert.AreEqual(2, renderer.ButtonWidthRequests.Count);
         Assert.AreEqual(2, renderer.NextItemWidths.Count);
         Assert.AreEqual(renderer.NextItemWidths[0], renderer.NextItemWidths[1]);
@@ -154,6 +160,7 @@ public sealed class ConfigDrawerTests
     {
         // Arrange
         var renderer = new TestConfigDrawerScope();
+        renderer.TextWidths["Search"] = 36f;
         renderer.ButtonWidths["<##ConfigDrawerSearchPrevious"] = 40f;
         renderer.ButtonWidths[">##ConfigDrawerSearchNext"] = 44f;
         using var drawer = new ConfigDrawer<TestConfig>(
@@ -169,17 +176,18 @@ public sealed class ConfigDrawerTests
         drawer.Draw();
 
         // Assert
+        Assert.AreEqual(2, renderer.TextWidthRequests.Count);
         Assert.AreEqual(4, renderer.ButtonWidthRequests.Count);
         Assert.AreEqual(2, renderer.NextItemWidths.Count);
         Assert.AreNotEqual(renderer.NextItemWidths[0], renderer.NextItemWidths[1]);
-        Assert.AreEqual(360f - 40f - 44f - (8f * 2f), renderer.NextItemWidths[1]);
+        Assert.AreEqual(360f - 36f - 40f - 44f - (8f * 3f), renderer.NextItemWidths[1]);
     }
 
     /// <summary>
-    /// Tests that entering a query filters the drawer through the flat search index and only draws matching results.
+    /// Tests that entering a query filters the drawer through the flat search index and only draws matching results without auto-focusing them.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenSearchQueryMatchesSingleResult_DrawsOnlyMatchingNode()
+    public void Draw_WhenSearchQueryMatchesSingleResult_DrawsOnlyMatchingNodeWithoutAutoFocus()
     {
         // Arrange
         var renderer = new TestConfigDrawerScope
@@ -187,6 +195,7 @@ public sealed class ConfigDrawerTests
             NextInputTextResult = true,
             NextInputTextValue = "audio"
         };
+        renderer.TextWidths["Search"] = 36f;
         var alphaNode = new SearchAwareTestNode("alpha");
         var betaNode = new SearchAwareTestNode("beta");
         var searchIndex = new ConfigSearchIndex();
@@ -208,15 +217,15 @@ public sealed class ConfigDrawerTests
         Assert.AreEqual(1, alphaNode.DrawCount);
         Assert.AreEqual(0, betaNode.DrawCount);
         Assert.IsTrue(alphaNode.LastIsMatch);
-        Assert.IsTrue(alphaNode.LastIsFocused);
+        Assert.IsFalse(alphaNode.LastIsFocused);
         Assert.IsFalse(betaNode.LastWasVisible);
     }
 
     /// <summary>
-    /// Tests that the initial focused search result requests keyboard focus for its control when a query produces matches.
+    /// Tests that query changes alone do not request keyboard focus for any matched control.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenQueryProducesFocusedMatch_RequestsKeyboardFocusForFocusedControl()
+    public void Draw_WhenQueryProducesMatches_DoesNotRequestKeyboardFocusUntilNavigationOccurs()
     {
         // Arrange
         var drawerRenderer = new TestConfigDrawerScope
@@ -224,6 +233,7 @@ public sealed class ConfigDrawerTests
             NextInputTextResult = true,
             NextInputTextValue = "gamma"
         };
+        drawerRenderer.TextWidths["Search"] = 36f;
         var alphaRenderer = new TestParameterNodeRenderer();
         var betaRenderer = new TestParameterNodeRenderer();
         var alphaNode = new ParameterNode(static () => { }, order: 0, spacingBefore: 0, spacingAfter: 0, renderer: alphaRenderer, resultId: "alpha");
@@ -245,12 +255,12 @@ public sealed class ConfigDrawerTests
         drawer.Draw();
 
         // Assert
-        Assert.AreEqual(1, alphaRenderer.KeyboardFocusCount);
+        Assert.AreEqual(0, alphaRenderer.KeyboardFocusCount);
         Assert.AreEqual(0, betaRenderer.KeyboardFocusCount);
     }
 
     /// <summary>
-    /// Tests that the next and previous navigation buttons move focus through the ordered match list.
+    /// Tests that the next and previous navigation buttons move focus through the ordered match list after an initially unfocused query result set.
     /// </summary>
     [TestMethod]
     public void Draw_WhenNavigationButtonsAreClicked_MovesFocusedResult()
@@ -261,6 +271,7 @@ public sealed class ConfigDrawerTests
             NextInputTextResult = true,
             NextInputTextValue = "ga"
         };
+        renderer.TextWidths["Search"] = 36f;
         var alphaNode = new SearchAwareTestNode("alpha");
         var betaNode = new SearchAwareTestNode("beta");
         var searchIndex = new ConfigSearchIndex();
@@ -280,14 +291,18 @@ public sealed class ConfigDrawerTests
         renderer.ButtonResults.Enqueue(false);
         renderer.ButtonResults.Enqueue(true);
         drawer.Draw();
-        var betaFocusedAfterNext = betaNode.LastIsFocused;
+        var alphaFocusedAfterFirstNext = alphaNode.LastIsFocused;
+        renderer.ButtonResults.Enqueue(false);
+        renderer.ButtonResults.Enqueue(true);
+        drawer.Draw();
+        var betaFocusedAfterSecondNext = betaNode.LastIsFocused;
         renderer.ButtonResults.Enqueue(true);
         renderer.ButtonResults.Enqueue(false);
         drawer.Draw();
 
         // Assert
-        Assert.IsTrue(alphaNode.WasFocusedAtLeastOnce);
-        Assert.IsTrue(betaFocusedAfterNext);
+        Assert.IsTrue(alphaFocusedAfterFirstNext);
+        Assert.IsTrue(betaFocusedAfterSecondNext);
         Assert.IsTrue(alphaNode.LastIsFocused);
     }
 
@@ -303,6 +318,7 @@ public sealed class ConfigDrawerTests
             NextInputTextResult = true,
             NextInputTextValue = "ga"
         };
+        drawerRenderer.TextWidths["Search"] = 36f;
         var alphaRenderer = new TestParameterNodeRenderer();
         var betaRenderer = new TestParameterNodeRenderer();
         var alphaNode = new ParameterNode(static () => { }, order: 0, spacingBefore: 0, spacingAfter: 0, renderer: alphaRenderer, resultId: "alpha");
@@ -320,6 +336,9 @@ public sealed class ConfigDrawerTests
             searchIndex);
 
         // Act
+        drawer.Draw();
+        drawerRenderer.ButtonResults.Enqueue(false);
+        drawerRenderer.ButtonResults.Enqueue(true);
         drawer.Draw();
         drawerRenderer.ButtonResults.Enqueue(false);
         drawerRenderer.ButtonResults.Enqueue(true);

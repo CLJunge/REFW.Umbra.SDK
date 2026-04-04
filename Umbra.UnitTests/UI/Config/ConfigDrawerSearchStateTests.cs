@@ -22,6 +22,8 @@ public sealed class ConfigDrawerSearchStateTests
         Assert.AreEqual("  GaMmA  ", state.Query);
         Assert.AreEqual("GAMMA", state.NormalizedQuery);
         Assert.IsTrue(state.HasActiveQuery);
+        Assert.IsNull(state.PendingScrollResultId);
+        Assert.IsNull(state.PendingFocusResultId);
     }
 
     /// <summary>
@@ -45,16 +47,35 @@ public sealed class ConfigDrawerSearchStateTests
     }
 
     /// <summary>
-    /// Tests that setting matches initializes focus to the first result.
+    /// Tests that setting matches without explicit navigation does not auto-focus the first result.
     /// </summary>
     [TestMethod]
-    public void SetMatches_WithResults_FocusesFirstResult()
+    public void SetMatches_WithResults_DoesNotAutoFocusFirstResult()
     {
         // Arrange
         var state = new ConfigDrawerSearchState();
 
         // Act
         state.SetMatches(["alpha", "beta", "gamma"]);
+
+        // Assert
+        Assert.IsNull(state.PendingScrollResultId);
+        Assert.IsNull(state.PendingFocusResultId);
+        Assert.IsNull(state.FocusedResultId);
+    }
+
+    /// <summary>
+    /// Tests that moving to the next result from an unfocused state selects the first result.
+    /// </summary>
+    [TestMethod]
+    public void MoveNext_WithoutExistingFocus_SelectsFirstResult()
+    {
+        // Arrange
+        var state = new ConfigDrawerSearchState();
+        state.SetMatches(["alpha", "beta", "gamma"]);
+
+        // Act
+        state.MoveNext();
 
         // Assert
         Assert.AreEqual("alpha", state.PendingScrollResultId);
@@ -70,6 +91,7 @@ public sealed class ConfigDrawerSearchStateTests
         // Arrange
         var state = new ConfigDrawerSearchState();
         state.SetMatches(["alpha", "beta", "gamma"]);
+        state.MoveNext();
         state.MoveNext();
         state.MoveNext();
 
@@ -102,7 +124,7 @@ public sealed class ConfigDrawerSearchStateTests
     }
 
     /// <summary>
-    /// Tests that replacing matches clamps focus to the available results.
+    /// Tests that replacing matches clamps focus to the available results when a result was already selected explicitly.
     /// </summary>
     [TestMethod]
     public void SetMatches_WhenFocusedIndexExceedsNewResultCount_ClampsFocus()
@@ -110,6 +132,7 @@ public sealed class ConfigDrawerSearchStateTests
         // Arrange
         var state = new ConfigDrawerSearchState();
         state.SetMatches(["alpha", "beta", "gamma"]);
+        state.MoveNext();
         state.MoveNext();
         state.MoveNext();
 
@@ -122,6 +145,26 @@ public sealed class ConfigDrawerSearchStateTests
     }
 
     /// <summary>
+    /// Tests that changing the query clears an existing focused result until the user navigates again.
+    /// </summary>
+    [TestMethod]
+    public void SetQuery_WhenResultWasFocused_ClearsFocusedResultAndPendingTargets()
+    {
+        // Arrange
+        var state = new ConfigDrawerSearchState();
+        state.SetMatches(["alpha", "beta"]);
+        state.MoveNext();
+
+        // Act
+        state.SetQuery("alpha");
+
+        // Assert
+        Assert.IsNull(state.FocusedResultId);
+        Assert.IsNull(state.PendingScrollResultId);
+        Assert.IsNull(state.PendingFocusResultId);
+    }
+
+    /// <summary>
     /// Tests that clearing a consumed focus target leaves unrelated pending focus requests intact.
     /// </summary>
     [TestMethod]
@@ -130,6 +173,7 @@ public sealed class ConfigDrawerSearchStateTests
         // Arrange
         var state = new ConfigDrawerSearchState();
         state.SetMatches(["alpha", "beta"]);
+        state.MoveNext();
 
         // Act
         state.ClearPendingFocusTarget("alpha");

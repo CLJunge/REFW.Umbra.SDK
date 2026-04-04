@@ -21,7 +21,8 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
 {
     private const uint SearchBarMaxLength = 256;
     private const float MinimumSearchInputWidth = 64f;
-    private const string SearchInputLabel = "Search##ConfigDrawerSearch";
+    private const string SearchLabel = "Search";
+    private const string SearchInputLabel = "##ConfigDrawerSearch";
     private const string PreviousButtonLabel = "<##ConfigDrawerSearchPrevious";
     private const string NextButtonLabel = ">##ConfigDrawerSearchNext";
 
@@ -226,6 +227,9 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
 
         EnsureSearchLayout(layoutState);
 
+        _renderer.Text(SearchLabel);
+        _renderer.SameLine();
+
         var query = searchState.Query;
         _renderer.SetNextItemWidth(layoutState.SearchInputWidth);
         if (_renderer.InputText(SearchInputLabel, ref query, SearchBarMaxLength))
@@ -253,11 +257,13 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
         layoutState.PreviousButtonWidth = _renderer.GetButtonWidth(PreviousButtonLabel);
         layoutState.NextButtonWidth = _renderer.GetButtonWidth(NextButtonLabel);
 
+        var labelWidth = _renderer.GetTextWidth(SearchLabel);
         var spacingX = _renderer.GetItemSpacingX();
         var searchInputWidth = availableWidth
+            - labelWidth
             - layoutState.PreviousButtonWidth
             - layoutState.NextButtonWidth
-            - (spacingX * 2f);
+            - (spacingX * 3f);
         layoutState.SearchInputWidth = Math.Max(MinimumSearchInputWidth, searchInputWidth);
         layoutState.IsInitialized = true;
     }
