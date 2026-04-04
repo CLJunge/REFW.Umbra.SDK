@@ -149,7 +149,7 @@ Import compatibility rules:
 - imported values are applied through the existing `Parameter<T>` validation pipeline, so rejected values keep the last valid in-memory state
 - when `SettingsImportOptions.SaveAfterImport` is `true`, Umbra saves the accepted final state once through the normal store persistence path
 
-Config transfer UI can be surfaced through a dedicated nested-group drawer instead of four separate default rows. `Umbra.SamplePlugin/Config/PluginConfig.cs` demonstrates this pattern by binding its `ConfigTransferSettings` group with `[UmbraNestedDrawer<ConfigTransferDrawer>]`.
+Config transfer UI is now an optional built-in Umbra feature rather than a plugin-defined nested config group. Enable it through `ConfigDrawerOptions.Transfer` and create the section through `ConfigSection<TConfig>.CreateWithStore(config, store, options, ...)`. The built-in control renders after the normal config nodes, uses one shared config-file path field, exposes an explicit browse menu for import or export file selection, and shows a second row of equal-width `Import` and `Export` action buttons. The transfer path is persisted in a separate sidecar file derived from the main settings-store file path, so transfer UI state stays decoupled from the actual configuration payload.
 
 ## Custom drawers and sections
 

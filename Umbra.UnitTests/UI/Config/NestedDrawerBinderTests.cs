@@ -121,19 +121,18 @@ public sealed class NestedDrawerBinderTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="ConfigTransferDrawer"/> binds successfully to a concrete group implementing <see cref="IConfigTransferGroup"/>.
+    /// Verifies that <see cref="ConfigTransferDrawer"/> no longer binds through the nested-drawer binder.
     /// </summary>
     [TestMethod]
-    public void BuildDrawAction_WithConfigTransferDrawerAndCompatibleGroup_ReturnsAction()
+    public void BuildDrawAction_WithConfigTransferDrawer_ReturnsNull()
     {
         var attribute = new TestNestedDrawerAttribute(typeof(ConfigTransferDrawer));
         var group = new TestTransferGroup();
 
         var action = NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestTransferGroup), group, out var disposable);
 
-        Assert.IsNotNull(action);
-        Assert.IsNotNull(disposable);
-        Assert.IsInstanceOfType<ConfigTransferDrawer>(disposable);
+        Assert.IsNull(action);
+        Assert.IsNull(disposable);
     }
 
     /// <summary>
@@ -225,11 +224,9 @@ public sealed class NestedDrawerBinderTests
     /// <summary>
     /// Concrete transfer-group type used to verify assignable nested-drawer binding.
     /// </summary>
-    private sealed class TestTransferGroup : IConfigTransferGroup
+    private sealed class TestTransferGroup
     {
-        public Parameter<string> ImportPath { get; } = new("import.json");
-
-        public Parameter<string> ExportPath { get; } = new("export.json");
+        public Parameter<string> ConfigFilePath { get; } = new("config.json");
 
         public Parameter<Action> ImportConfig { get; } = new(static () => { });
 

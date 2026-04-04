@@ -9,9 +9,14 @@ namespace Umbra.UI.Config.Drawers.UnitTests;
 public sealed class ConfigTransferDrawerTests
 {
     private TestConfigTransferDrawerRenderer _renderer = null!;
+    private TestConfigTransferFilePicker _picker = null!;
 
     [TestInitialize]
-    public void TestInitialize() => _renderer = new TestConfigTransferDrawerRenderer();
+    public void TestInitialize()
+    {
+        _renderer = new TestConfigTransferDrawerRenderer();
+        _picker = new TestConfigTransferFilePicker();
+    }
 
     /// <summary>
     /// Verifies that drawing a null transfer group renders disabled explanatory text.
@@ -19,72 +24,77 @@ public sealed class ConfigTransferDrawerTests
     [TestMethod]
     public void Draw_NullGroup_ShowsDisabledText()
     {
-        var drawer = new ConfigTransferDrawer(_renderer);
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
 
-        drawer.Draw(null!);
+        drawer.Draw(null, null, null);
 
         Assert.AreEqual(1, _renderer.DisabledTexts.Count);
-        Assert.AreEqual("(ConfigTransferDrawer requires a non-null config transfer group)", _renderer.DisabledTexts[0]);
+        Assert.AreEqual("(ConfigTransferDrawer requires a non-null config-file path parameter)", _renderer.DisabledTexts[0]);
     }
 
     /// <summary>
     /// Verifies that a bad transfer-group implementation with a null path parameter fails safely.
     /// </summary>
     [TestMethod]
-    public void Draw_GroupWithNullImportPath_ShowsDisabledText()
+    public void Draw_NullPathParameter_ShowsDisabledText()
     {
-        var drawer = new ConfigTransferDrawer(_renderer);
-        var group = new InvalidTransferGroup
-        {
-            ImportPath = null!,
-            ExportPath = CreateStringParameter("exportPath", "export.json"),
-            ImportConfig = new Parameter<Action>(static () => { }),
-            ExportConfig = new Parameter<Action>(static () => { })
-        };
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
 
-        drawer.Draw(group);
+        drawer.Draw(null, static () => { }, static () => { });
 
         Assert.AreEqual(1, _renderer.DisabledTexts.Count);
-        Assert.AreEqual("(ConfigTransferDrawer requires a non-null 'Import Path' parameter)", _renderer.DisabledTexts[0]);
+        Assert.AreEqual("(ConfigTransferDrawer requires a non-null config-file path parameter)", _renderer.DisabledTexts[0]);
     }
 
     /// <summary>
-    /// Verifies that editing the import path updates the parameter through the validating setter.
+    /// Verifies that the shared path input uses the remaining first-row width after subtracting label, browse button, and spacing.
     /// </summary>
     [TestMethod]
-    public void Draw_ImportPathEdited_UpdatesParameterValue()
+    public void Draw_Layout_ComputesSharedPathInputWidth()
     {
-        var drawer = new ConfigTransferDrawer(_renderer);
-        var group = CreateValidGroup();
-        group.ImportPath = CreateStringParameter(
-            "importPath",
-            "old-import.json",
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+
+        drawer.Draw(pathParameter, static () => { }, static () => { });
+
+        Assert.AreEqual(408f, _renderer.Widths[0]);
+    }
+
+    /// <summary>
+    /// Verifies that editing the shared path updates the parameter through the validating setter.
+    /// </summary>
+    [TestMethod]
+    public void Draw_ConfigFilePathEdited_UpdatesParameterValue()
+    {
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter(
+            "configFilePath",
+            "old-config.json",
             new ParameterMetadata { MaxLength = 512 });
-        _renderer.InputResults.Enqueue((true, "new-import.json"));
+        _renderer.InputResults.Enqueue((true, "new-config.json"));
 
-        drawer.Draw(group);
+        drawer.Draw(pathParameter, static () => { }, static () => { });
 
-        Assert.AreEqual("new-import.json", group.ImportPath.Value);
-        Assert.AreEqual(2, _renderer.Inputs.Count);
-        Assert.AreEqual("##importPath", _renderer.Inputs[0].Label);
+        Assert.AreEqual("new-config.json", pathParameter.Value);
+        Assert.AreEqual(1, _renderer.Inputs.Count);
+        Assert.AreEqual("##configFilePath", _renderer.Inputs[0].Label);
         Assert.AreEqual((uint)512, _renderer.Inputs[0].MaxLength);
     }
 
     /// <summary>
-    /// Verifies that editing the export path updates the parameter through the validating setter.
+    /// Verifies that the import and export buttons use equal widths and fill the second row evenly.
     /// </summary>
     [TestMethod]
-    public void Draw_ExportPathEdited_UpdatesParameterValue()
+    public void Draw_ActionButtons_UseEqualWidths()
     {
-        var drawer = new ConfigTransferDrawer(_renderer);
-        var group = CreateValidGroup();
-        _renderer.InputResults.Enqueue((false, group.ImportPath.Value ?? string.Empty));
-        _renderer.InputResults.Enqueue((true, "new-export.json"));
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
 
-        drawer.Draw(group);
+        drawer.Draw(pathParameter, static () => { }, static () => { });
 
-        Assert.AreEqual("new-export.json", group.ExportPath.Value);
-        Assert.AreEqual("##exportPath", _renderer.Inputs[1].Label);
+        Assert.AreEqual(2, _renderer.SizedButtons.Count);
+        Assert.AreEqual(296f, _renderer.SizedButtons[0].Size.X);
+        Assert.AreEqual(296f, _renderer.SizedButtons[1].Size.X);
     }
 
     /// <summary>
@@ -94,16 +104,15 @@ public sealed class ConfigTransferDrawerTests
     public void Draw_WhenImportButtonClicked_InvokesImportAction()
     {
         var importCount = 0;
-        var drawer = new ConfigTransferDrawer(_renderer);
-        var group = CreateValidGroup();
-        group.ImportConfig = new Parameter<Action>(() => importCount++);
-        _renderer.ButtonResults.Enqueue(true);
-        _renderer.ButtonResults.Enqueue(false);
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        _renderer.SizedButtonResults.Enqueue(true);
+        _renderer.SizedButtonResults.Enqueue(false);
 
-        drawer.Draw(group);
+        drawer.Draw(pathParameter, () => importCount++, static () => { });
 
         Assert.AreEqual(1, importCount);
-        Assert.AreEqual("Import##importPath", _renderer.Buttons[0]);
+        Assert.AreEqual("Import##configFilePath", _renderer.SizedButtons[0].Label);
     }
 
     /// <summary>
@@ -113,47 +122,98 @@ public sealed class ConfigTransferDrawerTests
     public void Draw_WhenExportButtonClicked_InvokesExportAction()
     {
         var exportCount = 0;
-        var drawer = new ConfigTransferDrawer(_renderer);
-        var group = CreateValidGroup();
-        group.ExportConfig = new Parameter<Action>(() => exportCount++);
-        _renderer.ButtonResults.Enqueue(false);
-        _renderer.ButtonResults.Enqueue(true);
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        _renderer.SizedButtonResults.Enqueue(false);
+        _renderer.SizedButtonResults.Enqueue(true);
 
-        drawer.Draw(group);
+        drawer.Draw(pathParameter, static () => { }, () => exportCount++);
 
         Assert.AreEqual(1, exportCount);
-        Assert.AreEqual("Export##exportPath", _renderer.Buttons[1]);
+        Assert.AreEqual("Export##configFilePath", _renderer.SizedButtons[1].Label);
+    }
+
+    /// <summary>
+    /// Verifies that selecting an import file from the browse popup updates the shared path.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenBrowseImportSelected_UpdatesConfigFilePath()
+    {
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        _renderer.ButtonResults.Enqueue(true);
+        _renderer.BeginPopupResults.Enqueue(true);
+        _renderer.SelectableResults.Enqueue(true);
+        _renderer.SelectableResults.Enqueue(false);
+        _picker.ImportResults.Enqueue((true, "selected-import.json"));
+
+        drawer.Draw(pathParameter, static () => { }, static () => { });
+
+        Assert.AreEqual("selected-import.json", pathParameter.Value);
+        Assert.AreEqual(1, _picker.ImportPickCallCount);
+        Assert.AreEqual("ConfigTransferBrowse##configFilePath", _renderer.OpenedPopups[0]);
+        Assert.AreEqual("Choose import file...", _renderer.Selectables[0]);
+        Assert.AreEqual("Choose export destination...", _renderer.Selectables[1]);
+    }
+
+    /// <summary>
+    /// Verifies that selecting an export file from the browse popup updates the shared path.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenBrowseExportSelected_UpdatesConfigFilePath()
+    {
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        _renderer.ButtonResults.Enqueue(true);
+        _renderer.BeginPopupResults.Enqueue(true);
+        _renderer.SelectableResults.Enqueue(false);
+        _renderer.SelectableResults.Enqueue(true);
+        _picker.ExportResults.Enqueue((true, "selected-export.json"));
+
+        drawer.Draw(pathParameter, static () => { }, static () => { });
+
+        Assert.AreEqual("selected-export.json", pathParameter.Value);
+        Assert.AreEqual(1, _picker.ExportPickCallCount);
+    }
+
+    /// <summary>
+    /// Verifies that picker cancellation leaves the shared path unchanged.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenBrowsePickerCancelled_LeavesConfigFilePathUnchanged()
+    {
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        _renderer.ButtonResults.Enqueue(true);
+        _renderer.BeginPopupResults.Enqueue(true);
+        _renderer.SelectableResults.Enqueue(true);
+        _renderer.SelectableResults.Enqueue(false);
+        _picker.ImportResults.Enqueue((false, null));
+
+        drawer.Draw(pathParameter, static () => { }, static () => { });
+
+        Assert.AreEqual("config.json", pathParameter.Value);
     }
 
     /// <summary>
     /// Verifies that invalid path edits keep the previous value and render inline validation feedback.
     /// </summary>
     [TestMethod]
-    public void Draw_InvalidImportPath_RendersValidationMessageAndPreservesPreviousValue()
+    public void Draw_InvalidConfigFilePath_RendersValidationMessageAndPreservesPreviousValue()
     {
-        var drawer = new ConfigTransferDrawer(_renderer);
-        var group = CreateValidGroup();
-        group.ImportPath = CreateStringParameter(
-            "importPath",
-            "valid-import.json",
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter(
+            "configFilePath",
+            "valid-config.json",
             new ParameterMetadata { Required = true, AllowWhitespace = false });
         _renderer.InputResults.Enqueue((true, "   "));
 
-        drawer.Draw(group);
+        drawer.Draw(pathParameter, static () => { }, static () => { });
 
-        Assert.AreEqual("valid-import.json", group.ImportPath.Value);
+        Assert.AreEqual("valid-config.json", pathParameter.Value);
         Assert.AreEqual(1, _renderer.ColoredTexts.Count);
         Assert.AreEqual("Value cannot be whitespace only.", _renderer.ColoredTexts[0].Text);
     }
-
-    private static TestTransferGroup CreateValidGroup()
-        => new()
-        {
-            ImportPath = CreateStringParameter("importPath", "import.json"),
-            ExportPath = CreateStringParameter("exportPath", "export.json"),
-            ImportConfig = new Parameter<Action>(static () => { }),
-            ExportConfig = new Parameter<Action>(static () => { })
-        };
 
     private static Parameter<string> CreateStringParameter(string key, string value, ParameterMetadata? metadata = null)
     {
@@ -163,25 +223,4 @@ public sealed class ConfigTransferDrawerTests
         return parameter;
     }
 
-    private sealed class TestTransferGroup : IConfigTransferGroup
-    {
-        public Parameter<string> ImportPath { get; set; } = null!;
-
-        public Parameter<string> ExportPath { get; set; } = null!;
-
-        public Parameter<Action> ImportConfig { get; set; } = null!;
-
-        public Parameter<Action> ExportConfig { get; set; } = null!;
-    }
-
-    private sealed class InvalidTransferGroup : IConfigTransferGroup
-    {
-        public Parameter<string> ImportPath { get; set; } = null!;
-
-        public Parameter<string> ExportPath { get; set; } = null!;
-
-        public Parameter<Action> ImportConfig { get; set; } = null!;
-
-        public Parameter<Action> ExportConfig { get; set; } = null!;
-    }
 }

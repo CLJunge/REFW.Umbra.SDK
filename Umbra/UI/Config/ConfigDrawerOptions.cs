@@ -13,7 +13,8 @@ public sealed class ConfigDrawerOptions
     internal static ConfigDrawerOptions Default { get; } = new()
     {
         ShowSearchBar = false,
-        SuppressRootNode = false
+        SuppressRootNode = false,
+        Transfer = null
     };
 
     /// <summary>
@@ -31,6 +32,15 @@ public sealed class ConfigDrawerOptions
     /// </value>
     public bool SuppressRootNode { get; init; }
 
+    /// <summary>
+    /// Gets or sets the optional built-in config transfer UI settings.
+    /// </summary>
+    /// <remarks>
+    /// When <see langword="null"/> or when <see cref="ConfigTransferOptions.Enabled"/> is <see langword="false"/>,
+    /// the wrapped drawer or section renders no built-in config transfer UI.
+    /// </remarks>
+    public ConfigTransferOptions? Transfer { get; init; }
+
     /// <summary>Initializes a new instance of <see cref="ConfigDrawerOptions"/> with all options set to their defaults.</summary>
     public ConfigDrawerOptions() { }
 
@@ -38,6 +48,7 @@ public sealed class ConfigDrawerOptions
     {
         ShowSearchBar = source.ShowSearchBar;
         SuppressRootNode = source.SuppressRootNode;
+        Transfer = source.Transfer;
     }
 
     internal ConfigDrawerOptions WithShowSearchBar(bool showSearchBar)
@@ -48,5 +59,10 @@ public sealed class ConfigDrawerOptions
     internal ConfigDrawerOptions WithSuppressRootNode(bool suppressRootNode)
     {
         return new ConfigDrawerOptions(this) { SuppressRootNode = suppressRootNode };
+    }
+
+    internal ConfigDrawerOptions WithTransfer(ConfigTransferOptions? transfer)
+    {
+        return new ConfigDrawerOptions(this) { Transfer = transfer };
     }
 }

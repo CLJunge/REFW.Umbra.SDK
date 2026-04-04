@@ -284,6 +284,74 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
+    /// Tests that the additive store-aware factory succeeds without changing existing section behavior.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithOptions_ConstructsSuccessfully()
+    {
+        var config = new TestConfig();
+        using var tempDirectory = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+        var options = new ConfigDrawerOptions
+        {
+            ShowSearchBar = true,
+            Transfer = new ConfigTransferOptions { Enabled = true }
+        };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "transfer-enabled");
+
+        Assert.AreEqual("transfer-enabled", section.SectionId);
+    }
+
+    /// <summary>
+    /// Tests that the additive store-aware factory rejects a null store.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_NullStore_ThrowsArgumentNullException()
+    {
+        var config = new TestConfig();
+        var options = new ConfigDrawerOptions { Transfer = new ConfigTransferOptions { Enabled = true } };
+
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(
+            () => _ = ConfigSection<TestConfig>.CreateWithStore(config, null!, options));
+
+        Assert.AreEqual("store", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that the store-aware factory leaves the built-in transfer feature disabled when transfer is not enabled.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WhenTransferDisabled_DoesNotCreateTransferFeature()
+    {
+        using var tempDirectory = new TempDirectory();
+        var config = new TestConfig();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(config, store, new ConfigDrawerOptions());
+
+        Assert.IsNull(GetTransferFeature(section));
+    }
+
+    /// <summary>
+    /// Tests that the store-aware factory creates the built-in transfer feature when transfer is enabled.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WhenTransferEnabled_CreatesTransferFeature()
+    {
+        using var tempDirectory = new TempDirectory();
+        var config = new TestConfig();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Transfer = new ConfigTransferOptions { Enabled = true } });
+
+        Assert.IsNotNull(GetTransferFeature(section));
+    }
+
+    /// <summary>
     /// Tests that the section preserves caller-enabled search while suppressing the wrapped drawer root node.
     /// </summary>
     [TestMethod]
@@ -391,6 +459,50 @@ public sealed class ConfigSectionTests
     {
         [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
+    }
+
+    /// <summary>
+    /// Minimal transfer-capable store stub used by the store-aware section factory tests.
+    /// </summary>
+    private sealed class TestConfigTransferStore(string filePath) : IConfigTransferStore
+    {
+        public string FilePath => filePath;
+
+        public bool IsLoaded => true;
+
+        public bool IsDisposed => false;
+
+        public void Export(string filePath)
+        {
+        }
+
+        public SettingsImportReport Import(string filePath, SettingsImportOptions? options = null)
+            => new();
+    }
+
+    private static object? GetTransferFeature<T>(ConfigSection<T> section)
+        where T : class
+        => typeof(ConfigSection<T>)
+            .GetField("_transferFeature", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            ?.GetValue(section);
+
+    private sealed class TempDirectory : IDisposable
+    {
+        internal TempDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path);
+        }
+
+        internal string Path { get; }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+                Directory.Delete(Path, recursive: true);
+
+            GC.SuppressFinalize(this);
+        }
     }
 
     /// <summary>

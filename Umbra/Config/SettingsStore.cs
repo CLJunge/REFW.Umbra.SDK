@@ -14,7 +14,7 @@ namespace Umbra.Config;
 /// The configuration class type. Must have a public parameterless constructor.
 /// </typeparam>
 [DebuggerDisplay("SettingsStore for {typeof(TConfig).Name}, Parameters: {_parameters.Count}")]
-public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCopyTarget<TConfig>
+public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCopyTarget<TConfig>, IConfigTransferStore
     where TConfig : class, new()
 {
     private readonly Dictionary<string, IParameter> _parameters = [];
@@ -61,6 +61,11 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     /// <see cref="ObjectDisposedException"/>.
     /// </remarks>
     public bool IsDisposed => _disposed;
+
+    /// <summary>
+    /// Gets the configured main settings file path for this store.
+    /// </summary>
+    public string FilePath => _persistenceCoordinator.FilePath;
 
     /// <summary>
     /// Persists the current registered parameter values to the configured file path.
