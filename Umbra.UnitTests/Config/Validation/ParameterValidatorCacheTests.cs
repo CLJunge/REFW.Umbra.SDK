@@ -9,6 +9,26 @@ namespace Umbra.Config.Validation.UnitTests;
 public sealed class ParameterValidatorCacheTests
 {
     /// <summary>
+    /// Verifies that the first successful lookup creates and returns a validator instance.
+    /// </summary>
+    [TestMethod]
+    public void TryGet_FirstLookup_CreatesValidatorInstance()
+    {
+        // Arrange
+        CountingValidator.Reset();
+        var cache = new ParameterValidatorCache();
+
+        // Act
+        var result = cache.TryGet(typeof(CountingValidator), out var validator, out var failureReason);
+
+        // Assert
+        Assert.IsTrue(result);
+        Assert.IsNotNull(validator);
+        Assert.IsNull(failureReason);
+        Assert.AreEqual(1, CountingValidator.InstanceCount);
+    }
+
+    /// <summary>
     /// Verifies that the cache reuses one validator instance while the validator type is unchanged.
     /// </summary>
     [TestMethod]
@@ -74,6 +94,25 @@ public sealed class ParameterValidatorCacheTests
         Assert.AreEqual("Validator type 'System.String' must implement IParameterValidator.", failureReason);
     }
 
+    /// <summary>
+    /// Verifies that validator creation failures are reported as deterministic cache failures.
+    /// </summary>
+    [TestMethod]
+    public void TryGet_WhenValidatorConstructionThrows_ReturnsFalseWithFailureReason()
+    {
+        // Arrange
+        var cache = new ParameterValidatorCache();
+
+        // Act
+        var result = cache.TryGet(typeof(ThrowingConstructorValidator), out _, out var failureReason);
+
+        // Assert
+        Assert.IsFalse(result);
+        Assert.IsNotNull(failureReason);
+        StringAssert.Contains(failureReason, $"Validator '{typeof(ThrowingConstructorValidator).FullName}' could not be created:");
+        StringAssert.Contains(failureReason, "Constructor failure.");
+    }
+
     private sealed class CountingValidator : IParameterValidator
     {
         internal static int InstanceCount;
@@ -96,5 +135,16 @@ public sealed class ParameterValidatorCacheTests
             => ParameterValidationResult.Valid();
 
         internal static void Reset() => InstanceCount = 0;
+    }
+
+    private sealed class ThrowingConstructorValidator : IParameterValidator
+    {
+        public ThrowingConstructorValidator()
+        {
+            throw new InvalidOperationException("Constructor failure.");
+        }
+
+        public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
+            => ParameterValidationResult.Valid();
     }
 }
