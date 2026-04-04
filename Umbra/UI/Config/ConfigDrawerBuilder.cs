@@ -1,5 +1,6 @@
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config;
 
@@ -24,6 +25,11 @@ internal sealed class ConfigDrawerBuilder
     internal readonly List<IDisposable> Disposables = [];
 
     /// <summary>
+    /// Gets the flat search index collected during the current <see cref="Collect"/> pass.
+    /// </summary>
+    internal ConfigSearchIndex SearchIndex { get; } = new();
+
+    /// <summary>
     /// Walks <paramref name="obj"/> and rebuilds the cached node and disposable lists for the supplied configuration scope.
     /// </summary>
     internal void Collect(
@@ -37,6 +43,7 @@ internal sealed class ConfigDrawerBuilder
         Nodes.Clear();
         Disposables.Clear();
         _allCategoryNodes.Clear();
+        SearchIndex.Clear();
 
         var typeMeta = TypeDrawMetadata.For(type);
         var rootGroupPath = typeMeta.SettingsPrefix ?? string.Empty;
@@ -48,7 +55,7 @@ internal sealed class ConfigDrawerBuilder
             labelMarginOverride ?? typeMeta.LabelMarginAttr,
             RegisterCategoryNode);
 
-        ConfigDrawTreeCollector.CollectInto(scope, obj, type, RegisterCategoryNode, Disposables, SortNodesInPlace);
+        ConfigDrawTreeCollector.CollectInto(scope, obj, type, RegisterCategoryNode, Disposables, SortNodesInPlace, SearchIndex);
 
         foreach (var node in scope.Nodes)
             Nodes.Add(node);

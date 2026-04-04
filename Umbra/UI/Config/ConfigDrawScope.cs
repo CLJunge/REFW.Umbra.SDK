@@ -63,7 +63,7 @@ internal sealed class ConfigDrawScope(
     /// </returns>
     internal CategoryNode CreateContainerNode(string category)
     {
-        var node = new CategoryNode(category, CollapseAttr, CategoryIndentAttr);
+        var node = new CategoryNode(category, BuildCategoryBranchId(category), CollapseAttr, CategoryIndentAttr);
         foreach (var child in Nodes)
             node.Children.Add(child);
 
@@ -101,11 +101,16 @@ internal sealed class ConfigDrawScope(
             return;
         }
 
-        var node = new CategoryNode(category, CollapseAttr, CategoryIndentAttr);
+        var node = new CategoryNode(category, BuildCategoryBranchId(category), CollapseAttr, CategoryIndentAttr);
         Nodes.Add(node);
         _namedCategories[category] = node;
         _currentCategoryNode = node;
         _lastCategory = category;
         registerCategory(node);
     }
+
+    private string BuildCategoryBranchId(string category)
+        => string.IsNullOrEmpty(GroupPath)
+            ? $"category:{category}"
+            : $"category:{GroupPath}|{category}";
 }

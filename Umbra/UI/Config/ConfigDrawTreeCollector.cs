@@ -1,5 +1,6 @@
 using Umbra.Config;
 using Umbra.UI.Config.Nodes;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config;
 
@@ -20,13 +21,15 @@ internal static class ConfigDrawTreeCollector
     /// <param name="registerCategoryNode">Tracks materialized category nodes for later sorting.</param>
     /// <param name="disposables">Collects disposable resources created while resolving nodes and drawers.</param>
     /// <param name="sortNodesInPlace">Applies the caller's stable local ordering policy.</param>
+    /// <param name="searchIndex">Collects the flat search index built alongside the rendered nodes.</param>
     internal static void CollectInto(
         ConfigDrawScope scope,
         object obj,
         Type type,
         Action<CategoryNode> registerCategoryNode,
         List<IDisposable> disposables,
-        Action<List<IDrawNode>> sortNodesInPlace)
+        Action<List<IDrawNode>> sortNodesInPlace,
+        ConfigSearchIndex searchIndex)
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(obj);
@@ -34,6 +37,7 @@ internal static class ConfigDrawTreeCollector
         ArgumentNullException.ThrowIfNull(registerCategoryNode);
         ArgumentNullException.ThrowIfNull(disposables);
         ArgumentNullException.ThrowIfNull(sortNodesInPlace);
+        ArgumentNullException.ThrowIfNull(searchIndex);
 
         var typeMeta = TypeDrawMetadata.For(type);
         if (typeMeta.NestedDrawerAttr is not null)
@@ -62,6 +66,13 @@ internal static class ConfigDrawTreeCollector
                     classLabelMargin?.Pixels);
                 if (resource is not null)
                     disposables.Add(resource);
+
+                searchIndex.AddParameterResult(
+                    parameter.Key,
+                    parameter.Metadata.ResolvedLabel,
+                    parameter.Metadata.Description,
+                    category,
+                    scope.GroupPath);
 
                 scope.AddNode(category, node);
                 continue;
@@ -120,7 +131,7 @@ internal static class ConfigDrawTreeCollector
                 registerCategoryNode,
                 childAlignmentGroup);
 
-            CollectInto(childScope, nested, propType, registerCategoryNode, disposables, sortNodesInPlace);
+            CollectInto(childScope, nested, propType, registerCategoryNode, disposables, sortNodesInPlace, searchIndex);
 
             if (nestedLocalCategory is null)
                 sortNodesInPlace(childScope.Nodes);

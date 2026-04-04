@@ -1,7 +1,7 @@
 using Hexa.NET.ImGui;
-using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Rendering;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config;
 
@@ -15,6 +15,9 @@ namespace Umbra.UI.Config;
 /// <para>
 /// Pass a configuration instance returned by <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so each registered parameter already carries resolved <see cref="Umbra.Config.ParameterMetadata"/>. Nested-group wrapper attributes are still read from reflected property and type metadata during the one-time build pass.
 /// </para>
+/// <para>
+/// Root-node composition is delegated to <see cref="ConfigDrawerRootNodeComposer"/>, built-in search-row UI is delegated to <see cref="ConfigDrawerSearchController"/>, and per-frame search-state application is delegated to <see cref="ConfigDrawerSearchApplicator"/>.
+/// </para>
 /// </remarks>
 /// <typeparam name="TConfig">The configuration type rendered by the drawer.</typeparam>
 public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
@@ -22,7 +25,9 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     private readonly List<IDrawNode> _nodes;
     private readonly List<IDisposable> _disposables;
     private readonly string _idScope;
-    private readonly IConfigDrawerScope _scope;
+    private readonly IConfigDrawerRenderer _renderer;
+    private readonly ConfigSearchIndex _searchIndex;
+    private readonly ConfigDrawerSearchController _searchController;
     private bool _disposed;
 
     /// <summary>
@@ -51,80 +56,100 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
     public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)
-        : this(config, idScope, ImGuiConfigRenderContext.Instance, suppressRootNode)
+        : this(config, idScope, ConfigDrawerOptions.Default, ImGuiConfigRenderContext.Instance, suppressRootNode)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new <see cref="ConfigDrawer{TConfig}"/> by reflecting over
+    /// <paramref name="config"/> once to build the complete draw tree, using the supplied drawer options.
+    /// </summary>
+    /// <param name="config">The configuration instance whose draw tree should be built.</param>
+    /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
+    /// <param name="options">The optional feature flags that customize drawer behavior.</param>
+    /// <param name="suppressRootNode">
+    /// When <see langword="true"/>, suppresses the root-node-attribute-driven root tree wrapper.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    public ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, bool suppressRootNode = false)
+        : this(config, idScope, options, ImGuiConfigRenderContext.Instance, suppressRootNode)
     {
     }
 
     /// <summary>
     /// Initializes a new <see cref="ConfigDrawer{TConfig}"/> by reflecting over
     /// <paramref name="config"/> once to build the complete draw tree, using the specified
-    /// draw-scope implementation.
+    /// renderer seam.
     /// </summary>
     /// <param name="config">The configuration instance whose draw tree should be built.</param>
     /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
-    /// <param name="scope">The scope implementation used to bracket each draw call.</param>
+    /// <param name="options">The optional feature flags that customize drawer behavior.</param>
+    /// <param name="renderer">The renderer seam used for outer drawer chrome, ID-scope operations, and search-row layout.</param>
     /// <param name="suppressRootNode">
     /// When <see langword="true"/>, suppresses the root-node-attribute-driven root tree wrapper.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="config"/> or <paramref name="scope"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="config"/>, <paramref name="options"/>, or <paramref name="renderer"/> is <see langword="null"/>.
     /// </exception>
-    internal ConfigDrawer(TConfig config, string idScope, IConfigDrawerScope scope, bool suppressRootNode = false)
+    internal ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, IConfigDrawerRenderer renderer, bool suppressRootNode = false)
     {
         ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(renderer);
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
-        _scope = scope;
+        _renderer = renderer;
         var builder = new ConfigDrawerBuilder();
         builder.Collect(config, typeof(TConfig));
         builder.SortAll();
+        _searchIndex = builder.SearchIndex;
+        _searchController = new ConfigDrawerSearchController(options, _renderer, _searchIndex);
         _disposables = builder.Disposables;
 
-        var rootAttr = GetRootNodeMetadata(typeof(TConfig));
-        if (rootAttr.HasValue && !suppressRootNode)
-        {
-            var label = rootAttr.Value.Label ?? typeof(TConfig).Name.ToDisplayName();
-            _nodes = [new RootTreeNode(label, rootAttr.Value.DefaultOpen, builder.Nodes)];
-        }
-        else
-        {
-            _nodes = builder.Nodes;
-        }
+        _nodes = ConfigDrawerRootNodeComposer.Compose<TConfig>(
+            _idScope,
+            builder.Nodes,
+            _searchIndex,
+            suppressRootNode);
     }
 
     /// <summary>
     /// Initializes a new <see cref="ConfigDrawer{TConfig}"/> with a pre-built node list.
     /// </summary>
     /// <remarks>
-    /// This constructor exists for tests that need to verify draw ordering, disposal behavior, and
-    /// scope cleanup without building a runtime-backed ImGui node tree.
+    /// This constructor exists for tests that need to verify draw ordering, disposal behavior, search-state application, and
+    /// renderer cleanup without building a runtime-backed ImGui node tree.
     /// </remarks>
     /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
     /// <param name="nodes">The pre-built nodes to draw each frame.</param>
     /// <param name="disposables">The disposable resources owned by the drawer.</param>
-    /// <param name="scope">The scope implementation used to bracket each draw call.</param>
+    /// <param name="renderer">The renderer seam used to verify drawer-level UI operations without an active ImGui frame.</param>
+    /// <param name="options">Optional feature flags that customize drawer behavior for the test instance. When <see langword="null"/>, <see cref="ConfigDrawerOptions.Default"/> is used.</param>
+    /// <param name="searchIndex">The pre-built flat search index used by the test instance. When <see langword="null"/>, an empty index is created.</param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="nodes"/>, <paramref name="disposables"/>, or
-    /// <paramref name="scope"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="nodes"/>, <paramref name="disposables"/>, or <paramref name="renderer"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.
     /// </exception>
-    internal ConfigDrawer(string idScope, List<IDrawNode> nodes, List<IDisposable> disposables, IConfigDrawerScope scope)
+    internal ConfigDrawer(string idScope, List<IDrawNode> nodes, List<IDisposable> disposables, IConfigDrawerRenderer renderer, ConfigDrawerOptions? options = null, ConfigSearchIndex? searchIndex = null)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(disposables);
-        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(renderer);
         if (string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
+        var effectiveOptions = options ?? ConfigDrawerOptions.Default;
         _nodes = nodes;
         _disposables = disposables;
-        _scope = scope;
+        _renderer = renderer;
+        _searchIndex = searchIndex ?? new ConfigSearchIndex();
+        _searchController = new ConfigDrawerSearchController(effectiveOptions, _renderer, _searchIndex);
     }
 
     /// <summary>
@@ -138,15 +163,17 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
         if (_disposed)
             return;
 
-        _scope.PushId(_idScope);
+        _renderer.PushId(_idScope);
         try
         {
+            _searchController.DrawControls();
+            ConfigDrawerSearchApplicator.Apply(_nodes, _searchIndex, _searchController.CurrentState);
             foreach (var node in _nodes)
                 node.Draw();
         }
         finally
         {
-            _scope.PopId();
+            _renderer.PopId();
         }
     }
 
@@ -162,14 +189,5 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
         _disposed = true;
         foreach (var d in _disposables) d.Dispose();
         GC.SuppressFinalize(this);
-    }
-
-    private static (string? Label, bool DefaultOpen)? GetRootNodeMetadata(Type type)
-    {
-        foreach (var attr in type.GetCustomAttributes(inherit: true))
-            if (attr is UmbraRootNodeAttribute prefixed)
-                return (prefixed.Label, prefixed.DefaultOpen);
-
-        return null;
     }
 }

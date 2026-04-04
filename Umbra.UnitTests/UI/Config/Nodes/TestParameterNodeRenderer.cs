@@ -5,9 +5,14 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 /// </summary>
 internal sealed class TestParameterNodeRenderer : IParameterNodeRenderer
 {
+    public List<(Hexa.NET.ImGui.ImGuiCol Color, System.Numerics.Vector4 Value)> PushedStyleColors { get; } = [];
     public int SpacingCount { get; private set; }
     public int IndentCount { get; private set; }
     public int UnindentCount { get; private set; }
+    public int PushStyleColorCount { get; private set; }
+    public int PopStyleColorCount { get; private set; }
+    public int ScrollHereCount { get; private set; }
+    public int KeyboardFocusCount { get; private set; }
     public float? LastIndentAmount { get; private set; }
     public float? LastUnindentAmount { get; private set; }
 
@@ -24,4 +29,19 @@ internal sealed class TestParameterNodeRenderer : IParameterNodeRenderer
         UnindentCount++;
         LastUnindentAmount = amount;
     }
+
+    public void PushStyleColor(Hexa.NET.ImGui.ImGuiCol color, System.Numerics.Vector4 value)
+    {
+        PushStyleColorCount++;
+        PushedStyleColors.Add((color, value));
+    }
+
+    public void PopStyleColor(int count)
+        => PopStyleColorCount += count;
+
+    public void SetScrollHereY(float centerYRatio)
+        => ScrollHereCount++;
+
+    public void SetKeyboardFocusHere()
+        => KeyboardFocusCount++;
 }

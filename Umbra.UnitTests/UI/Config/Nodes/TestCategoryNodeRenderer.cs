@@ -8,7 +8,7 @@ internal sealed class TestCategoryNodeRenderer : ICategoryNodeRenderer
     public List<float> Indents { get; } = [];
     public List<float> Unindents { get; } = [];
     public List<string> SeparatorLabels { get; } = [];
-    public List<(string Label, bool DefaultOpen)> TreeNodes { get; } = [];
+    public List<(string Label, bool DefaultOpen, bool ForceOpen)> TreeNodes { get; } = [];
     public int TreePopCount { get; private set; }
     public Queue<bool> TreeNodeResults { get; } = new();
 
@@ -18,9 +18,9 @@ internal sealed class TestCategoryNodeRenderer : ICategoryNodeRenderer
 
     public void SeparatorText(string label) => SeparatorLabels.Add(label);
 
-    public bool TreeNode(string label, bool defaultOpen)
+    public bool TreeNode(string label, bool defaultOpen, bool forceOpen = false)
     {
-        TreeNodes.Add((label, defaultOpen));
+        TreeNodes.Add((label, defaultOpen, forceOpen));
         if (TreeNodeResults.Count == 0)
             return false;
 

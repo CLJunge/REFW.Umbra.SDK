@@ -14,6 +14,7 @@ The repository contains three projects:
 - JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable enum parameters
 - Deferred auto-save with `DeferredSaveController<TConfig>`
 - Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
+- Built-in config search/filter UI with visible-match filtering, highlight styling, and previous/next result navigation in `ConfigDrawer<TConfig>` and `ConfigSection<TConfig>`
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
 - Validation attributes with inline feedback for rejected edits in `ConfigDrawer<TConfig>`
 - Custom parameter drawers, two-column drawers, and nested-group drawers
@@ -88,6 +89,18 @@ Current `REGame` values in the codebase:
 - `Parameter<TEnum?>` → enum combo box with a `<None>` option for `null`
 - Explicit `[UmbraDrawer<TDrawer>]` and `[UmbraTwoColumnDrawer<TDrawer>]` override the defaults
 
+## Search and filtering
+
+When `ConfigDrawerOptions.ShowSearchBar` is enabled, the built-in config UI adds a search row with:
+
+- a visible `Search` label
+- a filter input that narrows the rendered config tree to matching parameters
+- match highlighting for visible search hits
+- previous/next navigation buttons that move the focused result
+- automatic branch expansion and scroll-into-view for the explicitly selected result
+
+Query changes do not auto-focus results. Focus moves only when the user navigates with the previous/next controls.
+
 ## Validation attributes
 
 - `[UmbraRequired]` rejects `null` and empty strings
@@ -121,7 +134,7 @@ REFW.Umbra
 │  │  ├─ Config
 │  │  │  ├─ ConfigDrawer<TConfig>, ConfigSection<TConfig>
 │  │  │  ├─ control builders, draw-tree composition, render context, nodes
-│  │  │  └─ custom drawers and nested-group drawers
+│  │  │  └─ custom drawers, nested-group drawers, and built-in search state/indexing
 │  │  ├─ LiveState
 │  │  │  ├─ LiveStateSection<T>
 │  │  │  ├─ ILiveStateSectionDrawer<T>
@@ -158,9 +171,10 @@ REFW.Umbra
 2. Load it with `SettingsStore<TConfig>.Load()`.
 3. Optionally attach `DeferredSaveController<TConfig>` after load.
 4. Render config through `ConfigDrawer<TConfig>` directly or through `ConfigSection<TConfig>` inside `PluginPanel`.
-5. For live state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
-6. Host the plugin instance through `PluginHost<TPlugin>` from a static REFramework entry-point class.
-7. On unload, run cleanup in isolated best-effort steps so one failure does not block later flush, save, or dispose work.
+5. Enable `ConfigDrawerOptions.ShowSearchBar` when the surface should expose built-in filtering and result navigation.
+6. For live state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
+7. Host the plugin instance through `PluginHost<TPlugin>` from a static REFramework entry-point class.
+8. On unload, run cleanup in isolated best-effort steps so one failure does not block later flush, save, or dispose work.
 
 ### Notes on persistence and lifecycle
 
@@ -208,7 +222,7 @@ The setup script downloads the latest REFramework nightly C# API package, stages
 ### Test
 
 ```bash
- dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj
+ dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj -c Release
 ```
 
 ### Local Visual Studio deployment hooks
@@ -280,7 +294,10 @@ public sealed class MyPlugin : UmbraPlugin
         _saveController = new DeferredSaveController<MyConfig>(_store);
 
         _panel = new PluginPanel("MyPlugin.RuntimePanel")
-            .Add(new ConfigSection<MyConfig>(config, "MyPlugin.RuntimeConfigSection"));
+            .Add(new ConfigSection<MyConfig>(
+                config,
+                new ConfigDrawerOptions { ShowSearchBar = true },
+                "MyPlugin.RuntimeConfigSection"));
 
         Log.Info("Loaded.");
     }
@@ -379,99 +396,4 @@ For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested conf
 
 ## Panel benchmarking
 
-`Umbra.UI.Panel.Benchmark` is compiled only when `BENCHMARK` is defined.
-
-`PluginPanelBenchmark` can measure one duplicate `PluginPanel.Draw()` call per frame and export CSV, JSON, and Markdown artifacts.
-
-When the benchmark target is a config-backed panel, you can either use `PluginPanelBenchmark.CreateForConfig(...)` or manually construct a duplicate benchmark panel and pass it to the `PluginPanelBenchmark` constructor. `Umbra.SamplePlugin` currently demonstrates the manual duplicate-panel constructor path:
-
-```csharp
-using REFrameworkNET;
-using Umbra.Config;
-using Umbra.Logging;
-using Umbra.Runtime;
-using Umbra.UI.Config;
-using Umbra.UI.Panel;
-using Umbra.UI.Panel.Benchmark;
-
-public sealed class MyPlugin : UmbraPlugin
-{
-    private static readonly PluginLogger _log = new("MyPlugin");
-
-    private PluginPanel? _panel;
-    private PluginPanelBenchmark? _panelBenchmark;
-    private SettingsStore<MyConfig>? _store;
-    private DeferredSaveController<MyConfig>? _saveController;
-
-    public MyPlugin() : base(_log) { }
-
-    public override void Initialize()
-    {
-        var pluginDir = API.GetPluginDirectory(GetType().Assembly);
-        var configPath = Path.Combine(pluginDir, "data", "MyPlugin", "config.json");
-        var benchmarkDirectory = Path.Combine(pluginDir, "data", "MyPlugin", "artifacts", "perf", "runtime", "panel-draw");
-
-        _store = new SettingsStore<MyConfig>(configPath);
-        var config = _store.Load();
-        _saveController = new DeferredSaveController<MyConfig>(_store);
-
-        _panel = new PluginPanel("MyPlugin.RuntimePanel")
-            .Add(new ConfigSection<MyConfig>(config, "MyPlugin.RuntimeConfigSection"));
-
-        _panelBenchmark = PluginPanelBenchmark.CreateForConfig(
-            "MyPlugin Panel Benchmark",
-            config,
-            "MyPlugin.BenchmarkPanel",
-            benchmarkDirectory,
-            sectionIdScope: "MyPlugin.BenchmarkConfigSection");
-    }
-
-    public override void Shutdown()
-    {
-        _panelBenchmark?.CompleteActiveRun("PluginUnload");
-        _panelBenchmark?.Dispose();
-        _panelBenchmark = null;
-
-        _saveController?.Flush();
-        _saveController?.Dispose();
-        _saveController = null;
-
-        _store?.Save();
-        _store?.Dispose();
-        _store = null;
-
-        _panel?.Dispose();
-        _panel = null;
-    }
-
-    public override void OnPreImGuiDrawUI()
-    {
-        if (API.IsDrawingUI())
-        {
-            if (_panelBenchmark is null || !_panelBenchmark.ShouldSuppressRuntimePanel)
-                _panel?.Draw();
-
-            _panelBenchmark?.DrawWindow();
-        }
-
-        _saveController?.Tick();
-    }
-}
-```
-
-Use the constructor overload instead when the benchmark target panel is assembled manually from custom `IPanelSection` instances and should remain caller-owned.
-
-## Coding expectations
-
-The current repository conventions emphasize:
-
-- file-scoped namespaces where appropriate
-- nullable reference types enabled
-- small, dependency-light runtime code
-- ImGui-based in-game UI only
-- explicit loops and predicates instead of LINQ
-- XML documentation kept in sync with behavior changes
-
-## License
-
-MIT. See `LICENSE.txt`.
+`Umbra.UI.Panel.Benchmark` is compiled only when the `BENCHMARK` symbol is defined and provides optional timing helpers for panel rendering.

@@ -19,7 +19,7 @@ internal sealed class ImGuiConfigRenderContext :
     IRootTreeNodeRenderer,
     IIdScopeNodeRenderer,
     IParameterNodeRenderer,
-    IConfigDrawerScope,
+    IConfigDrawerRenderer,
     IButtonStyleColorSink
 {
     /// <summary>
@@ -53,6 +53,25 @@ internal sealed class ImGuiConfigRenderContext :
     public bool Button(string label, Vector2 size) => ImGui.Button(label, size);
 
     /// <inheritdoc/>
+    public float GetAvailableWidth() => ImGui.GetContentRegionAvail().X;
+
+    /// <inheritdoc/>
+    public float GetItemSpacingX() => ImGui.GetStyle().ItemSpacing.X;
+
+    /// <inheritdoc/>
+    public float GetTextWidth(string text) => ImGui.CalcTextSize(text).X;
+
+    /// <inheritdoc/>
+    public float GetButtonWidth(string label)
+        => ImGui.CalcTextSize(GetVisibleLabelText(label)).X + (ImGui.GetStyle().FramePadding.X * 2f);
+
+    /// <inheritdoc/>
+    public void SetNextItemWidth(float width) => ImGui.SetNextItemWidth(width);
+
+    /// <inheritdoc/>
+    public bool InputText(string label, ref string value, uint maxLength) => ImGui.InputText(label, ref value, maxLength);
+
+    /// <inheritdoc/>
     public bool PushButtonColors(ButtonStyle style) => ButtonStyleColors.Push(style);
 
     /// <inheritdoc/>
@@ -71,8 +90,11 @@ internal sealed class ImGuiConfigRenderContext :
     public void SeparatorText(string label) => ImGui.SeparatorText(label);
 
     /// <inheritdoc/>
-    public bool TreeNode(string label, bool defaultOpen)
+    public bool TreeNode(string label, bool defaultOpen, bool forceOpen = false)
     {
+        if (forceOpen)
+            ImGui.SetNextItemOpen(true, ImGuiCond.Always);
+
         var flags = defaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
         return ImGui.TreeNodeEx(label, flags);
     }
@@ -90,8 +112,20 @@ internal sealed class ImGuiConfigRenderContext :
     public void Spacing() => ImGui.Spacing();
 
     /// <inheritdoc/>
+    public void SetScrollHereY(float centerYRatio) => ImGui.SetScrollHereY(centerYRatio);
+
+    /// <inheritdoc/>
+    public void SetKeyboardFocusHere() => ImGui.SetKeyboardFocusHere();
+
+    /// <inheritdoc/>
     public void PushStyleColor(ImGuiCol color, Vector4 value) => ImGui.PushStyleColor(color, value);
 
     /// <inheritdoc/>
     public void PopStyleColor(int count) => ImGui.PopStyleColor(count);
+
+    private static string GetVisibleLabelText(string label)
+    {
+        var hiddenIdIndex = label.IndexOf("##", StringComparison.Ordinal);
+        return hiddenIdIndex >= 0 ? label[..hiddenIdIndex] : label;
+    }
 }

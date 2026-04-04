@@ -66,6 +66,8 @@ When generating or modifying code for this repository:
 - Prefer small, focused tests named by behavior and scenario.
 - `Assert.ThrowsException` does not exist here; use `Assert.ThrowsExactly` for exception assertions.
 - Use existing test seams and test doubles already present in the repo; do not add unnecessary abstractions just for tests.
+- After finishing each implementation phase, reevaluate whether all items for that phase were implemented properly.
+- When running tests in this repository, use the Release configuration.
 
 ## Key resources
 - `README.md` - architecture, runtime model, setup, and usage

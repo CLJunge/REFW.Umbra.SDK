@@ -46,8 +46,41 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     public ConfigSection(TConfig config, string? idScope = null,
         string? treeNodeLabel = null, bool treeNodeDefaultOpen = false,
         bool suppressTreeNode = false)
+        : this(config, ConfigDrawerOptions.Default, idScope, treeNodeLabel, treeNodeDefaultOpen, suppressTreeNode)
+    {
+    }
+
+    /// <summary>
+    /// Initialises a new config section wrapping a <see cref="ConfigDrawer{TConfig}"/>, using the supplied drawer options.
+    /// </summary>
+    /// <param name="config">The already loaded configuration instance to render.</param>
+    /// <param name="options">The optional feature flags that customize drawer behavior.</param>
+    /// <param name="idScope">
+    /// Optional stable ImGui widget ID sub-scope for this section. When omitted,
+    /// <c>typeof(<typeparamref name="TConfig"/>).FullName</c> (falling back to
+    /// <c>typeof(<typeparamref name="TConfig"/>).Name</c>) is used instead. Must not be empty or
+    /// whitespace when supplied.
+    /// </param>
+    /// <param name="treeNodeLabel">
+    /// Optional label for a collapsible tree node wrapped around this section by the owning
+    /// <see cref="PluginPanel"/>.
+    /// </param>
+    /// <param name="treeNodeDefaultOpen">
+    /// Whether the optional tree node starts expanded. Ignored when <paramref name="treeNodeLabel"/>
+    /// is <see langword="null"/>.
+    /// </param>
+    /// <param name="suppressTreeNode">
+    /// When <see langword="true"/>, suppresses any tree-node metadata inferred from
+    /// <see cref="UmbraRootNodeAttribute"/> on <typeparamref name="TConfig"/>.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
+    public ConfigSection(TConfig config, ConfigDrawerOptions options, string? idScope = null,
+        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false,
+        bool suppressTreeNode = false)
     {
         ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(options);
         if (idScope is not null && string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be empty or whitespace when supplied.", nameof(idScope));
 
@@ -72,7 +105,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
             }
         }
 
-        _drawer = new ConfigDrawer<TConfig>(config, _sectionId, suppressRootNode: true);
+        _drawer = new ConfigDrawer<TConfig>(config, _sectionId, options, suppressRootNode: true);
     }
 
     /// <inheritdoc/>

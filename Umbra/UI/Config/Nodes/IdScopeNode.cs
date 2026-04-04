@@ -1,4 +1,5 @@
 using Umbra.UI.Config.Rendering;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config.Nodes;
 
@@ -8,11 +9,12 @@ namespace Umbra.UI.Config.Nodes;
 /// <remarks>
 /// The scope ID is typically derived from the structural settings path of a nested group so repeated local widget labels remain isolated across sibling branches of the configuration tree. The pop operation always runs even if a child node throws while drawing.
 /// </remarks>
-internal sealed class IdScopeNode : IDrawNode
+internal sealed class IdScopeNode : IDrawNode, IConfigSearchNode
 {
     private readonly string _scopeId;
     private readonly List<IDrawNode> _children;
     private readonly IIdScopeNodeRenderer _renderer;
+    private bool _searchVisible = true;
 
     /// <summary>
     /// Initializes a new <see cref="IdScopeNode"/> that renders through the shared ImGui render context.
@@ -43,6 +45,9 @@ internal sealed class IdScopeNode : IDrawNode
     /// <inheritdoc/>
     public void Draw()
     {
+        if (!_searchVisible)
+            return;
+
         _renderer.PushId(_scopeId);
         try
         {
@@ -53,5 +58,36 @@ internal sealed class IdScopeNode : IDrawNode
         {
             _renderer.PopId();
         }
+    }
+
+    bool IConfigSearchNode.ApplySearch(ConfigSearchRenderState? searchState)
+    {
+        if (searchState is null || !searchState.HasActiveQuery)
+        {
+            _searchVisible = true;
+            ApplySearchToChildren(null);
+            return true;
+        }
+
+        _searchVisible = ApplySearchToChildren(searchState);
+        return _searchVisible;
+    }
+
+    private bool ApplySearchToChildren(ConfigSearchRenderState? searchState)
+    {
+        var hasVisibleChild = false;
+        foreach (var child in _children)
+        {
+            if (child is IConfigSearchNode searchNode)
+            {
+                if (searchNode.ApplySearch(searchState))
+                    hasVisibleChild = true;
+                continue;
+            }
+
+            hasVisibleChild = true;
+        }
+
+        return hasVisibleChild;
     }
 }

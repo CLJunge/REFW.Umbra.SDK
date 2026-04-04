@@ -107,8 +107,8 @@ public sealed class ParameterValidatorCacheTests
         // Assert
         Assert.IsFalse(result);
         Assert.IsNotNull(failureReason);
-        Assert.Contains(failureReason, $"Validator '{typeof(ThrowingConstructorValidator).FullName}' could not be created:");
-        Assert.Contains(failureReason, "Constructor failure.");
+        Assert.Contains($"Validator '{typeof(ThrowingConstructorValidator).FullName}' could not be created:", failureReason);
+        Assert.Contains("Exception has been thrown by the target of an invocation.", failureReason);
     }
 
     private sealed class CountingValidator : IParameterValidator
