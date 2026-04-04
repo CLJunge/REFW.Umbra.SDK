@@ -848,13 +848,13 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record SingleLineStringSamples
     {
-        [UmbraParameter, UmbraDisplayName("Profile Name"), UmbraDescription("A short single-line string sample."), UmbraMaxLength(40)]
+        [UmbraParameter, UmbraDisplayName("Profile Name"), UmbraDescription("A short single-line string sample with required and minimum-length validation."), UmbraRequired, UmbraMinLength(3), UmbraMaxLength(40)]
         public Parameter<string> ProfileName { get; set; } = new("Umbra Tester");
 
-        [UmbraParameter, UmbraDisplayName("Export Directory"), UmbraDescription("A longer single-line string sample."), UmbraMaxLength(120)]
+        [UmbraParameter, UmbraDisplayName("Export Directory"), UmbraDescription("A longer single-line string sample with required and regex validation."), UmbraRequired, UmbraRegex("^[A-Za-z0-9_./-]+$", Message = "Use letters, digits, underscores, dots, slashes, or dashes only."), UmbraMaxLength(120)]
         public Parameter<string> ExportDirectory { get; set; } = new("data/Umbra/SamplePlugin/exports");
 
-        [UmbraParameter, UmbraDisplayName("Search Filter"), UmbraDescription("A third single-line string sample used for quick manual edits."), UmbraMaxLength(60)]
+        [UmbraParameter, UmbraDisplayName("Search Filter"), UmbraDescription("A third single-line string sample that demonstrates required, minimum-length, regex, and custom-validator feedback."), UmbraRequired, UmbraMinLength(3), UmbraRegex("^[a-z0-9 _-]+$", Message = "Use lowercase letters, digits, spaces, underscores, or dashes only."), UmbraValidateWith<SearchFilterValidator>, UmbraMaxLength(60)]
         public Parameter<string> SearchFilter { get; set; } = new("player camera");
     }
 
@@ -864,7 +864,7 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record MultilineStringSamples
     {
-        [UmbraParameter, UmbraDisplayName("Notes"), UmbraDescription("A short multi-line text sample."), UmbraMultiline(3), UmbraMaxLength(160)]
+        [UmbraParameter, UmbraDisplayName("Notes"), UmbraDescription("A short multi-line text sample that allows whitespace-only content while still rejecting null or empty text."), UmbraRequired(AllowWhitespace = true), UmbraMultiline(3), UmbraMaxLength(160)]
         public Parameter<string> Notes { get; set; } = new("Use this field to validate multi-line text persistence.");
 
         [UmbraParameter, UmbraDisplayName("Changelog"), UmbraDescription("A larger multi-line text sample with more visible rows."), UmbraMultiline(5), UmbraMaxLength(320)]

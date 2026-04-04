@@ -9,6 +9,7 @@ namespace Umbra.UI.Config.Drawers.UnitTests;
 internal sealed class TestButtonDrawerRenderer : IButtonDrawerRenderer
 {
     public List<string> Texts { get; } = [];
+    public List<(Vector4 Color, string Text)> ColoredTexts { get; } = [];
     public List<string> DisabledTexts { get; } = [];
     public List<ButtonStyle> PushedStyles { get; } = [];
     public List<(Vector4 Normal, Vector4 Hovered, Vector4 Active)> PushedCustomColors { get; } = [];
@@ -45,5 +46,6 @@ internal sealed class TestButtonDrawerRenderer : IButtonDrawerRenderer
     public void SameLine() => SameLineCount++;
 
     public void DrawHelpMarker(string description) => HelpMarkers.Add(description);
+    public void TextColored(Vector4 color, string text) => ColoredTexts.Add((color, text));
     public void Text(string text) => Texts.Add(text);
 }

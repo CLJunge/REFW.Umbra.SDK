@@ -15,6 +15,7 @@ The repository contains three projects:
 - Deferred auto-save with `DeferredSaveController<TConfig>`
 - Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
+- Validation attributes with inline feedback for rejected edits in `ConfigDrawer<TConfig>`
 - Custom parameter drawers, two-column drawers, and nested-group drawers
 - Per-plugin logging with `PluginLogger`
 - Global SDK/runtime logging with `Logger`
@@ -87,6 +88,17 @@ Current `REGame` values in the codebase:
 - `Parameter<TEnum?>` → enum combo box with a `<None>` option for `null`
 - Explicit `[UmbraDrawer<TDrawer>]` and `[UmbraTwoColumnDrawer<TDrawer>]` override the defaults
 
+## Validation attributes
+
+- `[UmbraRequired]` rejects `null` and empty strings
+- `[UmbraRequired(AllowWhitespace = true)]` still rejects `null` and empty strings, but allows whitespace-only strings
+- `[UmbraMinLength(n)]` enforces an inclusive minimum string length
+- `[UmbraMaxLength(n)]` limits built-in string input capacity
+- `[UmbraRegex("pattern")]` enforces a regular-expression match for string values
+- `[UmbraValidateWith<TValidator>]` runs a custom `IParameterValidator`
+
+Validation failures on the non-throwing UI path do not crash the plugin or overwrite the last valid value. The attempted edit is rejected and the current validation message is rendered inline beneath the affected built-in string or numeric control.
+
 ## Custom drawers and sections
 
 - `[UmbraDrawer<TDrawer>]` uses an `IParameterDrawer`
@@ -155,6 +167,7 @@ REFW.Umbra
 - `DeferredSaveController<TConfig>` must be constructed after `Load()`.
 - `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed`.
 - `Save()`, listener APIs, `ResetAll()`, and `CopyValuesTo(...)` require a loaded store.
+- `Parameter<T>.Value` remains non-throwing for UI-driven edits; invalid values are rejected and preserve the last valid value.
 - On unreadable JSON, `Load()` attempts a timestamped `.invalid-*.json` backup and restores defaults.
 - If that backup cannot be created safely, the current session falls back to declared defaults and later `Save()` calls are suppressed to preserve the original file.
 - Changing `[UmbraPrefix("...")]` changes persisted key names; existing JSON is not migrated automatically.
@@ -227,8 +240,11 @@ public record MyConfig
     public Parameter<bool> IsEnabled { get; set; } = new(true);
 
     [UmbraParameter]
-    [UmbraDisplayName("Hotkey")]
-    public Parameter<int> Hotkey { get; set; } = new(574);
+    [UmbraDisplayName("Profile Name")]
+    [UmbraRequired]
+    [UmbraMinLength(3)]
+    [UmbraMaxLength(24)]
+    public Parameter<string> ProfileName { get; set; } = new("UmbraUser");
 }
 ```
 
@@ -359,7 +375,7 @@ public static class MyPluginHost
 }
 ```
 
-For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested config groups, hotkey drawers, buttons, enum controls, nested-group drawers, deferred saving, benchmark integration, robust shutdown, and `GameContext`-based compatibility gating.
+For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested config groups, hotkey drawers, buttons, enum controls, nested-group drawers, deferred saving, validation attributes with inline feedback, benchmark integration, robust shutdown, and `GameContext`-based compatibility gating.
 
 ## Panel benchmarking
 

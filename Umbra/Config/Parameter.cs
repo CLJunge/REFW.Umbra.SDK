@@ -1,16 +1,17 @@
 using System.Diagnostics;
+using Umbra.Config.Validation;
 
 namespace Umbra.Config;
 
 /// <summary>
-/// Stores one typed configuration value together with its default value, resolved metadata, and change notifications.
+/// Stores one typed configuration value together with its default value, resolved metadata, change notifications, and validation error state.
 /// </summary>
 /// <remarks>
-/// Umbra's registration pipeline assigns the resolved <see cref="Key"/> and <see cref="Metadata"/> after the parameter is discovered in a settings object. Public code can then read those values, observe changes, and mutate the current value through the typed or untyped APIs.
+/// Umbra's registration pipeline assigns the resolved <see cref="Key"/> and <see cref="Metadata"/> after the parameter is discovered in a settings object. This type remains responsible for value ownership, mutation semantics, and event dispatch, while metadata-driven rule execution is delegated to <see cref="ParameterValidationPipeline"/> and custom validator instance reuse is delegated to <see cref="ParameterValidatorCache"/>.
 /// </remarks>
 /// <typeparam name="T">The value type stored by the parameter.</typeparam>
 [DebuggerDisplay("{Key}: {Value} (Default: {DefaultValue}, Modified: {IsModified})")]
-public class Parameter<T> : IParameter, IParameterRegistration
+public class Parameter<T> : IParameter, IParameterRegistration, IParameterValidationState
 {
     /// <summary>
     /// Cached flag indicating whether <typeparamref name="T"/> is a non-nullable value type.
@@ -21,6 +22,9 @@ public class Parameter<T> : IParameter, IParameterRegistration
 
     private T? _value;
     private Action? _interfaceValueChanged;
+    private bool _hasValidationError;
+    private string? _validationError;
+    private readonly ParameterValidatorCache _validatorCache = new();
 
     /// <summary>
     /// Occurs when the parameter value changes through the typed notifying mutation paths.
@@ -41,6 +45,10 @@ public class Parameter<T> : IParameter, IParameterRegistration
 
     /// <inheritdoc/>
     public ParameterMetadata Metadata { get; internal set; } = new();
+
+    bool IParameterValidationState.HasValidationError => _hasValidationError;
+
+    string? IParameterValidationState.ValidationError => _validationError;
 
     /// <summary>
     /// Gets the default value captured when this parameter instance was constructed.
@@ -94,12 +102,13 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// </summary>
     /// <param name="raiseEvent"><see langword="true"/> to raise change notifications when resetting changes the current value; otherwise, <see langword="false"/>.</param>
     /// <remarks>
-    /// Reset bypasses metadata validation so <see cref="IsModified"/> always becomes <see langword="false"/> after the call.
+    /// Reset bypasses metadata validation so <see cref="IsModified"/> always becomes <see langword="false"/> after the call. Any recorded validation error is cleared as part of returning the parameter to its default state.
     /// </remarks>
     public void Reset(bool raiseEvent = true)
     {
         var oldValue = _value;
         _value = DefaultValue;
+        ClearValidationError();
 
         if (raiseEvent && !EqualityComparer<T?>.Default.Equals(oldValue, _value))
         {
@@ -113,9 +122,13 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// </summary>
     /// <param name="value">The value to assign silently.</param>
     /// <remarks>
-    /// This method intentionally bypasses the metadata validation performed by <see cref="Value"/>, <see cref="Set(T)"/>, <see cref="TrySet"/>, and <see cref="SetOrThrow"/>.
+    /// This method intentionally bypasses the metadata validation performed by <see cref="Value"/>, <see cref="Set(T)"/>, <see cref="TrySet"/>, and <see cref="SetOrThrow"/>. Any recorded validation error is cleared because the caller has explicitly chosen the silent assignment path.
     /// </remarks>
-    public void SetWithoutNotify(T? value) => _value = value;
+    public void SetWithoutNotify(T? value)
+    {
+        _value = value;
+        ClearValidationError();
+    }
 
     /// <summary>
     /// Sets the current value through the validating, notifying mutation path.
@@ -136,9 +149,13 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// </remarks>
     public bool TrySet(T? value)
     {
-        if (!Validate(value, out _))
+        if (!Validate(value, out var failureReason))
+        {
+            SetValidationError(failureReason);
             return false;
+        }
 
+        ClearValidationError();
         SetValueCore(value);
         return true;
     }
@@ -151,8 +168,12 @@ public class Parameter<T> : IParameter, IParameterRegistration
     public void SetOrThrow(T? value)
     {
         if (!Validate(value, out var failureReason))
+        {
+            SetValidationError(failureReason);
             throw new ArgumentOutOfRangeException(nameof(value), value, failureReason);
+        }
 
+        ClearValidationError();
         SetValueCore(value);
     }
 
@@ -162,6 +183,8 @@ public class Parameter<T> : IParameter, IParameterRegistration
     string IParameterRegistration.Key { set => Key = value; }
 
     ParameterMetadata IParameterRegistration.Metadata { set => Metadata = value; }
+
+    void IParameterValidationState.ClearValidationError() => ClearValidationError();
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentException">
@@ -177,7 +200,11 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// is a non-nullable value type, or when <paramref name="value"/> is non-<see langword="null"/>
     /// and is not assignable to <typeparamref name="T"/>.
     /// </exception>
-    void IParameter.SetValueWithoutNotify(object? value) => _value = CoerceValue(value);
+    void IParameter.SetValueWithoutNotify(object? value)
+    {
+        _value = CoerceValue(value);
+        ClearValidationError();
+    }
 
     /// <summary>
     /// Validates and coerces an untyped <paramref name="value"/> to <typeparamref name="T"/>.
@@ -207,47 +234,29 @@ public class Parameter<T> : IParameter, IParameterRegistration
     }
 
     /// <summary>
-    /// Validates <paramref name="value"/> against the <see cref="ParameterMetadata.Min"/> and
-    /// <see cref="ParameterMetadata.Max"/> constraints defined in <see cref="Metadata"/>.
+    /// Validates <paramref name="value"/> against the parameter's built-in metadata rules and
+    /// optional custom validator.
     /// </summary>
     /// <param name="value">The candidate value to validate.</param>
     /// <param name="failureReason">
     /// Receives a human-readable explanation when validation fails; otherwise <see langword="null"/>.
     /// </param>
-    /// <returns>
-    /// <see langword="true"/> if the value is within the allowed range or no constraints are
-    /// defined; <see langword="false"/> if the value falls outside the configured bounds.
-    /// </returns>
+    /// <returns><see langword="true"/> when validation succeeds; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// This method adapts the current parameter state into a <see cref="ParameterValidationContext"/> and delegates rule execution to <see cref="ParameterValidationPipeline"/>.
+    /// </remarks>
     private bool Validate(T? value, out string? failureReason)
     {
-        failureReason = null;
-        if (value == null || Metadata.Min == null && Metadata.Max == null)
-            return true;
-
-        if (value is IComparable c)
+        var result = ParameterValidationPipeline.Validate(
+            new ParameterValidationContext(Key, typeof(T), Metadata, value),
+            _validatorCache);
+        if (!result.IsValid)
         {
-            try
-            {
-                if (Metadata.Min != null && c.CompareTo(Convert.ChangeType(Metadata.Min.Value, typeof(T))) < 0)
-                {
-                    failureReason = $"Value must be greater than or equal to {Metadata.Min.Value}.";
-                    return false;
-                }
-
-                if (Metadata.Max != null && c.CompareTo(Convert.ChangeType(Metadata.Max.Value, typeof(T))) > 0)
-                {
-                    failureReason = $"Value must be less than or equal to {Metadata.Max.Value}.";
-                    return false;
-                }
-            }
-            catch (InvalidCastException)
-            {
-                // T cannot be converted to the bounds value type (e.g. mismatched numeric types
-                // from runtime metadata); skip bounds validation and treat the value as valid.
-                return true;
-            }
+            failureReason = result.ErrorMessage;
+            return false;
         }
 
+        failureReason = null;
         return true;
     }
 
@@ -259,7 +268,13 @@ public class Parameter<T> : IParameter, IParameterRegistration
     /// <param name="newValue">The new value to assign.</param>
     private void SetValue(T? newValue)
     {
-        if (!Validate(newValue, out _)) return;
+        if (!Validate(newValue, out var failureReason))
+        {
+            SetValidationError(failureReason);
+            return;
+        }
+
+        ClearValidationError();
         SetValueCore(newValue);
     }
 
@@ -276,6 +291,18 @@ public class Parameter<T> : IParameter, IParameterRegistration
 
         ValueChanged?.Invoke(oldValue, newValue);
         _interfaceValueChanged?.Invoke();
+    }
+
+    private void SetValidationError(string? failureReason)
+    {
+        _hasValidationError = !string.IsNullOrWhiteSpace(failureReason);
+        _validationError = _hasValidationError ? failureReason : null;
+    }
+
+    private void ClearValidationError()
+    {
+        _hasValidationError = false;
+        _validationError = null;
     }
 
     /// <summary>

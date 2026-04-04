@@ -1,5 +1,6 @@
 using System.Numerics;
 using Umbra.Config.Attributes;
+using Umbra.Config.Validation;
 
 
 namespace Umbra.Config.UnitTests;
@@ -20,6 +21,7 @@ public class ParameterMetadataReaderTests
         Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.ResolvedLabel)));
         Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.DrawerType)));
         Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.TwoColumnDrawerType)));
+        Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.ValidatorType)));
         Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.HideIf)));
         Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.InferredFloatFormat)));
         Assert.IsNull(typeof(ParameterMetadata).GetProperty(nameof(ParameterMetadata.HiddenLabel)));
@@ -43,12 +45,17 @@ public class ParameterMetadataReaderTests
         Assert.IsNull(result.DisplayName);
         Assert.AreEqual("No Attributes", result.ResolvedLabel);
         Assert.IsNull(result.Description);
+        Assert.IsFalse(result.Required);
+        Assert.IsFalse(result.AllowWhitespace);
+        Assert.IsNull(result.MinLength);
         Assert.IsNull(result.MaxLength);
         Assert.IsNull(result.Min);
         Assert.IsNull(result.Max);
         Assert.IsNull(result.Step);
         Assert.IsNull(result.Category);
         Assert.IsNull(result.Format);
+        Assert.IsNull(result.RegexPattern);
+        Assert.IsNull(result.RegexMessage);
         Assert.IsNull(result.ButtonStyle);
         Assert.IsNull(result.CustomButtonColors);
         Assert.IsNull(result.ControlWidth);
@@ -262,6 +269,89 @@ public class ParameterMetadataReaderTests
     }
 
     /// <summary>
+    /// Tests that ReadFrom returns required-validation metadata from <see cref="UmbraRequiredAttribute"/>.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithRequired_ReturnsRequiredMetadata()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithRequired))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member);
+
+        // Assert
+        Assert.IsTrue(result.Required);
+        Assert.IsFalse(result.AllowWhitespace);
+    }
+
+    /// <summary>
+    /// Tests that ReadFrom returns whitespace configuration from <see cref="UmbraRequiredAttribute"/>.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithRequiredAllowWhitespace_ReturnsWhitespaceMetadata()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithRequiredAllowWhitespace))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member);
+
+        // Assert
+        Assert.IsTrue(result.Required);
+        Assert.IsTrue(result.AllowWhitespace);
+    }
+
+    /// <summary>
+    /// Tests that ReadFrom returns minimum-length metadata from <see cref="UmbraMinLengthAttribute"/>.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithMinLength_ReturnsMinLengthMetadata()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithMinLength))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member);
+
+        // Assert
+        Assert.AreEqual(3u, result.MinLength);
+    }
+
+    /// <summary>
+    /// Tests that ReadFrom returns regex metadata from <see cref="UmbraRegexAttribute"/>.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithRegex_ReturnsRegexMetadata()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithRegex))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member);
+
+        // Assert
+        Assert.AreEqual("^[A-Z]{3}$", result.RegexPattern);
+        Assert.AreEqual("Use exactly three uppercase letters.", result.RegexMessage);
+    }
+
+    /// <summary>
+    /// Tests that ReadFrom returns the custom validator type declared through <see cref="UmbraValidateWithAttribute{TValidator}"/>.
+    /// </summary>
+    [TestMethod]
+    public void ReadFrom_MemberWithCustomValidator_ReturnsValidatorType()
+    {
+        // Arrange
+        var member = typeof(TestClass).GetProperty(nameof(TestClass.WithCustomValidator))!;
+
+        // Act
+        var result = ParameterMetadataReader.ReadFrom(member);
+
+        // Assert
+        Assert.AreEqual(typeof(TestValidator), result.ValidatorType);
+    }
+
+    /// <summary>
     /// Tests that ReadFrom returns a ParameterMetadata with all properties set when member has all attributes.
     /// Input: MemberInfo with all supported attributes.
     /// Expected: All properties are set correctly.
@@ -279,12 +369,17 @@ public class ParameterMetadataReaderTests
         Assert.AreEqual("All Attributes", result.DisplayName);
         Assert.AreEqual("All Attributes", result.ResolvedLabel);
         Assert.AreEqual("Full Description", result.Description);
+        Assert.IsTrue(result.Required);
+        Assert.IsTrue(result.AllowWhitespace);
+        Assert.AreEqual(2u, result.MinLength);
         Assert.AreEqual(50u, result.MaxLength);
         Assert.AreEqual(1.0, result.Min);
         Assert.AreEqual(99.0, result.Max);
         Assert.AreEqual(0.25, result.Step);
         Assert.AreEqual("Specific Category", result.Category);
         Assert.AreEqual("%.4f", result.Format);
+        Assert.AreEqual("^[a-z]+$", result.RegexPattern);
+        Assert.AreEqual("Lowercase letters only.", result.RegexMessage);
         Assert.AreEqual(ButtonStyle.Danger, result.ButtonStyle);
         Assert.AreEqual(150.0f, result.ControlWidth);
         Assert.AreEqual(4, result.MultilineLines);
@@ -398,6 +493,21 @@ public class ParameterMetadataReaderTests
         [UmbraMaxLength(100)]
         public string? WithMaxLength { get; set; }
 
+        [UmbraRequired]
+        public string? WithRequired { get; set; }
+
+        [UmbraRequired(AllowWhitespace = true)]
+        public string? WithRequiredAllowWhitespace { get; set; }
+
+        [UmbraMinLength(3)]
+        public string? WithMinLength { get; set; }
+
+        [UmbraRegex("^[A-Z]{3}$", Message = "Use exactly three uppercase letters.")]
+        public string? WithRegex { get; set; }
+
+        [UmbraValidateWith<TestValidator>]
+        public string? WithCustomValidator { get; set; }
+
         [UmbraRange(0.0, 100.0)]
         public double WithRange { get; set; }
 
@@ -444,11 +554,14 @@ public class ParameterMetadataReaderTests
 
         [UmbraDisplayName("All Attributes")]
         [UmbraDescription("Full Description")]
+        [UmbraRequired(AllowWhitespace = true)]
+        [UmbraMinLength(2)]
         [UmbraMaxLength(50)]
         [UmbraRange(1.0, 99.0)]
         [UmbraStep(0.25)]
         [UmbraCategory("Specific Category")]
         [UmbraFormat("%.4f")]
+        [UmbraRegex("^[a-z]+$", Message = "Lowercase letters only.")]
         [UmbraButtonStyle(ButtonStyle.Danger)]
         [UmbraControlWidth(150.0f)]
         [UmbraMultiline(4)]
@@ -482,6 +595,18 @@ public class ParameterMetadataReaderTests
     private class TestTwoColumnCustomDrawerAttribute : Attribute, ITwoColumnDrawerAttribute
     {
         public Type DrawerType => typeof(TestTwoColumnDrawer);
+    }
+
+    private sealed class TestValidator : IParameterValidator
+    {
+        public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
+        {
+            _ = parameterKey;
+            _ = value;
+            _ = valueType;
+            _ = metadata;
+            return ParameterValidationResult.Valid();
+        }
     }
 
     // Dummy drawer types for testing

@@ -12,6 +12,17 @@ namespace Umbra.Config;
 /// </remarks>
 internal static class ParameterMetadataReader
 {
+    private readonly record struct ValidationMetadataValues(
+        bool Required,
+        bool AllowWhitespace,
+        uint? MinLength,
+        uint? MaxLength,
+        double? Min,
+        double? Max,
+        string? RegexPattern,
+        string? RegexMessage,
+        Type? ValidatorType);
+
     /// <summary>
     /// Builds a <see cref="ParameterMetadata"/> instance from the attributes applied to <paramref name="member"/>.
     /// </summary>
@@ -21,8 +32,6 @@ internal static class ParameterMetadataReader
     /// <returns>The resolved metadata for <paramref name="member"/>.</returns>
     internal static ParameterMetadata ReadFrom(MemberInfo member, string? inheritedCategory = null, string? parameterKey = null)
     {
-        var maxLength = member.GetCustomAttribute<UmbraMaxLengthAttribute>();
-        var range = member.GetCustomAttribute<UmbraRangeAttribute>();
         var step = member.GetCustomAttribute<UmbraStepAttribute>();
         var name = member.GetCustomAttribute<UmbraDisplayNameAttribute>();
         var desc = member.GetCustomAttribute<UmbraDescriptionAttribute>();
@@ -36,6 +45,7 @@ internal static class ParameterMetadataReader
         var spacingBefore = member.GetCustomAttribute<UmbraSpacingBeforeAttribute>();
         var spacingAfter = member.GetCustomAttribute<UmbraSpacingAfterAttribute>();
         var indent = member.GetCustomAttribute<UmbraIndentAttribute>();
+        var validation = ReadValidationMetadata(member);
 
         Type? drawerType = null;
         Type? twoColumnDrawerType = null;
@@ -54,12 +64,17 @@ internal static class ParameterMetadataReader
             DisplayName = name?.Name,
             ResolvedLabel = name?.Name ?? member.Name.ToDisplayName(),
             Description = desc?.Text,
-            MaxLength = maxLength?.Length,
-            Min = range?.Min,
-            Max = range?.Max,
+            Required = validation.Required,
+            AllowWhitespace = validation.AllowWhitespace,
+            MinLength = validation.MinLength,
+            MaxLength = validation.MaxLength,
+            Min = validation.Min,
+            Max = validation.Max,
             Step = step?.Step,
             Category = category?.Name ?? inheritedCategory,
             Format = format?.Format,
+            RegexPattern = validation.RegexPattern,
+            RegexMessage = validation.RegexMessage,
             ButtonStyle = buttonStyle?.Style,
             CustomButtonColors = customButtonColors is null ? null : (
                 new Vector4(customButtonColors.NormalR, customButtonColors.NormalG, customButtonColors.NormalB, customButtonColors.NormalA),
@@ -74,10 +89,46 @@ internal static class ParameterMetadataReader
             Indent = indent?.Amount,
             DrawerType = drawerType,
             TwoColumnDrawerType = twoColumnDrawerType,
+            ValidatorType = validation.ValidatorType,
             HideIf = hideIf,
             InferredFloatFormat = inferredFloatFormat,
             HiddenLabel = parameterKey is not null ? string.Concat("##", parameterKey) : null,
         };
+    }
+
+    /// <summary>
+    /// Reads the validation-specific attribute metadata applied to <paramref name="member"/>.
+    /// </summary>
+    /// <param name="member">The reflected settings member whose validation attributes should be read.</param>
+    /// <returns>The resolved validation-specific metadata values.</returns>
+    private static ValidationMetadataValues ReadValidationMetadata(MemberInfo member)
+    {
+        var required = member.GetCustomAttribute<UmbraRequiredAttribute>();
+        var minLength = member.GetCustomAttribute<UmbraMinLengthAttribute>();
+        var maxLength = member.GetCustomAttribute<UmbraMaxLengthAttribute>();
+        var range = member.GetCustomAttribute<UmbraRangeAttribute>();
+        var regex = member.GetCustomAttribute<UmbraRegexAttribute>();
+
+        Type? validatorType = null;
+        foreach (var attr in member.GetCustomAttributes(inherit: false))
+        {
+            if (attr is IValidatorAttribute validator)
+            {
+                validatorType = validator.ValidatorType;
+                break;
+            }
+        }
+
+        return new ValidationMetadataValues(
+            required is not null,
+            required?.AllowWhitespace ?? false,
+            minLength?.Length,
+            maxLength?.Length,
+            range?.Min,
+            range?.Max,
+            regex?.Pattern,
+            regex?.Message,
+            validatorType);
     }
 
     /// <summary>

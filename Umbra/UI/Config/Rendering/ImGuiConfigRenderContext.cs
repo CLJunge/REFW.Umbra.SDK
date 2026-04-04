@@ -38,6 +38,9 @@ internal sealed class ImGuiConfigRenderContext :
     public void TextDisabled(string text) => ImGui.TextDisabled(text);
 
     /// <inheritdoc/>
+    public void TextColored(Vector4 color, string text) => ImGui.TextColored(color, text);
+
+    /// <inheritdoc/>
     public void SameLine() => ImGui.SameLine();
 
     /// <inheritdoc/>

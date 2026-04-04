@@ -42,6 +42,31 @@ public sealed class ParameterMetadata
     public string? Description { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the parameter requires a non-empty value.
+    /// Sourced from <see cref="UmbraRequiredAttribute"/>.
+    /// </summary>
+    /// <remarks>
+    /// For nullable value types and reference types, a required parameter rejects
+    /// <see langword="null"/>. For <see cref="string"/> parameters, empty text is also invalid.
+    /// Whitespace-only acceptance is controlled by <see cref="AllowWhitespace"/>.
+    /// </remarks>
+    public bool Required { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether whitespace-only strings satisfy
+    /// <see cref="Required"/>.
+    /// Sourced from <see cref="UmbraRequiredAttribute.AllowWhitespace"/>.
+    /// </summary>
+    /// <value><see langword="true"/> when whitespace-only strings are accepted; otherwise, <see langword="false"/>.</value>
+    public bool AllowWhitespace { get; init; }
+
+    /// <summary>
+    /// Gets the minimum character length required for string input fields.
+    /// Sourced from <see cref="UmbraMinLengthAttribute"/>. <see langword="null"/> when not specified.
+    /// </summary>
+    public uint? MinLength { get; init; }
+
+    /// <summary>
     /// Gets the maximum character length for string input fields.
     /// Sourced from <see cref="UmbraMaxLengthAttribute"/>. <see langword="null"/> if not specified;
     /// the UI defaults to <c>256</c>.
@@ -82,6 +107,19 @@ public sealed class ParameterMetadata
     /// from <see cref="Step"/> for floating-point types and <c>"%d"</c> for integers.
     /// </summary>
     public string? Format { get; init; }
+
+    /// <summary>
+    /// Gets the regular-expression pattern required for valid string values.
+    /// Sourced from <see cref="UmbraRegexAttribute"/>. <see langword="null"/> when not specified.
+    /// </summary>
+    public string? RegexPattern { get; init; }
+
+    /// <summary>
+    /// Gets the optional custom validation message shown when <see cref="RegexPattern"/>
+    /// does not match.
+    /// Sourced from <see cref="UmbraRegexAttribute.Message"/>. <see langword="null"/> when not specified.
+    /// </summary>
+    public string? RegexMessage { get; init; }
 
     /// <summary>
     /// Gets the visual color style applied to a button rendered by
@@ -185,6 +223,13 @@ public sealed class ParameterMetadata
     internal Type? TwoColumnDrawerType { get; init; }
 
     /// <summary>
+    /// Gets the concrete <see cref="Validation.IParameterValidator"/> type used to validate this
+    /// parameter, or <see langword="null"/> when no
+    /// <c>[UmbraValidateWithAttribute&lt;TValidator&gt;]</c> attribute is present.
+    /// </summary>
+    internal Type? ValidatorType { get; init; }
+
+    /// <summary>
     /// Gets the cached hide-condition data sourced from <see cref="UmbraHideIfAttribute{T}"/> on this
     /// parameter's declaring member, or <see langword="null"/> when no such attribute is present.
     /// Consumed by <see cref="Umbra.UI.Config.VisibilityPredicateResolver"/> to compile the per-frame visibility predicate
@@ -216,3 +261,5 @@ public sealed class ParameterMetadata
     /// </summary>
     internal string DebuggerDisplay => ParameterMetadataDebuggerDisplayFormatter.Format(this);
 }
+
+

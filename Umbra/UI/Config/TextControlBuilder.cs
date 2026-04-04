@@ -1,6 +1,7 @@
 using System.Numerics;
 using Hexa.NET.ImGui;
 using Umbra.Config;
+using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config;
 
@@ -9,6 +10,8 @@ namespace Umbra.UI.Config;
 /// </summary>
 internal static class TextControlBuilder
 {
+    private static readonly ITextOps _textOps = ImGuiConfigRenderContext.Instance;
+
     /// <summary>
     /// Builds the per-frame draw action for a <see cref="string"/> parameter.
     /// </summary>
@@ -31,6 +34,8 @@ internal static class TextControlBuilder
                 layout.Pre();
                 if (ImGui.InputTextMultiline(layout.HiddenLabel, ref v, maxLen, new Vector2(0f, height)))
                     p.Value = v;
+
+                ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
 
@@ -39,6 +44,7 @@ internal static class TextControlBuilder
             var v = p.Value ?? string.Empty;
             layout.Pre();
             if (ImGui.InputText(layout.HiddenLabel, ref v, maxLen)) p.Value = v;
+            ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }
 }
