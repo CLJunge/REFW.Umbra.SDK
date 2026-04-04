@@ -24,6 +24,7 @@ internal sealed class RootTreeNode : IDrawNode, IConfigSearchNode
     /// <param name="label">The visible label shown on the root tree node.</param>
     /// <param name="defaultOpen"><see langword="true"/> to start the root tree node expanded; otherwise, <see langword="false"/>.</param>
     /// <param name="children">The ordered child nodes rendered while the root tree node is open.</param>
+    /// <param name="branchId">The stable search branch identifier for this root wrapper, or <see langword="null"/> when no search-driven branch state is associated with it.</param>
     internal RootTreeNode(string label, bool defaultOpen, List<IDrawNode> children, string? branchId = null)
         : this(label, defaultOpen, children, branchId, ImGuiConfigRenderContext.Instance)
     {
@@ -35,6 +36,7 @@ internal sealed class RootTreeNode : IDrawNode, IConfigSearchNode
     /// <param name="label">The visible label shown on the root tree node.</param>
     /// <param name="defaultOpen"><see langword="true"/> to start the root tree node expanded; otherwise, <see langword="false"/>.</param>
     /// <param name="children">The ordered child nodes rendered while the root tree node is open.</param>
+    /// <param name="branchId">The stable search branch identifier for this root wrapper, or <see langword="null"/> when no search-driven branch state is associated with it.</param>
     /// <param name="renderer">The renderer used for tree-node operations.</param>
     /// <exception cref="ArgumentNullException"><paramref name="children"/> or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal RootTreeNode(string label, bool defaultOpen, List<IDrawNode> children, string? branchId, IRootTreeNodeRenderer renderer)

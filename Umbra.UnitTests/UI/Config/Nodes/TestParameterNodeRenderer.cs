@@ -12,6 +12,7 @@ internal sealed class TestParameterNodeRenderer : IParameterNodeRenderer
     public int PushStyleColorCount { get; private set; }
     public int PopStyleColorCount { get; private set; }
     public int ScrollHereCount { get; private set; }
+    public int KeyboardFocusCount { get; private set; }
     public float? LastIndentAmount { get; private set; }
     public float? LastUnindentAmount { get; private set; }
 
@@ -40,4 +41,7 @@ internal sealed class TestParameterNodeRenderer : IParameterNodeRenderer
 
     public void SetScrollHereY(float centerYRatio)
         => ScrollHereCount++;
+
+    public void SetKeyboardFocusHere()
+        => KeyboardFocusCount++;
 }

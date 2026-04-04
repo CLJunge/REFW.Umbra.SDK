@@ -320,7 +320,7 @@ public sealed class ParameterNodeTests
         var renderer = new TestParameterNodeRenderer();
         var drawCallCount = 0;
         var node = new ParameterNode(static () => true, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
-        var renderState = CreateRenderState(["alpha"], focusedResultId: null, pendingScrollResultId: null);
+        var renderState = CreateRenderState(["alpha"], focusedResultId: null, pendingScrollResultId: null, pendingFocusResultId: null);
 
         // Act
         var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
@@ -332,30 +332,33 @@ public sealed class ParameterNodeTests
         Assert.AreEqual(4, renderer.PushStyleColorCount);
         Assert.AreEqual(Hexa.NET.ImGui.ImGuiCol.Text, renderer.PushedStyleColors[0].Color);
         Assert.AreNotEqual(0, renderer.PopStyleColorCount);
+        Assert.AreEqual(0, renderer.KeyboardFocusCount);
     }
 
     /// <summary>
-    /// Verifies that applying a focused search state uses the focused highlight and scrolls the node into view once.
+    /// Verifies that applying a focused search state uses the focused highlight, scrolls the node into view once, and requests keyboard focus once.
     /// </summary>
     [TestMethod]
-    public void ApplySearch_WhenResultIsFocused_AppliesFocusedHighlightAndScrollsIntoView()
+    public void ApplySearch_WhenResultIsFocused_AppliesFocusedHighlightScrollAndKeyboardFocusOnce()
     {
         // Arrange
         var renderer = new TestParameterNodeRenderer();
         var drawCallCount = 0;
         var node = new ParameterNode(static () => true, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
-        var renderState = CreateRenderState(["alpha"], focusedResultId: "alpha", pendingScrollResultId: "alpha");
+        var renderState = CreateRenderState(["alpha"], focusedResultId: "alpha", pendingScrollResultId: "alpha", pendingFocusResultId: "alpha");
 
         // Act
         var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
         node.Draw();
+        node.Draw();
 
         // Assert
         Assert.IsTrue(visible);
-        Assert.AreEqual(1, drawCallCount);
-        Assert.AreEqual(4, renderer.PushStyleColorCount);
+        Assert.AreEqual(2, drawCallCount);
+        Assert.AreEqual(8, renderer.PushStyleColorCount);
         Assert.AreEqual(Hexa.NET.ImGui.ImGuiCol.Text, renderer.PushedStyleColors[0].Color);
         Assert.AreEqual(1, renderer.ScrollHereCount);
+        Assert.AreEqual(1, renderer.KeyboardFocusCount);
     }
 
     /// <summary>
@@ -368,7 +371,7 @@ public sealed class ParameterNodeTests
         var renderer = new TestParameterNodeRenderer();
         var drawCallCount = 0;
         var node = new ParameterNode(static () => true, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
-        var renderState = CreateRenderState(["beta"], focusedResultId: null, pendingScrollResultId: null);
+        var renderState = CreateRenderState(["beta"], focusedResultId: null, pendingScrollResultId: null, pendingFocusResultId: null);
 
         // Act
         var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
@@ -378,12 +381,14 @@ public sealed class ParameterNodeTests
         Assert.IsFalse(visible);
         Assert.AreEqual(0, drawCallCount);
         Assert.AreEqual(0, renderer.PushStyleColorCount);
+        Assert.AreEqual(0, renderer.KeyboardFocusCount);
     }
 
     private static ConfigSearchRenderState CreateRenderState(
         string[] matchIds,
         string? focusedResultId,
-        string? pendingScrollResultId)
+        string? pendingScrollResultId,
+        string? pendingFocusResultId)
     {
         var searchState = new ConfigDrawerSearchState();
         searchState.SetQuery("alpha");
@@ -402,6 +407,9 @@ public sealed class ParameterNodeTests
 
         if (pendingScrollResultId is null && searchState.PendingScrollResultId is not null)
             searchState.ClearPendingScrollTarget(searchState.PendingScrollResultId);
+
+        if (pendingFocusResultId is null && searchState.PendingFocusResultId is not null)
+            searchState.ClearPendingFocusTarget(searchState.PendingFocusResultId);
 
         return new ConfigSearchRenderState(
             searchState,

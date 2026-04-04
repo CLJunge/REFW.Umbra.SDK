@@ -25,6 +25,7 @@ internal sealed class CategoryNode : IDrawNode, IConfigSearchNode
     /// Initializes a new <see cref="CategoryNode"/> that renders through the shared ImGui render context.
     /// </summary>
     /// <param name="label">The visible category label.</param>
+    /// <param name="branchId">The stable search branch identifier for this category, or <see langword="null"/> when no search-driven branch state is associated with it.</param>
     /// <param name="collapseAttr">Optional collapse metadata that switches the category to tree-node rendering.</param>
     /// <param name="indentAttr">Optional indentation metadata applied around the category header and its children.</param>
     internal CategoryNode(
@@ -40,6 +41,7 @@ internal sealed class CategoryNode : IDrawNode, IConfigSearchNode
     /// Initializes a new <see cref="CategoryNode"/> with the specified renderer seam.
     /// </summary>
     /// <param name="label">The visible category label.</param>
+    /// <param name="branchId">The stable search branch identifier for this category, or <see langword="null"/> when no search-driven branch state is associated with it.</param>
     /// <param name="collapseAttr">Optional collapse metadata that switches the category to tree-node rendering.</param>
     /// <param name="indentAttr">Optional indentation metadata applied around the category header and its children.</param>
     /// <param name="renderer">The renderer used for category-node UI operations.</param>

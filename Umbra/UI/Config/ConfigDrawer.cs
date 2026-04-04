@@ -20,6 +20,10 @@ namespace Umbra.UI.Config;
 public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
 {
     private const uint SearchBarMaxLength = 256;
+    private const float MinimumSearchInputWidth = 64f;
+    private const string SearchInputLabel = "Search##ConfigDrawerSearch";
+    private const string PreviousButtonLabel = "<##ConfigDrawerSearchPrevious";
+    private const string NextButtonLabel = ">##ConfigDrawerSearchNext";
 
     private readonly List<IDrawNode> _nodes;
     private readonly List<IDisposable> _disposables;
@@ -28,6 +32,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     private readonly IConfigDrawerRenderer _renderer;
     private readonly ConfigSearchIndex _searchIndex;
     private readonly ConfigDrawerSearchState? _searchState;
+    private readonly ConfigDrawerSearchLayoutState? _searchLayoutState;
     private bool _disposed;
 
     /// <summary>
@@ -80,16 +85,17 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// <summary>
     /// Initializes a new <see cref="ConfigDrawer{TConfig}"/> by reflecting over
     /// <paramref name="config"/> once to build the complete draw tree, using the specified
-    /// draw-scope implementation.
+    /// renderer seam.
     /// </summary>
     /// <param name="config">The configuration instance whose draw tree should be built.</param>
     /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
-    /// <param name="scope">The scope implementation used to bracket each draw call.</param>
+    /// <param name="options">The optional feature flags that customize drawer behavior.</param>
+    /// <param name="renderer">The renderer seam used for outer drawer chrome, ID-scope operations, and search-row layout.</param>
     /// <param name="suppressRootNode">
     /// When <see langword="true"/>, suppresses the root-node-attribute-driven root tree wrapper.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="config"/> or <paramref name="scope"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="config"/>, <paramref name="options"/>, or <paramref name="renderer"/> is <see langword="null"/>.
     /// </exception>
     internal ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, IConfigDrawerRenderer renderer, bool suppressRootNode = false)
     {
@@ -103,6 +109,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
         _options = options;
         _renderer = renderer;
         _searchState = options.ShowSearchBar ? new ConfigDrawerSearchState() : null;
+        _searchLayoutState = options.ShowSearchBar ? new ConfigDrawerSearchLayoutState() : null;
         var builder = new ConfigDrawerBuilder();
         builder.Collect(config, typeof(TConfig));
         builder.SortAll();
@@ -127,16 +134,17 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// Initializes a new <see cref="ConfigDrawer{TConfig}"/> with a pre-built node list.
     /// </summary>
     /// <remarks>
-    /// This constructor exists for tests that need to verify draw ordering, disposal behavior, and
-    /// scope cleanup without building a runtime-backed ImGui node tree.
+    /// This constructor exists for tests that need to verify draw ordering, disposal behavior, search-state application, and
+    /// renderer cleanup without building a runtime-backed ImGui node tree.
     /// </remarks>
     /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
     /// <param name="nodes">The pre-built nodes to draw each frame.</param>
     /// <param name="disposables">The disposable resources owned by the drawer.</param>
-    /// <param name="scope">The scope implementation used to bracket each draw call.</param>
+    /// <param name="renderer">The renderer seam used to verify drawer-level UI operations without an active ImGui frame.</param>
+    /// <param name="options">Optional feature flags that customize drawer behavior for the test instance. When <see langword="null"/>, <see cref="ConfigDrawerOptions.Default"/> is used.</param>
+    /// <param name="searchIndex">The pre-built flat search index used by the test instance. When <see langword="null"/>, an empty index is created.</param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="nodes"/>, <paramref name="disposables"/>, or
-    /// <paramref name="scope"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="nodes"/>, <paramref name="disposables"/>, or <paramref name="renderer"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.
@@ -152,6 +160,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
         _idScope = idScope;
         _options = options ?? ConfigDrawerOptions.Default;
         _searchState = _options.ShowSearchBar ? new ConfigDrawerSearchState() : null;
+        _searchLayoutState = _options.ShowSearchBar ? new ConfigDrawerSearchLayoutState() : null;
         _nodes = nodes;
         _disposables = disposables;
         _renderer = renderer;
@@ -211,23 +220,46 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     private void DrawSearchBar()
     {
         var searchState = _searchState;
-        if (searchState is null)
+        var layoutState = _searchLayoutState;
+        if (searchState is null || layoutState is null)
             return;
 
+        EnsureSearchLayout(layoutState);
+
         var query = searchState.Query;
-        if (_renderer.InputText("Search##ConfigDrawerSearch", ref query, SearchBarMaxLength))
+        _renderer.SetNextItemWidth(layoutState.SearchInputWidth);
+        if (_renderer.InputText(SearchInputLabel, ref query, SearchBarMaxLength))
         {
             searchState.SetQuery(query);
             RefreshSearchMatches(searchState);
         }
 
         _renderer.SameLine();
-        if (_renderer.Button("<##ConfigDrawerSearchPrevious"))
+        if (_renderer.Button(PreviousButtonLabel))
             searchState.MovePrevious();
 
         _renderer.SameLine();
-        if (_renderer.Button(">##ConfigDrawerSearchNext"))
+        if (_renderer.Button(NextButtonLabel))
             searchState.MoveNext();
+    }
+
+    private void EnsureSearchLayout(ConfigDrawerSearchLayoutState layoutState)
+    {
+        var availableWidth = _renderer.GetAvailableWidth();
+        if (layoutState.IsInitialized && layoutState.LastAvailableWidth == availableWidth)
+            return;
+
+        layoutState.LastAvailableWidth = availableWidth;
+        layoutState.PreviousButtonWidth = _renderer.GetButtonWidth(PreviousButtonLabel);
+        layoutState.NextButtonWidth = _renderer.GetButtonWidth(NextButtonLabel);
+
+        var spacingX = _renderer.GetItemSpacingX();
+        var searchInputWidth = availableWidth
+            - layoutState.PreviousButtonWidth
+            - layoutState.NextButtonWidth
+            - (spacingX * 2f);
+        layoutState.SearchInputWidth = Math.Max(MinimumSearchInputWidth, searchInputWidth);
+        layoutState.IsInitialized = true;
     }
 
     private void RefreshSearchMatches(ConfigDrawerSearchState searchState)

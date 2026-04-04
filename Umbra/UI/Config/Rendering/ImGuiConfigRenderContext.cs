@@ -53,6 +53,19 @@ internal sealed class ImGuiConfigRenderContext :
     public bool Button(string label, Vector2 size) => ImGui.Button(label, size);
 
     /// <inheritdoc/>
+    public float GetAvailableWidth() => ImGui.GetContentRegionAvail().X;
+
+    /// <inheritdoc/>
+    public float GetItemSpacingX() => ImGui.GetStyle().ItemSpacing.X;
+
+    /// <inheritdoc/>
+    public float GetButtonWidth(string label)
+        => ImGui.CalcTextSize(label).X + (ImGui.GetStyle().FramePadding.X * 2f);
+
+    /// <inheritdoc/>
+    public void SetNextItemWidth(float width) => ImGui.SetNextItemWidth(width);
+
+    /// <inheritdoc/>
     public bool InputText(string label, ref string value, uint maxLength) => ImGui.InputText(label, ref value, maxLength);
 
     /// <inheritdoc/>
@@ -97,6 +110,9 @@ internal sealed class ImGuiConfigRenderContext :
 
     /// <inheritdoc/>
     public void SetScrollHereY(float centerYRatio) => ImGui.SetScrollHereY(centerYRatio);
+
+    /// <inheritdoc/>
+    public void SetKeyboardFocusHere() => ImGui.SetKeyboardFocusHere();
 
     /// <inheritdoc/>
     public void PushStyleColor(ImGuiCol color, Vector4 value) => ImGui.PushStyleColor(color, value);

@@ -4,8 +4,9 @@ namespace Umbra.UI.Config;
 /// Stores per-drawer search query and navigation state.
 /// </summary>
 /// <remarks>
-/// This state is local to one <see cref="ConfigDrawer{TConfig}"/> instance. Match population and
-/// focused-result scrolling are completed in later feature phases.
+/// This state is local to one <see cref="ConfigDrawer{TConfig}"/> instance. Match population,
+/// focused-result scrolling, and focused-control handoff are coordinated here so navigation can move
+/// both the viewport and keyboard focus to the currently focused result.
 /// </remarks>
 internal sealed class ConfigDrawerSearchState
 {
@@ -26,6 +27,11 @@ internal sealed class ConfigDrawerSearchState
     /// Gets the pending result identifier to scroll into view, or <see langword="null"/> when no scroll is pending.
     /// </summary>
     internal string? PendingScrollResultId { get; private set; }
+
+    /// <summary>
+    /// Gets the pending result identifier that should receive keyboard focus, or <see langword="null"/> when no focus transfer is pending.
+    /// </summary>
+    internal string? PendingFocusResultId { get; private set; }
 
     /// <summary>
     /// Gets the currently focused result identifier, or <see langword="null"/> when no result is focused.
@@ -51,7 +57,7 @@ internal sealed class ConfigDrawerSearchState
         Query = query ?? string.Empty;
         NormalizedQuery = Normalize(Query);
         ClampFocusedMatchIndex();
-        PendingScrollResultId = GetFocusedResultId();
+        SetPendingTargetsToFocusedResult();
     }
 
     /// <summary>
@@ -67,7 +73,7 @@ internal sealed class ConfigDrawerSearchState
             _matchIds.Add(matchId);
 
         ClampFocusedMatchIndex();
-        PendingScrollResultId = GetFocusedResultId();
+        SetPendingTargetsToFocusedResult();
     }
 
     /// <summary>
@@ -81,7 +87,7 @@ internal sealed class ConfigDrawerSearchState
         _focusedMatchIndex = _focusedMatchIndex < 0
             ? 0
             : (_focusedMatchIndex + 1) % _matchIds.Count;
-        PendingScrollResultId = _matchIds[_focusedMatchIndex];
+        SetPendingTargetsToFocusedResult();
     }
 
     /// <summary>
@@ -92,6 +98,16 @@ internal sealed class ConfigDrawerSearchState
     {
         if (string.Equals(PendingScrollResultId, resultId, StringComparison.Ordinal))
             PendingScrollResultId = null;
+    }
+
+    /// <summary>
+    /// Clears the pending keyboard-focus target when it has been consumed by the corresponding focused result.
+    /// </summary>
+    /// <param name="resultId">The result identifier that consumed the focus request.</param>
+    internal void ClearPendingFocusTarget(string resultId)
+    {
+        if (string.Equals(PendingFocusResultId, resultId, StringComparison.Ordinal))
+            PendingFocusResultId = null;
     }
 
     /// <summary>
@@ -107,7 +123,7 @@ internal sealed class ConfigDrawerSearchState
         else
             _focusedMatchIndex = (_focusedMatchIndex - 1 + _matchIds.Count) % _matchIds.Count;
 
-        PendingScrollResultId = _matchIds[_focusedMatchIndex];
+        SetPendingTargetsToFocusedResult();
     }
 
     private void ClampFocusedMatchIndex()
@@ -132,6 +148,13 @@ internal sealed class ConfigDrawerSearchState
         => _focusedMatchIndex >= 0 && _focusedMatchIndex < _matchIds.Count
             ? _matchIds[_focusedMatchIndex]
             : null;
+
+    private void SetPendingTargetsToFocusedResult()
+    {
+        var focusedResultId = GetFocusedResultId();
+        PendingScrollResultId = focusedResultId;
+        PendingFocusResultId = focusedResultId;
+    }
 
     private static string Normalize(string query)
         => string.IsNullOrWhiteSpace(query)

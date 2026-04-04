@@ -36,12 +36,23 @@ internal sealed class ConfigSearchRenderState
     internal bool ShouldScrollIntoView(string? resultId)
         => resultId is not null && string.Equals(resultId, _searchState.PendingScrollResultId, StringComparison.Ordinal);
 
+    internal bool ShouldFocusControl(string? resultId)
+        => resultId is not null && string.Equals(resultId, _searchState.PendingFocusResultId, StringComparison.Ordinal);
+
     internal void MarkScrolled(string? resultId)
     {
         if (resultId is null)
             return;
 
         _searchState.ClearPendingScrollTarget(resultId);
+    }
+
+    internal void MarkFocused(string? resultId)
+    {
+        if (resultId is null)
+            return;
+
+        _searchState.ClearPendingFocusTarget(resultId);
     }
 
     internal bool IsBranchForcedOpen(string? branchId)

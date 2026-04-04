@@ -8,7 +8,7 @@ namespace Umbra.UI.Config.Nodes;
 /// Renders one configuration-row draw action with optional visibility, spacing, and indentation behavior.
 /// </summary>
 /// <remarks>
-/// The default constructors render through the shared ImGui render context. Tests can supply a renderer seam to verify visibility, spacing, and indentation behavior without requiring an active ImGui frame.
+/// The default constructors render through the shared ImGui render context. Tests can supply a renderer seam to verify visibility, spacing, indentation, highlight, scroll, and focused-control handoff behavior without requiring an active ImGui frame.
 /// </remarks>
 internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
 {
@@ -32,11 +32,19 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     private readonly IParameterNodeRenderer _renderer;
     private bool _searchVisible = true;
     private bool _scrollIntoView;
+    private bool _focusControl;
     private SearchMatchVisualState _searchVisualState;
 
     /// <summary>
     /// Initializes a new always-visible <see cref="ParameterNode"/> that renders through the shared ImGui render context.
     /// </summary>
+    /// <param name="draw">The per-frame draw action to invoke.</param>
+    /// <param name="order">The sort key for this node within its local rendered scope.</param>
+    /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
+    /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
+    /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
+    /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
     internal ParameterNode(
         Action draw,
         int order = int.MaxValue,
@@ -56,8 +64,10 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     /// <param name="order">The sort key for this node within its local rendered scope.</param>
     /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
     /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
-    /// <param name="renderer">The renderer used for spacing and indentation operations.</param>
+    /// <param name="renderer">The renderer used for spacing, indentation, highlight, scroll, and focus operations.</param>
     /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
+    /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
     /// <exception cref="ArgumentNullException"><paramref name="draw"/> or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ParameterNode(
         Action draw,
@@ -85,6 +95,14 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     /// <summary>
     /// Initializes a new conditionally visible <see cref="ParameterNode"/> that renders through the shared ImGui render context.
     /// </summary>
+    /// <param name="isVisible">The predicate evaluated each frame to determine whether drawing should occur.</param>
+    /// <param name="draw">The per-frame draw action to invoke when visible.</param>
+    /// <param name="order">The sort key for this node within its local rendered scope.</param>
+    /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
+    /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
+    /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
+    /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
     internal ParameterNode(
         Func<bool> isVisible,
         Action draw,
@@ -106,8 +124,10 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     /// <param name="order">The sort key for this node within its local rendered scope.</param>
     /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
     /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
-    /// <param name="renderer">The renderer used for spacing and indentation operations.</param>
+    /// <param name="renderer">The renderer used for spacing, indentation, highlight, scroll, and focus operations.</param>
     /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
+    /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
     /// <exception cref="ArgumentNullException"><paramref name="isVisible"/>, <paramref name="draw"/>, or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ParameterNode(
         Func<bool> isVisible,
@@ -154,12 +174,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
             _renderer.Indent(amount);
             try
             {
-                _draw();
-                if (_scrollIntoView)
-                {
-                    _renderer.SetScrollHereY(0.5f);
-                    _scrollIntoView = false;
-                }
+                DrawCore();
             }
             finally
             {
@@ -168,12 +183,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
         }
         else
         {
-            _draw();
-            if (_scrollIntoView)
-            {
-                _renderer.SetScrollHereY(0.5f);
-                _scrollIntoView = false;
-            }
+            DrawCore();
         }
 
         if (highlightDepth > 0)
@@ -185,6 +195,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     bool IConfigSearchNode.ApplySearch(ConfigSearchRenderState? searchState)
     {
         _scrollIntoView = false;
+        _focusControl = false;
 
         if (searchState is null || !searchState.HasActiveQuery)
         {
@@ -231,7 +242,29 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
             searchState.MarkScrolled(_resultId);
         }
 
+        if (isMatch && searchState.ShouldFocusControl(_resultId))
+        {
+            _focusControl = true;
+            searchState.MarkFocused(_resultId);
+        }
+
         return isMatch;
+    }
+
+    private void DrawCore()
+    {
+        if (_focusControl)
+        {
+            _renderer.SetKeyboardFocusHere();
+            _focusControl = false;
+        }
+
+        _draw();
+        if (_scrollIntoView)
+        {
+            _renderer.SetScrollHereY(0.5f);
+            _scrollIntoView = false;
+        }
     }
 
     private int PushSearchHighlight()

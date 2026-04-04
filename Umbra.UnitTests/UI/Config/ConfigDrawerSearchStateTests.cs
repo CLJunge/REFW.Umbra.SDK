@@ -41,6 +41,7 @@ public sealed class ConfigDrawerSearchStateTests
         Assert.AreEqual(string.Empty, state.NormalizedQuery);
         Assert.IsFalse(state.HasActiveQuery);
         Assert.IsNull(state.PendingScrollResultId);
+        Assert.IsNull(state.PendingFocusResultId);
     }
 
     /// <summary>
@@ -57,6 +58,7 @@ public sealed class ConfigDrawerSearchStateTests
 
         // Assert
         Assert.AreEqual("alpha", state.PendingScrollResultId);
+        Assert.AreEqual("alpha", state.PendingFocusResultId);
     }
 
     /// <summary>
@@ -76,6 +78,7 @@ public sealed class ConfigDrawerSearchStateTests
 
         // Assert
         Assert.AreEqual("alpha", state.PendingScrollResultId);
+        Assert.AreEqual("alpha", state.PendingFocusResultId);
     }
 
     /// <summary>
@@ -95,6 +98,7 @@ public sealed class ConfigDrawerSearchStateTests
 
         // Assert
         Assert.AreEqual("gamma", state.PendingScrollResultId);
+        Assert.AreEqual("gamma", state.PendingFocusResultId);
     }
 
     /// <summary>
@@ -113,6 +117,25 @@ public sealed class ConfigDrawerSearchStateTests
         state.SetMatches(["alpha"]);
 
         // Assert
+        Assert.AreEqual("alpha", state.PendingScrollResultId);
+        Assert.AreEqual("alpha", state.PendingFocusResultId);
+    }
+
+    /// <summary>
+    /// Tests that clearing a consumed focus target leaves unrelated pending focus requests intact.
+    /// </summary>
+    [TestMethod]
+    public void ClearPendingFocusTarget_WhenResultMatches_ClearsPendingFocusOnlyForThatResult()
+    {
+        // Arrange
+        var state = new ConfigDrawerSearchState();
+        state.SetMatches(["alpha", "beta"]);
+
+        // Act
+        state.ClearPendingFocusTarget("alpha");
+
+        // Assert
+        Assert.IsNull(state.PendingFocusResultId);
         Assert.AreEqual("alpha", state.PendingScrollResultId);
     }
 }

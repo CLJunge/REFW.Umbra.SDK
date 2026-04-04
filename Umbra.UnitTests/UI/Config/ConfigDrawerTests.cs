@@ -1,6 +1,8 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
+using Umbra.UI.Config.Nodes.UnitTests;
+
 namespace Umbra.UI.Config.UnitTests;
 
 /// <summary>
@@ -94,6 +96,8 @@ public sealed class ConfigDrawerTests
     {
         // Arrange
         var renderer = new TestConfigDrawerScope();
+        renderer.ButtonWidths["<##ConfigDrawerSearchPrevious"] = 40f;
+        renderer.ButtonWidths[">##ConfigDrawerSearchNext"] = 44f;
         using var drawer = new ConfigDrawer<TestConfig>(
             "test-scope",
             [],
@@ -107,10 +111,68 @@ public sealed class ConfigDrawerTests
         // Assert
         Assert.AreEqual(1, renderer.InputTextLabels.Count);
         Assert.AreEqual("Search##ConfigDrawerSearch", renderer.InputTextLabels[0]);
+        Assert.AreEqual(1, renderer.NextItemWidths.Count);
+        Assert.AreEqual(300f - 40f - 44f - (8f * 2f), renderer.NextItemWidths[0]);
         Assert.AreEqual(2, renderer.ButtonLabels.Count);
         Assert.AreEqual("<##ConfigDrawerSearchPrevious", renderer.ButtonLabels[0]);
         Assert.AreEqual(">##ConfigDrawerSearchNext", renderer.ButtonLabels[1]);
         Assert.AreEqual(2, renderer.SameLineCount);
+    }
+
+    /// <summary>
+    /// Tests that the search row reuses cached button measurements when the available width is unchanged.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenAvailableWidthIsUnchanged_ReusesCachedSearchLayout()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope();
+        renderer.ButtonWidths["<##ConfigDrawerSearchPrevious"] = 40f;
+        renderer.ButtonWidths[">##ConfigDrawerSearchNext"] = 44f;
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = true });
+
+        // Act
+        drawer.Draw();
+        drawer.Draw();
+
+        // Assert
+        Assert.AreEqual(2, renderer.ButtonWidthRequests.Count);
+        Assert.AreEqual(2, renderer.NextItemWidths.Count);
+        Assert.AreEqual(renderer.NextItemWidths[0], renderer.NextItemWidths[1]);
+    }
+
+    /// <summary>
+    /// Tests that the cached search-row width is recomputed when the available width changes.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenAvailableWidthChanges_RecomputesSearchLayout()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope();
+        renderer.ButtonWidths["<##ConfigDrawerSearchPrevious"] = 40f;
+        renderer.ButtonWidths[">##ConfigDrawerSearchNext"] = 44f;
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = true });
+
+        // Act
+        drawer.Draw();
+        renderer.AvailableWidth = 360f;
+        drawer.Draw();
+
+        // Assert
+        Assert.AreEqual(4, renderer.ButtonWidthRequests.Count);
+        Assert.AreEqual(2, renderer.NextItemWidths.Count);
+        Assert.AreNotEqual(renderer.NextItemWidths[0], renderer.NextItemWidths[1]);
+        Assert.AreEqual(360f - 40f - 44f - (8f * 2f), renderer.NextItemWidths[1]);
     }
 
     /// <summary>
@@ -148,6 +210,43 @@ public sealed class ConfigDrawerTests
         Assert.IsTrue(alphaNode.LastIsMatch);
         Assert.IsTrue(alphaNode.LastIsFocused);
         Assert.IsFalse(betaNode.LastWasVisible);
+    }
+
+    /// <summary>
+    /// Tests that the initial focused search result requests keyboard focus for its control when a query produces matches.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenQueryProducesFocusedMatch_RequestsKeyboardFocusForFocusedControl()
+    {
+        // Arrange
+        var drawerRenderer = new TestConfigDrawerScope
+        {
+            NextInputTextResult = true,
+            NextInputTextValue = "gamma"
+        };
+        var alphaRenderer = new TestParameterNodeRenderer();
+        var betaRenderer = new TestParameterNodeRenderer();
+        var alphaNode = new ParameterNode(static () => { }, order: 0, spacingBefore: 0, spacingAfter: 0, renderer: alphaRenderer, resultId: "alpha");
+        var betaNode = new ParameterNode(static () => { }, order: 1, spacingBefore: 0, spacingAfter: 0, renderer: betaRenderer, resultId: "beta");
+        var searchIndex = new ConfigSearchIndex();
+        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "settings.graphics");
+        searchIndex.AddParameterResult("beta", "Brightness", null, "Graphics", "settings.graphics");
+
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [alphaNode, betaNode],
+            [],
+            drawerRenderer,
+            new ConfigDrawerOptions { ShowSearchBar = true },
+            searchIndex);
+
+        // Act
+        drawer.Draw();
+        drawer.Draw();
+
+        // Assert
+        Assert.AreEqual(1, alphaRenderer.KeyboardFocusCount);
+        Assert.AreEqual(0, betaRenderer.KeyboardFocusCount);
     }
 
     /// <summary>
@@ -190,6 +289,49 @@ public sealed class ConfigDrawerTests
         Assert.IsTrue(alphaNode.WasFocusedAtLeastOnce);
         Assert.IsTrue(betaFocusedAfterNext);
         Assert.IsTrue(alphaNode.LastIsFocused);
+    }
+
+    /// <summary>
+    /// Tests that next and previous navigation transfer keyboard focus to the newly focused control.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenNavigationButtonsMoveFocus_RequestsKeyboardFocusForEachNewFocusedControl()
+    {
+        // Arrange
+        var drawerRenderer = new TestConfigDrawerScope
+        {
+            NextInputTextResult = true,
+            NextInputTextValue = "ga"
+        };
+        var alphaRenderer = new TestParameterNodeRenderer();
+        var betaRenderer = new TestParameterNodeRenderer();
+        var alphaNode = new ParameterNode(static () => { }, order: 0, spacingBefore: 0, spacingAfter: 0, renderer: alphaRenderer, resultId: "alpha");
+        var betaNode = new ParameterNode(static () => { }, order: 1, spacingBefore: 0, spacingAfter: 0, renderer: betaRenderer, resultId: "beta");
+        var searchIndex = new ConfigSearchIndex();
+        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "settings.graphics");
+        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "settings.gameplay");
+
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [alphaNode, betaNode],
+            [],
+            drawerRenderer,
+            new ConfigDrawerOptions { ShowSearchBar = true },
+            searchIndex);
+
+        // Act
+        drawer.Draw();
+        drawerRenderer.ButtonResults.Enqueue(false);
+        drawerRenderer.ButtonResults.Enqueue(true);
+        drawer.Draw();
+        drawerRenderer.ButtonResults.Enqueue(true);
+        drawerRenderer.ButtonResults.Enqueue(false);
+        drawer.Draw();
+        drawer.Draw();
+
+        // Assert
+        Assert.AreEqual(2, alphaRenderer.KeyboardFocusCount);
+        Assert.AreEqual(1, betaRenderer.KeyboardFocusCount);
     }
 
     /// <summary>
@@ -584,7 +726,7 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> can be called on multiple instances
+    /// Verifies that calling <see cref="ConfigDrawer{TConfig}.Dispose"/> can be called on multiple instances
     /// without interference.
     /// </summary>
     [TestMethod]
