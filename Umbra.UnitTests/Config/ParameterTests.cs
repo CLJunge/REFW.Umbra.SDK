@@ -894,6 +894,54 @@ public class ParameterTests
     }
 
     /// <summary>
+    /// Test validator that counts instance creation and validation calls.
+    /// </summary>
+    private sealed class CountingValidator : IParameterValidator
+    {
+        internal static int InstanceCount;
+        internal static int ValidateCallCount;
+
+        public CountingValidator() => InstanceCount++;
+
+        public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
+        {
+            _ = parameterKey;
+            _ = value;
+            _ = valueType;
+            _ = metadata;
+            ValidateCallCount++;
+            return ParameterValidationResult.Valid();
+        }
+
+        internal static void Reset()
+        {
+            InstanceCount = 0;
+            ValidateCallCount = 0;
+        }
+    }
+
+    /// <summary>
+    /// Alternate test validator used to verify cache refresh when validator types change.
+    /// </summary>
+    private sealed class AlternateCountingValidator : IParameterValidator
+    {
+        internal static int InstanceCount;
+
+        public AlternateCountingValidator() => InstanceCount++;
+
+        public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
+        {
+            _ = parameterKey;
+            _ = value;
+            _ = valueType;
+            _ = metadata;
+            return ParameterValidationResult.Valid();
+        }
+
+        internal static void Reset() => InstanceCount = 0;
+    }
+
+    /// <summary>
     /// Tests that Reset with raiseEvent=true raises both ValueChanged and IParameter.ValueChanged events
     /// when the current value differs from the default value.
     /// </summary>
@@ -1712,6 +1760,57 @@ public class ParameterTests
         Assert.AreEqual("valid", parameter.Value);
         Assert.IsTrue(validationState.HasValidationError);
         Assert.AreEqual("The value 'blocked' is reserved.", validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that a custom validator instance is reused across repeated validation attempts.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_CustomValidatorRepeatedValidation_CachesValidatorInstance()
+    {
+        // Arrange
+        CountingValidator.Reset();
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { ValidatorType = typeof(CountingValidator) }
+        };
+
+        // Act
+        var firstResult = parameter.TrySet("first");
+        var secondResult = parameter.TrySet("second");
+
+        // Assert
+        Assert.IsTrue(firstResult);
+        Assert.IsTrue(secondResult);
+        Assert.AreEqual(1, CountingValidator.InstanceCount);
+        Assert.AreEqual(2, CountingValidator.ValidateCallCount);
+    }
+
+    /// <summary>
+    /// Tests that changing the configured validator type causes the cached validator instance to be recreated.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_WhenValidatorTypeChanges_RecreatesCachedValidator()
+    {
+        // Arrange
+        CountingValidator.Reset();
+        AlternateCountingValidator.Reset();
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { ValidatorType = typeof(CountingValidator) }
+        };
+
+        var firstResult = parameter.TrySet("first");
+
+        // Act
+        parameter.Metadata = new ParameterMetadata { ValidatorType = typeof(AlternateCountingValidator) };
+        var secondResult = parameter.TrySet("second");
+
+        // Assert
+        Assert.IsTrue(firstResult);
+        Assert.IsTrue(secondResult);
+        Assert.AreEqual(1, CountingValidator.InstanceCount);
+        Assert.AreEqual(1, AlternateCountingValidator.InstanceCount);
     }
 
     /// <summary>

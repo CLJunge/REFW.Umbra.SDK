@@ -25,6 +25,8 @@ public class Parameter<T> : IParameter, IParameterRegistration, IParameterValida
     private Action? _interfaceValueChanged;
     private bool _hasValidationError;
     private string? _validationError;
+    private Type? _cachedValidatorType;
+    private IParameterValidator? _cachedValidator;
 
     /// <summary>
     /// Occurs when the parameter value changes through the typed notifying mutation paths.
@@ -383,17 +385,8 @@ public class Parameter<T> : IParameter, IParameterRegistration, IParameterValida
             return false;
         }
 
-        IParameterValidator validator;
-        try
-        {
-            validator = (IParameterValidator)(Activator.CreateInstance(validatorType)
-                ?? throw new InvalidOperationException("Activator.CreateInstance returned null."));
-        }
-        catch (Exception ex)
-        {
-            failureReason = $"Validator '{validatorType.FullName ?? validatorType.Name}' could not be created: {ex.Message}";
+        if (!TryGetCachedValidator(validatorType, out var validator, out failureReason))
             return false;
-        }
 
         try
         {
@@ -409,6 +402,34 @@ public class Parameter<T> : IParameter, IParameterRegistration, IParameterValida
         catch (Exception ex)
         {
             failureReason = $"Validator '{validatorType.FullName ?? validatorType.Name}' threw: {ex.Message}";
+            return false;
+        }
+    }
+
+    private bool TryGetCachedValidator(Type validatorType, out IParameterValidator validator, out string? failureReason)
+    {
+        failureReason = null;
+
+        if (_cachedValidator is not null && _cachedValidatorType == validatorType)
+        {
+            validator = _cachedValidator;
+            return true;
+        }
+
+        try
+        {
+            validator = (IParameterValidator)(Activator.CreateInstance(validatorType)
+                ?? throw new InvalidOperationException("Activator.CreateInstance returned null."));
+            _cachedValidator = validator;
+            _cachedValidatorType = validatorType;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _cachedValidator = null;
+            _cachedValidatorType = null;
+            failureReason = $"Validator '{validatorType.FullName ?? validatorType.Name}' could not be created: {ex.Message}";
+            validator = null!;
             return false;
         }
     }
