@@ -1,5 +1,4 @@
 using Hexa.NET.ImGui;
-using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Rendering;
 using Umbra.UI.Config.Search;
@@ -16,25 +15,19 @@ namespace Umbra.UI.Config;
 /// <para>
 /// Pass a configuration instance returned by <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so each registered parameter already carries resolved <see cref="Umbra.Config.ParameterMetadata"/>. Nested-group wrapper attributes are still read from reflected property and type metadata during the one-time build pass.
 /// </para>
+/// <para>
+/// Root-node composition is delegated to <see cref="ConfigDrawerRootNodeComposer"/>, built-in search-row UI is delegated to <see cref="ConfigDrawerSearchController"/>, and per-frame search-state application is delegated to <see cref="ConfigDrawerSearchApplicator"/>.
+/// </para>
 /// </remarks>
 /// <typeparam name="TConfig">The configuration type rendered by the drawer.</typeparam>
 public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
 {
-    private const uint SearchBarMaxLength = 256;
-    private const float MinimumSearchInputWidth = 64f;
-    private const string SearchLabel = "Search";
-    private const string SearchInputLabel = "##ConfigDrawerSearch";
-    private const string PreviousButtonLabel = "<##ConfigDrawerSearchPrevious";
-    private const string NextButtonLabel = ">##ConfigDrawerSearchNext";
-
     private readonly List<IDrawNode> _nodes;
     private readonly List<IDisposable> _disposables;
     private readonly string _idScope;
-    private readonly ConfigDrawerOptions _options;
     private readonly IConfigDrawerRenderer _renderer;
     private readonly ConfigSearchIndex _searchIndex;
-    private readonly ConfigDrawerSearchState? _searchState;
-    private readonly ConfigDrawerSearchLayoutState? _searchLayoutState;
+    private readonly ConfigDrawerSearchController _searchController;
     private bool _disposed;
 
     /// <summary>
@@ -108,28 +101,19 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
             throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
-        _options = options;
         _renderer = renderer;
-        _searchState = options.ShowSearchBar ? new ConfigDrawerSearchState() : null;
-        _searchLayoutState = options.ShowSearchBar ? new ConfigDrawerSearchLayoutState() : null;
         var builder = new ConfigDrawerBuilder();
         builder.Collect(config, typeof(TConfig));
         builder.SortAll();
         _searchIndex = builder.SearchIndex;
+        _searchController = new ConfigDrawerSearchController(options, _renderer, _searchIndex);
         _disposables = builder.Disposables;
 
-        var rootAttr = GetRootNodeMetadata(typeof(TConfig));
-        if (rootAttr.HasValue && !suppressRootNode)
-        {
-            var label = rootAttr.Value.Label ?? typeof(TConfig).Name.ToDisplayName();
-            var rootBranchId = BuildRootBranchId(_idScope);
-            _searchIndex.PrependRootBranch(rootBranchId);
-            _nodes = [new RootTreeNode(label, rootAttr.Value.DefaultOpen, builder.Nodes, rootBranchId)];
-        }
-        else
-        {
-            _nodes = builder.Nodes;
-        }
+        _nodes = ConfigDrawerRootNodeComposer.Compose<TConfig>(
+            _idScope,
+            builder.Nodes,
+            _searchIndex,
+            suppressRootNode);
     }
 
     /// <summary>
@@ -160,13 +144,12 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
             throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
 
         _idScope = idScope;
-        _options = options ?? ConfigDrawerOptions.Default;
-        _searchState = _options.ShowSearchBar ? new ConfigDrawerSearchState() : null;
-        _searchLayoutState = _options.ShowSearchBar ? new ConfigDrawerSearchLayoutState() : null;
+        var effectiveOptions = options ?? ConfigDrawerOptions.Default;
         _nodes = nodes;
         _disposables = disposables;
         _renderer = renderer;
         _searchIndex = searchIndex ?? new ConfigSearchIndex();
+        _searchController = new ConfigDrawerSearchController(effectiveOptions, _renderer, _searchIndex);
     }
 
     /// <summary>
@@ -183,8 +166,8 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
         _renderer.PushId(_idScope);
         try
         {
-            DrawSearchBar();
-            ApplySearchState();
+            _searchController.DrawControls();
+            ConfigDrawerSearchApplicator.Apply(_nodes, _searchIndex, _searchController.CurrentState);
             foreach (var node in _nodes)
                 node.Draw();
         }
@@ -206,96 +189,5 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
         _disposed = true;
         foreach (var d in _disposables) d.Dispose();
         GC.SuppressFinalize(this);
-    }
-
-    private static (string? Label, bool DefaultOpen)? GetRootNodeMetadata(Type type)
-    {
-        foreach (var attr in type.GetCustomAttributes(inherit: true))
-            if (attr is UmbraRootNodeAttribute prefixed)
-                return (prefixed.Label, prefixed.DefaultOpen);
-
-        return null;
-    }
-
-    private static string BuildRootBranchId(string idScope) => $"root:{idScope}";
-
-    private void DrawSearchBar()
-    {
-        var searchState = _searchState;
-        var layoutState = _searchLayoutState;
-        if (searchState is null || layoutState is null)
-            return;
-
-        EnsureSearchLayout(layoutState);
-
-        _renderer.Text(SearchLabel);
-        _renderer.SameLine();
-
-        var query = searchState.Query;
-        _renderer.SetNextItemWidth(layoutState.SearchInputWidth);
-        if (_renderer.InputText(SearchInputLabel, ref query, SearchBarMaxLength))
-        {
-            searchState.SetQuery(query);
-            RefreshSearchMatches(searchState);
-        }
-
-        _renderer.SameLine();
-        if (_renderer.Button(PreviousButtonLabel))
-            searchState.MovePrevious();
-
-        _renderer.SameLine();
-        if (_renderer.Button(NextButtonLabel))
-            searchState.MoveNext();
-    }
-
-    private void EnsureSearchLayout(ConfigDrawerSearchLayoutState layoutState)
-    {
-        var availableWidth = _renderer.GetAvailableWidth();
-        if (layoutState.IsInitialized && layoutState.LastAvailableWidth == availableWidth)
-            return;
-
-        layoutState.LastAvailableWidth = availableWidth;
-        layoutState.PreviousButtonWidth = _renderer.GetButtonWidth(PreviousButtonLabel);
-        layoutState.NextButtonWidth = _renderer.GetButtonWidth(NextButtonLabel);
-
-        var labelWidth = _renderer.GetTextWidth(SearchLabel);
-        var spacingX = _renderer.GetItemSpacingX();
-        var searchInputWidth = availableWidth
-            - labelWidth
-            - layoutState.PreviousButtonWidth
-            - layoutState.NextButtonWidth
-            - (spacingX * 3f);
-        layoutState.SearchInputWidth = Math.Max(MinimumSearchInputWidth, searchInputWidth);
-        layoutState.IsInitialized = true;
-    }
-
-    private void RefreshSearchMatches(ConfigDrawerSearchState searchState)
-        => searchState.SetMatches(_searchIndex.FindMatches(searchState.NormalizedQuery));
-
-    private void ApplySearchState()
-    {
-        var searchState = _searchState;
-        ConfigSearchRenderState? renderState = null;
-        if (searchState is not null && searchState.HasActiveQuery)
-        {
-            var matchedResultIds = new HashSet<string>(searchState.MatchIds, StringComparer.Ordinal);
-            var forcedOpenBranchIds = new HashSet<string>(StringComparer.Ordinal);
-            for (var i = 0; i < searchState.MatchIds.Count; i++)
-            {
-                if (!_searchIndex.TryGetEntry(searchState.MatchIds[i], out var entry))
-                    continue;
-
-                for (var j = 0; j < entry.AncestorBranchIds.Length; j++)
-                    forcedOpenBranchIds.Add(entry.AncestorBranchIds[j]);
-            }
-
-            renderState = new ConfigSearchRenderState(searchState, matchedResultIds, forcedOpenBranchIds);
-        }
-
-        for (var i = 0; i < _nodes.Count; i++)
-        {
-            if (_nodes[i] is IConfigSearchNode searchNode)
-                searchNode.ApplySearch(renderState);
-        }
     }
 }
