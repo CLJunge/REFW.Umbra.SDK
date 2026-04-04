@@ -33,15 +33,4 @@ public sealed class ConfigDrawerOptions
 
     /// <summary>Initializes a new instance of <see cref="ConfigDrawerOptions"/> with all options set to their defaults.</summary>
     public ConfigDrawerOptions() { }
-
-    private ConfigDrawerOptions(ConfigDrawerOptions source)
-    {
-        ShowSearchBar = source.ShowSearchBar;
-        SuppressRootNode = source.SuppressRootNode;
-    }
-
-    internal ConfigDrawerOptions WithSuppressRootNode(bool suppressRootNode)
-    {
-        return new ConfigDrawerOptions(this) { SuppressRootNode = suppressRootNode };
-    }
 }

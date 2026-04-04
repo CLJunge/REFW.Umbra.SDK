@@ -109,7 +109,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
             }
         }
 
-        _drawer = new ConfigDrawer<TConfig>(config, _sectionId, options.WithSuppressRootNode(true));
+        _drawer = new ConfigDrawer<TConfig>(config, _sectionId, new ConfigDrawerOptions { ShowSearchBar = options.ShowSearchBar, SuppressRootNode = true });
     }
 
     /// <inheritdoc/>
