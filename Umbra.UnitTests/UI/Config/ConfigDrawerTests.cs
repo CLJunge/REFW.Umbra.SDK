@@ -746,7 +746,7 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Verifies that calling <see cref="ConfigDrawer{TConfig}.Dispose"/> can be called on multiple instances
+    /// Verifies that <see cref="ConfigDrawer{TConfig}.Dispose"/> can be called on multiple instances
     /// without interference.
     /// </summary>
     [TestMethod]
