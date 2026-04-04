@@ -81,24 +81,16 @@ public sealed class SamplePlugin : UmbraPlugin
         Log.Info("Unloading...");
 
 #if BENCHMARK
-        _panelBenchmark?.CompleteActiveRun("PluginUnload");
-        _panelBenchmark?.Dispose();
-        _panelBenchmark = null;
-
-        _benchmarkPanel?.Dispose();
-        _benchmarkPanel = null;
+        RunShutdownStep("complete active benchmark run", CompleteActiveBenchmarkRun);
+        RunShutdownStep("dispose panel benchmark", DisposePanelBenchmark);
+        RunShutdownStep("dispose benchmark panel", DisposeBenchmarkPanel);
 #endif
 
-        _panel?.Dispose();
-        _panel = null;
-
-        _saveController?.Flush();
-        _saveController?.Dispose();
-        _saveController = null;
-
-        _store?.Save();
-        _store?.Dispose();
-        _store = null;
+        RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
+        RunShutdownStep("flush deferred save controller", FlushDeferredSaveController);
+        RunShutdownStep("dispose deferred save controller", DisposeDeferredSaveController);
+        RunShutdownStep("save settings store", SaveSettingsStore);
+        RunShutdownStep("dispose settings store", DisposeSettingsStore);
 
         _config = null;
 
@@ -232,4 +224,62 @@ public sealed class SamplePlugin : UmbraPlugin
     /// </summary>
     private void TickDeferredSaveController()
         => _saveController?.Tick();
+
+#if BENCHMARK
+    private void CompleteActiveBenchmarkRun()
+        => _panelBenchmark?.CompleteActiveRun("PluginUnload");
+
+    private void DisposePanelBenchmark()
+    {
+        var panelBenchmark = _panelBenchmark;
+        _panelBenchmark = null;
+        panelBenchmark?.Dispose();
+    }
+
+    private void DisposeBenchmarkPanel()
+    {
+        var benchmarkPanel = _benchmarkPanel;
+        _benchmarkPanel = null;
+        benchmarkPanel?.Dispose();
+    }
+#endif
+
+    private void DisposeRuntimePanel()
+    {
+        var panel = _panel;
+        _panel = null;
+        panel?.Dispose();
+    }
+
+    private void FlushDeferredSaveController()
+        => _saveController?.Flush();
+
+    private void DisposeDeferredSaveController()
+    {
+        var saveController = _saveController;
+        _saveController = null;
+        saveController?.Dispose();
+    }
+
+    private void SaveSettingsStore()
+        => _store?.Save();
+
+    private void DisposeSettingsStore()
+    {
+        var store = _store;
+        _store = null;
+        store?.Dispose();
+    }
+
+    private void RunShutdownStep(string stepName, Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            Log.Exception(ex, "Shutdown step failed: {0}.", stepName);
+        }
+    }
 }

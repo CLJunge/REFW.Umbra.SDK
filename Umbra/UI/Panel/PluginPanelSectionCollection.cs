@@ -1,3 +1,5 @@
+using Umbra.Logging;
+
 namespace Umbra.UI.Panel;
 
 /// <summary>
@@ -39,7 +41,8 @@ internal sealed class PluginPanelSectionCollection : IDisposable
     /// Disposes all sections in their current ordered sequence and clears the collection.
     /// </summary>
     /// <remarks>
-    /// Repeated calls after the first one do nothing.
+    /// Repeated calls after the first one do nothing. If a section throws during disposal, the
+    /// exception is logged and disposal continues for the remaining sections.
     /// </remarks>
     public void Dispose()
     {
@@ -49,9 +52,21 @@ internal sealed class PluginPanelSectionCollection : IDisposable
         _disposed = true;
 
         foreach (var section in _sections)
-            section.Dispose();
+            DisposeSectionSafely(section);
 
         _sections.Clear();
         GC.SuppressFinalize(this);
+    }
+
+    private static void DisposeSectionSafely(IPanelSection section)
+    {
+        try
+        {
+            section.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Exception(ex, "Plugin panel section '{0}' threw during Dispose().", section.SectionId);
+        }
     }
 }

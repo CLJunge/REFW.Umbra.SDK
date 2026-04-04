@@ -479,4 +479,50 @@ public sealed class PluginPanelTests
         Assert.IsNotNull(second);
     }
 
+    private static readonly string[] _expectedSections = new[] { "FirstSection", "SecondSection" };
+
+    /// <summary>
+    /// Tests that disposing a panel continues disposing later sections even when an earlier section throws.
+    /// </summary>
+    [TestMethod]
+    public void Dispose_WhenSectionDisposeThrows_DisposesRemainingSections()
+    {
+        // Arrange
+        var disposedSections = new List<string>();
+        var panel = new PluginPanel($"DisposeSections_{Guid.NewGuid()}");
+        panel.Add(new DisposableTrackingPanelSection(
+            "FirstSection",
+            0,
+            () =>
+            {
+                disposedSections.Add("FirstSection");
+                throw new InvalidOperationException("boom");
+            }));
+        panel.Add(new DisposableTrackingPanelSection(
+            "SecondSection",
+            1,
+            () => disposedSections.Add("SecondSection")));
+
+        // Act
+        panel.Dispose();
+
+        // Assert
+        CollectionAssert.AreEqual(_expectedSections, disposedSections);
+    }
+
+    private sealed class DisposableTrackingPanelSection(
+        string sectionId,
+        int order,
+        Action disposeCallback) : IPanelSection
+    {
+        public int Order => order;
+
+        public string SectionId => sectionId;
+
+        public void Draw()
+        {
+        }
+
+        public void Dispose() => disposeCallback();
+    }
 }
