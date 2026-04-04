@@ -4,8 +4,9 @@ namespace Umbra.UI.Config;
 /// Stores the cached search-row layout measurements for one <see cref="ConfigDrawer{TConfig}"/> instance.
 /// </summary>
 /// <remarks>
-/// The drawer updates this state only when the available row width changes so the search input width
-/// does not need to be recalculated every frame.
+/// The drawer updates this state only when the available row width changes so the search-row input
+/// width does not need to be recalculated every frame after reserving space for the visible search
+/// label and the trailing navigation buttons.
 /// </remarks>
 internal sealed class ConfigDrawerSearchLayoutState
 {

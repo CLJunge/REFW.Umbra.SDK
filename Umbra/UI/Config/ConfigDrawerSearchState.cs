@@ -4,9 +4,10 @@ namespace Umbra.UI.Config;
 /// Stores per-drawer search query and navigation state.
 /// </summary>
 /// <remarks>
-/// This state is local to one <see cref="ConfigDrawer{TConfig}"/> instance. Match population,
-/// focused-result scrolling, and focused-control handoff are coordinated here so navigation can move
-/// both the viewport and keyboard focus to the currently focused result.
+/// This state is local to one <see cref="ConfigDrawer{TConfig}"/> instance. Query and match refreshes
+/// clear focused-result selection so matching rows are only focused after the user explicitly
+/// navigates with the previous or next controls. Once a result is focused, this state coordinates the
+/// pending scroll and keyboard-focus handoff consumed by searchable draw nodes.
 /// </remarks>
 internal sealed class ConfigDrawerSearchState
 {
@@ -36,6 +37,9 @@ internal sealed class ConfigDrawerSearchState
     /// <summary>
     /// Gets the currently focused result identifier, or <see langword="null"/> when no result is focused.
     /// </summary>
+    /// <remarks>
+    /// Matching rows remain unfocused after query changes until <see cref="MoveNext"/> or <see cref="MovePrevious"/> selects a result explicitly.
+    /// </remarks>
     internal string? FocusedResultId => GetFocusedResultId();
 
     /// <summary>
@@ -52,6 +56,10 @@ internal sealed class ConfigDrawerSearchState
     /// Replaces the current query text and normalizes it for matching.
     /// </summary>
     /// <param name="query">The new raw query text.</param>
+    /// <remarks>
+    /// This clears any previously focused result. Matching rows remain visible, but pending scroll and
+    /// keyboard-focus requests stay empty until the user navigates to a specific result.
+    /// </remarks>
     internal void SetQuery(string? query)
     {
         Query = query ?? string.Empty;
@@ -64,6 +72,10 @@ internal sealed class ConfigDrawerSearchState
     /// Replaces the ordered match identifiers used for navigation.
     /// </summary>
     /// <param name="matchIds">The ordered result identifiers.</param>
+    /// <remarks>
+    /// When no result is currently focused, this keeps the drawer in the unfocused state until the user
+    /// explicitly moves to the next or previous result.
+    /// </remarks>
     internal void SetMatches(IEnumerable<string> matchIds)
     {
         ArgumentNullException.ThrowIfNull(matchIds);
@@ -79,6 +91,10 @@ internal sealed class ConfigDrawerSearchState
     /// <summary>
     /// Moves focus to the next result, wrapping to the first result when needed.
     /// </summary>
+    /// <remarks>
+    /// When no result is focused yet, this selects the first matching result and schedules both scroll
+    /// and keyboard-focus handoff for that row.
+    /// </remarks>
     internal void MoveNext()
     {
         if (_matchIds.Count == 0)
@@ -113,6 +129,10 @@ internal sealed class ConfigDrawerSearchState
     /// <summary>
     /// Moves focus to the previous result, wrapping to the last result when needed.
     /// </summary>
+    /// <remarks>
+    /// When no result is focused yet, this selects the last matching result and schedules both scroll
+    /// and keyboard-focus handoff for that row.
+    /// </remarks>
     internal void MovePrevious()
     {
         if (_matchIds.Count == 0)
