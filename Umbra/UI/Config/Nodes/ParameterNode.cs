@@ -169,26 +169,31 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
         for (var i = 0; i < _spacingBefore; i++) _renderer.Spacing();
 
         var highlightDepth = PushSearchHighlight();
-        if (_indentAmount.HasValue)
+        try
         {
-            var amount = _indentAmount.Value;
-            _renderer.Indent(amount);
-            try
+            if (_indentAmount.HasValue)
+            {
+                var amount = _indentAmount.Value;
+                _renderer.Indent(amount);
+                try
+                {
+                    DrawCore();
+                }
+                finally
+                {
+                    _renderer.Unindent(amount);
+                }
+            }
+            else
             {
                 DrawCore();
             }
-            finally
-            {
-                _renderer.Unindent(amount);
-            }
         }
-        else
+        finally
         {
-            DrawCore();
+            if (highlightDepth > 0)
+                _renderer.PopStyleColor(highlightDepth);
         }
-
-        if (highlightDepth > 0)
-            _renderer.PopStyleColor(highlightDepth);
 
         for (var i = 0; i < _spacingAfter; i++) _renderer.Spacing();
     }
