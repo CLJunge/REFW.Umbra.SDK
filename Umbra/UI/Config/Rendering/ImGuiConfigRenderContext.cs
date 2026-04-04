@@ -63,7 +63,7 @@ internal sealed class ImGuiConfigRenderContext :
 
     /// <inheritdoc/>
     public float GetButtonWidth(string label)
-        => ImGui.CalcTextSize(label).X + (ImGui.GetStyle().FramePadding.X * 2f);
+        => ImGui.CalcTextSize(GetVisibleLabelText(label)).X + (ImGui.GetStyle().FramePadding.X * 2f);
 
     /// <inheritdoc/>
     public void SetNextItemWidth(float width) => ImGui.SetNextItemWidth(width);
@@ -122,4 +122,10 @@ internal sealed class ImGuiConfigRenderContext :
 
     /// <inheritdoc/>
     public void PopStyleColor(int count) => ImGui.PopStyleColor(count);
+
+    private static string GetVisibleLabelText(string label)
+    {
+        var hiddenIdIndex = label.IndexOf("##", StringComparison.Ordinal);
+        return hiddenIdIndex >= 0 ? label[..hiddenIdIndex] : label;
+    }
 }
