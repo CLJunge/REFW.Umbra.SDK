@@ -5,7 +5,7 @@
 The repository contains three projects:
 
 - `Umbra` - the reusable runtime/config/UI library
-- `Umbra.SamplePlugin` - a reference plugin showing the recommended host, config, panel, deferred-save, and benchmark patterns
+- `Umbra.SamplePlugin` - a reference plugin showing the recommended host, config, panel, deferred-save, benchmark, and robust-shutdown patterns
 - `Umbra.UnitTests` - automated coverage for settings, UI composition, lifecycle helpers, logging, runtime helpers, and persistence behavior
 
 ## Features
@@ -22,6 +22,7 @@ The repository contains three projects:
 - Managed object resolution with `ManagedObjectResolver.Resolve<T>` and `TryResolve<T>`
 - Runtime game detection with `GameContext.CurrentGame`
 - Supported-game identifiers and display names via `REGame` and `REGameExtensions`
+- Best-effort shutdown sequencing for plugin unload cleanup
 - Optional panel benchmarking utilities in `Umbra.UI.Panel.Benchmark` when `BENCHMARK` is defined
 
 ## Runtime and plugin model
@@ -42,7 +43,7 @@ The recommended pattern is:
 | Override | Typical use |
 |---|---|
 | `Initialize()` | Load config, create state, build panels |
-| `Shutdown()` | Flush/dispose controllers, save/dispose store, dispose panels |
+| `Shutdown()` | Run best-effort teardown steps: flush/dispose controllers, save/dispose stores, dispose panels, and log any cleanup failures |
 | `OnPreUpdateBehavior()` | Per-frame gameplay or polling logic |
 | `OnPreImGuiDrawUI()` | Draw settings/status UI and tick deferred saves |
 | `OnPreImGuiRenderer()` | Draw overlay UI during the renderer pass |
@@ -125,16 +126,16 @@ REFW.Umbra
 │  ├─ Input
 │  │  └─ KeyboardInput
 │  ├─ Runtime
-│  │  ├─ GameContext, GameMetadataLoader, REGame, REGameExtensions
-│  │  ├─ ManagedObjectResolver, REFrameworkManagedObjectBridge
-│  │  └─ IUmbraPlugin
+│  │  │  ├─ GameContext, GameMetadataLoader, REGame, REGameExtensions
+│  │  │  ├─ ManagedObjectResolver, REFrameworkManagedObjectBridge
+│  │  │  └─ IUmbraPlugin
 │  ├─ UmbraPlugin
 │  ├─ PluginHost<TPlugin>
 │  ├─ PluginBootstrapper
 │  ├─ PluginInstanceGuard
 │  └─ PluginInstanceLease
 ├─ Umbra.SamplePlugin
-│  └─ reference plugin showing nested config groups, custom drawers, deferred saving, panel usage, benchmarking, and game gating via GameContext
+│  └─ reference plugin showing nested config groups, custom drawers, deferred saving, panel usage, benchmarking, robust shutdown, and game gating via GameContext
 └─ Umbra.UnitTests
    └─ automated tests for settings, UI composition, lifecycle guards, runtime helpers, and logging
 ```
@@ -147,7 +148,7 @@ REFW.Umbra
 4. Render config through `ConfigDrawer<TConfig>` directly or through `ConfigSection<TConfig>` inside `PluginPanel`.
 5. For live state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
 6. Host the plugin instance through `PluginHost<TPlugin>` from a static REFramework entry-point class.
-7. On unload, flush/dispose the save controller, save/dispose the store, and dispose panels/state holders.
+7. On unload, run cleanup in isolated best-effort steps so one failure does not block later flush, save, or dispose work.
 
 ### Notes on persistence and lifecycle
 
@@ -157,6 +158,8 @@ REFW.Umbra
 - On unreadable JSON, `Load()` attempts a timestamped `.invalid-*.json` backup and restores defaults.
 - If that backup cannot be created safely, the current session falls back to declared defaults and later `Save()` calls are suppressed to preserve the original file.
 - Changing `[UmbraPrefix("...")]` changes persisted key names; existing JSON is not migrated automatically.
+- Because plugins run inside the game process, shutdown should prefer resilient cleanup over fail-fast teardown.
+- `Umbra.SamplePlugin` demonstrates a robust shutdown pattern that wraps each unload step, logs failures with `PluginLogger.Exception(...)`, and continues cleaning up the remaining resources.
 
 ## Getting started
 
@@ -268,16 +271,11 @@ public sealed class MyPlugin : UmbraPlugin
 
     public override void Shutdown()
     {
-        _saveController?.Flush();
-        _saveController?.Dispose();
-        _saveController = null;
-
-        _store?.Save();
-        _store?.Dispose();
-        _store = null;
-
-        _panel?.Dispose();
-        _panel = null;
+        RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
+        RunShutdownStep("flush deferred save controller", FlushDeferredSaveController);
+        RunShutdownStep("dispose deferred save controller", DisposeDeferredSaveController);
+        RunShutdownStep("save settings store", SaveSettingsStore);
+        RunShutdownStep("dispose settings store", DisposeSettingsStore);
 
         Log.Info("Unloaded.");
     }
@@ -288,6 +286,45 @@ public sealed class MyPlugin : UmbraPlugin
             _panel?.Draw();
 
         _saveController?.Tick();
+    }
+
+    private void DisposeRuntimePanel()
+    {
+        var panel = _panel;
+        _panel = null;
+        panel?.Dispose();
+    }
+
+    private void FlushDeferredSaveController()
+        => _saveController?.Flush();
+
+    private void DisposeDeferredSaveController()
+    {
+        var saveController = _saveController;
+        _saveController = null;
+        saveController?.Dispose();
+    }
+
+    private void SaveSettingsStore()
+        => _store?.Save();
+
+    private void DisposeSettingsStore()
+    {
+        var store = _store;
+        _store = null;
+        store?.Dispose();
+    }
+
+    private void RunShutdownStep(string stepName, Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            Log.Exception(ex, "Shutdown step failed: {0}.", stepName);
+        }
     }
 }
 
@@ -322,7 +359,7 @@ public static class MyPluginHost
 }
 ```
 
-For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested config groups, hotkey drawers, buttons, enum controls, nested-group drawers, deferred saving, benchmark integration, and `GameContext`-based compatibility gating.
+For a fuller reference, see `Umbra.SamplePlugin`, which demonstrates nested config groups, hotkey drawers, buttons, enum controls, nested-group drawers, deferred saving, benchmark integration, robust shutdown, and `GameContext`-based compatibility gating.
 
 ## Panel benchmarking
 
