@@ -1082,30 +1082,43 @@ public sealed class ConfigSectionTests
 
     private static ConfigDrawer<TConfig> GetDrawer<TConfig>(ConfigSection<TConfig> section) where TConfig : class
     {
-        var drawerField = section.GetType().GetField("_drawer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-        Assert.IsNotNull(drawerField);
-        var drawer = drawerField.GetValue(section) as ConfigDrawer<TConfig>;
-        Assert.IsNotNull(drawer);
-        return drawer;
+        return TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigSection<TConfig>, ConfigDrawer<TConfig>>(section, "_drawer");
     }
 
     private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
     {
-        var nodesField = drawer.GetType().GetField("_nodes", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-        Assert.IsNotNull(nodesField);
-        var nodes = nodesField.GetValue(drawer) as List<IDrawNode>;
-        Assert.IsNotNull(nodes);
-        return nodes;
+        return TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigDrawer<TConfig>, List<IDrawNode>>(drawer, "_nodes");
     }
 
     private static ConfigDrawerSearchState? GetSearchState<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
     {
-        var controllerField = drawer.GetType().GetField("_searchController", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-        Assert.IsNotNull(controllerField);
-        var controller = controllerField.GetValue(drawer);
-        Assert.IsNotNull(controller);
-        var currentStateProperty = controller.GetType().GetProperty("CurrentState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-        Assert.IsNotNull(currentStateProperty);
-        return currentStateProperty.GetValue(controller) as ConfigDrawerSearchState;
+        var controller = TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigDrawer<TConfig>, object>(drawer, "_searchController");
+        return TestReflectionHelper.GetRequiredPrivatePropertyValue<object, ConfigDrawerSearchState>(controller, "CurrentState");
+    }
+
+    private static class TestReflectionHelper
+    {
+        public static TValue GetRequiredPrivateFieldValue<TInstance, TValue>(TInstance instance, string fieldName)
+            where TInstance : class
+            where TValue : class
+        {
+            var field = instance.GetType().GetField(fieldName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Assert.IsNotNull(field);
+
+            var value = field.GetValue(instance) as TValue;
+            Assert.IsNotNull(value);
+
+            return value;
+        }
+
+        public static TValue? GetRequiredPrivatePropertyValue<TInstance, TValue>(TInstance instance, string propertyName)
+            where TInstance : class
+            where TValue : class
+        {
+            var property = instance.GetType().GetProperty(propertyName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Assert.IsNotNull(property);
+
+            return property.GetValue(instance) as TValue;
+        }
     }
 }
