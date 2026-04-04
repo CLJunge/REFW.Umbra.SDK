@@ -66,7 +66,14 @@ When generating or modifying code for this repository:
 - Prefer small, focused tests named by behavior and scenario.
 - `Assert.ThrowsException` does not exist here; use `Assert.ThrowsExactly` for exception assertions.
 - Use existing test seams and test doubles already present in the repo; do not add unnecessary abstractions just for tests.
-- After finishing each implementation phase, reevaluate whether all items for that phase were implemented properly.
+
+## Implementation process and validation
+- Fully process the implementation plan; do not stop after partial phase execution.
+- After each implementation phase, run a validation step consisting of building the project and running tests in the Release configuration.
+- If the build or tests report errors, fix the errors and repeat the validation step until no errors remain.
+- Once validation passes, reevaluate the completed phase to ensure every planned item for that phase was fully implemented.
+- If the phase is fully implemented, update the implementation plan with the concrete implementation details for that phase.
+- After updating the implementation plan, post a short summary of what was completed for that phase.
 - When running tests in this repository, use the Release configuration.
 
 ## Key resources
