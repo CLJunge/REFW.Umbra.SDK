@@ -25,12 +25,17 @@ internal static class ValidationMessageRenderer
         ArgumentNullException.ThrowIfNull(textOps);
 
         if (parameter is not IParameterValidationState validationState
-            || !validationState.HasValidationError
-            || string.IsNullOrWhiteSpace(validationState.ValidationError))
+            || !validationState.HasValidationError)
         {
             return;
         }
 
-        textOps.TextColored(_errorColor, validationState.ValidationError);
+        string? validationMessage = validationState.ValidationError;
+        if (string.IsNullOrWhiteSpace(validationMessage))
+        {
+            return;
+        }
+
+        textOps.TextColored(_errorColor, validationMessage);
     }
 }
