@@ -2,6 +2,7 @@
 // Copyright (c) Umbra. All rights reserved.
 // </copyright>
 
+using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Drawers;
 
@@ -120,6 +121,22 @@ public sealed class NestedDrawerBinderTests
     }
 
     /// <summary>
+    /// Verifies that <see cref="ConfigTransferDrawer"/> binds successfully to a concrete group implementing <see cref="IConfigTransferGroup"/>.
+    /// </summary>
+    [TestMethod]
+    public void BuildDrawAction_WithConfigTransferDrawerAndCompatibleGroup_ReturnsAction()
+    {
+        var attribute = new TestNestedDrawerAttribute(typeof(ConfigTransferDrawer));
+        var group = new TestTransferGroup();
+
+        var action = NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestTransferGroup), group, out var disposable);
+
+        Assert.IsNotNull(action);
+        Assert.IsNotNull(disposable);
+        Assert.IsInstanceOfType<ConfigTransferDrawer>(disposable);
+    }
+
+    /// <summary>
     /// Minimal attribute implementation used to supply drawer types to the binder.
     /// </summary>
     private sealed class TestNestedDrawerAttribute(Type drawerType) : INestedDrawerAttribute
@@ -203,6 +220,20 @@ public sealed class NestedDrawerBinderTests
     /// </summary>
     private sealed class DerivedGroup : BaseGroup
     {
+    }
+
+    /// <summary>
+    /// Concrete transfer-group type used to verify assignable nested-drawer binding.
+    /// </summary>
+    private sealed class TestTransferGroup : IConfigTransferGroup
+    {
+        public Parameter<string> ImportPath { get; } = new("import.json");
+
+        public Parameter<string> ExportPath { get; } = new("export.json");
+
+        public Parameter<Action> ImportConfig { get; } = new(static () => { });
+
+        public Parameter<Action> ExportConfig { get; } = new(static () => { });
     }
 
     /// <summary>

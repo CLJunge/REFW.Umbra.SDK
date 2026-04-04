@@ -149,6 +149,8 @@ Import compatibility rules:
 - imported values are applied through the existing `Parameter<T>` validation pipeline, so rejected values keep the last valid in-memory state
 - when `SettingsImportOptions.SaveAfterImport` is `true`, Umbra saves the accepted final state once through the normal store persistence path
 
+Config transfer UI can be surfaced through a dedicated nested-group drawer instead of four separate default rows. `Umbra.SamplePlugin/Config/PluginConfig.cs` demonstrates this pattern by binding its `ConfigTransferSettings` group with `[UmbraNestedDrawer<ConfigTransferDrawer>]`.
+
 ## Custom drawers and sections
 
 - `[UmbraDrawer<TDrawer>]` uses an `IParameterDrawer`

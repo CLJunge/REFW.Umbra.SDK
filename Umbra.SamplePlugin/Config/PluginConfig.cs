@@ -129,11 +129,12 @@ public record PluginConfig
     public NestedTypeTests NestedTypes { get; set; } = new();
 
     /// <summary>
-    /// Gets or sets the sample config import/export settings.
+    /// Gets or sets the sample config import/export settings rendered through the dedicated transfer control.
     /// </summary>
     [UmbraParameter]
     [UmbraCategory("Config Transfer")]
     [UmbraPrefix("configTransfer")]
+    [UmbraNestedDrawer<ConfigTransferDrawer>]
     [UmbraCollapseAsTree]
     public ConfigTransferSettings ConfigTransfer { get; set; } = new();
 
@@ -255,10 +256,10 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// Sample settings used to demonstrate config import and export actions.
+    /// Sample settings used to demonstrate the dedicated config transfer control.
     /// </summary>
     [UmbraAutoRegister]
-    public record ConfigTransferSettings
+    public record ConfigTransferSettings : IConfigTransferGroup
     {
         /// <summary>
         /// Gets or sets the source file path used by the sample import action.

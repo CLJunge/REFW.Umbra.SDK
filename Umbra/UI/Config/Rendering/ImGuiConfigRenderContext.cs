@@ -14,6 +14,7 @@ namespace Umbra.UI.Config.Rendering;
 /// </remarks>
 internal sealed class ImGuiConfigRenderContext :
     IButtonDrawerRenderer,
+    IConfigTransferDrawerRenderer,
     IHotkeyDrawerRenderer,
     ICategoryNodeRenderer,
     IRootTreeNodeRenderer,
