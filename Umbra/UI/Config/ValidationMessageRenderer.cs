@@ -30,7 +30,7 @@ internal static class ValidationMessageRenderer
             return;
         }
 
-        string? validationMessage = validationState.ValidationError;
+        var validationMessage = validationState.ValidationError;
         if (string.IsNullOrWhiteSpace(validationMessage))
         {
             return;

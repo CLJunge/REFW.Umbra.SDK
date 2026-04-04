@@ -1,5 +1,3 @@
-using Umbra.Config.Validation;
-
 namespace Umbra.Config.Validation.UnitTests;
 
 /// <summary>
@@ -109,15 +107,18 @@ public sealed class ParameterValidatorCacheTests
         // Assert
         Assert.IsFalse(result);
         Assert.IsNotNull(failureReason);
-        StringAssert.Contains(failureReason, $"Validator '{typeof(ThrowingConstructorValidator).FullName}' could not be created:");
-        StringAssert.Contains(failureReason, "Constructor failure.");
+        Assert.Contains(failureReason, $"Validator '{typeof(ThrowingConstructorValidator).FullName}' could not be created:");
+        Assert.Contains(failureReason, "Constructor failure.");
     }
 
     private sealed class CountingValidator : IParameterValidator
     {
         internal static int InstanceCount;
 
-        public CountingValidator() => InstanceCount++;
+        public CountingValidator()
+        {
+            InstanceCount++;
+        }
 
         public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
             => ParameterValidationResult.Valid();
@@ -129,7 +130,10 @@ public sealed class ParameterValidatorCacheTests
     {
         internal static int InstanceCount;
 
-        public AlternateCountingValidator() => InstanceCount++;
+        public AlternateCountingValidator()
+        {
+            InstanceCount++;
+        }
 
         public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
             => ParameterValidationResult.Valid();

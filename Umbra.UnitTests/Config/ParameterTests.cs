@@ -901,7 +901,10 @@ public class ParameterTests
         internal static int InstanceCount;
         internal static int ValidateCallCount;
 
-        public CountingValidator() => InstanceCount++;
+        public CountingValidator()
+        {
+            InstanceCount++;
+        }
 
         public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
         {
@@ -927,7 +930,10 @@ public class ParameterTests
     {
         internal static int InstanceCount;
 
-        public AlternateCountingValidator() => InstanceCount++;
+        public AlternateCountingValidator()
+        {
+            InstanceCount++;
+        }
 
         public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
         {
