@@ -715,13 +715,27 @@ public sealed class ConfigDrawerTests
 
     #endregion
 
+    private static class ConfigDrawerReflection
+    {
+        private const string NodesFieldName = "_nodes";
+
+        public static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
+        {
+            var nodesField = drawer.GetType().GetField(
+                NodesFieldName,
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+            Assert.IsNotNull(nodesField);
+
+            var nodes = nodesField.GetValue(drawer) as List<IDrawNode>;
+            Assert.IsNotNull(nodes);
+            return nodes;
+        }
+    }
+
     private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
     {
-        var nodesField = drawer.GetType().GetField("_nodes", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-        Assert.IsNotNull(nodesField);
-        var nodes = nodesField.GetValue(drawer) as List<IDrawNode>;
-        Assert.IsNotNull(nodes);
-        return nodes;
+        return ConfigDrawerReflection.GetTopLevelNodes(drawer);
     }
 
     /// <summary>
