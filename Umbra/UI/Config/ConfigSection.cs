@@ -54,7 +54,11 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// Initialises a new config section wrapping a <see cref="ConfigDrawer{TConfig}"/>, using the supplied drawer options.
     /// </summary>
     /// <param name="config">The already loaded configuration instance to render.</param>
-    /// <param name="options">The optional feature flags that customize drawer behavior.</param>
+    /// <param name="options">
+    /// The optional feature flags that customize the wrapped drawer behavior. Section-level tree-node metadata
+    /// remains controlled by <paramref name="treeNodeLabel"/>, <paramref name="treeNodeDefaultOpen"/>, and
+    /// <paramref name="suppressTreeNode"/>.
+    /// </param>
     /// <param name="idScope">
     /// Optional stable ImGui widget ID sub-scope for this section. When omitted,
     /// <c>typeof(<typeparamref name="TConfig"/>).FullName</c> (falling back to
@@ -105,7 +109,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
             }
         }
 
-        _drawer = new ConfigDrawer<TConfig>(config, _sectionId, options, suppressRootNode: true);
+        _drawer = new ConfigDrawer<TConfig>(config, _sectionId, options.WithSuppressRootNode(true));
     }
 
     /// <inheritdoc/>

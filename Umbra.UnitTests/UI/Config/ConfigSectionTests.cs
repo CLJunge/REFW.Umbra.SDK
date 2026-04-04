@@ -1,5 +1,7 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
+using Umbra.UI.Config.Nodes;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config.UnitTests;
 
@@ -282,6 +284,27 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
+    /// Tests that the section preserves caller-enabled search while suppressing the wrapped drawer root node.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WithOptions_PreservesSearchBarAndSuppressesWrappedDrawerRootNode()
+    {
+        // Arrange
+        var config = new RootWrappedSectionConfig();
+        var options = new ConfigDrawerOptions { ShowSearchBar = true };
+
+        // Act
+        using var section = new ConfigSection<RootWrappedSectionConfig>(config, options, idScope: "search-enabled");
+        var drawer = GetDrawer(section);
+        var nodes = GetTopLevelNodes(drawer);
+        var searchState = GetSearchState(drawer);
+
+        // Assert
+        Assert.IsNotNull(searchState);
+        Assert.IsFalse(nodes.Exists(static node => node is RootTreeNode));
+    }
+
+    /// <summary>
     /// Tests that the options-aware constructor rejects a null options instance.
     /// </summary>
     [TestMethod]
@@ -357,6 +380,17 @@ public sealed class ConfigSectionTests
     [UmbraRootNode("Attribute Label", true)]
     internal sealed class ConfigWithRootNodeAttribute
     {
+    }
+
+    /// <summary>
+    /// Test configuration class that declares a root node and exposes a parameter for section option tests.
+    /// </summary>
+    [UmbraAutoRegister]
+    [UmbraRootNode("Section Root", true)]
+    internal sealed class RootWrappedSectionConfig
+    {
+        [UmbraParameter]
+        public Parameter<bool> Enabled { get; set; } = new(true);
     }
 
     /// <summary>
@@ -1044,5 +1078,34 @@ public sealed class ConfigSectionTests
     [UmbraRootNode("Closed Tree", false)]
     internal sealed class ConfigWithRootNodeDefaultOpenFalse
     {
+    }
+
+    private static ConfigDrawer<TConfig> GetDrawer<TConfig>(ConfigSection<TConfig> section) where TConfig : class
+    {
+        var drawerField = section.GetType().GetField("_drawer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.IsNotNull(drawerField);
+        var drawer = drawerField.GetValue(section) as ConfigDrawer<TConfig>;
+        Assert.IsNotNull(drawer);
+        return drawer;
+    }
+
+    private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
+    {
+        var nodesField = drawer.GetType().GetField("_nodes", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.IsNotNull(nodesField);
+        var nodes = nodesField.GetValue(drawer) as List<IDrawNode>;
+        Assert.IsNotNull(nodes);
+        return nodes;
+    }
+
+    private static ConfigDrawerSearchState? GetSearchState<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
+    {
+        var controllerField = drawer.GetType().GetField("_searchController", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.IsNotNull(controllerField);
+        var controller = controllerField.GetValue(drawer);
+        Assert.IsNotNull(controller);
+        var currentStateProperty = controller.GetType().GetProperty("CurrentState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.IsNotNull(currentStateProperty);
+        return currentStateProperty.GetValue(controller) as ConfigDrawerSearchState;
     }
 }

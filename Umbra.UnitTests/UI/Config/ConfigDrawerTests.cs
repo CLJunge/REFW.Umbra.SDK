@@ -557,20 +557,45 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Tests that the constructor succeeds when suppressRootNode is explicitly set to true.
+    /// Tests that the options-aware constructor suppresses the root wrapper when requested.
     /// </summary>
     [TestMethod]
-    public void ConfigDrawer_SuppressRootNodeTrue_ConstructsSuccessfully()
+    public void ConfigDrawer_WithOptionsSuppressRootNodeTrue_DoesNotWrapNodesInRootTreeNode()
     {
         // Arrange
-        var config = new SimpleConfig();
-        var idScope = "TestPlugin";
+        var config = new RootWrappedConfig();
 
         // Act
-        using var drawer = new ConfigDrawer<SimpleConfig>(config, idScope, suppressRootNode: true);
+        using var drawer = new ConfigDrawer<RootWrappedConfig>(
+            config,
+            "TestPlugin",
+            new ConfigDrawerOptions { SuppressRootNode = true });
+        var nodes = GetTopLevelNodes(drawer);
 
         // Assert
-        Assert.IsNotNull(drawer);
+        Assert.HasCount(1, nodes);
+        Assert.IsFalse(nodes[0] is RootTreeNode);
+    }
+
+    /// <summary>
+    /// Tests that the options-aware constructor still emits the root wrapper when suppression is not requested.
+    /// </summary>
+    [TestMethod]
+    public void ConfigDrawer_WithOptionsSuppressRootNodeFalse_WrapsNodesInRootTreeNode()
+    {
+        // Arrange
+        var config = new RootWrappedConfig();
+
+        // Act
+        using var drawer = new ConfigDrawer<RootWrappedConfig>(
+            config,
+            "TestPlugin",
+            new ConfigDrawerOptions { SuppressRootNode = false });
+        var nodes = GetTopLevelNodes(drawer);
+
+        // Assert
+        Assert.HasCount(1, nodes);
+        Assert.IsTrue(nodes[0] is RootTreeNode);
     }
 
     /// <summary>
@@ -614,6 +639,17 @@ public sealed class ConfigDrawerTests
     /// </summary>
     [UmbraAutoRegister]
     private sealed class SimpleConfig
+    {
+        [UmbraParameter]
+        public Parameter<bool> Enabled { get; set; } = new(true);
+    }
+
+    /// <summary>
+    /// Configuration class that declares a root wrapper attribute.
+    /// </summary>
+    [UmbraAutoRegister]
+    [UmbraRootNode("Root Wrapped", true)]
+    private sealed class RootWrappedConfig
     {
         [UmbraParameter]
         public Parameter<bool> Enabled { get; set; } = new(true);
@@ -678,6 +714,15 @@ public sealed class ConfigDrawerTests
     }
 
     #endregion
+
+    private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
+    {
+        var nodesField = drawer.GetType().GetField("_nodes", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.IsNotNull(nodesField);
+        var nodes = nodesField.GetValue(drawer) as List<IDrawNode>;
+        Assert.IsNotNull(nodes);
+        return nodes;
+    }
 
     /// <summary>
     /// Verifies that calling <see cref="ConfigDrawer{TConfig}.Dispose"/> once disposes owned
