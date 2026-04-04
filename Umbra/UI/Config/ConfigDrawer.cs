@@ -46,17 +46,10 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// string, preventing duplicate-ID warnings when multiple plugins render settings panels
     /// in the same ImGui window. Must be non-null and non-whitespace.
     /// </param>
-    /// <param name="suppressRootNode">
-    /// When <see langword="true"/>, the root-node-attribute-driven
-    /// root <see cref="ImGui.TreeNode(string)"/> is not rendered even when such an attribute is present on
-    /// <typeparamref name="TConfig"/>. Defaults to <see langword="false"/>.
-    /// Pass <see langword="true"/> when the owning <see cref="ConfigSection{TConfig}"/>
-    /// is responsible for the tree node so that the wrapping is not duplicated.
-    /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
-    public ConfigDrawer(TConfig config, string idScope, bool suppressRootNode = false)
-        : this(config, idScope, ConfigDrawerOptions.Default, ImGuiConfigRenderContext.Instance, suppressRootNode)
+    public ConfigDrawer(TConfig config, string idScope)
+        : this(config, idScope, ConfigDrawerOptions.Default, ImGuiConfigRenderContext.Instance)
     {
     }
 
@@ -66,14 +59,14 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// </summary>
     /// <param name="config">The configuration instance whose draw tree should be built.</param>
     /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
-    /// <param name="options">The optional feature flags that customize drawer behavior.</param>
-    /// <param name="suppressRootNode">
-    /// When <see langword="true"/>, suppresses the root-node-attribute-driven root tree wrapper.
+    /// <param name="options">
+    /// The optional feature flags that customize drawer behavior, including whether the built-in search bar is shown
+    /// and whether the root-node-attribute-driven root tree wrapper is suppressed.
     /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.</exception>
-    public ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, bool suppressRootNode = false)
-        : this(config, idScope, options, ImGuiConfigRenderContext.Instance, suppressRootNode)
+    public ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options)
+        : this(config, idScope, options, ImGuiConfigRenderContext.Instance)
     {
     }
 
@@ -84,15 +77,15 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// </summary>
     /// <param name="config">The configuration instance whose draw tree should be built.</param>
     /// <param name="idScope">The plugin-unique ImGui ID scope string.</param>
-    /// <param name="options">The optional feature flags that customize drawer behavior.</param>
-    /// <param name="renderer">The renderer seam used for outer drawer chrome, ID-scope operations, and search-row layout.</param>
-    /// <param name="suppressRootNode">
-    /// When <see langword="true"/>, suppresses the root-node-attribute-driven root tree wrapper.
+    /// <param name="options">
+    /// The optional feature flags that customize drawer behavior, including whether the built-in search bar is shown
+    /// and whether the root-node-attribute-driven root tree wrapper is suppressed.
     /// </param>
+    /// <param name="renderer">The renderer seam used for outer drawer chrome, ID-scope operations, and search-row layout.</param>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="config"/>, <paramref name="options"/>, or <paramref name="renderer"/> is <see langword="null"/>.
     /// </exception>
-    internal ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, IConfigDrawerRenderer renderer, bool suppressRootNode = false)
+    internal ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, IConfigDrawerRenderer renderer)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(options);
@@ -113,7 +106,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
             _idScope,
             builder.Nodes,
             _searchIndex,
-            suppressRootNode);
+            options.SuppressRootNode);
     }
 
     /// <summary>

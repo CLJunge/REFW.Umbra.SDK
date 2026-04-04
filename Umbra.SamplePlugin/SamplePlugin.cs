@@ -184,7 +184,7 @@ public sealed class SamplePlugin : UmbraPlugin
         => new PluginPanel(_runtimePanelScope)
             .Add(new ConfigSection<PluginConfig>(
                 config,
-                new ConfigDrawerOptions() { ShowSearchBar = true },
+                new ConfigDrawerOptions { ShowSearchBar = true },
                 _runtimeSectionScope));
 
     /// <summary>
