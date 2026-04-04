@@ -1,4 +1,4 @@
-namespace Umbra.UI.Config.UnitTests;
+namespace Umbra.UI.Config.Search.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="ConfigDrawerSearchState"/>.

@@ -1,4 +1,4 @@
-namespace Umbra.UI.Config;
+namespace Umbra.UI.Config.Search;
 
 /// <summary>
 /// Stores one searchable configuration result in the drawer's flat search index.

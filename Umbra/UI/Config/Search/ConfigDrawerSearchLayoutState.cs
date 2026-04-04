@@ -1,4 +1,4 @@
-namespace Umbra.UI.Config;
+namespace Umbra.UI.Config.Search;
 
 /// <summary>
 /// Stores the cached search-row layout measurements for one <see cref="ConfigDrawer{TConfig}"/> instance.

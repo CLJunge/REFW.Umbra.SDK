@@ -1,4 +1,4 @@
-namespace Umbra.UI.Config;
+namespace Umbra.UI.Config.Search;
 
 /// <summary>
 /// Stores one stable branch identifier that can be force-opened by search navigation.

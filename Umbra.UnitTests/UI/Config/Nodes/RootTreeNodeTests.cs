@@ -1,3 +1,5 @@
+using Umbra.UI.Config.Search;
+
 namespace Umbra.UI.Config.Nodes.UnitTests;
 
 /// <summary>

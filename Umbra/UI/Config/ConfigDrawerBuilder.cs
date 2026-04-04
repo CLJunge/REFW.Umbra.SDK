@@ -1,5 +1,6 @@
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config;
 

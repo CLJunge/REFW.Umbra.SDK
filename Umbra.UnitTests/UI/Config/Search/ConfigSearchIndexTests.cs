@@ -1,4 +1,4 @@
-namespace Umbra.UI.Config.UnitTests;
+namespace Umbra.UI.Config.Search.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="ConfigSearchIndex"/>.
@@ -42,7 +42,7 @@ public sealed class ConfigSearchIndexTests
         var matches = index.FindMatches(string.Empty);
 
         // Assert
-        Assert.AreEqual(0, matches.Count);
+        Assert.IsEmpty(matches);
     }
 
     /// <summary>
@@ -58,12 +58,12 @@ public sealed class ConfigSearchIndexTests
         index.AddParameterResult("alpha", "Master Volume", null, "Audio", "settings.audio");
 
         // Assert
-        Assert.AreEqual(3, index.Branches.Count);
+        Assert.HasCount(3, index.Branches);
         Assert.AreEqual("group:settings", index.Branches[0].BranchId);
         Assert.AreEqual("group:settings.audio", index.Branches[1].BranchId);
         Assert.AreEqual("category:settings.audio|Audio", index.Branches[2].BranchId);
         Assert.AreEqual("group:settings.audio", index.Branches[2].ParentBranchId);
-        Assert.AreEqual(3, index.Entries[0].AncestorBranchIds.Length);
+        Assert.HasCount(3, index.Entries[0].AncestorBranchIds);
     }
 
     /// <summary>
@@ -82,6 +82,6 @@ public sealed class ConfigSearchIndexTests
         // Assert
         Assert.AreEqual("root:test-scope", index.Branches[^1].BranchId);
         Assert.AreEqual("root:test-scope", index.Entries[0].AncestorBranchIds[0]);
-        Assert.AreEqual(4, index.Entries[0].AncestorBranchIds.Length);
+        Assert.HasCount(4, index.Entries[0].AncestorBranchIds);
     }
 }

@@ -1,4 +1,4 @@
-namespace Umbra.UI.Config;
+namespace Umbra.UI.Config.Search;
 
 /// <summary>
 /// Stores per-drawer search query and navigation state.

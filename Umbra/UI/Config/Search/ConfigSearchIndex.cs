@@ -1,4 +1,4 @@
-namespace Umbra.UI.Config;
+namespace Umbra.UI.Config.Search;
 
 /// <summary>
 /// Stores the flat searchable result set built alongside one configuration draw tree.

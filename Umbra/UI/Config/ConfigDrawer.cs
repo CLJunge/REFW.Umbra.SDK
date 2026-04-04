@@ -2,6 +2,7 @@ using Hexa.NET.ImGui;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Rendering;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config;
 

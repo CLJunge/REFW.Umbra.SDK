@@ -1,4 +1,5 @@
 using Umbra.UI.Config.Rendering;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config.Nodes;
 

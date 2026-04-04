@@ -2,6 +2,7 @@ using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Nodes.UnitTests;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config.UnitTests;
 
@@ -84,9 +85,9 @@ public sealed class ConfigDrawerTests
         drawer.Draw();
 
         // Assert
-        Assert.AreEqual(0, renderer.InputTextLabels.Count);
-        Assert.AreEqual(0, renderer.ButtonLabels.Count);
-        Assert.AreEqual(0, renderer.RenderedTexts.Count);
+        Assert.IsEmpty(renderer.InputTextLabels);
+        Assert.IsEmpty(renderer.ButtonLabels);
+        Assert.IsEmpty(renderer.RenderedTexts);
     }
 
     /// <summary>
@@ -111,13 +112,13 @@ public sealed class ConfigDrawerTests
         drawer.Draw();
 
         // Assert
-        Assert.AreEqual(1, renderer.RenderedTexts.Count);
+        Assert.HasCount(1, renderer.RenderedTexts);
         Assert.AreEqual("Search", renderer.RenderedTexts[0]);
-        Assert.AreEqual(1, renderer.InputTextLabels.Count);
+        Assert.HasCount(1, renderer.InputTextLabels);
         Assert.AreEqual("##ConfigDrawerSearch", renderer.InputTextLabels[0]);
-        Assert.AreEqual(1, renderer.NextItemWidths.Count);
+        Assert.HasCount(1, renderer.NextItemWidths);
         Assert.AreEqual(300f - 36f - 40f - 44f - (8f * 3f), renderer.NextItemWidths[0]);
-        Assert.AreEqual(2, renderer.ButtonLabels.Count);
+        Assert.HasCount(2, renderer.ButtonLabels);
         Assert.AreEqual("<##ConfigDrawerSearchPrevious", renderer.ButtonLabels[0]);
         Assert.AreEqual(">##ConfigDrawerSearchNext", renderer.ButtonLabels[1]);
         Assert.AreEqual(3, renderer.SameLineCount);
@@ -146,9 +147,9 @@ public sealed class ConfigDrawerTests
         drawer.Draw();
 
         // Assert
-        Assert.AreEqual(1, renderer.TextWidthRequests.Count);
-        Assert.AreEqual(2, renderer.ButtonWidthRequests.Count);
-        Assert.AreEqual(2, renderer.NextItemWidths.Count);
+        Assert.HasCount(1, renderer.TextWidthRequests);
+        Assert.HasCount(2, renderer.ButtonWidthRequests);
+        Assert.HasCount(2, renderer.NextItemWidths);
         Assert.AreEqual(renderer.NextItemWidths[0], renderer.NextItemWidths[1]);
     }
 
@@ -176,9 +177,9 @@ public sealed class ConfigDrawerTests
         drawer.Draw();
 
         // Assert
-        Assert.AreEqual(2, renderer.TextWidthRequests.Count);
-        Assert.AreEqual(4, renderer.ButtonWidthRequests.Count);
-        Assert.AreEqual(2, renderer.NextItemWidths.Count);
+        Assert.HasCount(2, renderer.TextWidthRequests);
+        Assert.HasCount(4, renderer.ButtonWidthRequests);
+        Assert.HasCount(2, renderer.NextItemWidths);
         Assert.AreNotEqual(renderer.NextItemWidths[0], renderer.NextItemWidths[1]);
         Assert.AreEqual(360f - 36f - 40f - 44f - (8f * 3f), renderer.NextItemWidths[1]);
     }
