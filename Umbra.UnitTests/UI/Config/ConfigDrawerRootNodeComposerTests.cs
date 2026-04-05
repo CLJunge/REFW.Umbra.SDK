@@ -126,6 +126,6 @@ public sealed class ConfigDrawerRootNodeComposerTests
     [UmbraRootNode("Root Label")]
     private sealed class ConfigWithRootLabel;
 
-    [UmbraRootNode(defaultOpen: true)]
+    [UmbraRootNode(expandedByDefault: true)]
     private sealed class ConfigWithDefaultLabel;
 }

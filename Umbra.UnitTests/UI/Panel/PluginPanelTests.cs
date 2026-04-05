@@ -204,15 +204,15 @@ public sealed class PluginPanelTests_Draw
     private sealed class CallbackPanelSection(
         string sectionId,
         int order,
-        string? treeNodeLabel,
-        bool treeNodeDefaultOpen,
+        string? sectionLabel,
+        bool expandedByDefault,
         Action callback) : IPanelSection
     {
         public int Order => order;
 
-        public string? TreeNodeLabel => treeNodeLabel;
+        public string? SectionLabel => sectionLabel;
 
-        public bool TreeNodeDefaultOpen => treeNodeDefaultOpen;
+        public bool ExpandedByDefault => expandedByDefault;
 
         public string SectionId => sectionId;
 
@@ -280,16 +280,16 @@ public sealed class PluginPanelTests
     }
 
     /// <summary>
-    /// Tests that Add accepts section with null TreeNodeLabel without throwing.
+    /// Tests that Add accepts section with null SectionLabel without throwing.
     /// </summary>
     [TestMethod]
-    public void Add_SectionWithNullTreeNodeLabel_DoesNotThrow()
+    public void Add_SectionWithNullSectionLabel_DoesNotThrow()
     {
         // Arrange
         var panel = new PluginPanel("TestPanel");
         var mockSection = new Mock<IPanelSection>();
         mockSection.Setup(s => s.Order).Returns(0);
-        mockSection.Setup(s => s.TreeNodeLabel).Returns((string?)null);
+        mockSection.Setup(s => s.SectionLabel).Returns((string?)null);
         mockSection.Setup(s => s.SectionId).Returns("NullLabelSection");
 
         // Act & Assert - Should not throw
@@ -526,3 +526,4 @@ public sealed class PluginPanelTests
         public void Dispose() => disposeCallback();
     }
 }
+

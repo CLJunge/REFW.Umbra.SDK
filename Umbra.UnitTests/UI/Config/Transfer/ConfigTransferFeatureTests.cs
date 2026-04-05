@@ -1,5 +1,5 @@
 using Umbra.Config;
-using Umbra.UI.Config.Transfer;
+using Umbra.UI.Config.Drawers;
 
 namespace Umbra.UI.Config.Transfer.UnitTests;
 
@@ -81,6 +81,41 @@ public sealed class ConfigTransferFeatureTests
         var result = ConfigTransferFeature.ResolveStatusVisibilityTimeout(TimeSpan.FromSeconds(-1));
 
         Assert.AreEqual(ConfigTransferOptions.DefaultStatusVisibilityTimeout, result);
+    }
+
+    [TestMethod]
+    public void Constructor_WhenUsingRenamedOptionProperties_AppliesConfiguredValues()
+    {
+        using var tempDirectory = new TempDirectory();
+        var mainFilePath = Path.Combine(tempDirectory.Path, "config.json");
+        var transferStateFilePath = Path.Combine(tempDirectory.Path, "custom-transfer-state.json");
+        var store = new TestConfigTransferStore(mainFilePath);
+        var drawer = new ConfigTransferDrawer();
+        var options = new ConfigTransferOptions
+        {
+            Enabled = true,
+            TransferStateFilePath = transferStateFilePath,
+            BrowseFallbackDirectory = Path.Combine(tempDirectory.Path, "browse"),
+            SectionLabel = "Transfer Controls",
+            ExpandedByDefault = true,
+            ShowSeparatorBelowButtons = false,
+            StatusDisplayDuration = TimeSpan.FromSeconds(3)
+        };
+
+        var feature = new ConfigTransferFeature(store, options, drawer);
+        feature.ConfigFilePath.Value = Path.Combine(tempDirectory.Path, "persisted.json");
+        feature.TransferMode.Value = ConfigTransferMode.Export;
+        feature.Dispose();
+
+        Assert.AreEqual("Transfer Controls", feature.SectionLabel);
+        Assert.IsTrue(feature.ExpandedByDefault);
+        Assert.IsFalse(feature.ShowSeparatorBelowButtons);
+        Assert.AreEqual(TimeSpan.FromSeconds(3), drawer.StatusVisibilityTimeout);
+
+        using var sidecarStore = new SettingsStore<ConfigTransferSidecarState>(transferStateFilePath);
+        var sidecarState = sidecarStore.Load();
+        Assert.AreEqual(Path.Combine(tempDirectory.Path, "persisted.json"), sidecarState.ConfigFilePath.Value);
+        Assert.AreEqual(ConfigTransferMode.Export, sidecarState.TransferMode.Value);
     }
 
     [TestMethod]
@@ -210,3 +245,4 @@ public sealed class ConfigTransferFeatureTests
         }
     }
 }
+

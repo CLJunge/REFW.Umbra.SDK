@@ -22,9 +22,9 @@ public interface IPanelSection : IDisposable
     int Order => int.MaxValue;
 
     /// <summary>
-    /// Gets the optional tree-node label that wraps this section inside the owning <see cref="PluginPanel"/>.
+    /// Gets the optional visible section label that wraps this section inside the owning <see cref="PluginPanel"/>.
     /// </summary>
-    /// <value>The visible tree-node label, or <see langword="null"/> to render the section without a wrapping tree node.</value>
+    /// <value>The visible section label, or <see langword="null"/> to render the section without a wrapping collapsible section.</value>
     /// <remarks>
     /// <para>
     /// When this property is non-<see langword="null"/>, the panel wraps <see cref="Draw()"/> in a collapsible <see cref="ImGui.TreeNode(string)"/>. <see cref="ConfigSection{TConfig}"/> derives the label from <see cref="Umbra.Config.Attributes.UmbraRootNodeAttribute"/> on the config type or from an explicit constructor argument. <see cref="LiveStateSection{T}"/> accepts it as a constructor argument.
@@ -33,24 +33,24 @@ public interface IPanelSection : IDisposable
     /// The label must not contain ImGui's <c>"##"</c> label and ID separator. <see cref="PluginPanel.Add(IPanelSection)"/> warns when that token is present, and <see cref="PluginPanelTreeNodeLabels"/> strips the suffix at render time so the panel can append its own stable ID disambiguation suffix.
     /// </para>
     /// </remarks>
-    string? TreeNodeLabel => null;
+    string? SectionLabel => null;
 
     /// <summary>
-    /// Gets a value indicating whether the wrapping tree node starts expanded.
+    /// Gets a value indicating whether the wrapping section starts expanded.
     /// </summary>
-    /// <value><see langword="true"/> if the wrapping tree node should default to the open state; otherwise, <see langword="false"/>.</value>
+    /// <value><see langword="true"/> if the wrapping section should default to the expanded state; otherwise, <see langword="false"/>.</value>
     /// <remarks>
-    /// This property is ignored when <see cref="TreeNodeLabel"/> is <see langword="null"/>.
+    /// This property is ignored when <see cref="SectionLabel"/> is <see langword="null"/>.
     /// </remarks>
-    bool TreeNodeDefaultOpen => false;
+    bool ExpandedByDefault => false;
 
     /// <summary>
-    /// Gets the stable identifier used by the owning <see cref="PluginPanel"/> to disambiguate this section's tree node in ImGui.
+    /// Gets the stable identifier used by the owning <see cref="PluginPanel"/> to disambiguate this section's collapsible node in ImGui.
     /// </summary>
     /// <value>A stable string appended to the visible label through ImGui's <c>##</c> suffix convention.</value>
     /// <remarks>
     /// <para>
-    /// When <see cref="TreeNodeLabel"/> is non-<see langword="null"/>, the panel renders the node as <c>$"{TreeNodeLabel}##{SectionId}"</c>. The suffix is invisible in the UI but changes ImGui's hash so multiple sections with the same visible label still keep distinct persisted open and closed state.
+    /// When <see cref="SectionLabel"/> is non-<see langword="null"/>, the panel renders the node as <c>$"{SectionLabel}##{SectionId}"</c>. The suffix is invisible in the UI but changes ImGui's hash so multiple sections with the same visible label still keep distinct persisted open and closed state.
     /// </para>
     /// <para>
     /// The identifier must remain stable for the lifetime of the panel. The default implementation returns the runtime type's <see cref="Type.FullName"/>, falling back to <see cref="System.Reflection.MemberInfo.Name"/> when the full name is unavailable. Override this property when multiple sections of the same concrete type can appear in one panel.

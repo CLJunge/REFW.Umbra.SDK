@@ -14,23 +14,23 @@ internal static class PluginPanelTreeNodeLabels
     private static readonly object _warningLock = new();
 
     /// <summary>
-    /// Emits a developer warning when the section's tree-node label contains ImGui's label and ID separator token.
+    /// Emits a developer warning when the section's visible label contains ImGui's label and ID separator token.
     /// </summary>
     /// <remarks>
     /// The warning is emitted at most once per section identifier and label pair. Rendering still sanitizes the label on every draw.
     /// </remarks>
     /// <param name="section">The section being added to the panel.</param>
     internal static void WarnIfInvalid(IPanelSection section)
-        => WarnIfInvalid(section.SectionId, section.TreeNodeLabel, $"section '{section.SectionId}'");
+        => WarnIfInvalid(section.SectionId, section.SectionLabel, $"section '{section.SectionId}'");
 
     /// <summary>
-    /// Emits a developer warning when the supplied root or section tree-node label contains ImGui's label and ID separator token.
+    /// Emits a developer warning when the supplied root or section label contains ImGui's label and ID separator token.
     /// </summary>
     /// <remarks>
     /// The warning is emitted at most once per owner and label pair. Rendering still sanitizes the label on every draw.
     /// </remarks>
     /// <param name="ownerId">The stable panel or section identifier associated with the label.</param>
-    /// <param name="treeLabel">The root or section tree-node label to validate.</param>
+    /// <param name="treeLabel">The root or section label to validate.</param>
     /// <param name="ownerDescription">The owner description used in the warning text.</param>
     internal static void WarnIfInvalid(string ownerId, string? treeLabel, string ownerDescription)
     {

@@ -47,20 +47,20 @@ internal sealed class ConfigTransferFeature : IDisposable
 
         _store = store;
         _drawer = drawer;
-        _drawer.StatusVisibilityTimeout = ResolveStatusVisibilityTimeout(options.StatusVisibilityTimeout);
-        _fallbackBrowseDirectory = ResolveFallbackBrowseDirectory(store.FilePath, options.BrowseInitialDirectory);
-        var sidecarFilePath = ResolveSidecarFilePath(store.FilePath, options.SidecarFilePath);
-        _sidecarStore = new SettingsStore<ConfigTransferSidecarState>(sidecarFilePath);
+        _drawer.StatusVisibilityTimeout = ResolveStatusVisibilityTimeout(options.StatusDisplayDuration);
+        _fallbackBrowseDirectory = ResolveFallbackBrowseDirectory(store.FilePath, options.BrowseFallbackDirectory);
+        var transferStateFilePath = ResolveSidecarFilePath(store.FilePath, options.TransferStateFilePath);
+        _sidecarStore = new SettingsStore<ConfigTransferSidecarState>(transferStateFilePath);
         var sidecarState = _sidecarStore.Load();
         _sidecarSaveController = new DeferredSaveController<ConfigTransferSidecarState>(_sidecarStore);
         ConfigFilePath = sidecarState.ConfigFilePath;
         TransferMode = sidecarState.TransferMode;
         ImportConfig = new(ImportFromPath);
         ExportConfig = new(ExportToPath);
-        TreeNodeLabel = ResolveTreeNodeLabel(options.TreeNodeLabel);
-        TreeNodeDefaultOpen = options.TreeNodeDefaultOpen;
+        SectionLabel = ResolveTreeNodeLabel(options.SectionLabel);
+        ExpandedByDefault = options.ExpandedByDefault;
         Placement = options.Placement;
-        DrawSeparatorBelowButtons = options.DrawSeparatorBelowButtons;
+        ShowSeparatorBelowButtons = options.ShowSeparatorBelowButtons;
     }
 
     public Parameter<string> ConfigFilePath { get; }
@@ -71,20 +71,20 @@ internal sealed class ConfigTransferFeature : IDisposable
 
     public Parameter<Action> ExportConfig { get; }
 
-    internal string? TreeNodeLabel { get; }
+    internal string? SectionLabel { get; }
 
-    internal bool TreeNodeDefaultOpen { get; }
+    internal bool ExpandedByDefault { get; }
 
     internal ConfigTransferPlacement Placement { get; }
 
-    internal bool DrawSeparatorBelowButtons { get; }
+    internal bool ShowSeparatorBelowButtons { get; }
 
     internal void Draw()
     {
         if (_disposed)
             return;
 
-        _drawer.Draw(TransferMode, ConfigFilePath, ExecuteImportFromPath, ExecuteExportToPath, _fallbackBrowseDirectory, DrawSeparatorBelowButtons);
+        _drawer.Draw(TransferMode, ConfigFilePath, ExecuteImportFromPath, ExecuteExportToPath, _fallbackBrowseDirectory, ShowSeparatorBelowButtons);
         _sidecarSaveController.Tick();
     }
 
@@ -218,12 +218,15 @@ internal sealed class ConfigTransferFeature : IDisposable
 
     private static bool CanExportToPath(string filePath)
     {
-        if (string.Equals(Path.GetExtension(filePath), ".json", StringComparison.OrdinalIgnoreCase))
+        if (HasJsonExtension(filePath))
             return true;
 
-        Logger.Warning("Config export ignored because the configured config file '{0}' does not use the .json extension.", filePath);
+        Logger.Warning("Config export ignored because the configured config file '{0}' does not end with .json.", filePath);
         return false;
     }
+
+    private static bool HasJsonExtension(string filePath)
+        => string.Equals(Path.GetExtension(filePath), ".json", StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>

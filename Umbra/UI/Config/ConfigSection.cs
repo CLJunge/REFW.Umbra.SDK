@@ -10,7 +10,7 @@ namespace Umbra.UI.Config;
 /// Wraps a <see cref="ConfigDrawer{TConfig}"/> as a <see cref="IPanelSection"/> for use inside <see cref="PluginPanel"/>.
 /// </summary>
 /// <remarks>
-/// When <typeparamref name="TConfig"/> carries <see cref="UmbraRootNodeAttribute"/>, this section surfaces the corresponding tree-node label and default-open state to the owning <see cref="PluginPanel"/>, unless tree-node behavior is explicitly suppressed.
+/// When <typeparamref name="TConfig"/> carries <see cref="UmbraRootNodeAttribute"/>, this section surfaces the corresponding section label and default-open state to the owning <see cref="PluginPanel"/>, unless tree-node behavior is explicitly suppressed.
 /// </remarks>
 /// <typeparam name="TConfig">The configuration type rendered by the section.</typeparam>
 public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
@@ -19,8 +19,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private readonly ConfigDrawer<TConfig> _drawer;
     private readonly string _sectionId;
     private readonly int _order;
-    private readonly string? _treeNodeLabel;
-    private readonly bool _treeNodeDefaultOpen;
+    private readonly string? _sectionLabel;
+    private readonly bool _expandedByDefault;
     private ConfigTransferFeature? _transferFeature;
     private bool _disposed;
 
@@ -34,12 +34,12 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <c>typeof(<typeparamref name="TConfig"/>).Name</c>) is used instead. Must not be empty or
     /// whitespace when supplied.
     /// </param>
-    /// <param name="treeNodeLabel">
-    /// Optional label for a collapsible tree node wrapped around this section by the owning
+    /// <param name="sectionLabel">
+    /// Optional label for a collapsible section wrapped around this section by the owning
     /// <see cref="PluginPanel"/>.
     /// </param>
-    /// <param name="treeNodeDefaultOpen">
-    /// Whether the optional tree node starts expanded. Ignored when <paramref name="treeNodeLabel"/>
+    /// <param name="expandedByDefault">
+    /// Whether the optional section starts expanded. Ignored when <paramref name="sectionLabel"/>
     /// is <see langword="null"/>.
     /// </param>
     /// <param name="suppressTreeNode">
@@ -49,9 +49,9 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
     public ConfigSection(TConfig config, string? idScope = null,
-        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false,
+        string? sectionLabel = null, bool expandedByDefault = false,
         bool suppressTreeNode = false)
-        : this(config, ConfigDrawerOptions.Default, idScope, treeNodeLabel, treeNodeDefaultOpen, suppressTreeNode)
+        : this(config, ConfigDrawerOptions.Default, idScope, sectionLabel, expandedByDefault, suppressTreeNode)
     {
     }
 
@@ -60,8 +60,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// </summary>
     /// <param name="config">The already loaded configuration instance to render.</param>
     /// <param name="options">
-    /// The optional feature flags that customize the wrapped drawer behavior. Section-level tree-node metadata
-    /// remains controlled by <paramref name="treeNodeLabel"/>, <paramref name="treeNodeDefaultOpen"/>, and
+    /// The optional feature flags that customize the wrapped drawer behavior. Section-level presentation metadata
+    /// remains controlled by <paramref name="sectionLabel"/>, <paramref name="expandedByDefault"/>, and
     /// <paramref name="suppressTreeNode"/>.
     /// </param>
     /// <param name="idScope">
@@ -70,12 +70,12 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <c>typeof(<typeparamref name="TConfig"/>).Name</c>) is used instead. Must not be empty or
     /// whitespace when supplied.
     /// </param>
-    /// <param name="treeNodeLabel">
-    /// Optional label for a collapsible tree node wrapped around this section by the owning
+    /// <param name="sectionLabel">
+    /// Optional label for a collapsible section wrapped around this section by the owning
     /// <see cref="PluginPanel"/>.
     /// </param>
-    /// <param name="treeNodeDefaultOpen">
-    /// Whether the optional tree node starts expanded. Ignored when <paramref name="treeNodeLabel"/>
+    /// <param name="expandedByDefault">
+    /// Whether the optional section starts expanded. Ignored when <paramref name="sectionLabel"/>
     /// is <see langword="null"/>.
     /// </param>
     /// <param name="suppressTreeNode">
@@ -85,7 +85,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
     public ConfigSection(TConfig config, ConfigDrawerOptions options, string? idScope = null,
-        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false,
+        string? sectionLabel = null, bool expandedByDefault = false,
         bool suppressTreeNode = false)
     {
         ArgumentNullException.ThrowIfNull(config);
@@ -98,18 +98,18 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 
         if (!suppressTreeNode)
         {
-            if (treeNodeLabel is not null)
+            if (sectionLabel is not null)
             {
-                _treeNodeLabel = treeNodeLabel;
-                _treeNodeDefaultOpen = treeNodeDefaultOpen;
+                _sectionLabel = sectionLabel;
+                _expandedByDefault = expandedByDefault;
             }
             else
             {
                 var attr = GetRootNodeMetadata(typeof(TConfig));
                 if (attr.HasValue)
                 {
-                    _treeNodeLabel = attr.Value.Label ?? typeof(TConfig).Name.ToDisplayName();
-                    _treeNodeDefaultOpen = attr.Value.DefaultOpen;
+                    _sectionLabel = attr.Value.Label ?? typeof(TConfig).Name.ToDisplayName();
+                    _expandedByDefault = attr.Value.ExpandedByDefault;
                 }
             }
         }
@@ -128,8 +128,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <param name="config">The already loaded configuration instance to render.</param>
     /// <param name="store">The loaded settings store associated with <paramref name="config"/>.</param>
     /// <param name="idScope">Optional stable ImGui widget ID sub-scope for this section.</param>
-    /// <param name="treeNodeLabel">Optional label for a collapsible tree node wrapped around this section by the owning <see cref="PluginPanel"/>.</param>
-    /// <param name="treeNodeDefaultOpen">Whether the optional tree node starts expanded.</param>
+    /// <param name="sectionLabel">Optional label for a collapsible section wrapped around this section by the owning <see cref="PluginPanel"/>.</param>
+    /// <param name="expandedByDefault">Whether the optional section starts expanded.</param>
     /// <param name="suppressTreeNode">When <see langword="true"/>, suppresses any tree-node metadata inferred from <see cref="UmbraRootNodeAttribute"/>.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> or <paramref name="store"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
@@ -137,10 +137,10 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         TConfig config,
         IConfigTransferStore store,
         string? idScope = null,
-        string? treeNodeLabel = null,
-        bool treeNodeDefaultOpen = false,
+        string? sectionLabel = null,
+        bool expandedByDefault = false,
         bool suppressTreeNode = false)
-        => CreateWithStore(config, store, ConfigDrawerOptions.Default, idScope, treeNodeLabel, treeNodeDefaultOpen, suppressTreeNode);
+        => CreateWithStore(config, store, ConfigDrawerOptions.Default, idScope, sectionLabel, expandedByDefault, suppressTreeNode);
 
     /// <summary>
     /// Creates a config section with access to the loaded settings store for optional built-in transfer UI and the supplied drawer options.
@@ -154,8 +154,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <param name="store">The loaded settings store associated with <paramref name="config"/>.</param>
     /// <param name="options">The optional feature flags that customize the wrapped drawer behavior.</param>
     /// <param name="idScope">Optional stable ImGui widget ID sub-scope for this section.</param>
-    /// <param name="treeNodeLabel">Optional label for a collapsible tree node wrapped around this section by the owning <see cref="PluginPanel"/>.</param>
-    /// <param name="treeNodeDefaultOpen">Whether the optional tree node starts expanded.</param>
+    /// <param name="sectionLabel">Optional label for a collapsible section wrapped around this section by the owning <see cref="PluginPanel"/>.</param>
+    /// <param name="expandedByDefault">Whether the optional section starts expanded.</param>
     /// <param name="suppressTreeNode">When <see langword="true"/>, suppresses any tree-node metadata inferred from <see cref="UmbraRootNodeAttribute"/>.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/>, <paramref name="store"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
@@ -164,12 +164,12 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         IConfigTransferStore store,
         ConfigDrawerOptions options,
         string? idScope = null,
-        string? treeNodeLabel = null,
-        bool treeNodeDefaultOpen = false,
+        string? sectionLabel = null,
+        bool expandedByDefault = false,
         bool suppressTreeNode = false)
     {
         ArgumentNullException.ThrowIfNull(store);
-        var section = new ConfigSection<TConfig>(config, options, idScope, treeNodeLabel, treeNodeDefaultOpen, suppressTreeNode)
+        var section = new ConfigSection<TConfig>(config, options, idScope, sectionLabel, expandedByDefault, suppressTreeNode)
         {
             _transferFeature = CreateTransferFeature(store, options)
         };
@@ -183,10 +183,10 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     public string SectionId => _sectionId;
 
     /// <inheritdoc/>
-    public string? TreeNodeLabel => _treeNodeLabel;
+    public string? SectionLabel => _sectionLabel;
 
     /// <inheritdoc/>
-    public bool TreeNodeDefaultOpen => _treeNodeDefaultOpen;
+    public bool ExpandedByDefault => _expandedByDefault;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -234,8 +234,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         if (transferFeature is null)
             return;
 
-        var treeNodeLabel = $"{transferFeature.TreeNodeLabel}##{_sectionId}.Transfer";
-        if (!_renderContext.TreeNode(treeNodeLabel, transferFeature.TreeNodeDefaultOpen))
+        var transferSectionLabel = $"{transferFeature.SectionLabel}##{_sectionId}.Transfer";
+        if (!_renderContext.TreeNode(transferSectionLabel, transferFeature.ExpandedByDefault))
             return;
 
         try
@@ -248,11 +248,11 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         }
     }
 
-    private static (string? Label, bool DefaultOpen)? GetRootNodeMetadata(Type type)
+    private static (string? Label, bool ExpandedByDefault)? GetRootNodeMetadata(Type type)
     {
         foreach (var attr in type.GetCustomAttributes(inherit: true))
             if (attr is UmbraRootNodeAttribute prefixed)
-                return (prefixed.Label, prefixed.DefaultOpen);
+                return (prefixed.Label, prefixed.ExpandedByDefault);
 
         return null;
     }
