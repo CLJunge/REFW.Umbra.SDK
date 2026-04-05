@@ -79,18 +79,6 @@ internal sealed class ImGuiConfigRenderContext :
     public bool InputText(string label, ref string value, uint maxLength) => ImGui.InputText(label, ref value, maxLength);
 
     /// <inheritdoc/>
-    public void OpenPopup(string id) => ImGui.OpenPopup(id);
-
-    /// <inheritdoc/>
-    public bool BeginPopup(string id) => ImGui.BeginPopup(id);
-
-    /// <inheritdoc/>
-    public void EndPopup() => ImGui.EndPopup();
-
-    /// <inheritdoc/>
-    public bool Selectable(string label) => ImGui.Selectable(label);
-
-    /// <inheritdoc/>
     public void Separator() => ImGui.Separator();
 
     /// <inheritdoc/>

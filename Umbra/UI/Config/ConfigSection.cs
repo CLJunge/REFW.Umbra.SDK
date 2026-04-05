@@ -234,7 +234,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         if (transferFeature is null)
             return;
 
-        var transferSectionLabel = $"{transferFeature.SectionLabel}##{_sectionId}.Transfer";
+        PluginPanelTreeNodeLabels.WarnIfInvalid($"{_sectionId}.Transfer", transferFeature.SectionLabel, $"config-transfer section for '{_sectionId}'");
+        var transferSectionLabel = $"{PluginPanelTreeNodeLabels.Sanitize(transferFeature.SectionLabel)}##{_sectionId}.Transfer";
         if (!_renderContext.TreeNode(transferSectionLabel, transferFeature.ExpandedByDefault))
             return;
 
