@@ -313,6 +313,58 @@ public sealed class ConfigTransferDrawerTests
         Assert.AreEqual("Value cannot be whitespace only.", _renderer.ColoredTexts[0].Text);
     }
 
+    /// <summary>
+    /// Verifies that the file-existence result is cached per-path: deleting the file between frames
+    /// while the path remains unchanged still reports the file as present, avoiding redundant IO.
+    /// Users must edit the path to force a fresh check.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenPathUnchanged_UsesCachedFileExistenceResult()
+    {
+        using var tempDirectory = new TempDirectory();
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
+        var existingFilePath = Path.Combine(tempDirectory.Path, "config.json");
+        File.WriteAllText(existingFilePath, "{}");
+        var pathParameter = CreateStringParameter("configFilePath", existingFilePath);
+
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
+
+        File.Delete(existingFilePath);
+        _renderer.DisabledScopes.Clear();
+
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
+
+        Assert.HasCount(1, _renderer.DisabledScopes);
+        Assert.IsFalse(_renderer.DisabledScopes[0]);
+    }
+
+    /// <summary>
+    /// Verifies that changing the path invalidates the cached file-existence result and triggers a
+    /// fresh check, so a newly created file is detected correctly.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenPathChanges_RechecksFileExistence()
+    {
+        using var tempDirectory = new TempDirectory();
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
+        var missingFilePath = Path.Combine(tempDirectory.Path, "missing.json");
+        var existingFilePath = Path.Combine(tempDirectory.Path, "existing.json");
+        File.WriteAllText(existingFilePath, "{}");
+        var pathParameter = CreateStringParameter("configFilePath", missingFilePath);
+
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
+
+        _renderer.DisabledScopes.Clear();
+        pathParameter.Value = existingFilePath;
+
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
+
+        Assert.HasCount(1, _renderer.DisabledScopes);
+        Assert.IsFalse(_renderer.DisabledScopes[0]);
+    }
+
     private static Parameter<ConfigTransferMode> CreateModeParameter(string key, ConfigTransferMode value)
     {
         var parameter = new Parameter<ConfigTransferMode>(value);

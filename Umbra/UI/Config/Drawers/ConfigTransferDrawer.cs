@@ -26,6 +26,8 @@ internal sealed class ConfigTransferDrawer : IDisposable
     private readonly IConfigTransferFilePicker _filePicker;
     private readonly TimeProvider _timeProvider;
     private TransferStatusState? _statusState;
+    private string? _cachedExistsPath;
+    private bool _cachedFileExists;
 
     internal TimeSpan StatusVisibilityTimeout { get; set; } = ConfigTransferOptions.DefaultStatusVisibilityTimeout;
 
@@ -230,7 +232,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
         pathParameter.Value = selectedPath;
     }
 
-    private static TransferActionState EvaluateActionState(ConfigTransferMode mode, Parameter<string> pathParameter)
+    private TransferActionState EvaluateActionState(ConfigTransferMode mode, Parameter<string> pathParameter)
     {
         if (pathParameter is IParameterValidationState validationState && validationState.HasValidationError)
             return TransferActionState.Invalid;
@@ -240,9 +242,25 @@ internal sealed class ConfigTransferDrawer : IDisposable
             return TransferActionState.Empty;
 
         if (mode == ConfigTransferMode.Import)
-            return File.Exists(filePath) ? TransferActionState.Ready : TransferActionState.Missing;
+            return GetFileExists(filePath) ? TransferActionState.Ready : TransferActionState.Missing;
 
         return HasJsonExtension(filePath) ? TransferActionState.Ready : TransferActionState.InvalidExtension;
+    }
+
+    /// <summary>
+    /// Returns whether the specified file path exists, using a cached result to avoid probing the
+    /// file system on every frame. The cache is invalidated only when the path changes; if the file
+    /// is created or deleted while the path remains the same, the cached result is returned until
+    /// the user edits the path.
+    /// </summary>
+    private bool GetFileExists(string filePath)
+    {
+        if (string.Equals(filePath, _cachedExistsPath, StringComparison.Ordinal))
+            return _cachedFileExists;
+
+        _cachedExistsPath = filePath;
+        _cachedFileExists = File.Exists(filePath);
+        return _cachedFileExists;
     }
 
     private static bool CanExecute(TransferActionState actionState)
