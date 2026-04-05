@@ -25,7 +25,7 @@ internal enum ConfigTransferMode
 internal sealed class ConfigTransferFeature : IDisposable
 {
     private readonly IConfigTransferStore _store;
-    private readonly SettingsStore<ConfigTransferSidecarState> _sidecarStore;
+    private readonly ConfigStore<ConfigTransferSidecarState> _sidecarStore;
     private readonly DeferredSaveController<ConfigTransferSidecarState> _sidecarSaveController;
     private readonly ConfigTransferDrawer _drawer;
     private readonly string? _fallbackBrowseDirectory;
@@ -50,7 +50,7 @@ internal sealed class ConfigTransferFeature : IDisposable
         _drawer.StatusVisibilityTimeout = ResolveStatusVisibilityTimeout(options.StatusDisplayDuration);
         _fallbackBrowseDirectory = ResolveFallbackBrowseDirectory(store.FilePath, options.BrowseFallbackDirectory);
         var transferStateFilePath = ResolveSidecarFilePath(store.FilePath, options.ConfigFilePath);
-        _sidecarStore = new SettingsStore<ConfigTransferSidecarState>(transferStateFilePath);
+        _sidecarStore = new ConfigStore<ConfigTransferSidecarState>(transferStateFilePath);
         var sidecarState = _sidecarStore.Load();
         _sidecarSaveController = new DeferredSaveController<ConfigTransferSidecarState>(_sidecarStore);
         ConfigFilePath = sidecarState.ConfigFilePath;

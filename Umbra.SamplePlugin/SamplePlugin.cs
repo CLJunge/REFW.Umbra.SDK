@@ -37,7 +37,7 @@ public sealed class SamplePlugin : UmbraPlugin
     private PluginPanel? _benchmarkPanel;
     private PluginPanelBenchmark? _panelBenchmark;
 #endif
-    private SettingsStore<PluginConfig>? _store;
+    private ConfigStore<PluginConfig>? _store;
     private DeferredSaveController<PluginConfig>? _saveController;
     private PluginConfig? _config;
 
@@ -57,7 +57,7 @@ public sealed class SamplePlugin : UmbraPlugin
         var configPath = GetConfigPath();
         Log.Info($"Config path: {configPath}");
 
-        _store = new SettingsStore<PluginConfig>(configPath);
+        _store = new ConfigStore<PluginConfig>(configPath);
         _config = _store.Load();
         _config.LogTestMessage.Value = () => Log.Info("Sample Plugin is active!");
 
@@ -90,8 +90,8 @@ public sealed class SamplePlugin : UmbraPlugin
         RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
         RunShutdownStep("flush deferred save controller", FlushDeferredSaveController);
         RunShutdownStep("dispose deferred save controller", DisposeDeferredSaveController);
-        RunShutdownStep("save settings store", SaveSettingsStore);
-        RunShutdownStep("dispose settings store", DisposeSettingsStore);
+        RunShutdownStep("save settings store", SaveConfigStore);
+        RunShutdownStep("dispose settings store", DisposeConfigStore);
 
         _config = null;
 
@@ -181,7 +181,7 @@ public sealed class SamplePlugin : UmbraPlugin
     /// </summary>
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
     /// <returns>The runtime panel.</returns>
-    private static PluginPanel CreateRuntimePanel(PluginConfig config, SettingsStore<PluginConfig> store)
+    private static PluginPanel CreateRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
         => new PluginPanel(_runtimePanelScope)
             .Add(ConfigSection<PluginConfig>.CreateWithStore(
                 config,
@@ -270,10 +270,10 @@ public sealed class SamplePlugin : UmbraPlugin
         saveController?.Dispose();
     }
 
-    private void SaveSettingsStore()
+    private void SaveConfigStore()
         => _store?.Save();
 
-    private void DisposeSettingsStore()
+    private void DisposeConfigStore()
     {
         var store = _store;
         _store = null;

@@ -5,12 +5,12 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Reads and writes registered settings values to the JSON file used by a <see cref="SettingsStore{TConfig}"/>.
+/// Reads and writes registered settings values to the JSON file used by a <see cref="ConfigStore{TConfig}"/>.
 /// </summary>
 /// <remarks>
-/// This helper serializes only the registered parameter map, leaving store lifecycle and recovery policy orchestration to <see cref="SettingsStorePersistenceCoordinator{TConfig}"/>.
+/// This helper serializes only the registered parameter map, leaving store lifecycle and recovery policy orchestration to <see cref="ConfigStorePersistenceCoordinator{TConfig}"/>.
 /// </remarks>
-internal static class SettingsPersistence
+internal static class ConfigPersistence
 {
     /// <summary>
     /// Describes the outcome of a settings-file load attempt.
@@ -73,11 +73,11 @@ internal static class SettingsPersistence
             }
 
             File.WriteAllText(filePath, JsonSerializer.Serialize(dict, _jsonOptions));
-            Logger.Info($"SettingsPersistence: saved {dict.Count} parameter(s) to '{filePath}'.");
+            Logger.Info($"ConfigPersistence: saved {dict.Count} parameter(s) to '{filePath}'.");
         }
         catch (Exception ex)
         {
-            Logger.Exception(ex, $"SettingsPersistence: failed to save settings to '{filePath}'.");
+            Logger.Exception(ex, $"ConfigPersistence: failed to save settings to '{filePath}'.");
         }
     }
 
@@ -106,17 +106,17 @@ internal static class SettingsPersistence
                 applied++;
             }
 
-            Logger.Info($"SettingsPersistence: loaded {applied} of {dict.Count} key(s) from '{filePath}'.");
+            Logger.Info($"ConfigPersistence: loaded {applied} of {dict.Count} key(s) from '{filePath}'.");
             return LoadResult.Success;
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
         {
-            Logger.Info($"SettingsPersistence: settings file '{filePath}' not found (race condition or external deletion); using defaults.");
+            Logger.Info($"ConfigPersistence: settings file '{filePath}' not found (race condition or external deletion); using defaults.");
             return LoadResult.MissingFile;
         }
         catch (Exception ex)
         {
-            Logger.Exception(ex, $"SettingsPersistence: failed to load settings from '{filePath}'.");
+            Logger.Exception(ex, $"ConfigPersistence: failed to load settings from '{filePath}'.");
             return TryBackupUnreadableSettingsFile(filePath, out var backupPath)
                 ? LogRecoveredToDefaults(filePath, backupPath)
                 : LoadResult.Failed;
@@ -142,7 +142,7 @@ internal static class SettingsPersistence
         catch (Exception backupEx)
         {
             Logger.Exception(backupEx,
-                $"SettingsPersistence: failed to back up unreadable settings file '{filePath}' before rewriting defaults.");
+                $"ConfigPersistence: failed to back up unreadable settings file '{filePath}' before rewriting defaults.");
             backupPath = string.Empty;
             return false;
         }
@@ -157,7 +157,7 @@ internal static class SettingsPersistence
     private static LoadResult LogRecoveredToDefaults(string filePath, string backupPath)
     {
         Logger.Warning(
-            $"SettingsPersistence: moved unreadable settings file '{filePath}' to '{backupPath}'. Defaults will be rewritten.");
+            $"ConfigPersistence: moved unreadable settings file '{filePath}' to '{backupPath}'. Defaults will be rewritten.");
         return LoadResult.RecoveredToDefaults;
     }
 

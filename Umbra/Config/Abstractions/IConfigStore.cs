@@ -7,7 +7,7 @@ namespace Umbra.Config;
 /// Implementations discover and register a stable parameter set during <see cref="Load"/>, then expose persistence and listener operations over that registered set for the remainder of the store instance's lifetime. Unless stated otherwise, operations that inspect or mutate registered parameters require <see cref="Load"/> to have completed successfully first.
 /// </remarks>
 /// <typeparam name="TConfig">The configuration type managed by the store.</typeparam>
-public interface ISettingsStore<TConfig> : IDisposable
+public interface IConfigStore<TConfig> : IDisposable
     where TConfig : class, new()
 {
     /// <summary>
@@ -57,7 +57,7 @@ public interface ISettingsStore<TConfig> : IDisposable
     /// <remarks>
     /// Requires <see cref="Load"/> to have completed successfully so the store has a stable registered parameter set to receive imported values.
     /// </remarks>
-    SettingsImportReport Import(string filePath, SettingsImportOptions? options = null);
+    ConfigImportReport Import(string filePath, ConfigImportOptions? options = null);
 
     /// <summary>
     /// Copies this store's registered parameter values into the corresponding parameters of <paramref name="target"/>.
@@ -70,7 +70,7 @@ public interface ISettingsStore<TConfig> : IDisposable
     /// <exception cref="ArgumentNullException"><paramref name="target"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">This store or <paramref name="target"/> has been disposed.</exception>
     /// <exception cref="InvalidOperationException">This store or <paramref name="target"/> has not completed <see cref="Load"/>, or <paramref name="target"/> does not support Umbra's copy-target contract.</exception>
-    void CopyValuesTo(ISettingsStore<TConfig> target, bool setWithoutNotifying = false);
+    void CopyValuesTo(IConfigStore<TConfig> target, bool setWithoutNotifying = false);
 
     /// <summary>
     /// Subscribes a callback to every registered parameter.

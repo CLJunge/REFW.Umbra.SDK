@@ -21,11 +21,11 @@ internal static class NestedScopePathResolver
         TypeDrawMetadata.PropertyDrawMetadata propMeta,
         TypeDrawMetadata propTypeMeta)
     {
-        var segment = propMeta.SettingsPrefix;
+        var segment = propMeta.ConfigPrefix;
         if (segment is null)
-            segment = propTypeMeta.SettingsPrefix;
+            segment = propTypeMeta.ConfigPrefix;
         if (segment is null)
-            segment = propMeta.SettingsParameterKeyOverride;
+            segment = propMeta.ConfigParameterKeyOverride;
         if (segment is null)
             segment = propMeta.Property.Name.ToCamelCase() ?? propMeta.Property.Name;
 

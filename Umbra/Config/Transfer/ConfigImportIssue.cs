@@ -3,7 +3,7 @@ namespace Umbra.Config;
 /// <summary>
 /// Describes one non-fatal issue encountered while importing a config document.
 /// </summary>
-public sealed class SettingsImportIssue
+public sealed class ConfigImportIssue
 {
     /// <summary>
     /// Gets or sets the issue category.

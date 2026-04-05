@@ -55,7 +55,7 @@ When generating or modifying code for this repository:
 - Prefer the existing `Umbra.Config` model:
   - mark config types with `[UmbraAutoRegister]`
   - store values in `Parameter<T>` properties marked with `[UmbraParameter]`
-  - load and save through `SettingsStore<TConfig>`
+  - load and save through `ConfigStore<TConfig>`
   - create `DeferredSaveController<TConfig>` only after `Load()` completes
 - For nested config groups, put `[UmbraPrefix("...")]` on the parent property, not the nested type.
 - Reuse existing helpers where applicable: `KeyboardInput`, `ImGuiWidgets`, and drawers under `Umbra.UI.Config.Drawers`.

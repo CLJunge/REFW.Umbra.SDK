@@ -46,7 +46,7 @@ internal sealed class ConfigDrawerBuilder
         SearchIndex.Clear();
 
         var typeMeta = TypeDrawMetadata.For(type);
-        var rootGroupPath = typeMeta.SettingsPrefix ?? string.Empty;
+        var rootGroupPath = typeMeta.ConfigPrefix ?? string.Empty;
         var scope = new ConfigDrawScope(
             rootGroupPath,
             categoryOverride ?? typeMeta.Category,

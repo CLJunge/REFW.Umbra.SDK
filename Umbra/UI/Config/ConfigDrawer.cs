@@ -13,7 +13,7 @@ namespace Umbra.UI.Config;
 /// The draw tree is assembled once at construction time. Later <see cref="Draw"/> calls walk the cached nodes without performing per-frame reflection.
 /// </para>
 /// <para>
-/// Pass a configuration instance returned by <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so each registered parameter already carries resolved <see cref="Umbra.Config.ParameterMetadata"/>. Nested-group wrapper attributes are still read from reflected property and type metadata during the one-time build pass.
+/// Pass a configuration instance returned by <see cref="Umbra.Config.ConfigStore{TConfig}.Load()"/> so each registered parameter already carries resolved <see cref="Umbra.Config.ParameterMetadata"/>. Nested-group wrapper attributes are still read from reflected property and type metadata during the one-time build pass.
 /// </para>
 /// <para>
 /// Root-node composition is delegated to <see cref="ConfigDrawerRootNodeComposer"/>, built-in search-row UI is delegated to <see cref="ConfigDrawerSearchController"/>, and per-frame search-state application is delegated to <see cref="ConfigDrawerSearchApplicator"/>.
@@ -36,7 +36,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// </summary>
     /// <param name="config">
     /// A fully initialized configuration instance, ideally returned by
-    /// <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so that <see cref="Umbra.Config.ParameterMetadata"/>
+    /// <see cref="Umbra.Config.ConfigStore{TConfig}.Load()"/> so that <see cref="Umbra.Config.ParameterMetadata"/>
     /// is already populated on every parameter.
     /// </param>
     /// <param name="idScope">

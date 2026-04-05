@@ -36,5 +36,5 @@ public interface IConfigTransferStore
     /// <param name="filePath">The source file path.</param>
     /// <param name="options">Optional import finalization settings.</param>
     /// <returns>A structured report describing the import outcome.</returns>
-    SettingsImportReport Import(string filePath, SettingsImportOptions? options = null);
+    ConfigImportReport Import(string filePath, ConfigImportOptions? options = null);
 }

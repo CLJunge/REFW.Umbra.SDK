@@ -4,17 +4,17 @@ using Umbra.Config.Attributes;
 namespace Umbra.Config.UnitTests;
 
 /// <summary>
-/// Unit tests for config import/export behavior exposed by <see cref="SettingsStore{TConfig}"/>.
+/// Unit tests for config import/export behavior exposed by <see cref="ConfigStore{TConfig}"/>.
 /// </summary>
 [TestClass]
-public sealed class SettingsExchangePersistenceTests
+public sealed class ConfigExchangePersistenceTests
 {
     private string _testDirectory = string.Empty;
 
     [TestInitialize]
     public void TestInitialize()
     {
-        _testDirectory = Path.Combine(Path.GetTempPath(), nameof(SettingsExchangePersistenceTests), Guid.NewGuid().ToString());
+        _testDirectory = Path.Combine(Path.GetTempPath(), nameof(ConfigExchangePersistenceTests), Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
     }
 
@@ -42,7 +42,7 @@ public sealed class SettingsExchangePersistenceTests
     {
         var runtimePath = Path.Combine(_testDirectory, "runtime.json");
         var exportPath = Path.Combine(_testDirectory, "export.json");
-        var store = new SettingsStore<ExchangeConfig>(runtimePath);
+        var store = new ConfigStore<ExchangeConfig>(runtimePath);
 
         try
         {
@@ -55,7 +55,7 @@ public sealed class SettingsExchangePersistenceTests
             var root = document.RootElement;
             var values = root.GetProperty("values");
 
-            Assert.AreEqual(SettingsExchangeDocument.CurrentFormatVersion, root.GetProperty("formatVersion").GetInt32());
+            Assert.AreEqual(ConfigExchangeDocument.CurrentFormatVersion, root.GetProperty("formatVersion").GetInt32());
             Assert.AreEqual(typeof(ExchangeConfig).FullName, root.GetProperty("schemaId").GetString());
             Assert.AreEqual(2, root.GetProperty("schemaVersion").GetInt32());
             Assert.AreEqual(9, values.GetProperty("exchange.numberValue").GetInt32());
@@ -85,7 +85,7 @@ public sealed class SettingsExchangePersistenceTests
 }
 """);
 
-        var store = new SettingsStore<ExchangeConfig>(runtimePath);
+        var store = new ConfigStore<ExchangeConfig>(runtimePath);
         try
         {
             var config = store.Load();
@@ -130,12 +130,12 @@ public sealed class SettingsExchangePersistenceTests
 }
 """);
 
-        var store = new SettingsStore<ExchangeConfig>(runtimePath);
+        var store = new ConfigStore<ExchangeConfig>(runtimePath);
         try
         {
             var config = store.Load();
 
-            var report = store.Import(importPath, new SettingsImportOptions { SaveAfterImport = false });
+            var report = store.Import(importPath, new ConfigImportOptions { SaveAfterImport = false });
 
             Assert.IsFalse(report.Success);
             Assert.AreEqual(3, config.NumberValue.Value);
@@ -166,12 +166,12 @@ public sealed class SettingsExchangePersistenceTests
 }
 """);
 
-        var store = new SettingsStore<ExchangeConfig>(runtimePath);
+        var store = new ConfigStore<ExchangeConfig>(runtimePath);
         try
         {
             var config = store.Load();
 
-            var report = store.Import(importPath, new SettingsImportOptions { SaveAfterImport = false });
+            var report = store.Import(importPath, new ConfigImportOptions { SaveAfterImport = false });
 
             Assert.IsFalse(report.Success);
             Assert.AreEqual("default", config.TextValue.Value);
@@ -203,12 +203,12 @@ public sealed class SettingsExchangePersistenceTests
 }
 """);
 
-        var store = new SettingsStore<ExchangeConfig>(runtimePath);
+        var store = new ConfigStore<ExchangeConfig>(runtimePath);
         try
         {
             var config = store.Load();
 
-            var report = store.Import(importPath, new SettingsImportOptions { SaveAfterImport = false });
+            var report = store.Import(importPath, new ConfigImportOptions { SaveAfterImport = false });
 
             Assert.IsTrue(report.Success);
             Assert.AreEqual(1, report.AppliedCount);
@@ -244,12 +244,12 @@ public sealed class SettingsExchangePersistenceTests
 }
 """);
 
-        var store = new SettingsStore<ExchangeConfig>(runtimePath);
+        var store = new ConfigStore<ExchangeConfig>(runtimePath);
         try
         {
             var config = store.Load();
 
-            var report = store.Import(importPath, new SettingsImportOptions { SaveAfterImport = false });
+            var report = store.Import(importPath, new ConfigImportOptions { SaveAfterImport = false });
 
             Assert.IsTrue(report.Success);
             Assert.IsFalse(report.Saved);
@@ -279,12 +279,12 @@ public sealed class SettingsExchangePersistenceTests
 }
 """);
 
-        var store = new SettingsStore<ExchangeConfig>(runtimePath);
+        var store = new ConfigStore<ExchangeConfig>(runtimePath);
         try
         {
             _ = store.Load();
 
-            var report = store.Import(importPath, new SettingsImportOptions { SaveAfterImport = false });
+            var report = store.Import(importPath, new ConfigImportOptions { SaveAfterImport = false });
 
             Assert.IsFalse(report.Success);
             Assert.IsFalse(report.Saved);

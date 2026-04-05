@@ -10,9 +10,9 @@ The repository contains three projects:
 
 ## Features
 
-- Attribute-driven settings registration with `SettingsStore<TConfig>` and `Parameter<T>`
+- Attribute-driven settings registration with `ConfigStore<TConfig>` and `Parameter<T>`
 - JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable enum parameters
-- Config import/export via `SettingsStore<TConfig>.Import(...)` and `Export(...)`, with versioned exchange documents and legacy flat-file import support
+- Config import/export via `ConfigStore<TConfig>.Import(...)` and `Export(...)`, with versioned exchange documents and legacy flat-file import support
 - Deferred auto-save with `DeferredSaveController<TConfig>`
 - Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
 - Built-in config search/filter UI with visible-match filtering, highlight styling, and previous/next result navigation in `ConfigDrawer<TConfig>` and `ConfigSection<TConfig>`
@@ -115,7 +115,7 @@ Validation failures on the non-throwing UI path do not crash the plugin or overw
 
 ## Config import and export
 
-`SettingsStore<TConfig>.Export(string)` writes a versioned exchange document with this shape:
+`ConfigStore<TConfig>.Export(string)` writes a versioned exchange document with this shape:
 
 ```json
 {
@@ -134,7 +134,7 @@ Validation failures on the non-throwing UI path do not crash the plugin or overw
 - `schemaVersion` defaults to `1`, or to `[UmbraConfigVersion(n)]` when the root config type declares it.
 - `values` contains only persisted registered parameters; delegate-backed button parameters are skipped.
 
-`SettingsStore<TConfig>.Import(string, SettingsImportOptions?)` accepts two document shapes:
+`ConfigStore<TConfig>.Import(string, ConfigImportOptions?)` accepts two document shapes:
 
 1. the versioned envelope shown above
 2. the legacy flat JSON dictionary used by Umbra's normal runtime persistence
@@ -147,7 +147,7 @@ Import compatibility rules:
 - only keys that exist in the current loaded store are considered
 - unknown keys are ignored, not treated as fatal errors
 - imported values are applied through the existing `Parameter<T>` validation pipeline, so rejected values keep the last valid in-memory state
-- when `SettingsImportOptions.SaveAfterImport` is `true`, Umbra saves the accepted final state once through the normal store persistence path
+- when `ConfigImportOptions.SaveAfterImport` is `true`, Umbra saves the accepted final state once through the normal store persistence path
 
 Config transfer UI is now an optional built-in Umbra feature rather than a plugin-defined nested config group. Enable it through `ConfigDrawerOptions.Transfer` and create the section through `ConfigSection<TConfig>.CreateWithStore(config, store, options, ...)`. The built-in control renders in its own tree node, with a configurable header and configurable placement before or after the normal config nodes. Inside that tree node it uses one shared config-file path field, exposes an explicit browse menu for import or export file selection, shows one mode-specific action button, and renders a transient status row below that button only after an import or export completes. Success and failure messages remain visible for about two seconds by default before the row collapses again, that visibility duration is configurable through `ConfigTransferOptions.StatusDisplayDuration`, and failure messages direct the user to check the logs. The transfer path is persisted in a separate sidecar file derived from the main settings-store file path, so transfer UI state stays decoupled from the actual configuration payload.
 
@@ -166,7 +166,7 @@ REFW.Umbra
 ├─ Umbra
 │  ├─ Config
 │  │  ├─ Parameter<T>, IParameter, ParameterMetadata
-│  │  ├─ SettingsStore<TConfig>, SettingsStorePersistenceCoordinator<TConfig>, SettingsRegistrar
+│  │  ├─ ConfigStore<TConfig>, ConfigStorePersistenceCoordinator<TConfig>, ConfigRegistrar
 │  │  ├─ DeferredSaveController<TConfig>
 │  │  └─ settings/UI metadata attributes
 │  ├─ UI
@@ -207,7 +207,7 @@ REFW.Umbra
 ## Main flow
 
 1. Define a config type with `[UmbraAutoRegister]` and `Parameter<T>` properties marked with `[UmbraParameter]`.
-2. Load it with `SettingsStore<TConfig>.Load()`.
+2. Load it with `ConfigStore<TConfig>.Load()`.
 3. Optionally attach `DeferredSaveController<TConfig>` after load.
 4. Render config through `ConfigDrawer<TConfig>` directly or through `ConfigSection<TConfig>` inside `PluginPanel`.
 5. Enable `ConfigDrawerOptions.ShowSearchBar` when the surface should expose built-in filtering and result navigation.
@@ -218,7 +218,7 @@ REFW.Umbra
 ### Notes on persistence and lifecycle
 
 - `DeferredSaveController<TConfig>` must be constructed after `Load()`.
-- `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed`.
+- `ConfigStore<TConfig>` exposes `IsLoaded` and `IsDisposed`.
 - `Save()`, listener APIs, `ResetAll()`, and `CopyValuesTo(...)` require a loaded store.
 - `Parameter<T>.Value` remains non-throwing for UI-driven edits; invalid values are rejected and preserve the last valid value.
 - On unreadable JSON, `Load()` attempts a timestamped `.invalid-*.json` backup and restores defaults.
@@ -318,7 +318,7 @@ public sealed class MyPlugin : UmbraPlugin
     private static readonly PluginLogger _log = new("MyPlugin");
 
     private PluginPanel? _panel;
-    private SettingsStore<MyConfig>? _store;
+    private ConfigStore<MyConfig>? _store;
     private DeferredSaveController<MyConfig>? _saveController;
 
     public MyPlugin() : base(_log) { }
@@ -328,7 +328,7 @@ public sealed class MyPlugin : UmbraPlugin
         var pluginDir = API.GetPluginDirectory(GetType().Assembly);
         var configPath = Path.Combine(pluginDir, "data", "MyPlugin", "config.json");
 
-        _store = new SettingsStore<MyConfig>(configPath);
+        _store = new ConfigStore<MyConfig>(configPath);
         var config = _store.Load();
         _saveController = new DeferredSaveController<MyConfig>(_store);
 
@@ -346,8 +346,8 @@ public sealed class MyPlugin : UmbraPlugin
         RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
         RunShutdownStep("flush deferred save controller", FlushDeferredSaveController);
         RunShutdownStep("dispose deferred save controller", DisposeDeferredSaveController);
-        RunShutdownStep("save settings store", SaveSettingsStore);
-        RunShutdownStep("dispose settings store", DisposeSettingsStore);
+        RunShutdownStep("save settings store", SaveConfigStore);
+        RunShutdownStep("dispose settings store", DisposeConfigStore);
 
         Log.Info("Unloaded.");
     }
@@ -377,10 +377,10 @@ public sealed class MyPlugin : UmbraPlugin
         saveController?.Dispose();
     }
 
-    private void SaveSettingsStore()
+    private void SaveConfigStore()
         => _store?.Save();
 
-    private void DisposeSettingsStore()
+    private void DisposeConfigStore()
     {
         var store = _store;
         _store = null;

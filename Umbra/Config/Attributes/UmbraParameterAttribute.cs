@@ -4,7 +4,7 @@ namespace Umbra.Config.Attributes;
 /// Marks a member as a settings-parameter declaration consumed by Umbra's registration pipeline.
 /// </summary>
 /// <remarks>
-/// <see cref="SettingsStore{TConfig}.Load()"/> currently discovers only public instance properties marked with this attribute. Field targets remain allowed for attribute-shape consistency and reflective tooling, but fields are ignored by <see cref="SettingsRegistrar"/> during normal registration.
+/// <see cref="ConfigStore{TConfig}.Load()"/> currently discovers only public instance properties marked with this attribute. Field targets remain allowed for attribute-shape consistency and reflective tooling, but fields are ignored by <see cref="ConfigRegistrar"/> during normal registration.
 /// </remarks>
 /// <param name="keyOverride">The optional explicit persisted key segment for the annotated parameter.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]

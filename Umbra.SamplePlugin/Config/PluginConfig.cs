@@ -52,7 +52,7 @@ public record PluginConfig
     [UmbraCategory("General")]
     [UmbraPrefix("general")]
     [UmbraCollapseAsTree(true)]
-    public GeneralSettings General { get; set; } = new();
+    public GeneralConfig General { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the boolean checkbox samples.
@@ -246,7 +246,7 @@ public record PluginConfig
     /// General sample settings covering the basic boolean and hotkey controls used by many plugins.
     /// </summary>
     [UmbraAutoRegister]
-    public record GeneralSettings
+    public record GeneralConfig
     {
         /// <summary>Gets or sets whether the sample plugin is enabled.</summary>
         [UmbraParameter]
@@ -282,8 +282,8 @@ public record PluginConfig
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetGeneral { get; init; }
 
-        /// <summary>Initializes a new <see cref="GeneralSettings"/> and wires the reset action.</summary>
-        public GeneralSettings()
+        /// <summary>Initializes a new <see cref="GeneralConfig"/> and wires the reset action.</summary>
+        public GeneralConfig()
         {
             ResetGeneral = new(() =>
             {
@@ -558,7 +558,7 @@ public record PluginConfig
         [UmbraPrefix("graphics")]
         [UmbraCollapseAsTree(true)]
         [UmbraParameterOrder(0)]
-        public ScopedBranchSettings Graphics { get; set; } = new()
+        public ScopedBranchConfig Graphics { get; set; } = new()
         {
             Intensity = new(.25f),
             Advanced = new()
@@ -575,7 +575,7 @@ public record PluginConfig
         [UmbraPrefix("audio")]
         [UmbraCollapseAsTree(true)]
         [UmbraParameterOrder(1)]
-        public ScopedBranchSettings Audio { get; set; } = new()
+        public ScopedBranchConfig Audio { get; set; } = new()
         {
             Enabled = new(false),
             ShowAdvanced = new(false),
@@ -594,7 +594,7 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraPrefix("typeLevelFallback")]
         [UmbraParameterOrder(2)]
-        public TypeLevelPresentationSettings TypeLevelFallback { get; set; } = new();
+        public TypeLevelPresentationConfig TypeLevelFallback { get; set; } = new();
 
         /// <summary>
         /// Gets or sets the nested group whose property-level category overrides its type-level fallback metadata.
@@ -604,7 +604,7 @@ public record PluginConfig
         [UmbraPrefix("propertyOverride")]
         [UmbraCollapseAsTree]
         [UmbraParameterOrder(3)]
-        public TypeLevelPresentationSettings PropertyOverride { get; set; } = new()
+        public TypeLevelPresentationConfig PropertyOverride { get; set; } = new()
         {
             SampleValue = new(77),
             Notes = new("Property-level category should win.")
@@ -616,14 +616,14 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraPrefix("indentedLayout")]
         [UmbraParameterOrder(4)]
-        public IndentedLayoutSettings IndentedLayout { get; set; } = new();
+        public IndentedLayoutConfig IndentedLayout { get; set; } = new();
     }
 
     /// <summary>
     /// Shared branch used by the nested-type tests to validate local category scoping and nested visibility.
     /// </summary>
     [UmbraAutoRegister]
-    public record ScopedBranchSettings
+    public record ScopedBranchConfig
     {
         /// <summary>Gets or sets whether this branch is enabled.</summary>
         [UmbraParameter]
@@ -659,14 +659,14 @@ public record PluginConfig
         [UmbraSpacingBefore]
         [UmbraSpacingAfter]
         [UmbraParameterOrder(2)]
-        public ScopedAdvancedSettings Advanced { get; set; } = new();
+        public ScopedAdvancedConfig Advanced { get; set; } = new();
     }
 
     /// <summary>
     /// Second-level nested branch used by the scoped-branch demo.
     /// </summary>
     [UmbraAutoRegister]
-    public record ScopedAdvancedSettings
+    public record ScopedAdvancedConfig
     {
         /// <summary>Gets or sets the advanced threshold value.</summary>
         [UmbraParameter]
@@ -699,7 +699,7 @@ public record PluginConfig
     [UmbraAutoRegister]
     [UmbraCategory("Type-Level Fallback")]
     [UmbraCollapseAsTree]
-    public record TypeLevelPresentationSettings
+    public record TypeLevelPresentationConfig
     {
         /// <summary>Gets or sets the sample numeric value rendered in the fallback group.</summary>
         [UmbraParameter]
@@ -726,7 +726,7 @@ public record PluginConfig
     [UmbraCollapseAsTree(true)]
     [UmbraIndent(18f)]
     [UmbraLabelMargin(16f)]
-    public record IndentedLayoutSettings
+    public record IndentedLayoutConfig
     {
         /// <summary>Gets or sets the primary layout scale.</summary>
         [UmbraParameter]

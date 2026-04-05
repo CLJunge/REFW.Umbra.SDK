@@ -79,7 +79,7 @@ internal static class ConfigDrawTreeCollector
             }
 
             var propTypeMeta = TypeDrawMetadata.For(propType);
-            if (!propTypeMeta.IsAutoRegisterSettings || value is not { } nested)
+            if (!propTypeMeta.IsAutoRegisterConfig || value is not { } nested)
                 continue;
 
             var nestedDrawerAttr = propMeta.NestedDrawerAttr ?? propTypeMeta.NestedDrawerAttr;

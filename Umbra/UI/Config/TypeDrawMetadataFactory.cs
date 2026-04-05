@@ -19,7 +19,7 @@ internal static class TypeDrawMetadataFactory
         ArgumentNullException.ThrowIfNull(type);
 
         string? category = null;
-        string? settingsPrefix = null;
+        string? configPrefix = null;
         UmbraIndentAttribute? indentAttr = null;
         UmbraCollapseAsTreeAttribute? collapseAttr = null;
         UmbraLabelMarginAttribute? labelMarginAttr = null;
@@ -29,7 +29,7 @@ internal static class TypeDrawMetadataFactory
         foreach (var attribute in type.GetCustomAttributes(inherit: true))
         {
             if (attribute is UmbraCategoryAttribute categoryAttribute) { category = categoryAttribute.Name; continue; }
-            if (attribute is UmbraPrefixAttribute prefixAttribute) { settingsPrefix = prefixAttribute.Prefix; continue; }
+            if (attribute is UmbraPrefixAttribute prefixAttribute) { configPrefix = prefixAttribute.Prefix; continue; }
             if (attribute is UmbraIndentAttribute indentAttribute) { indentAttr = indentAttribute; continue; }
             if (attribute is UmbraCollapseAsTreeAttribute collapseAttribute) { collapseAttr = collapseAttribute; continue; }
             if (attribute is UmbraLabelMarginAttribute marginAttribute) { labelMarginAttr = marginAttribute; continue; }
@@ -44,7 +44,7 @@ internal static class TypeDrawMetadataFactory
 
         return new TypeDrawMetadata(
             category,
-            settingsPrefix,
+            configPrefix,
             indentAttr,
             collapseAttr,
             labelMarginAttr,
@@ -64,8 +64,8 @@ internal static class TypeDrawMetadataFactory
             && propertyType.GetGenericTypeDefinition() == typeof(Umbra.Config.Parameter<>);
 
         string? category = null;
-        string? settingsPrefix = null;
-        string? settingsParameterKeyOverride = null;
+        string? configPrefix = null;
+        string? configParameterKeyOverride = null;
         UmbraIndentAttribute? indentAttr = null;
         UmbraCollapseAsTreeAttribute? collapseAttr = null;
         UmbraLabelMarginAttribute? labelMarginAttr = null;
@@ -78,8 +78,8 @@ internal static class TypeDrawMetadataFactory
         foreach (var attribute in property.GetCustomAttributes(inherit: false))
         {
             if (attribute is UmbraCategoryAttribute categoryAttribute) { category = categoryAttribute.Name; continue; }
-            if (attribute is UmbraPrefixAttribute prefixAttribute) { settingsPrefix = prefixAttribute.Prefix; continue; }
-            if (attribute is UmbraParameterAttribute parameterAttribute) { settingsParameterKeyOverride = parameterAttribute.KeyOverride; continue; }
+            if (attribute is UmbraPrefixAttribute prefixAttribute) { configPrefix = prefixAttribute.Prefix; continue; }
+            if (attribute is UmbraParameterAttribute parameterAttribute) { configParameterKeyOverride = parameterAttribute.KeyOverride; continue; }
             if (attribute is UmbraIndentAttribute indentAttribute) { indentAttr = indentAttribute; continue; }
             if (attribute is UmbraCollapseAsTreeAttribute collapseAttribute) { collapseAttr = collapseAttribute; continue; }
             if (attribute is UmbraLabelMarginAttribute marginAttribute) { labelMarginAttr = marginAttribute; continue; }
@@ -104,7 +104,7 @@ internal static class TypeDrawMetadataFactory
             order,
             spacingBefore,
             spacingAfter,
-            settingsPrefix,
-            settingsParameterKeyOverride);
+            configPrefix,
+            configParameterKeyOverride);
     }
 }

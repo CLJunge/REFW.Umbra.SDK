@@ -118,7 +118,7 @@ public sealed class ConfigTransferFeatureTests
         Assert.IsFalse(feature.ShowSeparatorBelowButtons);
         Assert.AreEqual(TimeSpan.FromSeconds(3), drawer.StatusVisibilityTimeout);
 
-        using var sidecarStore = new SettingsStore<ConfigTransferSidecarState>(transferStateFilePath);
+        using var sidecarStore = new ConfigStore<ConfigTransferSidecarState>(transferStateFilePath);
         var sidecarState = sidecarStore.Load();
         Assert.AreEqual(Path.Combine(tempDirectory.Path, "persisted.json"), sidecarState.ConfigFilePath.Value);
         Assert.AreEqual(ConfigTransferMode.Export, sidecarState.TransferMode.Value);
@@ -205,7 +205,7 @@ public sealed class ConfigTransferFeatureTests
 
         feature.Dispose();
 
-        using var sidecarStore = new SettingsStore<ConfigTransferSidecarState>(sidecarFilePath);
+        using var sidecarStore = new ConfigStore<ConfigTransferSidecarState>(sidecarFilePath);
         var sidecarState = sidecarStore.Load();
         Assert.AreEqual(Path.Combine(tempDirectory.Path, "persisted.json"), sidecarState.ConfigFilePath.Value);
         Assert.AreEqual(ConfigTransferMode.Export, sidecarState.TransferMode.Value);
@@ -225,10 +225,10 @@ public sealed class ConfigTransferFeatureTests
 
         public void Export(string filePath) => LastExportedPath = filePath;
 
-        public SettingsImportReport Import(string filePath, SettingsImportOptions? options = null)
+        public ConfigImportReport Import(string filePath, ConfigImportOptions? options = null)
         {
             LastImportedPath = filePath;
-            return new SettingsImportReport { Success = true };
+            return new ConfigImportReport { Success = true };
         }
     }
 

@@ -4,10 +4,10 @@ using Umbra.Config.Attributes;
 namespace Umbra.Config.UnitTests;
 
 /// <summary>
-/// Tests for <see cref="SettingsRegistrar.Register{TConfig}(TConfig)"/>.
+/// Tests for <see cref="ConfigRegistrar.Register{TConfig}(TConfig)"/>.
 /// </summary>
 [TestClass]
-public partial class SettingsRegistrarTests
+public partial class ConfigRegistrarTests
 {
     /// <summary>
     /// Tests that Register returns an empty dictionary when the config type
@@ -20,7 +20,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithoutAttribute();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.IsNotNull(result);
@@ -38,7 +38,7 @@ public partial class SettingsRegistrarTests
         var config = new EmptyConfig();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.IsNotNull(result);
@@ -55,7 +55,7 @@ public partial class SettingsRegistrarTests
         var config = new SimpleConfig();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(1, result);
@@ -74,7 +74,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithPrefix();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(2, result);
@@ -94,7 +94,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithCategory();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(1, result);
@@ -113,7 +113,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithPrefixAndCategory();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(1, result);
@@ -132,7 +132,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithKeyOverride();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(1, result);
@@ -151,7 +151,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithMultipleParameters();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(3, result);
@@ -174,7 +174,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithNestedSettings();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(2, result);
@@ -194,7 +194,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithNestedPropertyPrefix();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(1, result);
@@ -213,7 +213,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithDeeplyNestedSettings();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(1, result);
@@ -233,7 +233,7 @@ public partial class SettingsRegistrarTests
         config.Other.Other = config; // Create circular reference
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.IsNotNull(result);
@@ -255,7 +255,7 @@ public partial class SettingsRegistrarTests
         };
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(1, result);
@@ -272,7 +272,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithEmptyPrefix();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(1, result);
@@ -289,8 +289,8 @@ public partial class SettingsRegistrarTests
         var config = new SimpleConfig();
 
         // Act
-        var result1 = SettingsRegistrar.Register(config);
-        var result2 = SettingsRegistrar.Register(config);
+        var result1 = ConfigRegistrar.Register(config);
+        var result2 = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.AreNotSame(result1, result2);
@@ -306,7 +306,7 @@ public partial class SettingsRegistrarTests
         var config = new ConfigWithPrivateProperty();
 
         // Act
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         // Assert
         Assert.HasCount(1, result);
@@ -321,7 +321,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithDuplicateKeys();
 
-        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => ConfigRegistrar.Register(config));
 
         Assert.Contains("Duplicate settings key 'enabled'", exception.Message);
         Assert.Contains(nameof(ConfigWithDuplicateKeys.Enabled1), exception.Message);
@@ -336,7 +336,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithPropertyAndTypePrefix();
 
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("propertyPrefix.nestedValue"));
@@ -351,7 +351,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithPropertyAndTypeCategory();
 
-        _ = SettingsRegistrar.Register(config);
+        _ = ConfigRegistrar.Register(config);
 
         Assert.AreEqual("PropertyCategory", config.Nested.NestedValue.Metadata.Category);
     }
@@ -364,7 +364,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithEmptyKeyOverride();
 
-        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => ConfigRegistrar.Register(config));
 
         Assert.Contains("empty string", exception.Message);
         Assert.Contains(nameof(ConfigWithEmptyKeyOverride.Enabled), exception.Message);
@@ -378,7 +378,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithEmptyNestedPropertyPrefix();
 
-        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => ConfigRegistrar.Register(config));
 
         Assert.Contains("empty string", exception.Message);
         Assert.Contains(nameof(ConfigWithEmptyNestedPropertyPrefix.Nested), exception.Message);
@@ -392,7 +392,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithEmptyNestedTypePrefix();
 
-        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => SettingsRegistrar.Register(config));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => ConfigRegistrar.Register(config));
 
         Assert.Contains("empty string", exception.Message);
         Assert.Contains(nameof(EmptyPrefixNestedGroup), exception.Message);
@@ -406,7 +406,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithNonAutoRegisterNestedObject();
 
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         Assert.IsNotNull(result);
         Assert.IsEmpty(result);
@@ -420,7 +420,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithNestedTypeCategoryOnly();
 
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         Assert.HasCount(1, result);
         Assert.AreEqual("NestedTypeCategory", config.Nested.NestedValue.Metadata.Category);
@@ -434,7 +434,7 @@ public partial class SettingsRegistrarTests
     {
         var config = new ConfigWithNestedTypePrefixOnly();
 
-        var result = SettingsRegistrar.Register(config);
+        var result = ConfigRegistrar.Register(config);
 
         Assert.HasCount(1, result);
         Assert.IsTrue(result.ContainsKey("typeOnlyPrefix.nestedValue"));

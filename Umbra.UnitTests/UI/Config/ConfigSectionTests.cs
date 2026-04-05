@@ -550,7 +550,7 @@ public sealed class ConfigSectionTests
         {
         }
 
-        public SettingsImportReport Import(string filePath, SettingsImportOptions? options = null)
+        public ConfigImportReport Import(string filePath, ConfigImportOptions? options = null)
             => new();
     }
 

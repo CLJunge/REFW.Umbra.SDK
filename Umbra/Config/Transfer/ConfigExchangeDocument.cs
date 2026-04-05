@@ -6,7 +6,7 @@ namespace Umbra.Config;
 /// <remarks>
 /// This envelope is used only for explicit import/export scenarios. Umbra's normal runtime persistence continues to use the existing flat `key -> value` JSON format.
 /// </remarks>
-public sealed class SettingsExchangeDocument
+public sealed class ConfigExchangeDocument
 {
     /// <summary>
     /// Gets the current exchange-document format version supported by this Umbra build.

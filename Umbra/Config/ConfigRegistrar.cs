@@ -9,7 +9,7 @@ namespace Umbra.Config;
 /// <remarks>
 /// The registrar walks public instance properties marked with <see cref="UmbraParameterAttribute"/>, respects nested-group prefixes and inherited categories, and assigns each discovered parameter its fully qualified persisted key together with resolved <see cref="ParameterMetadata"/>.
 /// </remarks>
-internal static class SettingsRegistrar
+internal static class ConfigRegistrar
 {
     /// <summary>
     /// Walks <paramref name="config"/> and returns a flat map of every discovered parameter keyed by fully qualified persisted name.

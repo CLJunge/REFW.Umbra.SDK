@@ -7,7 +7,7 @@ namespace Umbra.Config;
 /// <summary>
 /// Reads and writes versioned config exchange documents for explicit import/export scenarios.
 /// </summary>
-internal static class SettingsExchangePersistence
+internal static class ConfigExchangePersistence
 {
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -40,9 +40,9 @@ internal static class SettingsExchangePersistence
                 values[parameter.Key] = parameter.GetValue();
             }
 
-            var document = new SettingsExchangeDocument
+            var document = new ConfigExchangeDocument
             {
-                FormatVersion = SettingsExchangeDocument.CurrentFormatVersion,
+                FormatVersion = ConfigExchangeDocument.CurrentFormatVersion,
                 SchemaId = schemaId,
                 SchemaVersion = schemaVersion,
                 Values = values
@@ -50,15 +50,15 @@ internal static class SettingsExchangePersistence
 
             File.WriteAllText(filePath, JsonSerializer.Serialize(document, _jsonOptions));
             Logger.Info(
-                $"SettingsExchangePersistence: exported {values.Count} parameter(s) for schema '{schemaId}' v{schemaVersion} to '{filePath}'.");
+                $"ConfigExchangePersistence: exported {values.Count} parameter(s) for schema '{schemaId}' v{schemaVersion} to '{filePath}'.");
         }
         catch (Exception ex)
         {
-            Logger.Exception(ex, $"SettingsExchangePersistence: failed to export settings to '{filePath}'.");
+            Logger.Exception(ex, $"ConfigExchangePersistence: failed to export settings to '{filePath}'.");
         }
     }
 
-    internal static SettingsImportReport Import(
+    internal static ConfigImportReport Import(
         string filePath,
         IReadOnlyDictionary<string, IParameter> parameters,
         string expectedSchemaId,
@@ -121,12 +121,12 @@ internal static class SettingsExchangePersistence
         }
         catch (JsonException ex)
         {
-            Logger.Exception(ex, $"SettingsExchangePersistence: failed to parse import file '{filePath}'.");
+            Logger.Exception(ex, $"ConfigExchangePersistence: failed to parse import file '{filePath}'.");
             return Failed($"Settings import file '{filePath}' contains invalid JSON: {ex.Message}");
         }
         catch (Exception ex)
         {
-            Logger.Exception(ex, $"SettingsExchangePersistence: failed to import settings from '{filePath}'.");
+            Logger.Exception(ex, $"ConfigExchangePersistence: failed to import settings from '{filePath}'.");
             return Failed($"Settings import failed for '{filePath}': {ex.Message}");
         }
     }
@@ -134,7 +134,7 @@ internal static class SettingsExchangePersistence
     private static bool TryGetEnvelopeValues(
         JsonElement root,
         out JsonElement valuesElement,
-        out SettingsImportReport? failureReport)
+        out ConfigImportReport? failureReport)
     {
         valuesElement = default;
         failureReport = null;
@@ -159,10 +159,10 @@ internal static class SettingsExchangePersistence
             return true;
         }
 
-        if (formatVersion != SettingsExchangeDocument.CurrentFormatVersion)
+        if (formatVersion != ConfigExchangeDocument.CurrentFormatVersion)
         {
             failureReport = Failed(
-                $"Settings import document format version {formatVersion} is not supported. Expected {SettingsExchangeDocument.CurrentFormatVersion}.");
+                $"Settings import document format version {formatVersion} is not supported. Expected {ConfigExchangeDocument.CurrentFormatVersion}.");
             return true;
         }
 
@@ -201,7 +201,7 @@ internal static class SettingsExchangePersistence
         return true;
     }
 
-    private static SettingsImportReport ImportValues(
+    private static ConfigImportReport ImportValues(
         JsonElement values,
         IReadOnlyDictionary<string, IParameter> parameters,
         bool isLegacyDocument,
@@ -217,7 +217,7 @@ internal static class SettingsExchangePersistence
             schemaVersion = root.GetProperty("schemaVersion").GetInt32();
         }
 
-        var issues = new List<SettingsImportIssue>();
+        var issues = new List<ConfigImportIssue>();
         var appliedCount = 0;
         var ignoredCount = 0;
         var rejectedCount = 0;
@@ -227,7 +227,7 @@ internal static class SettingsExchangePersistence
             if (!parameters.TryGetValue(property.Name, out var parameter))
             {
                 ignoredCount++;
-                issues.Add(new SettingsImportIssue
+                issues.Add(new ConfigImportIssue
                 {
                     Category = "Ignored",
                     Key = property.Name,
@@ -239,7 +239,7 @@ internal static class SettingsExchangePersistence
             if (typeof(Delegate).IsAssignableFrom(parameter.ValueType))
             {
                 ignoredCount++;
-                issues.Add(new SettingsImportIssue
+                issues.Add(new ConfigImportIssue
                 {
                     Category = "Ignored",
                     Key = property.Name,
@@ -251,7 +251,7 @@ internal static class SettingsExchangePersistence
             if (!ParameterJsonReader.TryConvert(property.Value, parameter.ValueType, out var convertedValue, out var failureReason))
             {
                 rejectedCount++;
-                issues.Add(new SettingsImportIssue
+                issues.Add(new ConfigImportIssue
                 {
                     Category = "Rejected",
                     Key = property.Name,
@@ -263,7 +263,7 @@ internal static class SettingsExchangePersistence
             if (!TryApplyImportedValue(parameter, convertedValue, out failureReason))
             {
                 rejectedCount++;
-                issues.Add(new SettingsImportIssue
+                issues.Add(new ConfigImportIssue
                 {
                     Category = "Rejected",
                     Key = property.Name,
@@ -276,9 +276,9 @@ internal static class SettingsExchangePersistence
         }
 
         Logger.Info(
-            $"SettingsExchangePersistence: imported {appliedCount} applied, {ignoredCount} ignored, {rejectedCount} rejected key(s) from '{filePath}'.");
+            $"ConfigExchangePersistence: imported {appliedCount} applied, {ignoredCount} ignored, {rejectedCount} rejected key(s) from '{filePath}'.");
 
-        return new SettingsImportReport
+        return new ConfigImportReport
         {
             Success = true,
             IsLegacyDocument = isLegacyDocument,
@@ -317,7 +317,7 @@ internal static class SettingsExchangePersistence
         return true;
     }
 
-    private static SettingsImportReport Failed(string failureReason)
+    private static ConfigImportReport Failed(string failureReason)
         => new()
         {
             Success = false,

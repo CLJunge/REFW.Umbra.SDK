@@ -3,7 +3,7 @@ namespace Umbra.Config;
 /// <summary>
 /// Reports the outcome of a config import attempt.
 /// </summary>
-public sealed class SettingsImportReport
+public sealed class ConfigImportReport
 {
     /// <summary>
     /// Gets or sets a value indicating whether the import operation completed without a document-level failure.
@@ -53,5 +53,5 @@ public sealed class SettingsImportReport
     /// <summary>
     /// Gets or sets the per-key issues collected during import.
     /// </summary>
-    public IReadOnlyList<SettingsImportIssue> Issues { get; init; } = [];
+    public IReadOnlyList<ConfigImportIssue> Issues { get; init; } = [];
 }
