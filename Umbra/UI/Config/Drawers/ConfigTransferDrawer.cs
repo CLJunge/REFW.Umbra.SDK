@@ -130,7 +130,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
         }
     }
 
-    private void ApplyPickedPath(
+    private static void ApplyPickedPath(
         Parameter<string> pathParameter,
         TryPickPathCallback tryPickPath)
     {
@@ -143,13 +143,13 @@ internal sealed class ConfigTransferDrawer : IDisposable
         pathParameter.Value = selectedPath;
     }
 
-    private static string GetBrowsePopupId(IParameter parameter)
+    private static string GetBrowsePopupId(Parameter<string> parameter)
         => $"ConfigTransferBrowse##{parameter.Key}";
 
-    private static string GetHiddenLabel(IParameter parameter)
+    private static string GetHiddenLabel(Parameter<string> parameter)
         => parameter.Metadata.HiddenLabel ?? $"##{parameter.Key}";
 
-    private static uint GetMaxLength(IParameter parameter)
+    private static uint GetMaxLength(Parameter<string> parameter)
         => parameter.Metadata.MaxLength ?? DefaultMaxPathLength;
 
     private delegate bool TryPickPathCallback(string? currentPath, out string? selectedPath);

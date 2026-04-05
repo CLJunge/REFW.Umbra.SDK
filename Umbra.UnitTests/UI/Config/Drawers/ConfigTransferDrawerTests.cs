@@ -28,7 +28,7 @@ public sealed class ConfigTransferDrawerTests
 
         drawer.Draw(null, null, null);
 
-        Assert.AreEqual(1, _renderer.DisabledTexts.Count);
+        Assert.HasCount(1, _renderer.DisabledTexts);
         Assert.AreEqual("(ConfigTransferDrawer requires a non-null config-file path parameter)", _renderer.DisabledTexts[0]);
     }
 
@@ -42,7 +42,7 @@ public sealed class ConfigTransferDrawerTests
 
         drawer.Draw(null, static () => { }, static () => { });
 
-        Assert.AreEqual(1, _renderer.DisabledTexts.Count);
+        Assert.HasCount(1, _renderer.DisabledTexts);
         Assert.AreEqual("(ConfigTransferDrawer requires a non-null config-file path parameter)", _renderer.DisabledTexts[0]);
     }
 
@@ -76,7 +76,7 @@ public sealed class ConfigTransferDrawerTests
         drawer.Draw(pathParameter, static () => { }, static () => { });
 
         Assert.AreEqual("new-config.json", pathParameter.Value);
-        Assert.AreEqual(1, _renderer.Inputs.Count);
+        Assert.HasCount(1, _renderer.Inputs);
         Assert.AreEqual("##configFilePath", _renderer.Inputs[0].Label);
         Assert.AreEqual((uint)512, _renderer.Inputs[0].MaxLength);
     }
@@ -92,7 +92,7 @@ public sealed class ConfigTransferDrawerTests
 
         drawer.Draw(pathParameter, static () => { }, static () => { });
 
-        Assert.AreEqual(2, _renderer.SizedButtons.Count);
+        Assert.HasCount(2, _renderer.SizedButtons);
         Assert.AreEqual(296f, _renderer.SizedButtons[0].Size.X);
         Assert.AreEqual(296f, _renderer.SizedButtons[1].Size.X);
     }
@@ -211,7 +211,7 @@ public sealed class ConfigTransferDrawerTests
         drawer.Draw(pathParameter, static () => { }, static () => { });
 
         Assert.AreEqual("valid-config.json", pathParameter.Value);
-        Assert.AreEqual(1, _renderer.ColoredTexts.Count);
+        Assert.HasCount(1, _renderer.ColoredTexts);
         Assert.AreEqual("Value cannot be whitespace only.", _renderer.ColoredTexts[0].Text);
     }
 

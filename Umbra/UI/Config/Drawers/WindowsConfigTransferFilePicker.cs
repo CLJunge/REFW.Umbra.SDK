@@ -1,11 +1,10 @@
 using System.Runtime.InteropServices;
-using System.Text;
-
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
 /// Uses the native Windows common file dialogs for config transfer path selection.
 /// </summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "SYSLIB1054:Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time", Justification = "<Pending>")]
 internal sealed class WindowsConfigTransferFilePicker : IConfigTransferFilePicker
 {
     private const int MaxPathLength = 1024;
@@ -27,42 +26,65 @@ internal sealed class WindowsConfigTransferFilePicker : IConfigTransferFilePicke
         if (!OperatingSystem.IsWindows())
             return false;
 
-        var buffer = new StringBuilder(MaxPathLength);
-        SeedInitialPath(buffer, currentPath);
         var initialDirectory = GetExistingDirectory(currentPath);
-        var dialog = new OpenFileName
+        var fileBuffer = AllocatePathBuffer(currentPath);
+        var filterPointer = Marshal.StringToHGlobalUni(Filter);
+        var initialDirectoryPointer = initialDirectory is null ? nint.Zero : Marshal.StringToHGlobalUni(initialDirectory);
+        var titlePointer = Marshal.StringToHGlobalUni(title);
+        var defaultExtensionPointer = Marshal.StringToHGlobalUni("json");
+
+        try
         {
-            lStructSize = Marshal.SizeOf<OpenFileName>(),
-            lpstrFilter = Filter,
-            lpstrFile = buffer,
-            nMaxFile = buffer.Capacity,
-            lpstrInitialDir = initialDirectory,
-            lpstrTitle = title,
-            Flags = OfnNoChangeDir | OfnPathMustExist,
-            lpstrDefExt = "json"
-        };
+            var dialog = new OpenFileName
+            {
+                lStructSize = Marshal.SizeOf<OpenFileName>(),
+                lpstrFilter = filterPointer,
+                lpstrFile = fileBuffer,
+                nMaxFile = MaxPathLength,
+                lpstrInitialDir = initialDirectoryPointer,
+                lpstrTitle = titlePointer,
+                Flags = OfnNoChangeDir | OfnPathMustExist,
+                lpstrDefExt = defaultExtensionPointer
+            };
 
-        if (!forExport)
-            dialog.Flags |= OfnFileMustExist;
-        else
-            dialog.Flags |= OfnOverwritePrompt;
+            if (!forExport)
+                dialog.Flags |= OfnFileMustExist;
+            else
+                dialog.Flags |= OfnOverwritePrompt;
 
-        var success = forExport
-            ? GetSaveFileName(dialog)
-            : GetOpenFileName(dialog);
-        if (!success)
-            return false;
+            var success = forExport
+                ? GetSaveFileName(ref dialog)
+                : GetOpenFileName(ref dialog);
+            if (!success)
+                return false;
 
-        selectedPath = dialog.lpstrFile.ToString();
-        return !string.IsNullOrWhiteSpace(selectedPath);
+            selectedPath = Marshal.PtrToStringUni(dialog.lpstrFile);
+            return !string.IsNullOrWhiteSpace(selectedPath);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(fileBuffer);
+            Marshal.FreeHGlobal(filterPointer);
+            if (initialDirectoryPointer != nint.Zero)
+                Marshal.FreeHGlobal(initialDirectoryPointer);
+
+            Marshal.FreeHGlobal(titlePointer);
+            Marshal.FreeHGlobal(defaultExtensionPointer);
+        }
     }
 
-    private static void SeedInitialPath(StringBuilder buffer, string? currentPath)
+    private static nint AllocatePathBuffer(string? currentPath)
     {
-        if (string.IsNullOrWhiteSpace(currentPath))
-            return;
+        var bufferPointer = Marshal.AllocHGlobal(MaxPathLength * sizeof(char));
+        var characters = new char[MaxPathLength];
+        if (!string.IsNullOrWhiteSpace(currentPath))
+        {
+            var copyLength = Math.Min(currentPath.Length, MaxPathLength - 1);
+            currentPath.CopyTo(0, characters, 0, copyLength);
+        }
 
-        buffer.Append(currentPath);
+        Marshal.Copy(characters, 0, bufferPointer, characters.Length);
+        return bufferPointer;
     }
 
     private static string? GetExistingDirectory(string? currentPath)
@@ -82,35 +104,35 @@ internal sealed class WindowsConfigTransferFilePicker : IConfigTransferFilePicke
 
     [DllImport("comdlg32.dll", EntryPoint = "GetOpenFileNameW", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetOpenFileName([In, Out] OpenFileName openFileName);
+    private static extern bool GetOpenFileName([In, Out] ref OpenFileName openFileName);
 
     [DllImport("comdlg32.dll", EntryPoint = "GetSaveFileNameW", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetSaveFileName([In, Out] OpenFileName openFileName);
+    private static extern bool GetSaveFileName([In, Out] ref OpenFileName openFileName);
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private sealed class OpenFileName
+    [StructLayout(LayoutKind.Sequential)]
+    private struct OpenFileName
     {
         public int lStructSize;
         public nint hwndOwner;
         public nint hInstance;
-        public string? lpstrFilter;
-        public string? lpstrCustomFilter;
+        public nint lpstrFilter;
+        public nint lpstrCustomFilter;
         public int nMaxCustFilter;
         public int nFilterIndex;
-        public StringBuilder lpstrFile = null!;
+        public nint lpstrFile;
         public int nMaxFile;
-        public StringBuilder? lpstrFileTitle;
+        public nint lpstrFileTitle;
         public int nMaxFileTitle;
-        public string? lpstrInitialDir;
-        public string? lpstrTitle;
+        public nint lpstrInitialDir;
+        public nint lpstrTitle;
         public int Flags;
         public short nFileOffset;
         public short nFileExtension;
-        public string? lpstrDefExt;
+        public nint lpstrDefExt;
         public nint lCustData;
         public nint lpfnHook;
-        public string? lpTemplateName;
+        public nint lpTemplateName;
         public nint pvReserved;
         public int dwReserved;
         public int FlagsEx;
