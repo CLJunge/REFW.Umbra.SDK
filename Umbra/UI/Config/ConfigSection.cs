@@ -164,8 +164,10 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         bool suppressTreeNode = false)
     {
         ArgumentNullException.ThrowIfNull(store);
-        var section = new ConfigSection<TConfig>(config, options, idScope, treeNodeLabel, treeNodeDefaultOpen, suppressTreeNode);
-        section._transferFeature = CreateTransferFeature(store, options);
+        var section = new ConfigSection<TConfig>(config, options, idScope, treeNodeLabel, treeNodeDefaultOpen, suppressTreeNode)
+        {
+            _transferFeature = CreateTransferFeature(store, options)
+        };
         return section;
     }
 

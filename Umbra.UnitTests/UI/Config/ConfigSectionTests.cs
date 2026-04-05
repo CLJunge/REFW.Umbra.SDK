@@ -1192,15 +1192,9 @@ public sealed class ConfigSectionTests
     {
     }
 
-    private static ConfigDrawer<TConfig> GetDrawer<TConfig>(ConfigSection<TConfig> section) where TConfig : class
-    {
-        return TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigSection<TConfig>, ConfigDrawer<TConfig>>(section, "_drawer");
-    }
+    private static ConfigDrawer<TConfig> GetDrawer<TConfig>(ConfigSection<TConfig> section) where TConfig : class => TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigSection<TConfig>, ConfigDrawer<TConfig>>(section, "_drawer");
 
-    private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
-    {
-        return TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigDrawer<TConfig>, List<IDrawNode>>(drawer, "_nodes");
-    }
+    private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class => TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigDrawer<TConfig>, List<IDrawNode>>(drawer, "_nodes");
 
     private static ConfigDrawerSearchState? GetSearchState<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
     {

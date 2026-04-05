@@ -51,18 +51,9 @@ public sealed class ConfigDrawerOptions
         Transfer = source.Transfer;
     }
 
-    internal ConfigDrawerOptions WithShowSearchBar(bool showSearchBar)
-    {
-        return new ConfigDrawerOptions(this) { ShowSearchBar = showSearchBar };
-    }
+    internal ConfigDrawerOptions WithShowSearchBar(bool showSearchBar) => new(this) { ShowSearchBar = showSearchBar };
 
-    internal ConfigDrawerOptions WithSuppressRootNode(bool suppressRootNode)
-    {
-        return new ConfigDrawerOptions(this) { SuppressRootNode = suppressRootNode };
-    }
+    internal ConfigDrawerOptions WithSuppressRootNode(bool suppressRootNode) => new(this) { SuppressRootNode = suppressRootNode };
 
-    internal ConfigDrawerOptions WithTransfer(ConfigTransferOptions? transfer)
-    {
-        return new ConfigDrawerOptions(this) { Transfer = transfer };
-    }
+    internal ConfigDrawerOptions WithTransfer(ConfigTransferOptions? transfer) => new(this) { Transfer = transfer };
 }

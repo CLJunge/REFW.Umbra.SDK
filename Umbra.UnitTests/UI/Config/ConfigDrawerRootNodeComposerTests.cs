@@ -1,5 +1,4 @@
 using System.Reflection;
-using Umbra;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Search;

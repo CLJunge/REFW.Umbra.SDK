@@ -733,10 +733,7 @@ public sealed class ConfigDrawerTests
         }
     }
 
-    private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
-    {
-        return ConfigDrawerReflection.GetTopLevelNodes(drawer);
-    }
+    private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class => ConfigDrawerReflection.GetTopLevelNodes(drawer);
 
     /// <summary>
     /// Verifies that calling <see cref="ConfigDrawer{TConfig}.Dispose"/> once disposes owned
