@@ -4,8 +4,7 @@ namespace Umbra.UI.Config.Drawers;
 /// <summary>
 /// Uses the native Windows common file dialogs for config transfer path selection.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "SYSLIB1054:Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time", Justification = "<Pending>")]
-internal sealed class WindowsConfigTransferFilePicker : IConfigTransferFilePicker
+internal sealed partial class WindowsConfigTransferFilePicker : IConfigTransferFilePicker
 {
     private const int MaxPathLength = 1024;
     private const string Filter = "JSON Files (*.json)\0*.json\0All Files (*.*)\0*.*\0\0";
@@ -14,19 +13,19 @@ internal sealed class WindowsConfigTransferFilePicker : IConfigTransferFilePicke
     private const int OfnOverwritePrompt = 0x00000002;
     private const int OfnNoChangeDir = 0x00000008;
 
-    public bool TryPickImportPath(string? currentPath, out string? selectedPath)
-        => TryPickPath(currentPath, "Choose Config File for Import", forExport: false, out selectedPath);
+    public bool TryPickImportPath(string? currentPath, string? fallbackDirectory, out string? selectedPath)
+        => TryPickPath(currentPath, fallbackDirectory, "Choose Config File for Import", forExport: false, out selectedPath);
 
-    public bool TryPickExportPath(string? currentPath, out string? selectedPath)
-        => TryPickPath(currentPath, "Choose Config File Destination", forExport: true, out selectedPath);
+    public bool TryPickExportPath(string? currentPath, string? fallbackDirectory, out string? selectedPath)
+        => TryPickPath(currentPath, fallbackDirectory, "Choose Config File Destination", forExport: true, out selectedPath);
 
-    private static bool TryPickPath(string? currentPath, string title, bool forExport, out string? selectedPath)
+    private static bool TryPickPath(string? currentPath, string? fallbackDirectory, string title, bool forExport, out string? selectedPath)
     {
         selectedPath = null;
         if (!OperatingSystem.IsWindows())
             return false;
 
-        var initialDirectory = GetExistingDirectory(currentPath);
+        var initialDirectory = GetInitialDirectory(currentPath, fallbackDirectory);
         var fileBuffer = AllocatePathBuffer(currentPath);
         var filterPointer = Marshal.StringToHGlobalUni(Filter);
         var initialDirectoryPointer = initialDirectory is null ? nint.Zero : Marshal.StringToHGlobalUni(initialDirectory);
@@ -87,28 +86,36 @@ internal sealed class WindowsConfigTransferFilePicker : IConfigTransferFilePicke
         return bufferPointer;
     }
 
-    private static string? GetExistingDirectory(string? currentPath)
+    private static string? GetInitialDirectory(string? currentPath, string? fallbackDirectory)
     {
         if (string.IsNullOrWhiteSpace(currentPath))
-            return null;
+            return GetExistingDirectory(fallbackDirectory);
 
         if (Directory.Exists(currentPath))
             return currentPath;
 
         var directoryPath = Path.GetDirectoryName(currentPath);
+        if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
+            return directoryPath;
+
+        return GetExistingDirectory(fallbackDirectory);
+    }
+
+    private static string? GetExistingDirectory(string? directoryPath)
+    {
         if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath))
             return null;
 
         return directoryPath;
     }
 
-    [DllImport("comdlg32.dll", EntryPoint = "GetOpenFileNameW", CharSet = CharSet.Unicode, SetLastError = true)]
+    [LibraryImport("comdlg32.dll", EntryPoint = "GetOpenFileNameW", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetOpenFileName([In, Out] ref OpenFileName openFileName);
+    private static partial bool GetOpenFileName(ref OpenFileName openFileName);
 
-    [DllImport("comdlg32.dll", EntryPoint = "GetSaveFileNameW", CharSet = CharSet.Unicode, SetLastError = true)]
+    [LibraryImport("comdlg32.dll", EntryPoint = "GetSaveFileNameW", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetSaveFileName([In, Out] ref OpenFileName openFileName);
+    private static partial bool GetSaveFileName(ref OpenFileName openFileName);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct OpenFileName

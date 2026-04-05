@@ -21,4 +21,12 @@ public sealed class ConfigTransferOptions
     /// When <see langword="null"/>, Umbra derives the sidecar path from the main settings-store file path.
     /// </remarks>
     public string? SidecarFilePath { get; init; }
+
+    /// <summary>
+    /// Gets or sets an optional fallback directory used by the native browse dialog when the current transfer path does not resolve to an existing directory.
+    /// </summary>
+    /// <remarks>
+    /// When <see langword="null"/>, Umbra falls back to the directory that contains the main settings-store file.
+    /// </remarks>
+    public string? BrowseInitialDirectory { get; init; }
 }

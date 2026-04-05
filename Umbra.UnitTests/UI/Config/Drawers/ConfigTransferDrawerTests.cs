@@ -141,16 +141,18 @@ public sealed class ConfigTransferDrawerTests
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
         var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        const string fallbackDirectory = @"C:\plugin-data";
         _renderer.ButtonResults.Enqueue(true);
         _renderer.BeginPopupResults.Enqueue(true);
         _renderer.SelectableResults.Enqueue(true);
         _renderer.SelectableResults.Enqueue(false);
         _picker.ImportResults.Enqueue((true, "selected-import.json"));
 
-        drawer.Draw(pathParameter, static () => { }, static () => { });
+        drawer.Draw(pathParameter, static () => { }, static () => { }, fallbackDirectory);
 
         Assert.AreEqual("selected-import.json", pathParameter.Value);
         Assert.AreEqual(1, _picker.ImportPickCallCount);
+        Assert.AreEqual(fallbackDirectory, _picker.LastImportFallbackDirectory);
         Assert.AreEqual("ConfigTransferBrowse##configFilePath", _renderer.OpenedPopups[0]);
         Assert.AreEqual("Choose import file...", _renderer.Selectables[0]);
         Assert.AreEqual("Choose export destination...", _renderer.Selectables[1]);
@@ -164,16 +166,18 @@ public sealed class ConfigTransferDrawerTests
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
         var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        const string fallbackDirectory = @"C:\plugin-data";
         _renderer.ButtonResults.Enqueue(true);
         _renderer.BeginPopupResults.Enqueue(true);
         _renderer.SelectableResults.Enqueue(false);
         _renderer.SelectableResults.Enqueue(true);
         _picker.ExportResults.Enqueue((true, "selected-export.json"));
 
-        drawer.Draw(pathParameter, static () => { }, static () => { });
+        drawer.Draw(pathParameter, static () => { }, static () => { }, fallbackDirectory);
 
         Assert.AreEqual("selected-export.json", pathParameter.Value);
         Assert.AreEqual(1, _picker.ExportPickCallCount);
+        Assert.AreEqual(fallbackDirectory, _picker.LastExportFallbackDirectory);
     }
 
     /// <summary>

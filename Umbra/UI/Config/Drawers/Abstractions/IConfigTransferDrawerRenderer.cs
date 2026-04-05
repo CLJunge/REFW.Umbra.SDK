@@ -1,4 +1,3 @@
-using System.Numerics;
 using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config.Drawers;

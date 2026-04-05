@@ -19,6 +19,7 @@ internal sealed class ConfigTransferFeature : IDisposable
     private readonly SettingsStore<ConfigTransferSidecarState> _sidecarStore;
     private readonly DeferredSaveController<ConfigTransferSidecarState> _sidecarSaveController;
     private readonly ConfigTransferDrawer _drawer;
+    private readonly string? _fallbackBrowseDirectory;
     private bool _disposed;
 
     internal ConfigTransferFeature(IConfigTransferStore store, ConfigTransferOptions options)
@@ -37,6 +38,7 @@ internal sealed class ConfigTransferFeature : IDisposable
 
         _store = store;
         _drawer = drawer;
+        _fallbackBrowseDirectory = ResolveFallbackBrowseDirectory(store.FilePath, options.BrowseInitialDirectory);
         var sidecarFilePath = ResolveSidecarFilePath(store.FilePath, options.SidecarFilePath);
         _sidecarStore = new SettingsStore<ConfigTransferSidecarState>(sidecarFilePath);
         var sidecarState = _sidecarStore.Load();
@@ -57,7 +59,7 @@ internal sealed class ConfigTransferFeature : IDisposable
         if (_disposed)
             return;
 
-        _drawer.Draw(ConfigFilePath, ImportConfig.Value, ExportConfig.Value);
+        _drawer.Draw(ConfigFilePath, ImportConfig.Value, ExportConfig.Value, _fallbackBrowseDirectory);
         _sidecarSaveController.Tick();
     }
 
@@ -71,7 +73,7 @@ internal sealed class ConfigTransferFeature : IDisposable
         _sidecarSaveController.Dispose();
         _sidecarStore.Save();
         _sidecarStore.Dispose();
-        ((IDisposable)_drawer).Dispose();
+        _drawer.Dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -92,6 +94,15 @@ internal sealed class ConfigTransferFeature : IDisposable
         return string.IsNullOrWhiteSpace(directoryPath)
             ? sidecarFileName
             : Path.Combine(directoryPath, sidecarFileName);
+    }
+
+    internal static string? ResolveFallbackBrowseDirectory(string mainFilePath, string? browseInitialDirectoryOverride)
+    {
+        if (!string.IsNullOrWhiteSpace(browseInitialDirectoryOverride))
+            return browseInitialDirectoryOverride;
+
+        var directoryPath = Path.GetDirectoryName(mainFilePath);
+        return string.IsNullOrWhiteSpace(directoryPath) ? null : directoryPath;
     }
 
     private void ImportFromPath()
@@ -162,4 +173,4 @@ internal sealed record ConfigTransferSidecarState
     [UmbraDescription("The JSON file path used by Umbra's built-in config import and export UI.")]
     [UmbraRequired]
     public Parameter<string> ConfigFilePath { get; set; } = new(string.Empty);
- }
+}

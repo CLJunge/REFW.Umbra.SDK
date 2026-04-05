@@ -416,6 +416,6 @@ public sealed class ParameterNodeTests
         return new ConfigSearchRenderState(
             searchState,
             new HashSet<string>(matchIds, StringComparer.Ordinal),
-            new HashSet<string>(StringComparer.Ordinal));
+            [with(StringComparer.Ordinal)]);
     }
 }

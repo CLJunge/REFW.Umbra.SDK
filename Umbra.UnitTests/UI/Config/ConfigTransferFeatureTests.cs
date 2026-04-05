@@ -25,6 +25,22 @@ public sealed class ConfigTransferFeatureTests
     }
 
     [TestMethod]
+    public void ResolveFallbackBrowseDirectory_WithoutOverride_ReturnsMainStoreDirectory()
+    {
+        var result = ConfigTransferFeature.ResolveFallbackBrowseDirectory(@"C:\temp\config.json", null);
+
+        Assert.AreEqual(@"C:\temp", result);
+    }
+
+    [TestMethod]
+    public void ResolveFallbackBrowseDirectory_WithOverride_ReturnsOverride()
+    {
+        var result = ConfigTransferFeature.ResolveFallbackBrowseDirectory(@"C:\temp\config.json", @"D:\plugin-data");
+
+        Assert.AreEqual(@"D:\plugin-data", result);
+    }
+
+    [TestMethod]
     public void Constructor_WhenStoreIsNotLoaded_ThrowsInvalidOperationException()
     {
         var store = new TestConfigTransferStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "config.json"))

@@ -49,7 +49,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
         _filePicker = filePicker;
     }
 
-    internal void Draw(Parameter<string>? pathParameter, Action? importAction, Action? exportAction)
+    internal void Draw(Parameter<string>? pathParameter, Action? importAction, Action? exportAction, string? fallbackBrowseDirectory = null)
     {
         if (pathParameter is null)
         {
@@ -57,7 +57,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
             return;
         }
 
-        DrawPathRow(pathParameter, "Config File");
+        DrawPathRow(pathParameter, "Config File", fallbackBrowseDirectory);
         DrawActionButtons(pathParameter, importAction, exportAction);
     }
 
@@ -65,7 +65,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
     {
     }
 
-    private void DrawPathRow(Parameter<string> pathParameter, string label)
+    private void DrawPathRow(Parameter<string> pathParameter, string label, string? fallbackBrowseDirectory)
     {
         if (pathParameter is null)
         {
@@ -92,7 +92,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
         if (_renderer.Button(browseButtonLabel))
             _renderer.OpenPopup(GetBrowsePopupId(pathParameter));
 
-        DrawBrowsePopup(pathParameter);
+        DrawBrowsePopup(pathParameter, fallbackBrowseDirectory);
 
         ValidationMessageRenderer.Draw(pathParameter, _renderer);
     }
@@ -110,7 +110,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
             exportAction?.Invoke();
     }
 
-    private void DrawBrowsePopup(Parameter<string> pathParameter)
+    private void DrawBrowsePopup(Parameter<string> pathParameter, string? fallbackBrowseDirectory)
     {
         var popupId = GetBrowsePopupId(pathParameter);
         if (!_renderer.BeginPopup(popupId))
@@ -119,10 +119,10 @@ internal sealed class ConfigTransferDrawer : IDisposable
         try
         {
             if (_renderer.Selectable("Choose import file..."))
-                ApplyPickedPath(pathParameter, _filePicker.TryPickImportPath);
+                ApplyPickedPath(pathParameter, fallbackBrowseDirectory, _filePicker.TryPickImportPath);
 
             if (_renderer.Selectable("Choose export destination..."))
-                ApplyPickedPath(pathParameter, _filePicker.TryPickExportPath);
+                ApplyPickedPath(pathParameter, fallbackBrowseDirectory, _filePicker.TryPickExportPath);
         }
         finally
         {
@@ -132,9 +132,10 @@ internal sealed class ConfigTransferDrawer : IDisposable
 
     private static void ApplyPickedPath(
         Parameter<string> pathParameter,
+        string? fallbackBrowseDirectory,
         TryPickPathCallback tryPickPath)
     {
-        if (!tryPickPath(pathParameter.Value, out var selectedPath)
+        if (!tryPickPath(pathParameter.Value, fallbackBrowseDirectory, out var selectedPath)
             || string.IsNullOrWhiteSpace(selectedPath))
         {
             return;
@@ -152,5 +153,5 @@ internal sealed class ConfigTransferDrawer : IDisposable
     private static uint GetMaxLength(Parameter<string> parameter)
         => parameter.Metadata.MaxLength ?? DefaultMaxPathLength;
 
-    private delegate bool TryPickPathCallback(string? currentPath, out string? selectedPath);
+    private delegate bool TryPickPathCallback(string? currentPath, string? fallbackDirectory, out string? selectedPath);
 }
