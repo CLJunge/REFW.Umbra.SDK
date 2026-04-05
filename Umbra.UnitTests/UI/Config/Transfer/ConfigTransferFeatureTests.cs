@@ -12,33 +12,39 @@ public sealed class ConfigTransferFeatureTests
     [TestMethod]
     public void ResolveSidecarFilePath_WithoutOverride_DerivesSiblingTransferFile()
     {
-        var result = ConfigTransferFeature.ResolveSidecarFilePath(@"C:\temp\config.json", null);
+        var mainFilePath = Path.Combine("temp", "config.json");
+        var result = ConfigTransferFeature.ResolveSidecarFilePath(mainFilePath, null);
 
-        Assert.AreEqual(@"C:\temp\config-transfer.json", result);
+        Assert.AreEqual(Path.Combine("temp", "config-transfer.json"), result);
     }
 
     [TestMethod]
     public void ResolveSidecarFilePath_WithOverride_ReturnsOverride()
     {
-        var result = ConfigTransferFeature.ResolveSidecarFilePath(@"C:\temp\config.json", @"D:\custom\sidecar.json");
+        var mainFilePath = Path.Combine("temp", "config.json");
+        var sidecarFilePathOverride = Path.Combine("custom", "sidecar.json");
+        var result = ConfigTransferFeature.ResolveSidecarFilePath(mainFilePath, sidecarFilePathOverride);
 
-        Assert.AreEqual(@"D:\custom\sidecar.json", result);
+        Assert.AreEqual(sidecarFilePathOverride, result);
     }
 
     [TestMethod]
     public void ResolveFallbackBrowseDirectory_WithoutOverride_ReturnsMainStoreDirectory()
     {
-        var result = ConfigTransferFeature.ResolveFallbackBrowseDirectory(@"C:\temp\config.json", null);
+        var mainFilePath = Path.Combine("temp", "config.json");
+        var result = ConfigTransferFeature.ResolveFallbackBrowseDirectory(mainFilePath, null);
 
-        Assert.AreEqual(@"C:\temp", result);
+        Assert.AreEqual("temp", result);
     }
 
     [TestMethod]
     public void ResolveFallbackBrowseDirectory_WithOverride_ReturnsOverride()
     {
-        var result = ConfigTransferFeature.ResolveFallbackBrowseDirectory(@"C:\temp\config.json", @"D:\plugin-data");
+        var mainFilePath = Path.Combine("temp", "config.json");
+        const string browseInitialDirectoryOverride = "plugin-data";
+        var result = ConfigTransferFeature.ResolveFallbackBrowseDirectory(mainFilePath, browseInitialDirectoryOverride);
 
-        Assert.AreEqual(@"D:\plugin-data", result);
+        Assert.AreEqual(browseInitialDirectoryOverride, result);
     }
 
     [TestMethod]
@@ -224,6 +230,8 @@ public sealed class ConfigTransferFeatureTests
             LastImportedPath = filePath;
             return new SettingsImportReport { Success = true };
         }
+
+        public ConfigImportReport Import(string filePath, ConfigImportOptions? options = null) => throw new NotImplementedException();
     }
 
     private sealed class TempDirectory : IDisposable
