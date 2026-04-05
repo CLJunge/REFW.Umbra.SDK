@@ -230,8 +230,6 @@ public sealed class ConfigTransferFeatureTests
             LastImportedPath = filePath;
             return new SettingsImportReport { Success = true };
         }
-
-        public ConfigImportReport Import(string filePath, ConfigImportOptions? options = null) => throw new NotImplementedException();
     }
 
     private sealed class TempDirectory : IDisposable
