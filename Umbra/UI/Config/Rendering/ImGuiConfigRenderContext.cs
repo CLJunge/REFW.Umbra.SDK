@@ -85,6 +85,9 @@ internal sealed class ImGuiConfigRenderContext :
     public bool Selectable(string label) => ImGui.Selectable(label);
 
     /// <inheritdoc/>
+    public void Separator() => ImGui.Separator();
+
+    /// <inheritdoc/>
     public bool PushButtonColors(ButtonStyle style) => ButtonStyleColors.Push(style);
 
     /// <inheritdoc/>

@@ -1,6 +1,6 @@
 using Umbra.Config;
 
-namespace Umbra.UI.Config.UnitTests;
+namespace Umbra.UI.Config.Transfer.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="ConfigTransferFeature"/>.
@@ -38,6 +38,22 @@ public sealed class ConfigTransferFeatureTests
         var result = ConfigTransferFeature.ResolveFallbackBrowseDirectory(@"C:\temp\config.json", @"D:\plugin-data");
 
         Assert.AreEqual(@"D:\plugin-data", result);
+    }
+
+    [TestMethod]
+    public void ResolveTreeNodeLabel_WithoutOverride_ReturnsDefaultLabel()
+    {
+        var result = ConfigTransferFeature.ResolveTreeNodeLabel(null);
+
+        Assert.AreEqual(ConfigTransferOptions.DefaultTreeNodeLabel, result);
+    }
+
+    [TestMethod]
+    public void ResolveTreeNodeLabel_WithOverride_ReturnsOverride()
+    {
+        var result = ConfigTransferFeature.ResolveTreeNodeLabel("Transfer Controls");
+
+        Assert.AreEqual("Transfer Controls", result);
     }
 
     [TestMethod]

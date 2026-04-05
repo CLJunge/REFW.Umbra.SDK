@@ -49,7 +49,12 @@ internal sealed class ConfigTransferDrawer : IDisposable
         _filePicker = filePicker;
     }
 
-    internal void Draw(Parameter<string>? pathParameter, Action? importAction, Action? exportAction, string? fallbackBrowseDirectory = null)
+    internal void Draw(
+        Parameter<string>? pathParameter,
+        Action? importAction,
+        Action? exportAction,
+        string? fallbackBrowseDirectory = null,
+        bool drawSeparatorBelowButtons = true)
     {
         if (pathParameter is null)
         {
@@ -57,8 +62,10 @@ internal sealed class ConfigTransferDrawer : IDisposable
             return;
         }
 
-        DrawPathRow(pathParameter, "Config File", fallbackBrowseDirectory);
+        DrawPathRow(pathParameter, "Config File:", fallbackBrowseDirectory);
         DrawActionButtons(pathParameter, importAction, exportAction);
+        if (drawSeparatorBelowButtons)
+            _renderer.Separator();
     }
 
     public void Dispose()

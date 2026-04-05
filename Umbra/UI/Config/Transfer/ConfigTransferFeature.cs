@@ -3,7 +3,7 @@ using Umbra.Config.Attributes;
 using Umbra.Logging;
 using Umbra.UI.Config.Drawers;
 
-namespace Umbra.UI.Config;
+namespace Umbra.UI.Config.Transfer;
 
 /// <summary>
 /// Owns the optional built-in config transfer UI state for one settings section.
@@ -46,6 +46,9 @@ internal sealed class ConfigTransferFeature : IDisposable
         ConfigFilePath = sidecarState.ConfigFilePath;
         ImportConfig = new(ImportFromPath);
         ExportConfig = new(ExportToPath);
+        TreeNodeLabel = ResolveTreeNodeLabel(options.TreeNodeLabel);
+        TreeNodeDefaultOpen = options.TreeNodeDefaultOpen;
+        DrawSeparatorBelowButtons = options.DrawSeparatorBelowButtons;
     }
 
     public Parameter<string> ConfigFilePath { get; }
@@ -54,12 +57,20 @@ internal sealed class ConfigTransferFeature : IDisposable
 
     public Parameter<Action> ExportConfig { get; }
 
+    internal string? TreeNodeLabel { get; }
+
+    internal bool TreeNodeDefaultOpen { get; }
+
+    internal ConfigTransferPlacement Placement { get; }
+
+    internal bool DrawSeparatorBelowButtons { get; }
+
     internal void Draw()
     {
         if (_disposed)
             return;
 
-        _drawer.Draw(ConfigFilePath, ImportConfig.Value, ExportConfig.Value, _fallbackBrowseDirectory);
+        _drawer.Draw(ConfigFilePath, ImportConfig.Value, ExportConfig.Value, _fallbackBrowseDirectory, DrawSeparatorBelowButtons);
         _sidecarSaveController.Tick();
     }
 
@@ -104,6 +115,9 @@ internal sealed class ConfigTransferFeature : IDisposable
         var directoryPath = Path.GetDirectoryName(mainFilePath);
         return string.IsNullOrWhiteSpace(directoryPath) ? null : directoryPath;
     }
+
+    internal static string ResolveTreeNodeLabel(string? treeNodeLabel)
+        => string.IsNullOrWhiteSpace(treeNodeLabel) ? ConfigTransferOptions.DefaultTreeNodeLabel : treeNodeLabel;
 
     private void ImportFromPath()
     {

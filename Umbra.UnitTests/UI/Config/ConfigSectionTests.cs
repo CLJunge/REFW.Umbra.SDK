@@ -2,6 +2,7 @@ using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Search;
+using Umbra.UI.Config.Transfer;
 
 namespace Umbra.UI.Config.UnitTests;
 
@@ -351,6 +352,79 @@ public sealed class ConfigSectionTests
         Assert.IsNotNull(GetTransferFeature(section));
     }
 
+    [TestMethod]
+    public void CreateWithStore_WhenTransferEnabled_UsesDefaultTransferTreeNodeSettings()
+    {
+        using var tempDirectory = new TempDirectory();
+        var config = new TestConfig();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Transfer = new ConfigTransferOptions { Enabled = true } });
+
+        var feature = GetTransferFeature(section);
+        Assert.IsNotNull(feature);
+        Assert.AreEqual(ConfigTransferOptions.DefaultTreeNodeLabel, feature.TreeNodeLabel);
+        Assert.IsFalse(feature.TreeNodeDefaultOpen);
+        Assert.AreEqual(ConfigTransferPlacement.AfterConfig, feature.Placement);
+        Assert.IsTrue(feature.DrawSeparatorBelowButtons);
+    }
+
+    [TestMethod]
+    public void CreateWithStore_WhenTransferOptionsOverridePresentation_UsesConfiguredTreeNodeSettings()
+    {
+        using var tempDirectory = new TempDirectory();
+        var config = new TestConfig();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions
+            {
+                Transfer = new ConfigTransferOptions
+                {
+                    Enabled = true,
+                    TreeNodeLabel = "Transfer Controls",
+                    TreeNodeDefaultOpen = true,
+                    Placement = ConfigTransferPlacement.BeforeConfig
+                }
+            });
+
+        var feature = GetTransferFeature(section);
+        Assert.IsNotNull(feature);
+        Assert.AreEqual("Transfer Controls", feature.TreeNodeLabel);
+        Assert.IsTrue(feature.TreeNodeDefaultOpen);
+        Assert.AreEqual(ConfigTransferPlacement.BeforeConfig, feature.Placement);
+        Assert.IsTrue(feature.DrawSeparatorBelowButtons);
+    }
+
+    [TestMethod]
+    public void CreateWithStore_WhenTransferSeparatorDisabled_UsesConfiguredSeparatorSetting()
+    {
+        using var tempDirectory = new TempDirectory();
+        var config = new TestConfig();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions
+            {
+                Transfer = new ConfigTransferOptions
+                {
+                    Enabled = true,
+                    DrawSeparatorBelowButtons = false
+                }
+            });
+
+        var feature = GetTransferFeature(section);
+        Assert.IsNotNull(feature);
+        Assert.IsFalse(feature.DrawSeparatorBelowButtons);
+    }
+
     /// <summary>
     /// Tests that the section preserves caller-enabled search while suppressing the wrapped drawer root node.
     /// </summary>
@@ -480,9 +554,9 @@ public sealed class ConfigSectionTests
             => new();
     }
 
-    private static object? GetTransferFeature<T>(ConfigSection<T> section)
+    private static ConfigTransferFeature? GetTransferFeature<T>(ConfigSection<T> section)
         where T : class
-        => typeof(ConfigSection<T>)
+        => (ConfigTransferFeature?)typeof(ConfigSection<T>)
             .GetField("_transferFeature", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
             ?.GetValue(section);
 

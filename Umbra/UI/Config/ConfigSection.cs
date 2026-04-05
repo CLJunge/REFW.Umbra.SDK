@@ -1,5 +1,7 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
+using Umbra.UI.Config.Rendering;
+using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
 
 namespace Umbra.UI.Config;
@@ -13,6 +15,7 @@ namespace Umbra.UI.Config;
 /// <typeparam name="TConfig">The configuration type rendered by the section.</typeparam>
 public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 {
+    private static readonly ImGuiConfigRenderContext _renderContext = ImGuiConfigRenderContext.Instance;
     private readonly ConfigDrawer<TConfig> _drawer;
     private readonly string _sectionId;
     private readonly int _order;
@@ -119,7 +122,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// </summary>
     /// <remarks>
     /// When enabled through <see cref="ConfigDrawerOptions.Transfer"/>, the built-in transfer UI is rendered
-    /// after the normal config nodes rather than as part of the config object graph.
+    /// in its own Umbra-owned tree node, before or after the normal config nodes according to the configured
+    /// transfer placement option, rather than as part of the config object graph.
     /// </remarks>
     /// <param name="config">The already loaded configuration instance to render.</param>
     /// <param name="store">The loaded settings store associated with <paramref name="config"/>.</param>
@@ -143,7 +147,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// </summary>
     /// <remarks>
     /// When enabled through <see cref="ConfigDrawerOptions.Transfer"/>, the built-in transfer UI is rendered
-    /// after the normal config nodes rather than as part of the config object graph.
+    /// in its own Umbra-owned tree node, before or after the normal config nodes according to the configured
+    /// transfer placement option, rather than as part of the config object graph.
     /// </remarks>
     /// <param name="config">The already loaded configuration instance to render.</param>
     /// <param name="store">The loaded settings store associated with <paramref name="config"/>.</param>
@@ -190,8 +195,14 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     public void Draw()
     {
         if (_disposed) return;
+
+        if (_transferFeature?.Placement == ConfigTransferPlacement.BeforeConfig)
+            DrawTransferFeature();
+
         _drawer.Draw();
-        _transferFeature?.Draw();
+
+        if (_transferFeature?.Placement != ConfigTransferPlacement.BeforeConfig)
+            DrawTransferFeature();
     }
 
     /// <inheritdoc/>
@@ -215,6 +226,26 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
             return null;
 
         return new ConfigTransferFeature(store, transferOptions);
+    }
+
+    private void DrawTransferFeature()
+    {
+        var transferFeature = _transferFeature;
+        if (transferFeature is null)
+            return;
+
+        var treeNodeLabel = $"{transferFeature.TreeNodeLabel}##{_sectionId}.Transfer";
+        if (!_renderContext.TreeNode(treeNodeLabel, transferFeature.TreeNodeDefaultOpen))
+            return;
+
+        try
+        {
+            transferFeature.Draw();
+        }
+        finally
+        {
+            _renderContext.TreePop();
+        }
     }
 
     private static (string? Label, bool DefaultOpen)? GetRootNodeMetadata(Type type)

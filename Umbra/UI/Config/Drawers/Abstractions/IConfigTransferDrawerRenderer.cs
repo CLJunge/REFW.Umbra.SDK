@@ -73,4 +73,9 @@ internal interface IConfigTransferDrawerRenderer : ITextOps, IButtonOps, ISizedB
     /// <param name="label">The visible item label.</param>
     /// <returns><see langword="true"/> when the item was selected.</returns>
     bool Selectable(string label);
+
+    /// <summary>
+    /// Draws a horizontal separator.
+    /// </summary>
+    void Separator();
 }

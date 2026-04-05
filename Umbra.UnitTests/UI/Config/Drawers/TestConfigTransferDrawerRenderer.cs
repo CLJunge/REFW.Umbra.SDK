@@ -29,6 +29,8 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
 
     public List<string> Selectables { get; } = [];
 
+    public int SeparatorCount { get; private set; }
+
     public int SameLineCount { get; private set; }
 
     public float AvailableWidth { get; set; } = 600f;
@@ -122,4 +124,6 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
 
         return SelectableResults.Dequeue();
     }
+
+    public void Separator() => SeparatorCount++;
 }

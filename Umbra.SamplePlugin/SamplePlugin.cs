@@ -3,6 +3,7 @@ using Umbra.Config;
 using Umbra.Logging;
 using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
+using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
 #if BENCHMARK
 using Umbra.UI.Panel.Benchmark;

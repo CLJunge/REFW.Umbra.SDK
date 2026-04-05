@@ -98,6 +98,34 @@ public sealed class ConfigTransferDrawerTests
     }
 
     /// <summary>
+    /// Verifies that the transfer drawer renders a trailing separator by default.
+    /// </summary>
+    [TestMethod]
+    public void Draw_ByDefault_RendersTrailingSeparator()
+    {
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+
+        drawer.Draw(pathParameter, static () => { }, static () => { });
+
+        Assert.AreEqual(1, _renderer.SeparatorCount);
+    }
+
+    /// <summary>
+    /// Verifies that the trailing separator can be disabled.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenSeparatorDisabled_DoesNotRenderTrailingSeparator()
+    {
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+
+        drawer.Draw(pathParameter, static () => { }, static () => { }, drawSeparatorBelowButtons: false);
+
+        Assert.AreEqual(0, _renderer.SeparatorCount);
+    }
+
+    /// <summary>
     /// Verifies that clicking the import button invokes the configured import action exactly once.
     /// </summary>
     [TestMethod]
