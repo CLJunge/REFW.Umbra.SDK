@@ -9,7 +9,7 @@ namespace Umbra.UI.Config.Transfer;
 /// </remarks>
 public sealed class ConfigTransferOptions
 {
-    private string? _transferStateFilePath;
+    private string? _configFilePath;
     private string? _browseFallbackDirectory;
     private string? _sectionLabel;
     private bool _expandedByDefault;
@@ -17,9 +17,9 @@ public sealed class ConfigTransferOptions
     private TimeSpan _statusDisplayDuration = DefaultStatusVisibilityTimeout;
 
     /// <summary>
-    /// The default visible tree-node label used for the built-in transfer UI.
+    /// The default visible section label used for the built-in transfer UI.
     /// </summary>
-    public const string DefaultTreeNodeLabel = "Import/Export";
+    public const string DefaultSectionLabel = "Import/Export";
 
     /// <summary>
     /// The default duration that a completed transfer status label remains visible.
@@ -32,15 +32,15 @@ public sealed class ConfigTransferOptions
     public bool Enabled { get; init; }
 
     /// <summary>
-    /// Gets or sets an optional explicit file path override for the persisted transfer-state sidecar file.
+    /// Gets or sets an optional explicit file path override for the persisted transfer config file.
     /// </summary>
     /// <remarks>
-    /// When <see langword="null"/>, Umbra derives the transfer-state file path from the main settings-store file path.
+    /// When <see langword="null"/>, Umbra derives the persisted transfer config file path from the main settings-store file path.
     /// </remarks>
-    public string? TransferStateFilePath
+    public string? ConfigFilePath
     {
-        get => _transferStateFilePath;
-        init => _transferStateFilePath = value;
+        get => _configFilePath;
+        init => _configFilePath = value;
     }
 
     /// <summary>
@@ -59,7 +59,7 @@ public sealed class ConfigTransferOptions
     /// Gets or sets the visible section label used to wrap the built-in transfer UI.
     /// </summary>
     /// <remarks>
-    /// When <see langword="null"/> or whitespace, Umbra uses <see cref="DefaultTreeNodeLabel"/>.
+    /// When <see langword="null"/> or whitespace, Umbra uses <see cref="DefaultSectionLabel"/>.
     /// </remarks>
     public string? SectionLabel
     {

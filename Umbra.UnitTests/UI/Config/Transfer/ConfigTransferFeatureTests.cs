@@ -46,7 +46,7 @@ public sealed class ConfigTransferFeatureTests
     {
         var result = ConfigTransferFeature.ResolveTreeNodeLabel(null);
 
-        Assert.AreEqual(ConfigTransferOptions.DefaultTreeNodeLabel, result);
+        Assert.AreEqual(ConfigTransferOptions.DefaultSectionLabel, result);
     }
 
     [TestMethod]
@@ -94,7 +94,7 @@ public sealed class ConfigTransferFeatureTests
         var options = new ConfigTransferOptions
         {
             Enabled = true,
-            TransferStateFilePath = transferStateFilePath,
+            ConfigFilePath = transferStateFilePath,
             BrowseFallbackDirectory = Path.Combine(tempDirectory.Path, "browse"),
             SectionLabel = "Transfer Controls",
             ExpandedByDefault = true,

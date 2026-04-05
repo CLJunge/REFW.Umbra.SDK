@@ -366,7 +366,7 @@ public sealed class ConfigSectionTests
 
         var feature = GetTransferFeature(section);
         Assert.IsNotNull(feature);
-        Assert.AreEqual(ConfigTransferOptions.DefaultTreeNodeLabel, feature.SectionLabel);
+        Assert.AreEqual(ConfigTransferOptions.DefaultSectionLabel, feature.SectionLabel);
         Assert.IsFalse(feature.ExpandedByDefault);
         Assert.AreEqual(ConfigTransferPlacement.AfterConfig, feature.Placement);
         Assert.IsTrue(feature.ShowSeparatorBelowButtons);
