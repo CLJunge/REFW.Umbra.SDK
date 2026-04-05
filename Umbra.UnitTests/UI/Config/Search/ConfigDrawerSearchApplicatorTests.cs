@@ -65,7 +65,7 @@ public sealed class ConfigDrawerSearchApplicatorTests
         var renderer = new TestRootTreeNodeRenderer();
         renderer.TreeNodeResults.Enqueue(true);
         var child = new SearchAwareTestNode("alpha");
-        var root = new RootTreeNode("Root", defaultOpen: false, new List<IDrawNode> { child }, "root:test", renderer);
+        var root = new RootTreeNode("Root", defaultOpen: false, [child], "root:test", renderer);
         var nodes = new List<IDrawNode> { root };
         var searchIndex = new ConfigSearchIndex();
         searchIndex.AddParameterResult("alpha", "Master Volume", null, "Audio", "settings.audio");

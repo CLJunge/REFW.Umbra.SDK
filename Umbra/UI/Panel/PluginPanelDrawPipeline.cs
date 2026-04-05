@@ -80,12 +80,12 @@ internal sealed class PluginPanelDrawPipeline
     {
         foreach (var section in sections)
         {
-            var label = section.TreeNodeLabel;
+            var label = section.SectionLabel;
             if (label is not null)
             {
                 label = PluginPanelTreeNodeLabels.Sanitize(label);
 
-                var flags = section.TreeNodeDefaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+                var flags = section.ExpandedByDefault ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
                 if (_renderer.TreeNode($"{label}##{section.SectionId}", flags))
                 {
                     try

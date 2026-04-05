@@ -12,6 +12,7 @@ The repository contains three projects:
 
 - Attribute-driven settings registration with `SettingsStore<TConfig>` and `Parameter<T>`
 - JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable enum parameters
+- Config import/export via `SettingsStore<TConfig>.Import(...)` and `Export(...)`, with versioned exchange documents and legacy flat-file import support
 - Deferred auto-save with `DeferredSaveController<TConfig>`
 - Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
 - Built-in config search/filter UI with visible-match filtering, highlight styling, and previous/next result navigation in `ConfigDrawer<TConfig>` and `ConfigSection<TConfig>`
@@ -111,6 +112,44 @@ Query changes do not auto-focus results. Focus moves only when the user navigate
 - `[UmbraValidateWith<TValidator>]` runs a custom `IParameterValidator`
 
 Validation failures on the non-throwing UI path do not crash the plugin or overwrite the last valid value. The attempted edit is rejected and the current validation message is rendered inline beneath the affected built-in string or numeric control.
+
+## Config import and export
+
+`SettingsStore<TConfig>.Export(string)` writes a versioned exchange document with this shape:
+
+```json
+{
+  "formatVersion": 1,
+  "schemaId": "Fully.Qualified.Config.Type",
+  "schemaVersion": 1,
+  "values": {
+    "myPlugin.someKey": 123,
+    "myPlugin.otherKey": "value"
+  }
+}
+```
+
+- `formatVersion` identifies the exchange-document format.
+- `schemaId` defaults to `typeof(TConfig).FullName`.
+- `schemaVersion` defaults to `1`, or to `[UmbraConfigVersion(n)]` when the root config type declares it.
+- `values` contains only persisted registered parameters; delegate-backed button parameters are skipped.
+
+`SettingsStore<TConfig>.Import(string, SettingsImportOptions?)` accepts two document shapes:
+
+1. the versioned envelope shown above
+2. the legacy flat JSON dictionary used by Umbra's normal runtime persistence
+
+Import compatibility rules:
+
+- envelope imports reject unsupported `formatVersion` values
+- envelope imports reject mismatched `schemaId` values
+- envelope imports reject `schemaVersion` values newer than the current config schema
+- only keys that exist in the current loaded store are considered
+- unknown keys are ignored, not treated as fatal errors
+- imported values are applied through the existing `Parameter<T>` validation pipeline, so rejected values keep the last valid in-memory state
+- when `SettingsImportOptions.SaveAfterImport` is `true`, Umbra saves the accepted final state once through the normal store persistence path
+
+Config transfer UI is now an optional built-in Umbra feature rather than a plugin-defined nested config group. Enable it through `ConfigDrawerOptions.Transfer` and create the section through `ConfigSection<TConfig>.CreateWithStore(config, store, options, ...)`. The built-in control renders in its own tree node, with a configurable header and configurable placement before or after the normal config nodes. Inside that tree node it uses one shared config-file path field, exposes an explicit browse menu for import or export file selection, shows one mode-specific action button, and renders a transient status row below that button only after an import or export completes. Success and failure messages remain visible for about two seconds by default before the row collapses again, that visibility duration is configurable through `ConfigTransferOptions.StatusDisplayDuration`, and failure messages direct the user to check the logs. The transfer path is persisted in a separate sidecar file derived from the main settings-store file path, so transfer UI state stays decoupled from the actual configuration payload.
 
 ## Custom drawers and sections
 

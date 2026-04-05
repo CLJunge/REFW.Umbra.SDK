@@ -1,5 +1,4 @@
 using System.Reflection;
-using Umbra;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Search;
@@ -127,6 +126,6 @@ public sealed class ConfigDrawerRootNodeComposerTests
     [UmbraRootNode("Root Label")]
     private sealed class ConfigWithRootLabel;
 
-    [UmbraRootNode(defaultOpen: true)]
+    [UmbraRootNode(expandedByDefault: true)]
     private sealed class ConfigWithDefaultLabel;
 }

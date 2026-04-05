@@ -3,6 +3,7 @@ using Umbra.Config;
 using Umbra.Logging;
 using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
+using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
 #if BENCHMARK
 using Umbra.UI.Panel.Benchmark;
@@ -61,7 +62,7 @@ public sealed class SamplePlugin : UmbraPlugin
         _config.LogTestMessage.Value = () => Log.Info("Sample Plugin is active!");
 
         _saveController = new DeferredSaveController<PluginConfig>(_store);
-        _panel = CreateRuntimePanel(_config);
+        _panel = CreateRuntimePanel(_config, _store);
 #if BENCHMARK
         _benchmarkPanel = CreateBenchmarkPanel(_config);
         _panelBenchmark = new PluginPanelBenchmark(
@@ -180,11 +181,16 @@ public sealed class SamplePlugin : UmbraPlugin
     /// </summary>
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
     /// <returns>The runtime panel.</returns>
-    private static PluginPanel CreateRuntimePanel(PluginConfig config)
+    private static PluginPanel CreateRuntimePanel(PluginConfig config, SettingsStore<PluginConfig> store)
         => new PluginPanel(_runtimePanelScope)
-            .Add(new ConfigSection<PluginConfig>(
+            .Add(ConfigSection<PluginConfig>.CreateWithStore(
                 config,
-                new ConfigDrawerOptions { ShowSearchBar = true },
+                store,
+                new ConfigDrawerOptions
+                {
+                    ShowSearchBar = true,
+                    Transfer = new ConfigTransferOptions { Enabled = true }
+                },
                 _runtimeSectionScope));
 
     /// <summary>

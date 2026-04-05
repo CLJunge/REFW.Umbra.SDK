@@ -44,7 +44,7 @@ internal static class ConfigDrawerRootNodeComposer
         var label = rootAttr.Value.Label ?? typeof(TConfig).Name.ToDisplayName();
         var rootBranchId = BuildRootBranchId(idScope);
         searchIndex.PrependRootBranch(rootBranchId);
-        return [new RootTreeNode(label, rootAttr.Value.DefaultOpen, nodes, rootBranchId)];
+        return [new RootTreeNode(label, rootAttr.Value.ExpandedByDefault, nodes, rootBranchId)];
     }
 
     /// <summary>
@@ -52,14 +52,14 @@ internal static class ConfigDrawerRootNodeComposer
     /// </summary>
     /// <param name="type">The config type to inspect.</param>
     /// <returns>
-    /// The configured root-node label and default-open state, or <see langword="null"/> when the
+    /// The configured root-node label and default-expanded state, or <see langword="null"/> when the
     /// type does not declare <see cref="UmbraRootNodeAttribute"/>.
     /// </returns>
-    internal static (string? Label, bool DefaultOpen)? GetRootNodeMetadata(Type type)
+    internal static (string? Label, bool ExpandedByDefault)? GetRootNodeMetadata(Type type)
     {
         foreach (var attr in type.GetCustomAttributes(inherit: true))
             if (attr is UmbraRootNodeAttribute prefixed)
-                return (prefixed.Label, prefixed.DefaultOpen);
+                return (prefixed.Label, prefixed.ExpandedByDefault);
 
         return null;
     }

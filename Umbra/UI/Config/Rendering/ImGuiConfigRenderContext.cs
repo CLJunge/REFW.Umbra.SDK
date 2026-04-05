@@ -14,6 +14,7 @@ namespace Umbra.UI.Config.Rendering;
 /// </remarks>
 internal sealed class ImGuiConfigRenderContext :
     IButtonDrawerRenderer,
+    IConfigTransferDrawerRenderer,
     IHotkeyDrawerRenderer,
     ICategoryNodeRenderer,
     IRootTreeNodeRenderer,
@@ -53,6 +54,12 @@ internal sealed class ImGuiConfigRenderContext :
     public bool Button(string label, Vector2 size) => ImGui.Button(label, size);
 
     /// <inheritdoc/>
+    public void BeginDisabled(bool disabled) => ImGui.BeginDisabled(disabled);
+
+    /// <inheritdoc/>
+    public void EndDisabled() => ImGui.EndDisabled();
+
+    /// <inheritdoc/>
     public float GetAvailableWidth() => ImGui.GetContentRegionAvail().X;
 
     /// <inheritdoc/>
@@ -70,6 +77,9 @@ internal sealed class ImGuiConfigRenderContext :
 
     /// <inheritdoc/>
     public bool InputText(string label, ref string value, uint maxLength) => ImGui.InputText(label, ref value, maxLength);
+
+    /// <inheritdoc/>
+    public void Separator() => ImGui.Separator();
 
     /// <inheritdoc/>
     public bool PushButtonColors(ButtonStyle style) => ButtonStyleColors.Push(style);
@@ -122,6 +132,10 @@ internal sealed class ImGuiConfigRenderContext :
 
     /// <inheritdoc/>
     public void PopStyleColor(int count) => ImGui.PopStyleColor(count);
+
+    /// <inheritdoc/>
+    public bool Combo(string label, ref int selectedIndex, string[] items, int itemCount)
+        => ImGui.Combo(label, ref selectedIndex, items, itemCount);
 
     private static string GetVisibleLabelText(string label)
     {

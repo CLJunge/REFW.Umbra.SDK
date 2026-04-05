@@ -7,9 +7,9 @@ namespace Umbra.Config.Attributes;
 /// This attribute affects only UI presentation. It does not change parameter registration or persisted keys.
 /// </remarks>
 /// <param name="label">The optional visible label shown on the root tree node.</param>
-/// <param name="defaultOpen"><see langword="true"/> to start the root tree node expanded; otherwise, <see langword="false"/>.</param>
+/// <param name="expandedByDefault"><see langword="true"/> to start the root tree node expanded; otherwise, <see langword="false"/>.</param>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class UmbraRootNodeAttribute(string? label = null, bool defaultOpen = false) : Attribute
+public sealed class UmbraRootNodeAttribute(string? label = null, bool expandedByDefault = false) : Attribute
 {
     /// <summary>
     /// Gets the visible label shown on the root tree node.
@@ -18,8 +18,9 @@ public sealed class UmbraRootNodeAttribute(string? label = null, bool defaultOpe
     public string? Label { get; } = label;
 
     /// <summary>
-    /// Gets a value indicating whether the root tree node starts in the open state.
+    /// Gets a value indicating whether the root section starts in the expanded state.
     /// </summary>
-    /// <value><see langword="true"/> if the root tree node should start expanded; otherwise, <see langword="false"/>.</value>
-    public bool DefaultOpen { get; } = defaultOpen;
+    /// <value><see langword="true"/> if the root section should start expanded; otherwise, <see langword="false"/>.</value>
+    public bool ExpandedByDefault { get; } = expandedByDefault;
 }
+

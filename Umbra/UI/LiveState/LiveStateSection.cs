@@ -22,8 +22,8 @@ namespace Umbra.UI.LiveState;
 public sealed class LiveStateSection<T> : IPanelSection where T : class
 {
     private readonly string? _idScope;
-    private readonly string? _treeNodeLabel;
-    private readonly bool _treeNodeDefaultOpen;
+    private readonly string? _sectionLabel;
+    private readonly bool _expandedByDefault;
     private readonly Action _drawAction;
     private readonly IDisposable _drawerDisposable;
     private readonly int _order;
@@ -34,8 +34,8 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
     /// </summary>
     /// <param name="context">The live-state instance rendered by this section for its entire lifetime.</param>
     /// <param name="idScope">The optional stable ImGui widget ID sub-scope for this section.</param>
-    /// <param name="treeNodeLabel">The optional label for a collapsible tree node that wraps this section in the owning <see cref="PluginPanel"/>.</param>
-    /// <param name="treeNodeDefaultOpen"><see langword="true"/> to start the optional section tree node expanded; otherwise, <see langword="false"/>.</param>
+    /// <param name="sectionLabel">The optional label for a collapsible tree node that wraps this section in the owning <see cref="PluginPanel"/>.</param>
+    /// <param name="expandedByDefault"><see langword="true"/> to start the optional section tree node expanded; otherwise, <see langword="false"/>.</param>
     /// <remarks>
     /// <para>
     /// When <paramref name="idScope"/> is omitted, <c>typeof(<typeparamref name="T"/>).FullName</c> is used, falling back to <c>typeof(<typeparamref name="T"/>).Name</c> when the full name is unavailable. Supply an explicit value only when multiple live-state sections of the same type appear in one panel.
@@ -48,14 +48,14 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
     /// <exception cref="ArgumentException"><paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
     /// <exception cref="InvalidOperationException"><typeparamref name="T"/> is not decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.</exception>
     public LiveStateSection(T context, string? idScope = null,
-        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
+        string? sectionLabel = null, bool expandedByDefault = false)
     {
         ArgumentNullException.ThrowIfNull(context);
         if (idScope is not null && string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be empty or whitespace when supplied.", nameof(idScope));
         _idScope = idScope;
-        _treeNodeLabel = treeNodeLabel;
-        _treeNodeDefaultOpen = treeNodeDefaultOpen;
+        _sectionLabel = sectionLabel;
+        _expandedByDefault = expandedByDefault;
         _order = typeof(T).GetDrawerAttribute<UmbraSectionOrderAttribute>()?.Order ?? int.MaxValue;
         _drawAction = LiveStateSectionDrawerResolver.Resolve(typeof(T), context, out _drawerDisposable);
     }
@@ -65,15 +65,15 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Returns the explicit constructor-supplied scope when one was provided; otherwise, it returns the runtime-type fallback used for this section. The owning <see cref="PluginPanel"/> also uses this value to disambiguate tree-node identity when <see cref="IPanelSection.TreeNodeLabel"/> is set.
+    /// Returns the explicit constructor-supplied scope when one was provided; otherwise, it returns the runtime-type fallback used for this section. The owning <see cref="PluginPanel"/> also uses this value to disambiguate tree-node identity when <see cref="IPanelSection.SectionLabel"/> is set.
     /// </remarks>
     public string SectionId => _idScope ?? typeof(T).FullName ?? typeof(T).Name;
 
     /// <inheritdoc/>
-    public string? TreeNodeLabel => _treeNodeLabel;
+    public string? SectionLabel => _sectionLabel;
 
     /// <inheritdoc/>
-    public bool TreeNodeDefaultOpen => _treeNodeDefaultOpen;
+    public bool ExpandedByDefault => _expandedByDefault;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LiveStateSection{T}"/> class and creates the bound state instance internally.
@@ -82,12 +82,12 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
     /// Use this overload when the section owns the state instance and no external writer needs a reference to it. <typeparamref name="T"/> must expose a public parameterless constructor; otherwise, use <see cref="LiveStateSection{T}(T, string?, string?, bool)"/>.
     /// </remarks>
     /// <param name="idScope">The optional stable ImGui widget ID sub-scope for this section.</param>
-    /// <param name="treeNodeLabel">The optional label for a collapsible tree node that wraps this section in the owning <see cref="PluginPanel"/>.</param>
-    /// <param name="treeNodeDefaultOpen"><see langword="true"/> to start the optional section tree node expanded; otherwise, <see langword="false"/>.</param>
+    /// <param name="sectionLabel">The optional label for a collapsible tree node that wraps this section in the owning <see cref="PluginPanel"/>.</param>
+    /// <param name="expandedByDefault"><see langword="true"/> to start the optional section tree node expanded; otherwise, <see langword="false"/>.</param>
     /// <exception cref="InvalidOperationException"><typeparamref name="T"/> does not expose a public parameterless constructor, activation fails, or <typeparamref name="T"/> is not decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.</exception>
     public LiveStateSection(string? idScope = null,
-        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
-        : this(CreateOwnedContext(), idScope, treeNodeLabel, treeNodeDefaultOpen) { }
+        string? sectionLabel = null, bool expandedByDefault = false)
+        : this(CreateOwnedContext(), idScope, sectionLabel, expandedByDefault) { }
 
     /// <inheritdoc/>
     /// <remarks>
@@ -154,3 +154,5 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
         }
     }
 }
+
+

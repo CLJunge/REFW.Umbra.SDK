@@ -40,6 +40,26 @@ public interface ISettingsStore<TConfig> : IDisposable
     void Save();
 
     /// <summary>
+    /// Writes the current registered parameter values to a versioned config exchange document.
+    /// </summary>
+    /// <param name="filePath">The destination file path for the exported document.</param>
+    /// <remarks>
+    /// Requires <see cref="Load"/> to have completed successfully so the store has a stable registered parameter set to export.
+    /// </remarks>
+    void Export(string filePath);
+
+    /// <summary>
+    /// Imports compatible values from a config exchange document or a legacy flat settings file.
+    /// </summary>
+    /// <param name="filePath">The source file path to import from.</param>
+    /// <param name="options">Optional import finalization settings.</param>
+    /// <returns>A structured report describing applied, ignored, and rejected keys.</returns>
+    /// <remarks>
+    /// Requires <see cref="Load"/> to have completed successfully so the store has a stable registered parameter set to receive imported values.
+    /// </remarks>
+    SettingsImportReport Import(string filePath, SettingsImportOptions? options = null);
+
+    /// <summary>
     /// Copies this store's registered parameter values into the corresponding parameters of <paramref name="target"/>.
     /// </summary>
     /// <param name="target">The destination store to copy values into.</param>

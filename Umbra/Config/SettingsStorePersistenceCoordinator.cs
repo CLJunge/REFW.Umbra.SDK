@@ -31,6 +31,11 @@ internal sealed class SettingsStorePersistenceCoordinator<TConfig>
     }
 
     /// <summary>
+    /// Gets the configured main settings file path for this coordinator.
+    /// </summary>
+    internal string FilePath => _filePath;
+
+    /// <summary>
     /// Persists the current registered parameter values unless saves have been blocked by a prior unrecoverable load failure.
     /// </summary>
     internal void Save()

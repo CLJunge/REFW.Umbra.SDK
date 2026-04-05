@@ -206,6 +206,7 @@ public record PluginConfig
             NestedTypes.IndentedLayout.PrimaryScale.Reset();
             NestedTypes.IndentedLayout.SecondaryScale.Reset();
             NestedTypes.IndentedLayout.LayoutNotes.Reset();
+
         });
     }
 

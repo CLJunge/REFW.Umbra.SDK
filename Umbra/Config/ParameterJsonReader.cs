@@ -27,6 +27,54 @@ internal static class ParameterJsonReader
     }
 
     /// <summary>
+    /// Attempts to convert <paramref name="element"/> to a value assignable to <paramref name="targetType"/>.
+    /// </summary>
+    /// <param name="element">The JSON element to convert.</param>
+    /// <param name="targetType">The destination CLR type.</param>
+    /// <param name="value">Receives the converted value when conversion succeeds.</param>
+    /// <param name="failureReason">Receives a human-readable conversion failure reason when conversion fails.</param>
+    /// <returns><see langword="true"/> when conversion succeeds; otherwise, <see langword="false"/>.</returns>
+    internal static bool TryConvert(
+        JsonElement element,
+        Type targetType,
+        out object? value,
+        out string? failureReason)
+    {
+        ArgumentNullException.ThrowIfNull(targetType);
+
+        value = null;
+        failureReason = null;
+
+        if (element.ValueKind == JsonValueKind.Null)
+        {
+            if (targetType.IsValueType && Nullable.GetUnderlyingType(targetType) == null)
+            {
+                failureReason = $"Null is not valid for non-nullable value type '{targetType.FullName ?? targetType.Name}'.";
+                return false;
+            }
+
+            return true;
+        }
+
+        try
+        {
+            value = ConvertElement(element, targetType);
+        }
+        catch (Exception ex)
+        {
+            failureReason = ex.Message;
+            value = null;
+            return false;
+        }
+
+        if (value is not null)
+            return true;
+
+        failureReason = $"JSON value kind '{element.ValueKind}' is not compatible with '{targetType.FullName ?? targetType.Name}'.";
+        return false;
+    }
+
+    /// <summary>
     /// Converts a <see cref="JsonElement"/> to an object of <paramref name="targetType"/>,
     /// dispatching to the appropriate typed converter based on the element's
     /// <see cref="JsonValueKind"/>.
