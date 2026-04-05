@@ -252,9 +252,6 @@ public sealed class ConfigTransferDrawerTests
         Assert.AreEqual("selected-import.json", pathParameter.Value);
         Assert.AreEqual(1, _picker.ImportPickCallCount);
         Assert.AreEqual(fallbackDirectory, _picker.LastImportFallbackDirectory);
-        Assert.AreEqual(0, _renderer.OpenedPopups.Count);
-        Assert.AreEqual(0, _renderer.BegunPopups.Count);
-        Assert.AreEqual(0, _renderer.Selectables.Count);
     }
 
     /// <summary>
@@ -275,9 +272,6 @@ public sealed class ConfigTransferDrawerTests
         Assert.AreEqual("selected-export.json", pathParameter.Value);
         Assert.AreEqual(1, _picker.ExportPickCallCount);
         Assert.AreEqual(fallbackDirectory, _picker.LastExportFallbackDirectory);
-        Assert.AreEqual(0, _renderer.OpenedPopups.Count);
-        Assert.AreEqual(0, _renderer.BegunPopups.Count);
-        Assert.AreEqual(0, _renderer.Selectables.Count);
     }
 
     /// <summary>

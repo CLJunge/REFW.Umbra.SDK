@@ -71,31 +71,6 @@ internal interface IConfigTransferDrawerRenderer : ITextOps, IButtonOps, ISizedB
     bool InputText(string label, ref string value, uint maxLength);
 
     /// <summary>
-    /// Opens a popup with the supplied identifier.
-    /// </summary>
-    /// <param name="id">The popup identifier.</param>
-    void OpenPopup(string id);
-
-    /// <summary>
-    /// Begins rendering a popup.
-    /// </summary>
-    /// <param name="id">The popup identifier.</param>
-    /// <returns><see langword="true"/> when the popup is open and should be rendered.</returns>
-    bool BeginPopup(string id);
-
-    /// <summary>
-    /// Ends the current popup.
-    /// </summary>
-    void EndPopup();
-
-    /// <summary>
-    /// Renders a selectable popup item.
-    /// </summary>
-    /// <param name="label">The visible item label.</param>
-    /// <returns><see langword="true"/> when the item was selected.</returns>
-    bool Selectable(string label);
-
-    /// <summary>
     /// Draws a horizontal separator.
     /// </summary>
     void Separator();

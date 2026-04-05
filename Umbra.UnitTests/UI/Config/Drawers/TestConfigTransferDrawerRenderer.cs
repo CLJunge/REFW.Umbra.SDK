@@ -31,12 +31,6 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
 
     public int EndDisabledCallCount { get; private set; }
 
-    public List<string> OpenedPopups { get; } = [];
-
-    public List<string> BegunPopups { get; } = [];
-
-    public List<string> Selectables { get; } = [];
-
     public int SeparatorCount { get; private set; }
 
     public int SameLineCount { get; private set; }
@@ -52,10 +46,6 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
     public Queue<(bool Changed, string Value)> InputResults { get; } = new();
 
     public Queue<(bool Changed, int SelectedIndex)> ComboResults { get; } = new();
-
-    public Queue<bool> BeginPopupResults { get; } = new();
-
-    public Queue<bool> SelectableResults { get; } = new();
 
     public void Text(string text) => Texts.Add(text);
 
@@ -141,30 +131,6 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
         var next = ComboResults.Dequeue();
         selectedIndex = next.SelectedIndex;
         return next.Changed;
-    }
-
-    public void OpenPopup(string id) => OpenedPopups.Add(id);
-
-    public bool BeginPopup(string id)
-    {
-        BegunPopups.Add(id);
-        if (BeginPopupResults.Count == 0)
-            return false;
-
-        return BeginPopupResults.Dequeue();
-    }
-
-    public void EndPopup()
-    {
-    }
-
-    public bool Selectable(string label)
-    {
-        Selectables.Add(label);
-        if (SelectableResults.Count == 0)
-            return false;
-
-        return SelectableResults.Dequeue();
     }
 
     public void Separator() => SeparatorCount++;
