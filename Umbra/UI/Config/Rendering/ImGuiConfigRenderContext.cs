@@ -145,6 +145,10 @@ internal sealed class ImGuiConfigRenderContext :
     /// <inheritdoc/>
     public void PopStyleColor(int count) => ImGui.PopStyleColor(count);
 
+    /// <inheritdoc/>
+    public bool Combo(string label, ref int selectedIndex, string[] items, int itemCount)
+        => ImGui.Combo(label, ref selectedIndex, items, itemCount);
+
     private static string GetVisibleLabelText(string label)
     {
         var hiddenIdIndex = label.IndexOf("##", StringComparison.Ordinal);

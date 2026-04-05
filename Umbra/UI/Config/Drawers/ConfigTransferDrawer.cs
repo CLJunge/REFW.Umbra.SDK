@@ -1,6 +1,7 @@
 using System.Numerics;
 using Umbra.Config;
 using Umbra.UI.Config.Rendering;
+using Umbra.UI.Config.Transfer;
 
 namespace Umbra.UI.Config.Drawers;
 
@@ -15,10 +16,10 @@ internal sealed class ConfigTransferDrawer : IDisposable
 {
     private const uint DefaultMaxPathLength = 256;
     private const float MinimumPathInputWidth = 64f;
-    private const string ImportFileExistsStatusLabel = "OK";
-    private const string ImportFileMissingStatusLabel = "X";
-    private static readonly Vector4 _importFileExistsColor = new(0.35f, 1f, 0.35f, 1f);
-    private static readonly Vector4 _importFileMissingColor = new(1f, 0.35f, 0.35f, 1f);
+    private const string DefaultModeLabel = "Action";
+    private const string DefaultPathLabel = "Config File";
+    private static readonly string[] _modeLabels = [nameof(ConfigTransferMode.Import), nameof(ConfigTransferMode.Export)];
+    private static readonly ConfigTransferMode[] _modes = [ConfigTransferMode.Import, ConfigTransferMode.Export];
     private readonly IConfigTransferDrawerRenderer _renderer;
     private readonly IConfigTransferFilePicker _filePicker;
 
@@ -60,6 +61,15 @@ internal sealed class ConfigTransferDrawer : IDisposable
         Action? exportAction,
         string? fallbackBrowseDirectory = null,
         bool drawSeparatorBelowButtons = true)
+        => Draw(null, pathParameter, importAction, exportAction, fallbackBrowseDirectory, drawSeparatorBelowButtons);
+
+    internal void Draw(
+        Parameter<ConfigTransferMode>? modeParameter,
+        Parameter<string>? pathParameter,
+        Action? importAction,
+        Action? exportAction,
+        string? fallbackBrowseDirectory = null,
+        bool drawSeparatorBelowButtons = true)
     {
         if (pathParameter is null)
         {
@@ -67,8 +77,9 @@ internal sealed class ConfigTransferDrawer : IDisposable
             return;
         }
 
-        var importPathState = DrawPathRow(pathParameter, "Config File:", fallbackBrowseDirectory);
-        DrawActionButtons(pathParameter, importAction, exportAction, importPathState);
+        var mode = DrawModeRow(modeParameter);
+        var actionState = DrawPathRow(mode, pathParameter, fallbackBrowseDirectory);
+        DrawActionButton(mode, pathParameter, importAction, exportAction, actionState);
         if (drawSeparatorBelowButtons)
             _renderer.Separator();
     }
@@ -77,17 +88,40 @@ internal sealed class ConfigTransferDrawer : IDisposable
     {
     }
 
-    private ImportPathState DrawPathRow(Parameter<string> pathParameter, string label, string? fallbackBrowseDirectory)
+    private ConfigTransferMode DrawModeRow(Parameter<ConfigTransferMode>? modeParameter)
     {
+        if (modeParameter is null)
+            return ConfigTransferMode.Import;
+
+        var label = GetLabel(modeParameter, DefaultModeLabel);
+        var availableWidth = _renderer.GetAvailableWidth();
+        var spacingX = _renderer.GetItemSpacingX();
+        var comboWidth = availableWidth - _renderer.GetTextWidth(label) - spacingX;
+        var selectedMode = GetTransferMode(modeParameter);
+        var selectedIndex = GetModeIndex(selectedMode);
+
+        _renderer.Text(label);
+        _renderer.SameLine();
+        _renderer.SetNextItemWidth(Math.Max(MinimumPathInputWidth, comboWidth));
+        if (_renderer.Combo(GetModeHiddenLabel(modeParameter), ref selectedIndex, _modeLabels, _modeLabels.Length))
+            modeParameter.Value = _modes[selectedIndex];
+
+        return GetTransferMode(modeParameter);
+    }
+
+    private TransferActionState DrawPathRow(
+        ConfigTransferMode mode,
+        Parameter<string> pathParameter,
+        string? fallbackBrowseDirectory)
+    {
+        var label = GetLabel(pathParameter, DefaultPathLabel);
         var browseButtonLabel = $"Browse...##{pathParameter.Key}";
         var availableWidth = _renderer.GetAvailableWidth();
         var spacingX = _renderer.GetItemSpacingX();
-        var statusWidth = GetReservedImportStatusWidth();
         var pathInputWidth = availableWidth
             - _renderer.GetTextWidth(label)
             - _renderer.GetButtonWidth(browseButtonLabel)
-            - statusWidth
-            - (spacingX * 3f);
+            - (spacingX * 2f);
 
         _renderer.Text(label);
         _renderer.SameLine();
@@ -98,76 +132,39 @@ internal sealed class ConfigTransferDrawer : IDisposable
 
         _renderer.SameLine();
         if (_renderer.Button(browseButtonLabel))
-            _renderer.OpenPopup(GetBrowsePopupId(pathParameter));
+            ApplyPickedPath(pathParameter, fallbackBrowseDirectory, GetBrowsePicker(mode));
 
-        DrawBrowsePopup(pathParameter, fallbackBrowseDirectory);
-
-        var importPathState = EvaluateImportPathState(pathParameter);
-        DrawImportStatus(importPathState);
+        var actionState = EvaluateActionState(mode, pathParameter);
         ValidationMessageRenderer.Draw(pathParameter, _renderer);
-        return importPathState;
+        return actionState;
     }
 
-    private void DrawActionButtons(
+    private void DrawActionButton(
+        ConfigTransferMode mode,
         Parameter<string> pathParameter,
         Action? importAction,
         Action? exportAction,
-        ImportPathState importPathState)
+        TransferActionState actionState)
     {
-        var availableWidth = _renderer.GetAvailableWidth();
-        var spacingX = _renderer.GetItemSpacingX();
-        var buttonWidth = Math.Max(0f, (availableWidth - spacingX) / 2f);
+        var buttonWidth = Math.Max(0f, _renderer.GetAvailableWidth());
+        var buttonLabel = GetActionButtonLabel(mode, pathParameter);
 
-        _renderer.BeginDisabled(!CanImport(importPathState));
+        _renderer.BeginDisabled(!CanExecute(actionState));
         try
         {
-            if (_renderer.Button($"Import##{pathParameter.Key}", new(buttonWidth, 0f)))
+            if (!_renderer.Button(buttonLabel, new(buttonWidth, 0f)))
+                return;
+
+            if (mode == ConfigTransferMode.Import)
                 importAction?.Invoke();
+            else
+                exportAction?.Invoke();
         }
         finally
         {
             _renderer.EndDisabled();
         }
-
-        _renderer.SameLine();
-        if (_renderer.Button($"Export##{pathParameter.Key}", new(buttonWidth, 0f)))
-            exportAction?.Invoke();
     }
-
-    private void DrawBrowsePopup(Parameter<string> pathParameter, string? fallbackBrowseDirectory)
-    {
-        var popupId = GetBrowsePopupId(pathParameter);
-        if (!_renderer.BeginPopup(popupId))
-            return;
-
-        try
-        {
-            if (_renderer.Selectable("Choose import file..."))
-                ApplyPickedPath(pathParameter, fallbackBrowseDirectory, _filePicker.TryPickImportPath);
-
-            if (_renderer.Selectable("Choose export destination..."))
-                ApplyPickedPath(pathParameter, fallbackBrowseDirectory, _filePicker.TryPickExportPath);
-        }
-        finally
-        {
-            _renderer.EndPopup();
-        }
-    }
-
-    private void DrawImportStatus(ImportPathState importPathState)
-    {
-        var statusLabel = GetImportStatusLabel(importPathState);
-        if (statusLabel is null)
-            return;
-
-        _renderer.SameLine();
-        _renderer.TextColored(GetImportStatusColor(importPathState), statusLabel);
-    }
-
-    private float GetReservedImportStatusWidth()
-        => Math.Max(
-            _renderer.GetTextWidth(ImportFileExistsStatusLabel),
-            _renderer.GetTextWidth(ImportFileMissingStatusLabel));
 
     private static void ApplyPickedPath(
         Parameter<string> pathParameter,
@@ -183,48 +180,72 @@ internal sealed class ConfigTransferDrawer : IDisposable
         pathParameter.Value = selectedPath;
     }
 
-    private static ImportPathState EvaluateImportPathState(Parameter<string> pathParameter)
+    private static TransferActionState EvaluateActionState(ConfigTransferMode mode, Parameter<string> pathParameter)
     {
         if (pathParameter is IParameterValidationState validationState && validationState.HasValidationError)
-            return ImportPathState.Invalid;
+            return TransferActionState.Invalid;
 
         var filePath = pathParameter.Value;
         if (string.IsNullOrWhiteSpace(filePath))
-            return ImportPathState.Empty;
+            return TransferActionState.Empty;
 
-        return File.Exists(filePath) ? ImportPathState.Exists : ImportPathState.Missing;
+        if (mode == ConfigTransferMode.Import)
+            return File.Exists(filePath) ? TransferActionState.Ready : TransferActionState.Missing;
+
+        return HasJsonExtension(filePath) ? TransferActionState.Ready : TransferActionState.InvalidExtension;
     }
 
-    private static bool CanImport(ImportPathState importPathState)
-        => importPathState == ImportPathState.Exists;
-
-    private static string? GetImportStatusLabel(ImportPathState importPathState)
-        => importPathState switch
-        {
-            ImportPathState.Exists => ImportFileExistsStatusLabel,
-            ImportPathState.Missing => ImportFileMissingStatusLabel,
-            _ => null
-        };
-
-    private static Vector4 GetImportStatusColor(ImportPathState importPathState)
-        => importPathState == ImportPathState.Exists ? _importFileExistsColor : _importFileMissingColor;
-
-    private static string GetBrowsePopupId(Parameter<string> parameter)
-        => $"ConfigTransferBrowse##{parameter.Key}";
+    private static bool CanExecute(TransferActionState actionState)
+        => actionState == TransferActionState.Ready;
 
     private static string GetHiddenLabel(Parameter<string> parameter)
+        => parameter.Metadata.HiddenLabel ?? $"##{parameter.Key}";
+
+    private static string GetModeHiddenLabel(Parameter<ConfigTransferMode> parameter)
         => parameter.Metadata.HiddenLabel ?? $"##{parameter.Key}";
 
     private static uint GetMaxLength(Parameter<string> parameter)
         => parameter.Metadata.MaxLength ?? DefaultMaxPathLength;
 
+    private static ConfigTransferMode GetTransferMode(Parameter<ConfigTransferMode> modeParameter)
+    {
+        var currentMode = modeParameter.Value;
+        return Array.IndexOf(_modes, currentMode) >= 0 ? currentMode : ConfigTransferMode.Import;
+    }
+
+    private static int GetModeIndex(ConfigTransferMode mode)
+    {
+        var index = Array.IndexOf(_modes, mode);
+        return index >= 0 ? index : 0;
+    }
+
+    private static string GetActionButtonLabel(ConfigTransferMode mode, Parameter<string> pathParameter)
+        => $"{mode}##{pathParameter.Key}";
+
+    private TryPickPathCallback GetBrowsePicker(ConfigTransferMode mode)
+        => mode == ConfigTransferMode.Import ? _filePicker.TryPickImportPath : _filePicker.TryPickExportPath;
+
+    private static string GetLabel<T>(Parameter<T> parameter, string fallback)
+    {
+        var resolvedLabel = parameter.Metadata.ResolvedLabel;
+        if (!string.IsNullOrWhiteSpace(resolvedLabel))
+            return resolvedLabel;
+
+        var displayName = parameter.Metadata.DisplayName;
+        return string.IsNullOrWhiteSpace(displayName) ? fallback : displayName;
+    }
+
+    private static bool HasJsonExtension(string filePath)
+        => string.Equals(Path.GetExtension(filePath), ".json", StringComparison.OrdinalIgnoreCase);
+
     private delegate bool TryPickPathCallback(string? currentPath, string? fallbackDirectory, out string? selectedPath);
 
-    private enum ImportPathState
+    private enum TransferActionState
     {
         Empty,
         Invalid,
         Missing,
-        Exists
+        InvalidExtension,
+        Ready
     }
 }

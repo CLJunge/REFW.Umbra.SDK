@@ -6,6 +6,15 @@ using Umbra.UI.Config.Drawers;
 namespace Umbra.UI.Config.Transfer;
 
 /// <summary>
+/// Identifies the active built-in config transfer action.
+/// </summary>
+internal enum ConfigTransferMode
+{
+    Import,
+    Export
+}
+
+/// <summary>
 /// Owns the optional built-in config transfer UI state for one settings section.
 /// </summary>
 /// <remarks>
@@ -44,6 +53,7 @@ internal sealed class ConfigTransferFeature : IDisposable
         var sidecarState = _sidecarStore.Load();
         _sidecarSaveController = new DeferredSaveController<ConfigTransferSidecarState>(_sidecarStore);
         ConfigFilePath = sidecarState.ConfigFilePath;
+        TransferMode = sidecarState.TransferMode;
         ImportConfig = new(ImportFromPath);
         ExportConfig = new(ExportToPath);
         TreeNodeLabel = ResolveTreeNodeLabel(options.TreeNodeLabel);
@@ -53,6 +63,8 @@ internal sealed class ConfigTransferFeature : IDisposable
     }
 
     public Parameter<string> ConfigFilePath { get; }
+
+    internal Parameter<ConfigTransferMode> TransferMode { get; }
 
     public Parameter<Action> ImportConfig { get; }
 
@@ -71,7 +83,7 @@ internal sealed class ConfigTransferFeature : IDisposable
         if (_disposed)
             return;
 
-        _drawer.Draw(ConfigFilePath, ImportConfig.Value, ExportConfig.Value, _fallbackBrowseDirectory, DrawSeparatorBelowButtons);
+        _drawer.Draw(TransferMode, ConfigFilePath, ImportConfig.Value, ExportConfig.Value, _fallbackBrowseDirectory, DrawSeparatorBelowButtons);
         _sidecarSaveController.Tick();
     }
 
@@ -174,6 +186,9 @@ internal sealed class ConfigTransferFeature : IDisposable
             return;
         }
 
+        if (!CanExportToPath(filePath))
+            return;
+
         try
         {
             _store.Export(filePath);
@@ -184,6 +199,15 @@ internal sealed class ConfigTransferFeature : IDisposable
             Logger.Exception(ex, "Config export to '{0}' threw unexpectedly.", filePath);
         }
     }
+
+    private static bool CanExportToPath(string filePath)
+    {
+        if (string.Equals(Path.GetExtension(filePath), ".json", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        Logger.Warning("Config export ignored because the configured config file '{0}' does not use the .json extension.", filePath);
+        return false;
+    }
 }
 
 /// <summary>
@@ -192,6 +216,13 @@ internal sealed class ConfigTransferFeature : IDisposable
 [UmbraAutoRegister]
 internal sealed record ConfigTransferSidecarState
 {
+    /// <summary>
+    /// Gets or sets the last-used config transfer action.
+    /// </summary>
+    [UmbraParameter]
+    [UmbraDisplayName("Transfer Mode")]
+    public Parameter<ConfigTransferMode> TransferMode { get; set; } = new(ConfigTransferMode.Import);
+
     /// <summary>
     /// Gets or sets the last-used config transfer file path.
     /// </summary>

@@ -1,4 +1,5 @@
 using Umbra.Config;
+using Umbra.UI.Config.Transfer;
 
 namespace Umbra.UI.Config.Transfer.UnitTests;
 
@@ -112,7 +113,20 @@ public sealed class ConfigTransferFeatureTests
     }
 
     [TestMethod]
-    public void Dispose_PersistsUpdatedSidecarPath()
+    public void ExportConfig_WhenPathDoesNotUseJsonExtension_DoesNotCallStore()
+    {
+        using var tempDirectory = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true });
+        feature.ConfigFilePath.Value = Path.Combine(tempDirectory.Path, "export.txt");
+
+        feature.ExportConfig.Value!.Invoke();
+
+        Assert.IsNull(store.LastExportedPath);
+    }
+
+    [TestMethod]
+    public void Dispose_PersistsUpdatedSidecarPathAndMode()
     {
         using var tempDirectory = new TempDirectory();
         var mainFilePath = Path.Combine(tempDirectory.Path, "config.json");
@@ -120,12 +134,14 @@ public sealed class ConfigTransferFeatureTests
         var store = new TestConfigTransferStore(mainFilePath);
         var feature = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true });
         feature.ConfigFilePath.Value = Path.Combine(tempDirectory.Path, "persisted.json");
+        feature.TransferMode.Value = ConfigTransferMode.Export;
 
         feature.Dispose();
 
         using var sidecarStore = new SettingsStore<ConfigTransferSidecarState>(sidecarFilePath);
         var sidecarState = sidecarStore.Load();
         Assert.AreEqual(Path.Combine(tempDirectory.Path, "persisted.json"), sidecarState.ConfigFilePath.Value);
+        Assert.AreEqual(ConfigTransferMode.Export, sidecarState.TransferMode.Value);
     }
 
     private sealed class TestConfigTransferStore(string filePath) : IConfigTransferStore

@@ -21,6 +21,8 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
 
     public List<(string Label, string Value, uint MaxLength)> Inputs { get; } = [];
 
+    public List<(string Label, int SelectedIndex, string[] Items, int ItemCount)> Combos { get; } = [];
+
     public List<float> Widths { get; } = [];
 
     public List<(string Label, Vector2 Size)> SizedButtons { get; } = [];
@@ -48,6 +50,8 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
     public Queue<bool> SizedButtonResults { get; } = new();
 
     public Queue<(bool Changed, string Value)> InputResults { get; } = new();
+
+    public Queue<(bool Changed, int SelectedIndex)> ComboResults { get; } = new();
 
     public Queue<bool> BeginPopupResults { get; } = new();
 
@@ -125,6 +129,17 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
 
         var next = InputResults.Dequeue();
         value = next.Value;
+        return next.Changed;
+    }
+
+    public bool Combo(string label, ref int selectedIndex, string[] items, int itemCount)
+    {
+        Combos.Add((label, selectedIndex, items, itemCount));
+        if (ComboResults.Count == 0)
+            return false;
+
+        var next = ComboResults.Dequeue();
+        selectedIndex = next.SelectedIndex;
         return next.Changed;
     }
 

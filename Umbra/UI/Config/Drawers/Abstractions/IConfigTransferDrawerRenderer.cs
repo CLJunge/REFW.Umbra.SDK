@@ -24,6 +24,16 @@ internal interface IConfigTransferDrawerRenderer : ITextOps, IButtonOps, ISizedB
     void EndDisabled();
 
     /// <summary>
+    /// Renders a combo box and updates the selected index when the user chooses a different item.
+    /// </summary>
+    /// <param name="label">The hidden or visible combo label.</param>
+    /// <param name="selectedIndex">The current selected index, updated in place when the selection changes.</param>
+    /// <param name="items">The visible item labels.</param>
+    /// <param name="itemCount">The number of items available for selection.</param>
+    /// <returns><see langword="true"/> when the selection changed; otherwise, <see langword="false"/>.</returns>
+    bool Combo(string label, ref int selectedIndex, string[] items, int itemCount);
+
+    /// <summary>
     /// Gets the width available for the current row.
     /// </summary>
     float GetAvailableWidth();

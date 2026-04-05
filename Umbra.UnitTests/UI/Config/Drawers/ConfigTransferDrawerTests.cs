@@ -1,4 +1,5 @@
 using Umbra.Config;
+using Umbra.UI.Config.Transfer;
 
 namespace Umbra.UI.Config.Drawers.UnitTests;
 
@@ -39,25 +40,48 @@ public sealed class ConfigTransferDrawerTests
     public void Draw_NullPathParameter_ShowsDisabledText()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
 
-        drawer.Draw(null, static () => { }, static () => { });
+        drawer.Draw(modeParameter, null, static () => { }, static () => { });
 
         Assert.HasCount(1, _renderer.DisabledTexts);
         Assert.AreEqual("(ConfigTransferDrawer requires a non-null config-file path parameter)", _renderer.DisabledTexts[0]);
     }
 
     /// <summary>
-    /// Verifies that the shared path input reserves space for the inline import-file status indicator.
+    /// Verifies that the first row reserves width for the mode dropdown and the second row reserves width for the inline status indicator.
     /// </summary>
     [TestMethod]
-    public void Draw_Layout_ComputesSharedPathInputWidth()
+    public void Draw_Layout_ComputesModeAndPathInputWidths()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var pathParameter = CreateStringParameter("configFilePath", "config.json");
 
-        drawer.Draw(pathParameter, static () => { }, static () => { });
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
 
-        Assert.AreEqual(376f, _renderer.Widths[0]);
+        Assert.HasCount(2, _renderer.Widths);
+        Assert.AreEqual(488f, _renderer.Widths[0]);
+        Assert.AreEqual(408f, _renderer.Widths[1]);
+    }
+
+    /// <summary>
+    /// Verifies that selecting a different transfer mode updates the persisted mode parameter.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenModeSelectionChanges_UpdatesModeParameter()
+    {
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        _renderer.ComboResults.Enqueue((true, 1));
+
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
+
+        Assert.AreEqual(ConfigTransferMode.Export, modeParameter.Value);
+        Assert.HasCount(1, _renderer.Combos);
+        Assert.AreEqual("##transferMode", _renderer.Combos[0].Label);
+        CollectionAssert.AreEqual(new[] { "Import", "Export" }, _renderer.Combos[0].Items);
     }
 
     /// <summary>
@@ -67,13 +91,14 @@ public sealed class ConfigTransferDrawerTests
     public void Draw_ConfigFilePathEdited_UpdatesParameterValue()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var pathParameter = CreateStringParameter(
             "configFilePath",
             "old-config.json",
             new ParameterMetadata { MaxLength = 512 });
         _renderer.InputResults.Enqueue((true, "new-config.json"));
 
-        drawer.Draw(pathParameter, static () => { }, static () => { });
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
 
         Assert.AreEqual("new-config.json", pathParameter.Value);
         Assert.HasCount(1, _renderer.Inputs);
@@ -82,19 +107,19 @@ public sealed class ConfigTransferDrawerTests
     }
 
     /// <summary>
-    /// Verifies that the import and export buttons use equal widths and fill the second row evenly.
+    /// Verifies that the mode-specific action button fills the full third-row width.
     /// </summary>
     [TestMethod]
-    public void Draw_ActionButtons_UseEqualWidths()
+    public void Draw_ActionButton_UsesFullWidth()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var pathParameter = CreateStringParameter("configFilePath", "config.json");
 
-        drawer.Draw(pathParameter, static () => { }, static () => { });
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
 
-        Assert.HasCount(2, _renderer.SizedButtons);
-        Assert.AreEqual(296f, _renderer.SizedButtons[0].Size.X);
-        Assert.AreEqual(296f, _renderer.SizedButtons[1].Size.X);
+        Assert.HasCount(1, _renderer.SizedButtons);
+        Assert.AreEqual(600f, _renderer.SizedButtons[0].Size.X);
     }
 
     /// <summary>
@@ -104,9 +129,10 @@ public sealed class ConfigTransferDrawerTests
     public void Draw_ByDefault_RendersTrailingSeparator()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var pathParameter = CreateStringParameter("configFilePath", "config.json");
 
-        drawer.Draw(pathParameter, static () => { }, static () => { });
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
 
         Assert.AreEqual(1, _renderer.SeparatorCount);
     }
@@ -118,9 +144,10 @@ public sealed class ConfigTransferDrawerTests
     public void Draw_WhenSeparatorDisabled_DoesNotRenderTrailingSeparator()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var pathParameter = CreateStringParameter("configFilePath", "config.json");
 
-        drawer.Draw(pathParameter, static () => { }, static () => { }, drawSeparatorBelowButtons: false);
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { }, drawSeparatorBelowButtons: false);
 
         Assert.AreEqual(0, _renderer.SeparatorCount);
     }
@@ -129,18 +156,17 @@ public sealed class ConfigTransferDrawerTests
     /// Verifies that missing import files render a red status and keep the import action disabled.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenImportFileMissing_RendersMissingStatusAndDisablesImport()
+    public void Draw_WhenImportFileMissing_DisablesImport()
     {
         var importCount = 0;
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var pathParameter = CreateStringParameter("configFilePath", "missing-config.json");
         _renderer.SizedButtonResults.Enqueue(true);
 
-        drawer.Draw(pathParameter, () => importCount++, static () => { });
+        drawer.Draw(modeParameter, pathParameter, () => importCount++, static () => { });
 
         Assert.AreEqual(0, importCount);
-        Assert.HasCount(1, _renderer.ColoredTexts);
-        Assert.AreEqual("X", _renderer.ColoredTexts[0].Text);
         Assert.HasCount(1, _renderer.DisabledScopes);
         Assert.IsTrue(_renderer.DisabledScopes[0]);
         Assert.AreEqual(1, _renderer.EndDisabledCallCount);
@@ -151,88 +177,107 @@ public sealed class ConfigTransferDrawerTests
     /// Verifies that existing import files render a green status and allow the import action.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenImportFileExists_RendersExistsStatusAndInvokesImportAction()
+    public void Draw_WhenImportFileExists_InvokesImportAction()
     {
         using var tempDirectory = new TempDirectory();
         var importCount = 0;
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var existingFilePath = Path.Combine(tempDirectory.Path, "config.json");
         File.WriteAllText(existingFilePath, "{}");
         var pathParameter = CreateStringParameter("configFilePath", existingFilePath);
         _renderer.SizedButtonResults.Enqueue(true);
-        _renderer.SizedButtonResults.Enqueue(false);
 
-        drawer.Draw(pathParameter, () => importCount++, static () => { });
+        drawer.Draw(modeParameter, pathParameter, () => importCount++, static () => { });
 
         Assert.AreEqual(1, importCount);
-        Assert.HasCount(1, _renderer.ColoredTexts);
-        Assert.AreEqual("OK", _renderer.ColoredTexts[0].Text);
         Assert.HasCount(1, _renderer.DisabledScopes);
         Assert.IsFalse(_renderer.DisabledScopes[0]);
+        Assert.AreEqual("Import##configFilePath", _renderer.SizedButtons[0].Label);
     }
 
     /// <summary>
-    /// Verifies that export remains enabled even when the import path does not exist.
+    /// Verifies that export mode rejects non-json file paths and keeps the export action disabled.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenExportButtonClicked_InvokesExportActionEvenWhenImportDisabled()
+    public void Draw_WhenExportPathIsNotJson_DisablesExport()
     {
         var exportCount = 0;
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
-        var pathParameter = CreateStringParameter("configFilePath", "missing-config.json");
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Export);
+        var pathParameter = CreateStringParameter("configFilePath", "config.txt");
         _renderer.SizedButtonResults.Enqueue(true);
 
-        drawer.Draw(pathParameter, static () => { }, () => exportCount++);
+        drawer.Draw(modeParameter, pathParameter, static () => { }, () => exportCount++);
 
-        Assert.AreEqual(1, exportCount);
-        Assert.AreEqual("Export##configFilePath", _renderer.SizedButtons[1].Label);
+        Assert.AreEqual(0, exportCount);
+        Assert.IsTrue(_renderer.DisabledScopes[0]);
+        Assert.AreEqual("Export##configFilePath", _renderer.SizedButtons[0].Label);
     }
 
     /// <summary>
-    /// Verifies that selecting an import file from the browse popup updates the shared path.
+    /// Verifies that export mode accepts json file paths and invokes the export action.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenExportPathIsJson_InvokesExportAction()
+    {
+        var exportCount = 0;
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Export);
+        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        _renderer.SizedButtonResults.Enqueue(true);
+
+        drawer.Draw(modeParameter, pathParameter, static () => { }, () => exportCount++);
+
+        Assert.AreEqual(1, exportCount);
+        Assert.IsFalse(_renderer.DisabledScopes[0]);
+        Assert.AreEqual("Export##configFilePath", _renderer.SizedButtons[0].Label);
+    }
+
+    /// <summary>
+    /// Verifies that selecting an import file from the browse popup updates the shared path in import mode.
     /// </summary>
     [TestMethod]
     public void Draw_WhenBrowseImportSelected_UpdatesConfigFilePath()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var pathParameter = CreateStringParameter("configFilePath", "config.json");
         const string fallbackDirectory = @"C:\plugin-data";
         _renderer.ButtonResults.Enqueue(true);
-        _renderer.BeginPopupResults.Enqueue(true);
-        _renderer.SelectableResults.Enqueue(true);
-        _renderer.SelectableResults.Enqueue(false);
         _picker.ImportResults.Enqueue((true, "selected-import.json"));
 
-        drawer.Draw(pathParameter, static () => { }, static () => { }, fallbackDirectory);
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { }, fallbackDirectory);
 
         Assert.AreEqual("selected-import.json", pathParameter.Value);
         Assert.AreEqual(1, _picker.ImportPickCallCount);
         Assert.AreEqual(fallbackDirectory, _picker.LastImportFallbackDirectory);
-        Assert.AreEqual("ConfigTransferBrowse##configFilePath", _renderer.OpenedPopups[0]);
-        Assert.AreEqual("Choose import file...", _renderer.Selectables[0]);
-        Assert.AreEqual("Choose export destination...", _renderer.Selectables[1]);
+        Assert.AreEqual(0, _renderer.OpenedPopups.Count);
+        Assert.AreEqual(0, _renderer.BegunPopups.Count);
+        Assert.AreEqual(0, _renderer.Selectables.Count);
     }
 
     /// <summary>
-    /// Verifies that selecting an export file from the browse popup updates the shared path.
+    /// Verifies that selecting an export file from the browse popup updates the shared path in export mode.
     /// </summary>
     [TestMethod]
     public void Draw_WhenBrowseExportSelected_UpdatesConfigFilePath()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Export);
         var pathParameter = CreateStringParameter("configFilePath", "config.json");
         const string fallbackDirectory = @"C:\plugin-data";
         _renderer.ButtonResults.Enqueue(true);
-        _renderer.BeginPopupResults.Enqueue(true);
-        _renderer.SelectableResults.Enqueue(false);
-        _renderer.SelectableResults.Enqueue(true);
         _picker.ExportResults.Enqueue((true, "selected-export.json"));
 
-        drawer.Draw(pathParameter, static () => { }, static () => { }, fallbackDirectory);
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { }, fallbackDirectory);
 
         Assert.AreEqual("selected-export.json", pathParameter.Value);
         Assert.AreEqual(1, _picker.ExportPickCallCount);
         Assert.AreEqual(fallbackDirectory, _picker.LastExportFallbackDirectory);
+        Assert.AreEqual(0, _renderer.OpenedPopups.Count);
+        Assert.AreEqual(0, _renderer.BegunPopups.Count);
+        Assert.AreEqual(0, _renderer.Selectables.Count);
     }
 
     /// <summary>
@@ -242,16 +287,15 @@ public sealed class ConfigTransferDrawerTests
     public void Draw_WhenBrowsePickerCancelled_LeavesConfigFilePathUnchanged()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var pathParameter = CreateStringParameter("configFilePath", "config.json");
         _renderer.ButtonResults.Enqueue(true);
-        _renderer.BeginPopupResults.Enqueue(true);
-        _renderer.SelectableResults.Enqueue(true);
-        _renderer.SelectableResults.Enqueue(false);
         _picker.ImportResults.Enqueue((false, null));
 
-        drawer.Draw(pathParameter, static () => { }, static () => { });
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
 
         Assert.AreEqual("config.json", pathParameter.Value);
+        Assert.AreEqual(1, _picker.ImportPickCallCount);
     }
 
     /// <summary>
@@ -261,24 +305,33 @@ public sealed class ConfigTransferDrawerTests
     public void Draw_InvalidConfigFilePath_RendersValidationMessageAndPreservesPreviousValue()
     {
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var modeParameter = CreateModeParameter("transferMode", ConfigTransferMode.Import);
         var pathParameter = CreateStringParameter(
             "configFilePath",
             "valid-config.json",
             new ParameterMetadata { Required = true, AllowWhitespace = false });
         _renderer.InputResults.Enqueue((true, "   "));
 
-        drawer.Draw(pathParameter, static () => { }, static () => { });
+        drawer.Draw(modeParameter, pathParameter, static () => { }, static () => { });
 
         Assert.AreEqual("valid-config.json", pathParameter.Value);
         Assert.HasCount(1, _renderer.ColoredTexts);
         Assert.AreEqual("Value cannot be whitespace only.", _renderer.ColoredTexts[0].Text);
     }
 
+    private static Parameter<ConfigTransferMode> CreateModeParameter(string key, ConfigTransferMode value)
+    {
+        var parameter = new Parameter<ConfigTransferMode>(value);
+        ((IParameterRegistration)parameter).Key = key;
+        ((IParameterRegistration)parameter).Metadata = new ParameterMetadata { DisplayName = "Transfer Mode" };
+        return parameter;
+    }
+
     private static Parameter<string> CreateStringParameter(string key, string value, ParameterMetadata? metadata = null)
     {
         var parameter = new Parameter<string>(value);
         ((IParameterRegistration)parameter).Key = key;
-        ((IParameterRegistration)parameter).Metadata = metadata ?? new ParameterMetadata();
+        ((IParameterRegistration)parameter).Metadata = metadata ?? new ParameterMetadata { DisplayName = "Config File" };
         return parameter;
     }
 
