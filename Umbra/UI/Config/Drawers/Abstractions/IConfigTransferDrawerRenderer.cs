@@ -13,6 +13,17 @@ namespace Umbra.UI.Config.Drawers;
 internal interface IConfigTransferDrawerRenderer : ITextOps, IButtonOps, ISizedButtonOps
 {
     /// <summary>
+    /// Begins a disabled UI scope when <paramref name="disabled"/> is <see langword="true"/>.
+    /// </summary>
+    /// <param name="disabled">Whether the enclosed controls should be disabled.</param>
+    void BeginDisabled(bool disabled);
+
+    /// <summary>
+    /// Ends the current disabled UI scope.
+    /// </summary>
+    void EndDisabled();
+
+    /// <summary>
     /// Gets the width available for the current row.
     /// </summary>
     float GetAvailableWidth();

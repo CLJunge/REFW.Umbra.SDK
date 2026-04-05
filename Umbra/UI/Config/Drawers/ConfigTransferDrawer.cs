@@ -1,3 +1,4 @@
+using System.Numerics;
 using Umbra.Config;
 using Umbra.UI.Config.Rendering;
 
@@ -14,6 +15,10 @@ internal sealed class ConfigTransferDrawer : IDisposable
 {
     private const uint DefaultMaxPathLength = 256;
     private const float MinimumPathInputWidth = 64f;
+    private const string ImportFileExistsStatusLabel = "OK";
+    private const string ImportFileMissingStatusLabel = "X";
+    private static readonly Vector4 _importFileExistsColor = new(0.35f, 1f, 0.35f, 1f);
+    private static readonly Vector4 _importFileMissingColor = new(1f, 0.35f, 0.35f, 1f);
     private readonly IConfigTransferDrawerRenderer _renderer;
     private readonly IConfigTransferFilePicker _filePicker;
 
@@ -62,8 +67,8 @@ internal sealed class ConfigTransferDrawer : IDisposable
             return;
         }
 
-        DrawPathRow(pathParameter, "Config File:", fallbackBrowseDirectory);
-        DrawActionButtons(pathParameter, importAction, exportAction);
+        var importPathState = DrawPathRow(pathParameter, "Config File:", fallbackBrowseDirectory);
+        DrawActionButtons(pathParameter, importAction, exportAction, importPathState);
         if (drawSeparatorBelowButtons)
             _renderer.Separator();
     }
@@ -72,21 +77,17 @@ internal sealed class ConfigTransferDrawer : IDisposable
     {
     }
 
-    private void DrawPathRow(Parameter<string> pathParameter, string label, string? fallbackBrowseDirectory)
+    private ImportPathState DrawPathRow(Parameter<string> pathParameter, string label, string? fallbackBrowseDirectory)
     {
-        if (pathParameter is null)
-        {
-            _renderer.TextDisabled("(ConfigTransferDrawer requires a non-null config-file path parameter)");
-            return;
-        }
-
         var browseButtonLabel = $"Browse...##{pathParameter.Key}";
         var availableWidth = _renderer.GetAvailableWidth();
         var spacingX = _renderer.GetItemSpacingX();
+        var statusWidth = GetReservedImportStatusWidth();
         var pathInputWidth = availableWidth
             - _renderer.GetTextWidth(label)
             - _renderer.GetButtonWidth(browseButtonLabel)
-            - (spacingX * 2f);
+            - statusWidth
+            - (spacingX * 3f);
 
         _renderer.Text(label);
         _renderer.SameLine();
@@ -101,16 +102,32 @@ internal sealed class ConfigTransferDrawer : IDisposable
 
         DrawBrowsePopup(pathParameter, fallbackBrowseDirectory);
 
+        var importPathState = EvaluateImportPathState(pathParameter);
+        DrawImportStatus(importPathState);
         ValidationMessageRenderer.Draw(pathParameter, _renderer);
+        return importPathState;
     }
 
-    private void DrawActionButtons(Parameter<string> pathParameter, Action? importAction, Action? exportAction)
+    private void DrawActionButtons(
+        Parameter<string> pathParameter,
+        Action? importAction,
+        Action? exportAction,
+        ImportPathState importPathState)
     {
         var availableWidth = _renderer.GetAvailableWidth();
         var spacingX = _renderer.GetItemSpacingX();
         var buttonWidth = Math.Max(0f, (availableWidth - spacingX) / 2f);
-        if (_renderer.Button($"Import##{pathParameter.Key}", new(buttonWidth, 0f)))
-            importAction?.Invoke();
+
+        _renderer.BeginDisabled(!CanImport(importPathState));
+        try
+        {
+            if (_renderer.Button($"Import##{pathParameter.Key}", new(buttonWidth, 0f)))
+                importAction?.Invoke();
+        }
+        finally
+        {
+            _renderer.EndDisabled();
+        }
 
         _renderer.SameLine();
         if (_renderer.Button($"Export##{pathParameter.Key}", new(buttonWidth, 0f)))
@@ -137,6 +154,21 @@ internal sealed class ConfigTransferDrawer : IDisposable
         }
     }
 
+    private void DrawImportStatus(ImportPathState importPathState)
+    {
+        var statusLabel = GetImportStatusLabel(importPathState);
+        if (statusLabel is null)
+            return;
+
+        _renderer.SameLine();
+        _renderer.TextColored(GetImportStatusColor(importPathState), statusLabel);
+    }
+
+    private float GetReservedImportStatusWidth()
+        => Math.Max(
+            _renderer.GetTextWidth(ImportFileExistsStatusLabel),
+            _renderer.GetTextWidth(ImportFileMissingStatusLabel));
+
     private static void ApplyPickedPath(
         Parameter<string> pathParameter,
         string? fallbackBrowseDirectory,
@@ -151,6 +183,32 @@ internal sealed class ConfigTransferDrawer : IDisposable
         pathParameter.Value = selectedPath;
     }
 
+    private static ImportPathState EvaluateImportPathState(Parameter<string> pathParameter)
+    {
+        if (pathParameter is IParameterValidationState validationState && validationState.HasValidationError)
+            return ImportPathState.Invalid;
+
+        var filePath = pathParameter.Value;
+        if (string.IsNullOrWhiteSpace(filePath))
+            return ImportPathState.Empty;
+
+        return File.Exists(filePath) ? ImportPathState.Exists : ImportPathState.Missing;
+    }
+
+    private static bool CanImport(ImportPathState importPathState)
+        => importPathState == ImportPathState.Exists;
+
+    private static string? GetImportStatusLabel(ImportPathState importPathState)
+        => importPathState switch
+        {
+            ImportPathState.Exists => ImportFileExistsStatusLabel,
+            ImportPathState.Missing => ImportFileMissingStatusLabel,
+            _ => null
+        };
+
+    private static Vector4 GetImportStatusColor(ImportPathState importPathState)
+        => importPathState == ImportPathState.Exists ? _importFileExistsColor : _importFileMissingColor;
+
     private static string GetBrowsePopupId(Parameter<string> parameter)
         => $"ConfigTransferBrowse##{parameter.Key}";
 
@@ -161,4 +219,12 @@ internal sealed class ConfigTransferDrawer : IDisposable
         => parameter.Metadata.MaxLength ?? DefaultMaxPathLength;
 
     private delegate bool TryPickPathCallback(string? currentPath, string? fallbackDirectory, out string? selectedPath);
+
+    private enum ImportPathState
+    {
+        Empty,
+        Invalid,
+        Missing,
+        Exists
+    }
 }

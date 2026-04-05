@@ -54,6 +54,12 @@ internal sealed class ImGuiConfigRenderContext :
     public bool Button(string label, Vector2 size) => ImGui.Button(label, size);
 
     /// <inheritdoc/>
+    public void BeginDisabled(bool disabled) => ImGui.BeginDisabled(disabled);
+
+    /// <inheritdoc/>
+    public void EndDisabled() => ImGui.EndDisabled();
+
+    /// <inheritdoc/>
     public float GetAvailableWidth() => ImGui.GetContentRegionAvail().X;
 
     /// <inheritdoc/>

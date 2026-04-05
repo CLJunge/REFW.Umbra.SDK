@@ -47,7 +47,7 @@ public sealed class ConfigTransferDrawerTests
     }
 
     /// <summary>
-    /// Verifies that the shared path input uses the remaining first-row width after subtracting label, browse button, and spacing.
+    /// Verifies that the shared path input reserves space for the inline import-file status indicator.
     /// </summary>
     [TestMethod]
     public void Draw_Layout_ComputesSharedPathInputWidth()
@@ -57,7 +57,7 @@ public sealed class ConfigTransferDrawerTests
 
         drawer.Draw(pathParameter, static () => { }, static () => { });
 
-        Assert.AreEqual(408f, _renderer.Widths[0]);
+        Assert.AreEqual(376f, _renderer.Widths[0]);
     }
 
     /// <summary>
@@ -126,33 +126,60 @@ public sealed class ConfigTransferDrawerTests
     }
 
     /// <summary>
-    /// Verifies that clicking the import button invokes the configured import action exactly once.
+    /// Verifies that missing import files render a red status and keep the import action disabled.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenImportButtonClicked_InvokesImportAction()
+    public void Draw_WhenImportFileMissing_RendersMissingStatusAndDisablesImport()
     {
         var importCount = 0;
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
-        var pathParameter = CreateStringParameter("configFilePath", "config.json");
+        var pathParameter = CreateStringParameter("configFilePath", "missing-config.json");
+        _renderer.SizedButtonResults.Enqueue(true);
+
+        drawer.Draw(pathParameter, () => importCount++, static () => { });
+
+        Assert.AreEqual(0, importCount);
+        Assert.HasCount(1, _renderer.ColoredTexts);
+        Assert.AreEqual("X", _renderer.ColoredTexts[0].Text);
+        Assert.HasCount(1, _renderer.DisabledScopes);
+        Assert.IsTrue(_renderer.DisabledScopes[0]);
+        Assert.AreEqual(1, _renderer.EndDisabledCallCount);
+        Assert.AreEqual("Import##configFilePath", _renderer.SizedButtons[0].Label);
+    }
+
+    /// <summary>
+    /// Verifies that existing import files render a green status and allow the import action.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenImportFileExists_RendersExistsStatusAndInvokesImportAction()
+    {
+        using var tempDirectory = new TempDirectory();
+        var importCount = 0;
+        var drawer = new ConfigTransferDrawer(_renderer, _picker);
+        var existingFilePath = Path.Combine(tempDirectory.Path, "config.json");
+        File.WriteAllText(existingFilePath, "{}");
+        var pathParameter = CreateStringParameter("configFilePath", existingFilePath);
         _renderer.SizedButtonResults.Enqueue(true);
         _renderer.SizedButtonResults.Enqueue(false);
 
         drawer.Draw(pathParameter, () => importCount++, static () => { });
 
         Assert.AreEqual(1, importCount);
-        Assert.AreEqual("Import##configFilePath", _renderer.SizedButtons[0].Label);
+        Assert.HasCount(1, _renderer.ColoredTexts);
+        Assert.AreEqual("OK", _renderer.ColoredTexts[0].Text);
+        Assert.HasCount(1, _renderer.DisabledScopes);
+        Assert.IsFalse(_renderer.DisabledScopes[0]);
     }
 
     /// <summary>
-    /// Verifies that clicking the export button invokes the configured export action exactly once.
+    /// Verifies that export remains enabled even when the import path does not exist.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenExportButtonClicked_InvokesExportAction()
+    public void Draw_WhenExportButtonClicked_InvokesExportActionEvenWhenImportDisabled()
     {
         var exportCount = 0;
         var drawer = new ConfigTransferDrawer(_renderer, _picker);
-        var pathParameter = CreateStringParameter("configFilePath", "config.json");
-        _renderer.SizedButtonResults.Enqueue(false);
+        var pathParameter = CreateStringParameter("configFilePath", "missing-config.json");
         _renderer.SizedButtonResults.Enqueue(true);
 
         drawer.Draw(pathParameter, static () => { }, () => exportCount++);
@@ -255,4 +282,22 @@ public sealed class ConfigTransferDrawerTests
         return parameter;
     }
 
+    private sealed class TempDirectory : IDisposable
+    {
+        internal TempDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path);
+        }
+
+        internal string Path { get; }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+                Directory.Delete(Path, recursive: true);
+
+            GC.SuppressFinalize(this);
+        }
+    }
 }

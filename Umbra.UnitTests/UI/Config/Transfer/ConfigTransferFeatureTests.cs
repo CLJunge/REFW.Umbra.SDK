@@ -76,11 +76,26 @@ public sealed class ConfigTransferFeatureTests
         using var tempDirectory = new TempDirectory();
         var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
         using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true });
-        feature.ConfigFilePath.Value = Path.Combine(tempDirectory.Path, "import.json");
+        var importFilePath = Path.Combine(tempDirectory.Path, "import.json");
+        File.WriteAllText(importFilePath, "{}");
+        feature.ConfigFilePath.Value = importFilePath;
 
         feature.ImportConfig.Value!.Invoke();
 
         Assert.AreEqual(feature.ConfigFilePath.Value, store.LastImportedPath);
+    }
+
+    [TestMethod]
+    public void ImportConfig_WhenFileDoesNotExist_DoesNotCallStore()
+    {
+        using var tempDirectory = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true });
+        feature.ConfigFilePath.Value = Path.Combine(tempDirectory.Path, "missing-import.json");
+
+        feature.ImportConfig.Value!.Invoke();
+
+        Assert.IsNull(store.LastImportedPath);
     }
 
     [TestMethod]

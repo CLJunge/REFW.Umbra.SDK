@@ -7,6 +7,8 @@ namespace Umbra.UI.Config.Drawers.UnitTests;
 /// </summary>
 internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRenderer
 {
+    private int _disabledScopeDepth;
+
     public List<string> Texts { get; } = [];
 
     public List<string> DisabledTexts { get; } = [];
@@ -22,6 +24,10 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
     public List<float> Widths { get; } = [];
 
     public List<(string Label, Vector2 Size)> SizedButtons { get; } = [];
+
+    public List<bool> DisabledScopes { get; } = [];
+
+    public int EndDisabledCallCount { get; private set; }
 
     public List<string> OpenedPopups { get; } = [];
 
@@ -60,6 +66,9 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
     public bool Button(string label)
     {
         Buttons.Add(label);
+        if (_disabledScopeDepth > 0)
+            return false;
+
         if (ButtonResults.Count == 0)
             return false;
 
@@ -69,10 +78,28 @@ internal sealed class TestConfigTransferDrawerRenderer : IConfigTransferDrawerRe
     public bool Button(string label, Vector2 size)
     {
         SizedButtons.Add((label, size));
+        if (_disabledScopeDepth > 0)
+            return false;
+
         if (SizedButtonResults.Count == 0)
             return false;
 
         return SizedButtonResults.Dequeue();
+    }
+
+    public void BeginDisabled(bool disabled)
+    {
+        DisabledScopes.Add(disabled);
+        if (disabled)
+            _disabledScopeDepth++;
+    }
+
+    public void EndDisabled()
+    {
+        if (_disabledScopeDepth > 0)
+            _disabledScopeDepth--;
+
+        EndDisabledCallCount++;
     }
 
     public float GetAvailableWidth() => AvailableWidth;

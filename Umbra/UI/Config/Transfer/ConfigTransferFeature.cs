@@ -48,6 +48,7 @@ internal sealed class ConfigTransferFeature : IDisposable
         ExportConfig = new(ExportToPath);
         TreeNodeLabel = ResolveTreeNodeLabel(options.TreeNodeLabel);
         TreeNodeDefaultOpen = options.TreeNodeDefaultOpen;
+        Placement = options.Placement;
         DrawSeparatorBelowButtons = options.DrawSeparatorBelowButtons;
     }
 
@@ -128,6 +129,9 @@ internal sealed class ConfigTransferFeature : IDisposable
             return;
         }
 
+        if (!CanImportFromPath(filePath))
+            return;
+
         try
         {
             var report = _store.Import(filePath);
@@ -150,6 +154,15 @@ internal sealed class ConfigTransferFeature : IDisposable
         {
             Logger.Exception(ex, "Config import from '{0}' threw unexpectedly.", filePath);
         }
+    }
+
+    private static bool CanImportFromPath(string filePath)
+    {
+        if (File.Exists(filePath))
+            return true;
+
+        Logger.Warning("Config import ignored because the configured config file '{0}' does not exist.", filePath);
+        return false;
     }
 
     private void ExportToPath()
