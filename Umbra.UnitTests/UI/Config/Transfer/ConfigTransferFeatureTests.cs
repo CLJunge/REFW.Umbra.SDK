@@ -58,6 +58,32 @@ public sealed class ConfigTransferFeatureTests
     }
 
     [TestMethod]
+    public void ResolveStatusVisibilityTimeout_WithPositiveDuration_ReturnsConfiguredValue()
+    {
+        var configuredTimeout = TimeSpan.FromSeconds(3);
+
+        var result = ConfigTransferFeature.ResolveStatusVisibilityTimeout(configuredTimeout);
+
+        Assert.AreEqual(configuredTimeout, result);
+    }
+
+    [TestMethod]
+    public void ResolveStatusVisibilityTimeout_WithZeroDuration_ReturnsDefaultTimeout()
+    {
+        var result = ConfigTransferFeature.ResolveStatusVisibilityTimeout(TimeSpan.Zero);
+
+        Assert.AreEqual(ConfigTransferOptions.DefaultStatusVisibilityTimeout, result);
+    }
+
+    [TestMethod]
+    public void ResolveStatusVisibilityTimeout_WithNegativeDuration_ReturnsDefaultTimeout()
+    {
+        var result = ConfigTransferFeature.ResolveStatusVisibilityTimeout(TimeSpan.FromSeconds(-1));
+
+        Assert.AreEqual(ConfigTransferOptions.DefaultStatusVisibilityTimeout, result);
+    }
+
+    [TestMethod]
     public void Constructor_WhenStoreIsNotLoaded_ThrowsInvalidOperationException()
     {
         var store = new TestConfigTransferStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "config.json"))

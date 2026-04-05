@@ -47,6 +47,7 @@ internal sealed class ConfigTransferFeature : IDisposable
 
         _store = store;
         _drawer = drawer;
+        _drawer.StatusVisibilityTimeout = ResolveStatusVisibilityTimeout(options.StatusVisibilityTimeout);
         _fallbackBrowseDirectory = ResolveFallbackBrowseDirectory(store.FilePath, options.BrowseInitialDirectory);
         var sidecarFilePath = ResolveSidecarFilePath(store.FilePath, options.SidecarFilePath);
         _sidecarStore = new SettingsStore<ConfigTransferSidecarState>(sidecarFilePath);
@@ -131,6 +132,11 @@ internal sealed class ConfigTransferFeature : IDisposable
 
     internal static string ResolveTreeNodeLabel(string? treeNodeLabel)
         => string.IsNullOrWhiteSpace(treeNodeLabel) ? ConfigTransferOptions.DefaultTreeNodeLabel : treeNodeLabel;
+
+    internal static TimeSpan ResolveStatusVisibilityTimeout(TimeSpan statusVisibilityTimeout)
+        => statusVisibilityTimeout > TimeSpan.Zero
+            ? statusVisibilityTimeout
+            : ConfigTransferOptions.DefaultStatusVisibilityTimeout;
 
     private void ImportFromPath()
         => _ = ExecuteImportFromPath();

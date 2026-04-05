@@ -15,6 +15,11 @@ public sealed class ConfigTransferOptions
     public const string DefaultTreeNodeLabel = "Import/Export";
 
     /// <summary>
+    /// The default duration that a completed transfer status label remains visible.
+    /// </summary>
+    public static readonly TimeSpan DefaultStatusVisibilityTimeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>
     /// Gets or sets a value indicating whether the built-in config transfer UI is enabled.
     /// </summary>
     public bool Enabled { get; init; }
@@ -57,4 +62,12 @@ public sealed class ConfigTransferOptions
     /// Gets or sets a value indicating whether a separator is drawn below the built-in transfer buttons.
     /// </summary>
     public bool DrawSeparatorBelowButtons { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets how long the transient import or export status label remains visible after completion.
+    /// </summary>
+    /// <remarks>
+    /// When the configured value is zero or negative, Umbra falls back to <see cref="DefaultStatusVisibilityTimeout"/>.
+    /// </remarks>
+    public TimeSpan StatusVisibilityTimeout { get; init; } = DefaultStatusVisibilityTimeout;
 }

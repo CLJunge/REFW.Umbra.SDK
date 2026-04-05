@@ -18,7 +18,6 @@ internal sealed class ConfigTransferDrawer : IDisposable
     private const float MinimumPathInputWidth = 64f;
     private const string DefaultModeLabel = "Action";
     private const string DefaultPathLabel = "Config File";
-    private static readonly TimeSpan _statusVisibilityDuration = TimeSpan.FromSeconds(2);
     private static readonly Vector4 _successStatusColor = new(0.35f, 0.85f, 0.35f, 1f);
     private static readonly Vector4 _failureStatusColor = new(1f, 0.4f, 0.4f, 1f);
     private static readonly string[] _modeLabels = [nameof(ConfigTransferMode.Import), nameof(ConfigTransferMode.Export)];
@@ -27,6 +26,8 @@ internal sealed class ConfigTransferDrawer : IDisposable
     private readonly IConfigTransferFilePicker _filePicker;
     private readonly TimeProvider _timeProvider;
     private TransferStatusState? _statusState;
+
+    internal TimeSpan StatusVisibilityTimeout { get; set; } = ConfigTransferOptions.DefaultStatusVisibilityTimeout;
 
     /// <summary>
     /// Initializes a new <see cref="ConfigTransferDrawer"/> that renders through the shared ImGui context.
@@ -279,7 +280,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
         if (!_statusState.HasValue)
             return null;
 
-        if (_timeProvider.GetElapsedTime(_statusState.Value.Timestamp) < _statusVisibilityDuration)
+        if (_timeProvider.GetElapsedTime(_statusState.Value.Timestamp) < StatusVisibilityTimeout)
             return _statusState;
 
         _statusState = null;
