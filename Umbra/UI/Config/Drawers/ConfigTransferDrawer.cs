@@ -18,16 +18,21 @@ internal sealed class ConfigTransferDrawer : IDisposable
     private const float MinimumPathInputWidth = 64f;
     private const string DefaultModeLabel = "Action";
     private const string DefaultPathLabel = "Config File";
+    private static readonly TimeSpan _statusVisibilityDuration = TimeSpan.FromSeconds(2);
+    private static readonly Vector4 _successStatusColor = new(0.35f, 0.85f, 0.35f, 1f);
+    private static readonly Vector4 _failureStatusColor = new(1f, 0.4f, 0.4f, 1f);
     private static readonly string[] _modeLabels = [nameof(ConfigTransferMode.Import), nameof(ConfigTransferMode.Export)];
     private static readonly ConfigTransferMode[] _modes = [ConfigTransferMode.Import, ConfigTransferMode.Export];
     private readonly IConfigTransferDrawerRenderer _renderer;
     private readonly IConfigTransferFilePicker _filePicker;
+    private readonly TimeProvider _timeProvider;
+    private TransferStatusState? _statusState;
 
     /// <summary>
     /// Initializes a new <see cref="ConfigTransferDrawer"/> that renders through the shared ImGui context.
     /// </summary>
     internal ConfigTransferDrawer()
-        : this(ImGuiConfigRenderContext.Instance, new WindowsConfigTransferFilePicker())
+        : this(ImGuiConfigRenderContext.Instance, new WindowsConfigTransferFilePicker(), TimeProvider.System)
     {
     }
 
@@ -37,7 +42,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
     /// <param name="renderer">The renderer used for transfer-control UI operations.</param>
     /// <exception cref="ArgumentNullException"><paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ConfigTransferDrawer(IConfigTransferDrawerRenderer renderer)
-        : this(renderer, new WindowsConfigTransferFilePicker())
+        : this(renderer, new WindowsConfigTransferFilePicker(), TimeProvider.System)
     {
     }
 
@@ -48,11 +53,25 @@ internal sealed class ConfigTransferDrawer : IDisposable
     /// <param name="filePicker">The native file picker used by the browse workflow.</param>
     /// <exception cref="ArgumentNullException"><paramref name="renderer"/> or <paramref name="filePicker"/> is <see langword="null"/>.</exception>
     internal ConfigTransferDrawer(IConfigTransferDrawerRenderer renderer, IConfigTransferFilePicker filePicker)
+        : this(renderer, filePicker, TimeProvider.System)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new <see cref="ConfigTransferDrawer"/> with the specified renderer seam, file picker, and time provider.
+    /// </summary>
+    /// <param name="renderer">The renderer used for transfer-control UI operations.</param>
+    /// <param name="filePicker">The native file picker used by the browse workflow.</param>
+    /// <param name="timeProvider">The time source used to expire transient transfer status UI.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="renderer"/>, <paramref name="filePicker"/>, or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    internal ConfigTransferDrawer(IConfigTransferDrawerRenderer renderer, IConfigTransferFilePicker filePicker, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(renderer);
         ArgumentNullException.ThrowIfNull(filePicker);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         _renderer = renderer;
         _filePicker = filePicker;
+        _timeProvider = timeProvider;
     }
 
     internal void Draw(
@@ -61,13 +80,30 @@ internal sealed class ConfigTransferDrawer : IDisposable
         Action? exportAction,
         string? fallbackBrowseDirectory = null,
         bool drawSeparatorBelowButtons = true)
-        => Draw(null, pathParameter, importAction, exportAction, fallbackBrowseDirectory, drawSeparatorBelowButtons);
+        => Draw(null, pathParameter, WrapAction(importAction), WrapAction(exportAction), fallbackBrowseDirectory, drawSeparatorBelowButtons);
 
     internal void Draw(
         Parameter<ConfigTransferMode>? modeParameter,
         Parameter<string>? pathParameter,
         Action? importAction,
         Action? exportAction,
+        string? fallbackBrowseDirectory = null,
+        bool drawSeparatorBelowButtons = true)
+        => Draw(modeParameter, pathParameter, WrapAction(importAction), WrapAction(exportAction), fallbackBrowseDirectory, drawSeparatorBelowButtons);
+
+    internal void Draw(
+        Parameter<string>? pathParameter,
+        ExecuteTransferActionCallback? importAction,
+        ExecuteTransferActionCallback? exportAction,
+        string? fallbackBrowseDirectory = null,
+        bool drawSeparatorBelowButtons = true)
+        => Draw(null, pathParameter, importAction, exportAction, fallbackBrowseDirectory, drawSeparatorBelowButtons);
+
+    internal void Draw(
+        Parameter<ConfigTransferMode>? modeParameter,
+        Parameter<string>? pathParameter,
+        ExecuteTransferActionCallback? importAction,
+        ExecuteTransferActionCallback? exportAction,
         string? fallbackBrowseDirectory = null,
         bool drawSeparatorBelowButtons = true)
     {
@@ -80,6 +116,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
         var mode = DrawModeRow(modeParameter);
         var actionState = DrawPathRow(mode, pathParameter, fallbackBrowseDirectory);
         DrawActionButton(mode, pathParameter, importAction, exportAction, actionState);
+        DrawStatusRow();
         if (drawSeparatorBelowButtons)
             _renderer.Separator();
     }
@@ -142,8 +179,8 @@ internal sealed class ConfigTransferDrawer : IDisposable
     private void DrawActionButton(
         ConfigTransferMode mode,
         Parameter<string> pathParameter,
-        Action? importAction,
-        Action? exportAction,
+        ExecuteTransferActionCallback? importAction,
+        ExecuteTransferActionCallback? exportAction,
         TransferActionState actionState)
     {
         var buttonWidth = Math.Max(0f, _renderer.GetAvailableWidth());
@@ -155,15 +192,27 @@ internal sealed class ConfigTransferDrawer : IDisposable
             if (!_renderer.Button(buttonLabel, new(buttonWidth, 0f)))
                 return;
 
-            if (mode == ConfigTransferMode.Import)
-                importAction?.Invoke();
-            else
-                exportAction?.Invoke();
+            var action = mode == ConfigTransferMode.Import ? importAction : exportAction;
+            if (action is null)
+                return;
+
+            RecordStatus(mode, action());
         }
         finally
         {
             _renderer.EndDisabled();
         }
+    }
+
+    private void DrawStatusRow()
+    {
+        var statusState = GetVisibleStatus();
+        if (!statusState.HasValue)
+            return;
+
+        var color = statusState.Value.Succeeded ? _successStatusColor : _failureStatusColor;
+        var text = GetStatusText(statusState.Value.Mode, statusState.Value.Succeeded);
+        _renderer.TextColored(color, text);
     }
 
     private static void ApplyPickedPath(
@@ -222,8 +271,35 @@ internal sealed class ConfigTransferDrawer : IDisposable
     private static string GetActionButtonLabel(ConfigTransferMode mode, Parameter<string> pathParameter)
         => $"{mode}##{pathParameter.Key}";
 
+    private void RecordStatus(ConfigTransferMode mode, bool succeeded)
+        => _statusState = new TransferStatusState(mode, succeeded, _timeProvider.GetTimestamp());
+
+    private TransferStatusState? GetVisibleStatus()
+    {
+        if (!_statusState.HasValue)
+            return null;
+
+        if (_timeProvider.GetElapsedTime(_statusState.Value.Timestamp) < _statusVisibilityDuration)
+            return _statusState;
+
+        _statusState = null;
+        return null;
+    }
+
     private TryPickPathCallback GetBrowsePicker(ConfigTransferMode mode)
         => mode == ConfigTransferMode.Import ? _filePicker.TryPickImportPath : _filePicker.TryPickExportPath;
+
+    private static ExecuteTransferActionCallback? WrapAction(Action? action)
+    {
+        if (action is null)
+            return null;
+
+        return () =>
+        {
+            action();
+            return true;
+        };
+    }
 
     private static string GetLabel<T>(Parameter<T> parameter, string fallback)
     {
@@ -238,7 +314,16 @@ internal sealed class ConfigTransferDrawer : IDisposable
     private static bool HasJsonExtension(string filePath)
         => string.Equals(Path.GetExtension(filePath), ".json", StringComparison.OrdinalIgnoreCase);
 
+    private static string GetStatusText(ConfigTransferMode mode, bool succeeded)
+        => succeeded
+            ? $"{mode} completed successfully."
+            : $"{mode} failed. Check the logs.";
+
     private delegate bool TryPickPathCallback(string? currentPath, string? fallbackDirectory, out string? selectedPath);
+
+    internal delegate bool ExecuteTransferActionCallback();
+
+    private readonly record struct TransferStatusState(ConfigTransferMode Mode, bool Succeeded, long Timestamp);
 
     private enum TransferActionState
     {

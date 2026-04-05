@@ -83,7 +83,7 @@ internal sealed class ConfigTransferFeature : IDisposable
         if (_disposed)
             return;
 
-        _drawer.Draw(TransferMode, ConfigFilePath, ImportConfig.Value, ExportConfig.Value, _fallbackBrowseDirectory, DrawSeparatorBelowButtons);
+        _drawer.Draw(TransferMode, ConfigFilePath, ExecuteImportFromPath, ExecuteExportToPath, _fallbackBrowseDirectory, DrawSeparatorBelowButtons);
         _sidecarSaveController.Tick();
     }
 
@@ -133,16 +133,19 @@ internal sealed class ConfigTransferFeature : IDisposable
         => string.IsNullOrWhiteSpace(treeNodeLabel) ? ConfigTransferOptions.DefaultTreeNodeLabel : treeNodeLabel;
 
     private void ImportFromPath()
+        => _ = ExecuteImportFromPath();
+
+    private bool ExecuteImportFromPath()
     {
         var filePath = ConfigFilePath.Value;
         if (string.IsNullOrWhiteSpace(filePath))
         {
             Logger.Warning("Config import ignored because the configured config file path is empty.");
-            return;
+            return false;
         }
 
         if (!CanImportFromPath(filePath))
-            return;
+            return false;
 
         try
         {
@@ -150,7 +153,7 @@ internal sealed class ConfigTransferFeature : IDisposable
             if (!report.Success)
             {
                 Logger.Warning("Config import from '{0}' failed: {1}", filePath, report.FailureReason ?? "Unknown failure.");
-                return;
+                return false;
             }
 
             Logger.Info(
@@ -161,10 +164,12 @@ internal sealed class ConfigTransferFeature : IDisposable
                 report.RejectedCount,
                 report.Saved,
                 report.IsLegacyDocument);
+            return true;
         }
         catch (Exception ex)
         {
             Logger.Exception(ex, "Config import from '{0}' threw unexpectedly.", filePath);
+            return false;
         }
     }
 
@@ -178,25 +183,30 @@ internal sealed class ConfigTransferFeature : IDisposable
     }
 
     private void ExportToPath()
+        => _ = ExecuteExportToPath();
+
+    private bool ExecuteExportToPath()
     {
         var filePath = ConfigFilePath.Value;
         if (string.IsNullOrWhiteSpace(filePath))
         {
             Logger.Warning("Config export ignored because the configured config file path is empty.");
-            return;
+            return false;
         }
 
         if (!CanExportToPath(filePath))
-            return;
+            return false;
 
         try
         {
             _store.Export(filePath);
             Logger.Info("Requested config export to '{0}'.", filePath);
+            return true;
         }
         catch (Exception ex)
         {
             Logger.Exception(ex, "Config export to '{0}' threw unexpectedly.", filePath);
+            return false;
         }
     }
 
