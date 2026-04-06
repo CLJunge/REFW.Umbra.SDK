@@ -281,7 +281,7 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Creates a mock settings config configured to appear loaded and not disposed.
+    /// Creates a mock config store configured to appear loaded and not disposed.
     /// </summary>
     private static Mock<IConfigStore<TestConfig>> CreateMockStore()
     {
