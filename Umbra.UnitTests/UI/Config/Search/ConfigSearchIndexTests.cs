@@ -46,6 +46,41 @@ public sealed class ConfigSearchIndexTests
     }
 
     /// <summary>
+    /// Tests that visibility predicates exclude matching results that are currently hidden.
+    /// </summary>
+    [TestMethod]
+    public void FindMatches_WhenMatchingResultIsHidden_ExcludesHiddenResult()
+    {
+        // Arrange
+        var index = new ConfigSearchIndex();
+        index.AddParameterResult("alpha", "Gamma", null, "Graphics", "config.graphics", static () => false);
+        index.AddParameterResult("beta", "Game Speed", null, "Gameplay", "config.gameplay", static () => true);
+
+        // Act
+        var matches = index.FindMatches("GA");
+
+        // Assert
+        CollectionAssert.AreEqual(new List<string> { "beta" }, matches);
+    }
+
+    /// <summary>
+    /// Tests that visibility predicates still allow matching results that are currently visible.
+    /// </summary>
+    [TestMethod]
+    public void FindMatches_WhenMatchingResultIsVisible_IncludesVisibleResult()
+    {
+        // Arrange
+        var index = new ConfigSearchIndex();
+        index.AddParameterResult("alpha", "Gamma", null, "Graphics", "config.graphics", static () => true);
+
+        // Act
+        var matches = index.FindMatches("GA");
+
+        // Assert
+        CollectionAssert.AreEqual(new List<string> { "alpha" }, matches);
+    }
+
+    /// <summary>
     /// Tests that group and category branch identities are registered for parameter results.
     /// </summary>
     [TestMethod]

@@ -12,6 +12,7 @@ internal sealed class ConfigSearchIndex
 {
     private readonly List<ConfigSearchEntry> _entries = [];
     private readonly Dictionary<string, ConfigSearchEntry> _entriesByResultId = [];
+    private readonly Dictionary<string, Func<bool>> _visibilityPredicatesByResultId = [];
     private readonly List<ConfigSearchBranch> _branches = [];
     private readonly HashSet<string> _branchIds = [];
     private int _nextDrawOrderIndex;
@@ -24,12 +25,19 @@ internal sealed class ConfigSearchIndex
     {
         _entries.Clear();
         _entriesByResultId.Clear();
+        _visibilityPredicatesByResultId.Clear();
         _branches.Clear();
         _branchIds.Clear();
         _nextDrawOrderIndex = 0;
     }
 
-    internal void AddParameterResult(string? resultId, string label, string? description, string? category, string groupPath)
+    internal void AddParameterResult(
+        string? resultId,
+        string label,
+        string? description,
+        string? category,
+        string groupPath,
+        Func<bool>? isVisible = null)
     {
         var ancestorBranchIds = BuildAncestorBranchIds(groupPath, category);
         var stableResultId = string.IsNullOrWhiteSpace(resultId)
@@ -43,6 +51,11 @@ internal sealed class ConfigSearchIndex
             ancestorBranchIds);
         _entries.Add(entry);
         _entriesByResultId[stableResultId] = entry;
+
+        if (isVisible is not null)
+            _visibilityPredicatesByResultId[stableResultId] = isVisible;
+        else
+            _visibilityPredicatesByResultId.Remove(stableResultId);
     }
 
     internal void PrependRootBranch(string branchId)
@@ -74,11 +87,22 @@ internal sealed class ConfigSearchIndex
         for (var i = 0; i < _entries.Count; i++)
         {
             var entry = _entries[i];
+            if (!IsResultVisible(entry.ResultId))
+                continue;
+
             if (entry.NormalizedSearchText.Contains(normalizedQuery, StringComparison.Ordinal))
                 matches.Add(entry.ResultId);
         }
 
         return matches;
+    }
+
+    private bool IsResultVisible(string resultId)
+    {
+        if (!_visibilityPredicatesByResultId.TryGetValue(resultId, out var isVisible))
+            return true;
+
+        return isVisible();
     }
 
     private string[] BuildAncestorBranchIds(string groupPath, string? category)

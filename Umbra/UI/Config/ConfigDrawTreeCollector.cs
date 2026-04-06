@@ -22,6 +22,7 @@ internal static class ConfigDrawTreeCollector
     /// <param name="disposables">Collects disposable resources created while resolving nodes and drawers.</param>
     /// <param name="sortNodesInPlace">Applies the caller's stable local ordering policy.</param>
     /// <param name="searchIndex">Collects the flat search index built alongside the rendered nodes.</param>
+    /// <param name="inheritedVisibility">The effective runtime visibility inherited from ancestor wrappers, or <see langword="null"/> when no ancestor visibility filter applies.</param>
     internal static void CollectInto(
         ConfigDrawScope scope,
         object obj,
@@ -29,7 +30,8 @@ internal static class ConfigDrawTreeCollector
         Action<CategoryNode> registerCategoryNode,
         List<IDisposable> disposables,
         Action<List<IDrawNode>> sortNodesInPlace,
-        ConfigSearchIndex searchIndex)
+        ConfigSearchIndex searchIndex,
+        Func<bool>? inheritedVisibility = null)
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(obj);
@@ -72,7 +74,8 @@ internal static class ConfigDrawTreeCollector
                     parameter.Metadata.ResolvedLabel,
                     parameter.Metadata.Description,
                     category,
-                    scope.GroupPath);
+                    scope.GroupPath,
+                    ComposeVisibility(inheritedVisibility, parameter.Metadata.HideIf, obj));
 
                 scope.AddNode(category, node);
                 continue;
@@ -90,6 +93,7 @@ internal static class ConfigDrawTreeCollector
                 ?? scope.LabelMarginAttr;
             var propertyIndent = propMeta.IndentAttr;
             var nestedGroupPath = NestedScopePathResolver.Resolve(scope.GroupPath, propMeta, propTypeMeta);
+            var nestedVisibility = ComposeVisibility(inheritedVisibility, propMeta.HideIf, obj);
 
             if (nestedDrawerAttr is not null)
             {
@@ -131,7 +135,7 @@ internal static class ConfigDrawTreeCollector
                 registerCategoryNode,
                 childAlignmentGroup);
 
-            CollectInto(childScope, nested, propType, registerCategoryNode, disposables, sortNodesInPlace, searchIndex);
+            CollectInto(childScope, nested, propType, registerCategoryNode, disposables, sortNodesInPlace, searchIndex, nestedVisibility);
 
             if (nestedLocalCategory is null)
                 sortNodesInPlace(childScope.Nodes);
@@ -180,5 +184,28 @@ internal static class ConfigDrawTreeCollector
                 scope.AddNode(ambientCategory, scopedSubtreeNode);
             }
         }
+    }
+
+    private static Func<bool>? ComposeVisibility(
+        Func<bool>? inheritedVisibility,
+        Umbra.Config.Attributes.IHideIfAttribute? hideIf,
+        object owner)
+    {
+        var localVisibility = hideIf is null
+            ? null
+            : VisibilityPredicateResolver.Build(hideIf, owner);
+
+        return ComposeVisibility(inheritedVisibility, localVisibility);
+    }
+
+    private static Func<bool>? ComposeVisibility(Func<bool>? inheritedVisibility, Func<bool>? localVisibility)
+    {
+        if (inheritedVisibility is null)
+            return localVisibility;
+
+        if (localVisibility is null)
+            return inheritedVisibility;
+
+        return () => inheritedVisibility() && localVisibility();
     }
 }
