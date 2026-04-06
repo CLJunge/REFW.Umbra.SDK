@@ -15,7 +15,7 @@ internal enum ConfigTransferMode
 }
 
 /// <summary>
-/// Owns the optional built-in config transfer UI state for one settings section.
+/// Owns the optional built-in config transfer UI state for one config section.
 /// </summary>
 /// <remarks>
 /// This feature keeps transfer-path sidecar persistence, browse workflow state, and store-backed
@@ -25,7 +25,7 @@ internal enum ConfigTransferMode
 internal sealed class ConfigTransferFeature : IDisposable
 {
     private readonly IConfigTransferStore _store;
-    private readonly SettingsStore<ConfigTransferSidecarState> _sidecarStore;
+    private readonly ConfigStore<ConfigTransferSidecarState> _sidecarStore;
     private readonly DeferredSaveController<ConfigTransferSidecarState> _sidecarSaveController;
     private readonly ConfigTransferDrawer _drawer;
     private readonly string? _fallbackBrowseDirectory;
@@ -43,14 +43,14 @@ internal sealed class ConfigTransferFeature : IDisposable
         ArgumentNullException.ThrowIfNull(drawer);
         ObjectDisposedException.ThrowIf(store.IsDisposed, store);
         if (!store.IsLoaded)
-            throw new InvalidOperationException("Built-in config transfer UI requires a loaded settings store.");
+            throw new InvalidOperationException("Built-in config transfer UI requires a loaded config store.");
 
         _store = store;
         _drawer = drawer;
         _drawer.StatusVisibilityTimeout = ResolveStatusVisibilityTimeout(options.StatusDisplayDuration);
         _fallbackBrowseDirectory = ResolveFallbackBrowseDirectory(store.FilePath, options.BrowseFallbackDirectory);
         var transferStateFilePath = ResolveSidecarFilePath(store.FilePath, options.ConfigFilePath);
-        _sidecarStore = new SettingsStore<ConfigTransferSidecarState>(transferStateFilePath);
+        _sidecarStore = new ConfigStore<ConfigTransferSidecarState>(transferStateFilePath);
         var sidecarState = _sidecarStore.Load();
         _sidecarSaveController = new DeferredSaveController<ConfigTransferSidecarState>(_sidecarStore);
         ConfigFilePath = sidecarState.ConfigFilePath;
@@ -230,7 +230,7 @@ internal sealed class ConfigTransferFeature : IDisposable
 }
 
 /// <summary>
-/// Persists the last-used built-in transfer path separately from the main settings file.
+/// Persists the last-used built-in transfer path separately from the main config file.
 /// </summary>
 [UmbraAutoRegister]
 internal sealed record ConfigTransferSidecarState

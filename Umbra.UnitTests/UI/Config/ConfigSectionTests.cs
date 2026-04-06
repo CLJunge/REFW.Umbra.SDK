@@ -353,7 +353,7 @@ public sealed class ConfigSectionTests
     }
 
     [TestMethod]
-    public void CreateWithStore_WhenTransferEnabled_UsesDefaultTransferTreeNodeSettings()
+    public void CreateWithStore_WhenTransferEnabled_UsesDefaultTransferTreeNodeOptions()
     {
         using var tempDirectory = new TempDirectory();
         var config = new TestConfig();
@@ -373,7 +373,7 @@ public sealed class ConfigSectionTests
     }
 
     [TestMethod]
-    public void CreateWithStore_WhenTransferOptionsOverridePresentation_UsesConfiguredTreeNodeSettings()
+    public void CreateWithStore_WhenTransferOptionsOverridePresentation_UsesConfiguredTreeNodeOptions()
     {
         using var tempDirectory = new TempDirectory();
         var config = new TestConfig();
@@ -402,7 +402,7 @@ public sealed class ConfigSectionTests
     }
 
     [TestMethod]
-    public void CreateWithStore_WhenTransferSeparatorDisabled_UsesConfiguredSeparatorSetting()
+    public void CreateWithStore_WhenTransferSeparatorDisabled_UsesConfiguredSeparatorOption()
     {
         using var tempDirectory = new TempDirectory();
         var config = new TestConfig();
@@ -550,7 +550,7 @@ public sealed class ConfigSectionTests
         {
         }
 
-        public SettingsImportReport Import(string filePath, SettingsImportOptions? options = null)
+        public ConfigImportReport Import(string filePath, ConfigImportOptions? options = null)
             => new();
     }
 
@@ -951,7 +951,7 @@ public sealed class ConfigSectionTests
     /// </summary>
     [TestMethod]
     [DataRow("CustomScope")]
-    [DataRow("MyPlugin.Settings")]
+    [DataRow("MyPlugin.Config")]
     [DataRow("a")]
     [DataRow("123")]
     public void ConfigSection_IdScopeProvided_UsesProvidedIdScope(string idScope)
@@ -1044,7 +1044,7 @@ public sealed class ConfigSectionTests
     /// Tests that when sectionLabel is provided and suppressTreeNode is false, SectionLabel uses the provided value.
     /// </summary>
     [TestMethod]
-    [DataRow("My Settings")]
+    [DataRow("My Config")]
     [DataRow("Configuration")]
     [DataRow("")]
     [DataRow(" ")]
@@ -1121,7 +1121,7 @@ public sealed class ConfigSectionTests
         var section = new ConfigSection<ConfigWithRootNodeLabel>(config, sectionLabel: null);
 
         // Assert
-        Assert.AreEqual("Root Settings", section.SectionLabel);
+        Assert.AreEqual("Root Config", section.SectionLabel);
     }
 
     /// <summary>
@@ -1246,7 +1246,7 @@ public sealed class ConfigSectionTests
     {
     }
 
-    [UmbraRootNode("Root Settings", false)]
+    [UmbraRootNode("Root Config", false)]
     internal sealed class ConfigWithRootNodeLabel
     {
     }

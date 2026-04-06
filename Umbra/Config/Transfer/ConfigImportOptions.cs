@@ -1,14 +1,14 @@
 namespace Umbra.Config;
 
 /// <summary>
-/// Controls how <see cref="SettingsStore{TConfig}.Import(string, SettingsImportOptions?)"/> finalizes a successful config import.
+/// Controls how <see cref="ConfigStore{TConfig}.Import(string, ConfigImportOptions?)"/> finalizes a successful config import.
 /// </summary>
-public sealed class SettingsImportOptions
+public sealed class ConfigImportOptions
 {
     /// <summary>
     /// Gets a reusable default options instance.
     /// </summary>
-    public static SettingsImportOptions Default { get; } = new();
+    public static ConfigImportOptions Default { get; } = new();
 
     /// <summary>
     /// Gets or sets a value indicating whether the store should save the accepted imported state to its configured runtime file after import completes.

@@ -104,7 +104,7 @@ internal static class NestedNodeComposer
     }
 
     /// <summary>
-    /// Wraps a nested-group subtree in a stable ImGui ID scope derived from its structural settings path.
+    /// Wraps a nested-group subtree in a stable ImGui ID scope derived from its structural config path.
     /// </summary>
     internal static IdScopeNode CreateIdScopedSubtree(string scopePath, List<IDrawNode> nodes)
         => new(scopePath, nodes);

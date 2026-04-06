@@ -5,41 +5,41 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Owns the public lifecycle and registered parameter set of a typed settings store.
+/// Owns the public lifecycle and registered parameter set of a typed config store.
 /// </summary>
 /// <remarks>
-/// Persistence orchestration is delegated to <see cref="SettingsStorePersistenceCoordinator{TConfig}"/>, and listener bookkeeping is delegated to <see cref="SettingsStoreListenerRegistry"/>. This type remains responsible for public lifecycle guards, the shared registered parameter map, and parameter-level operations over that map.
+/// Persistence orchestration is delegated to <see cref="ConfigStorePersistenceCoordinator{TConfig}"/>, and listener bookkeeping is delegated to <see cref="ConfigStoreListenerRegistry"/>. This type remains responsible for public lifecycle guards, the shared registered parameter map, and parameter-level operations over that map.
 /// </remarks>
 /// <typeparam name="TConfig">
 /// The configuration class type. Must have a public parameterless constructor.
 /// </typeparam>
-[DebuggerDisplay("SettingsStore for {typeof(TConfig).Name}, Parameters: {_parameters.Count}")]
-public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCopyTarget<TConfig>, IConfigTransferStore
+[DebuggerDisplay("ConfigStore for {typeof(TConfig).Name}, Parameters: {_parameters.Count}")]
+public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarget<TConfig>, IConfigTransferStore
     where TConfig : class, new()
 {
     private readonly Dictionary<string, IParameter> _parameters = [];
-    private readonly SettingsStoreListenerRegistry _listenerRegistry = new();
-    private readonly SettingsStorePersistenceCoordinator<TConfig> _persistenceCoordinator;
+    private readonly ConfigStoreListenerRegistry _listenerRegistry = new();
+    private readonly ConfigStorePersistenceCoordinator<TConfig> _persistenceCoordinator;
     private bool _loaded;
     private bool _disposed;
 
-    IReadOnlyDictionary<string, IParameter> ISettingsStoreCopyTarget<TConfig>.Parameters => _parameters;
+    IReadOnlyDictionary<string, IParameter> IConfigStoreCopyTarget<TConfig>.Parameters => _parameters;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="SettingsStore{TConfig}"/> with the specified file path.
+    /// Initializes a new instance of <see cref="ConfigStore{TConfig}"/> with the specified file path.
     /// </summary>
     /// <param name="filePath">
-    /// The absolute or relative path to the JSON file used for persisting settings.
+    /// The absolute or relative path to the JSON file used for persisting config data.
     /// </param>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="filePath"/> is <see langword="null"/>, empty, or whitespace.
     /// </exception>
-    public SettingsStore(string filePath)
+    public ConfigStore(string filePath)
     {
         if (string.IsNullOrWhiteSpace(filePath))
             throw new ArgumentException("File path cannot be null, empty, or whitespace.", nameof(filePath));
 
-        _persistenceCoordinator = new SettingsStorePersistenceCoordinator<TConfig>(filePath, _parameters);
+        _persistenceCoordinator = new ConfigStorePersistenceCoordinator<TConfig>(filePath, _parameters);
     }
 
     /// <summary>
@@ -63,7 +63,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     public bool IsDisposed => _disposed;
 
     /// <summary>
-    /// Gets the configured main settings file path for this store.
+    /// Gets the configured main config file path for this store.
     /// </summary>
     public string FilePath => _persistenceCoordinator.FilePath;
 
@@ -95,26 +95,26 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
 
-        SettingsExchangePersistence.Export(filePath, _parameters, GetSchemaId(), GetSchemaVersion());
+        ConfigExchangePersistence.Export(filePath, _parameters, GetSchemaId(), GetSchemaVersion());
     }
 
     /// <summary>
-    /// Imports compatible values from a versioned config exchange document or a legacy flat settings file.
+    /// Imports compatible values from a versioned config exchange document or a legacy flat config file.
     /// </summary>
     /// <param name="filePath">The source file path.</param>
-    /// <param name="options">Optional import finalization settings.</param>
+    /// <param name="options">Optional import finalization options.</param>
     /// <returns>A structured report describing the import outcome.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is <see langword="null"/>, empty, or whitespace.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet completed successfully.</exception>
-    public SettingsImportReport Import(string filePath, SettingsImportOptions? options = null)
+    public ConfigImportReport Import(string filePath, ConfigImportOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
 
-        options ??= SettingsImportOptions.Default;
-        var report = SettingsExchangePersistence.Import(filePath, _parameters, GetSchemaId(), GetSchemaVersion());
+        options ??= ConfigImportOptions.Default;
+        var report = ConfigExchangePersistence.Import(filePath, _parameters, GetSchemaId(), GetSchemaVersion());
         if (!report.Success || !options.SaveAfterImport || report.AppliedCount == 0)
             return report;
 
@@ -129,7 +129,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     /// <returns>A fully initialized <typeparamref name="TConfig"/> instance populated from persisted values or declared defaults.</returns>
     /// <remarks>
     /// <para>
-    /// <typeparamref name="TConfig"/> must be decorated with <see cref="Attributes.UmbraAutoRegisterAttribute"/> for Umbra to discover its public instance properties marked with <see cref="Attributes.UmbraParameterAttribute"/>. Nested settings-group properties must expose types that are also decorated with that attribute.
+    /// <typeparamref name="TConfig"/> must be decorated with <see cref="Attributes.UmbraAutoRegisterAttribute"/> for Umbra to discover its public instance properties marked with <see cref="Attributes.UmbraParameterAttribute"/>. Nested config-group properties must expose types that are also decorated with that attribute.
     /// </para>
     /// <para>
     /// Persisted values are matched by exact fully qualified key during load. Changing key derivation, such as by changing an <see cref="Attributes.UmbraPrefixAttribute"/>, effectively renames the persisted entries and does not migrate existing JSON automatically.
@@ -148,8 +148,8 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_loaded)
             throw new InvalidOperationException(
-                $"SettingsStore<{typeof(TConfig).Name}>.Load() must only be called once per instance. " +
-                "Create a new SettingsStore to load a fresh configuration.");
+                $"ConfigStore<{typeof(TConfig).Name}>.Load() must only be called once per instance. " +
+                "Create a new ConfigStore to load a fresh configuration.");
 
         var instance = _persistenceCoordinator.Load(CreateRegisteredDefaults);
         _loaded = true;
@@ -159,7 +159,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     /// <summary>
     /// Copies this store's registered parameter values into the corresponding parameters of <paramref name="target"/>, matched by key.
     /// </summary>
-    /// <param name="target">The destination settings store to copy values into.</param>
+    /// <param name="target">The destination config store to copy values into.</param>
     /// <param name="setWithoutNotifying"><see langword="true"/> to apply copied values through the target store's silent mutation path; otherwise, <see langword="false"/>.</param>
     /// <remarks>
     /// Both stores must already be loaded so their registered parameter maps are stable. Parameters that exist in this store but not in <paramref name="target"/> are ignored. When <paramref name="setWithoutNotifying"/> is <see langword="true"/>, copied values bypass both change notification and metadata-based validation on the target parameters.
@@ -167,7 +167,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance or <paramref name="target"/> has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when this instance or <paramref name="target"/> has not completed <see cref="Load"/>, or when <paramref name="target"/> does not support Umbra's internal copy-target contract.</exception>
-    public void CopyValuesTo(ISettingsStore<TConfig> target, bool setWithoutNotifying = false)
+    public void CopyValuesTo(IConfigStore<TConfig> target, bool setWithoutNotifying = false)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
@@ -176,13 +176,13 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
         if (!target.IsLoaded)
         {
             throw new InvalidOperationException(
-                $"SettingsStore<{typeof(TConfig).Name}>.CopyValuesTo() requires a target store that has already completed Load().");
+                $"ConfigStore<{typeof(TConfig).Name}>.CopyValuesTo() requires a target store that has already completed Load().");
         }
 
-        if (target is not ISettingsStoreCopyTarget<TConfig> copyTarget)
+        if (target is not IConfigStoreCopyTarget<TConfig> copyTarget)
         {
             throw new InvalidOperationException(
-                $"SettingsStore<{typeof(TConfig).Name}>.CopyValuesTo() requires a target store implementation that supports Umbra parameter-map copy operations.");
+                $"ConfigStore<{typeof(TConfig).Name}>.CopyValuesTo() requires a target store implementation that supports Umbra parameter-map copy operations.");
         }
 
         foreach (var (key, param) in _parameters)
@@ -387,14 +387,14 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
             count++;
         }
 
-        Logger.Info($"SettingsStore<{typeof(TConfig).Name}>: reset {count} parameter(s) to defaults.");
+        Logger.Info($"ConfigStore<{typeof(TConfig).Name}>: reset {count} parameter(s) to defaults.");
     }
 
     /// <summary>
     /// Releases this store's remaining listener registrations and marks the instance as disposed.
     /// </summary>
     /// <remarks>
-    /// Repeated calls after the first one do nothing. This method does not persist settings automatically.
+    /// Repeated calls after the first one do nothing. This method does not persist config automatically.
     /// </remarks>
     public void Dispose()
     {
@@ -418,7 +418,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
             return;
 
         throw new InvalidOperationException(
-            $"SettingsStore<{typeof(TConfig).Name}> requires Load() to complete successfully before this operation can be used.");
+            $"ConfigStore<{typeof(TConfig).Name}> requires Load() to complete successfully before this operation can be used.");
     }
 
     /// <summary>
@@ -433,7 +433,7 @@ public class SettingsStore<TConfig> : ISettingsStore<TConfig>, ISettingsStoreCop
         var instance = new TConfig();
         _parameters.Clear();
 
-        var discovered = SettingsRegistrar.Register(instance);
+        var discovered = ConfigRegistrar.Register(instance);
         foreach (var (key, param) in discovered)
             _parameters[key] = param;
 

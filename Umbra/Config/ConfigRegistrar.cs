@@ -9,7 +9,7 @@ namespace Umbra.Config;
 /// <remarks>
 /// The registrar walks public instance properties marked with <see cref="UmbraParameterAttribute"/>, respects nested-group prefixes and inherited categories, and assigns each discovered parameter its fully qualified persisted key together with resolved <see cref="ParameterMetadata"/>.
 /// </remarks>
-internal static class SettingsRegistrar
+internal static class ConfigRegistrar
 {
     /// <summary>
     /// Walks <paramref name="config"/> and returns a flat map of every discovered parameter keyed by fully qualified persisted name.
@@ -119,13 +119,13 @@ internal static class SettingsRegistrar
     /// Registers one discovered parameter under <paramref name="key"/>, throwing when that key
     /// is already occupied by another parameter in the same configuration tree.
     /// </summary>
-    /// <param name="parameters">The destination parameter map keyed by fully-qualified setting key.</param>
+    /// <param name="parameters">The destination parameter map keyed by fully-qualified key.</param>
     /// <param name="parameterOrigins">
     /// Tracks the declaring property path for each registered key so duplicate-key failures can
     /// identify both colliding members.
     /// </param>
     /// <param name="parameter">The discovered parameter instance to register.</param>
-    /// <param name="key">The fully-qualified settings key resolved for the parameter.</param>
+    /// <param name="key">The fully-qualified key resolved for the parameter.</param>
     /// <param name="declaringProperty">The property that exposed the parameter.</param>
     /// <param name="currentCategory">The resolved category context applied to the parameter metadata.</param>
     /// <exception cref="InvalidOperationException">
@@ -144,7 +144,7 @@ internal static class SettingsRegistrar
         if (parameterOrigins.TryGetValue(key, out var existingOrigin))
         {
             throw new InvalidOperationException(
-                $"Duplicate settings key '{key}' detected while registering '{origin}'. " +
+                $"Duplicate parameter key '{key}' detected while registering '{origin}'. " +
                 $"The key is already used by '{existingOrigin}'. Ensure every [UmbraParameter] resolves to a unique key.");
         }
 
@@ -194,7 +194,7 @@ internal static class SettingsRegistrar
                 : member.Name;
 
         throw new InvalidOperationException(
-            $"Member '{memberName}' declares {source} as an empty string. Settings identifier segments must be non-empty.");
+            $"Member '{memberName}' declares {source} as an empty string. Config identifier segments must be non-empty.");
     }
 
     /// <summary>

@@ -31,8 +31,8 @@ internal sealed class TypeDrawMetadata
         int order,
         int spacingBefore,
         int spacingAfter,
-        string? settingsPrefix,
-        string? settingsParameterKeyOverride)
+        string? configPrefix,
+        string? configParameterKeyOverride)
     {
         internal PropertyInfo Property { get; } = property;
         internal Type PropertyType { get; } = propertyType;
@@ -47,8 +47,8 @@ internal sealed class TypeDrawMetadata
         internal int Order { get; } = order;
         internal int SpacingBefore { get; } = spacingBefore;
         internal int SpacingAfter { get; } = spacingAfter;
-        internal string? SettingsPrefix { get; } = settingsPrefix;
-        internal string? SettingsParameterKeyOverride { get; } = settingsParameterKeyOverride;
+        internal string? ConfigPrefix { get; } = configPrefix;
+        internal string? ConfigParameterKeyOverride { get; } = configParameterKeyOverride;
 
         internal bool HasWrapperMetadata => HideIf is not null
             || Order != int.MaxValue
@@ -57,31 +57,31 @@ internal sealed class TypeDrawMetadata
     }
 
     internal string? Category { get; }
-    internal string? SettingsPrefix { get; }
+    internal string? ConfigPrefix { get; }
     internal UmbraIndentAttribute? IndentAttr { get; }
     internal UmbraCollapseAsTreeAttribute? CollapseAttr { get; }
     internal UmbraLabelMarginAttribute? LabelMarginAttr { get; }
     internal INestedDrawerAttribute? NestedDrawerAttr { get; }
-    internal bool IsAutoRegisterSettings { get; }
+    internal bool IsAutoRegisterConfig { get; }
     internal PropertyDrawMetadata[] Properties { get; }
 
     internal TypeDrawMetadata(
         string? category,
-        string? settingsPrefix,
+        string? configPrefix,
         UmbraIndentAttribute? indentAttr,
         UmbraCollapseAsTreeAttribute? collapseAttr,
         UmbraLabelMarginAttribute? labelMarginAttr,
         INestedDrawerAttribute? nestedDrawerAttr,
-        bool isAutoRegisterSettings,
+        bool isAutoRegisterConfig,
         PropertyDrawMetadata[] properties)
     {
         Category = category;
-        SettingsPrefix = settingsPrefix;
+        ConfigPrefix = configPrefix;
         IndentAttr = indentAttr;
         CollapseAttr = collapseAttr;
         LabelMarginAttr = labelMarginAttr;
         NestedDrawerAttr = nestedDrawerAttr;
-        IsAutoRegisterSettings = isAutoRegisterSettings;
+        IsAutoRegisterConfig = isAutoRegisterConfig;
         Properties = properties;
     }
 

@@ -4,14 +4,14 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Coalesces change-triggered saves for a loaded <see cref="ISettingsStore{TConfig}"/>.
+/// Coalesces change-triggered saves for a loaded <see cref="IConfigStore{TConfig}"/>.
 /// </summary>
 /// <remarks>
 /// <para>
 /// Non-numeric parameter changes are saved on the next <see cref="Tick"/> call when no numeric debounce is pending. Numeric parameter changes for <see cref="int"/>, <see cref="float"/>, and <see cref="double"/> are coalesced until <see cref="DebounceWindow"/> has elapsed since the last numeric change.
 /// </para>
 /// <para>
-/// Construct this controller only after <see cref="ISettingsStore{TConfig}.Load"/> has completed. Call <see cref="Tick"/> once per frame, and dispose the controller before or alongside the owning store so pending writes can still be flushed.
+/// Construct this controller only after <see cref="IConfigStore{TConfig}.Load"/> has completed. Call <see cref="Tick"/> once per frame, and dispose the controller before or alongside the owning store so pending writes can still be flushed.
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">The configuration type managed by the wrapped store.</typeparam>
@@ -23,7 +23,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// <value>The debounce window used for numeric parameter changes.</value>
     public TimeSpan DebounceWindow { get; }
 
-    private readonly ISettingsStore<TConfig> _store;
+    private readonly IConfigStore<TConfig> _store;
 
     // Stored as fields so the exact delegate instances can be passed to RemoveListenerFromAll.
     private readonly Action _onAnyChanged;
@@ -39,8 +39,8 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// for parameter changes on <paramref name="store"/>.
     /// </summary>
     /// <param name="store">
-    /// The settings store to drive saves for. <strong>Must have already been loaded via
-    /// <see cref="ISettingsStore{TConfig}.Load"/> before this constructor is called.</strong>
+    /// The config store to drive saves for. <strong>Must have already been loaded via
+    /// <see cref="IConfigStore{TConfig}.Load"/> before this constructor is called.</strong>
     /// </param>
     /// <param name="debounceWindow">
     /// How long to wait after the last numeric parameter change before writing to disk.
@@ -51,17 +51,17 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="store"/> is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when <paramref name="store"/> has already been disposed.</exception>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when <paramref name="store"/> has not yet been loaded via <see cref="ISettingsStore{TConfig}.Load"/>.
+    /// Thrown when <paramref name="store"/> has not yet been loaded via <see cref="IConfigStore{TConfig}.Load"/>.
     /// </exception>
-    public DeferredSaveController(ISettingsStore<TConfig> store, TimeSpan? debounceWindow = null)
+    public DeferredSaveController(IConfigStore<TConfig> store, TimeSpan? debounceWindow = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         if (store.IsDisposed)
             throw new ObjectDisposedException(nameof(store),
-                $"DeferredSaveController<{typeof(TConfig).Name}> cannot attach to a disposed settings store.");
+                $"DeferredSaveController<{typeof(TConfig).Name}> cannot attach to a disposed config store.");
         if (!store.IsLoaded)
             throw new InvalidOperationException(
-                $"DeferredSaveController<{typeof(TConfig).Name}> requires a settings store that has already completed Load().");
+                $"DeferredSaveController<{typeof(TConfig).Name}> requires a config store that has already completed Load().");
 
         _store = store;
         DebounceWindow = debounceWindow ?? TimeSpan.FromSeconds(1);
@@ -111,7 +111,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         {
             if (_anyPending)
                 Logger.Warning(
-                    $"DeferredSaveController<{typeof(TConfig).Name}>: dropping pending changes because the settings store was already disposed.");
+                    $"DeferredSaveController<{typeof(TConfig).Name}>: dropping pending changes because the config store was already disposed.");
             ClearPendingState();
             return;
         }

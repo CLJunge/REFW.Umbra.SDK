@@ -7,7 +7,7 @@ namespace Umbra.Config;
 /// Stores one typed configuration value together with its default value, resolved metadata, change notifications, and validation error state.
 /// </summary>
 /// <remarks>
-/// Umbra's registration pipeline assigns the resolved <see cref="Key"/> and <see cref="Metadata"/> after the parameter is discovered in a settings object. This type remains responsible for value ownership, mutation semantics, and event dispatch, while metadata-driven rule execution is delegated to <see cref="ParameterValidationPipeline"/> and custom validator instance reuse is delegated to <see cref="ParameterValidatorCache"/>.
+/// Umbra's registration pipeline assigns the resolved <see cref="Key"/> and <see cref="Metadata"/> after the parameter is discovered in a config object. This type remains responsible for value ownership, mutation semantics, and event dispatch, while metadata-driven rule execution is delegated to <see cref="ParameterValidationPipeline"/> and custom validator instance reuse is delegated to <see cref="ParameterValidatorCache"/>.
 /// </remarks>
 /// <typeparam name="T">The value type stored by the parameter.</typeparam>
 [DebuggerDisplay("{Key}: {Value} (Default: {DefaultValue}, Modified: {IsModified})")]

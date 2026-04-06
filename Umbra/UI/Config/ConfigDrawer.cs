@@ -6,14 +6,14 @@ using Umbra.UI.Config.Search;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Builds and renders an ImGui settings panel for a loaded configuration instance.
+/// Builds and renders an ImGui config panel for a loaded configuration instance.
 /// </summary>
 /// <remarks>
 /// <para>
 /// The draw tree is assembled once at construction time. Later <see cref="Draw"/> calls walk the cached nodes without performing per-frame reflection.
 /// </para>
 /// <para>
-/// Pass a configuration instance returned by <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so each registered parameter already carries resolved <see cref="Umbra.Config.ParameterMetadata"/>. Nested-group wrapper attributes are still read from reflected property and type metadata during the one-time build pass.
+/// Pass a configuration instance returned by <see cref="Umbra.Config.ConfigStore{TConfig}.Load()"/> so each registered parameter already carries resolved <see cref="Umbra.Config.ParameterMetadata"/>. Nested-group wrapper attributes are still read from reflected property and type metadata during the one-time build pass.
 /// </para>
 /// <para>
 /// Root-node composition is delegated to <see cref="ConfigDrawerRootNodeComposer"/>, built-in search-row UI is delegated to <see cref="ConfigDrawerSearchController"/>, and per-frame search-state application is delegated to <see cref="ConfigDrawerSearchApplicator"/>.
@@ -36,14 +36,14 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// </summary>
     /// <param name="config">
     /// A fully initialized configuration instance, ideally returned by
-    /// <see cref="Umbra.Config.SettingsStore{TConfig}.Load()"/> so that <see cref="Umbra.Config.ParameterMetadata"/>
+    /// <see cref="Umbra.Config.ConfigStore{TConfig}.Load()"/> so that <see cref="Umbra.Config.ParameterMetadata"/>
     /// is already populated on every parameter.
     /// </param>
     /// <param name="idScope">
     /// A plugin-unique identifier string (e.g. <c>"MyPlugin"</c>) used to scope all ImGui
     /// widget IDs rendered by this drawer via <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>.
     /// Every widget ID within a <see cref="Draw"/> call is internally prefixed with this
-    /// string, preventing duplicate-ID warnings when multiple plugins render settings panels
+    /// string, preventing duplicate-ID warnings when multiple plugins render config panels
     /// in the same ImGui window. Must be non-null and non-whitespace.
     /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
@@ -146,7 +146,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     }
 
     /// <summary>
-    /// Renders the cached settings UI for the current ImGui frame.
+    /// Renders the cached config UI for the current ImGui frame.
     /// </summary>
     /// <remarks>
     /// The configured ID scope is always popped before this method returns, even if a node throws while drawing. After <see cref="Dispose"/>, this method becomes a silent no-op.

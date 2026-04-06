@@ -2,10 +2,10 @@ using Umbra.Config.Attributes;
 
 namespace Umbra.Config.UnitTests;
 /// <summary>
-/// Unit tests for <see cref = "SettingsStore{TConfig}.ResetAll"/> method.
+/// Unit tests for <see cref = "ConfigStore{TConfig}.ResetAll"/> method.
 /// </summary>
 [TestClass]
-public partial class SettingsStoreTests
+public partial class ConfigStoreTests
 {
     /// <summary>
     /// Tests that ResetAll successfully executes when the store is loaded and not disposed.
@@ -17,7 +17,7 @@ public partial class SettingsStoreTests
         var tempPath = System.IO.Path.GetTempFileName();
         try
         {
-            var store = new SettingsStore<TestConfig>(tempPath);
+            var store = new ConfigStore<TestConfig>(tempPath);
             store.Load();
             // Act
             store.ResetAll();
@@ -75,9 +75,9 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Unsupported settings-store implementation used to verify the interface-based copy contract.
+    /// Unsupported config-store implementation used to verify the interface-based copy contract.
     /// </summary>
-    private sealed class UnsupportedSettingsStoreTarget : ISettingsStore<TestConfig>
+    private sealed class UnsupportedConfigStoreTarget : IConfigStore<TestConfig>
     {
         public bool IsLoaded => true;
 
@@ -89,10 +89,10 @@ public partial class SettingsStoreTests
 
         public void Export(string filePath) => throw new NotSupportedException();
 
-        public SettingsImportReport Import(string filePath, SettingsImportOptions? options = null)
+        public ConfigImportReport Import(string filePath, ConfigImportOptions? options = null)
             => throw new NotSupportedException();
 
-        public void CopyValuesTo(ISettingsStore<TestConfig> target, bool setWithoutNotifying = false)
+        public void CopyValuesTo(IConfigStore<TestConfig> target, bool setWithoutNotifying = false)
             => throw new NotSupportedException();
 
         public void AddListenerToAll(Action listener) => throw new NotSupportedException();
@@ -124,7 +124,7 @@ public partial class SettingsStoreTests
         var tempPath = Path.GetTempFileName();
         try
         {
-            var store = new SettingsStore<TestConfig>(tempPath);
+            var store = new ConfigStore<TestConfig>(tempPath);
             // Act
             store.Dispose();
             // Assert
@@ -138,7 +138,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.Export(string)"/> requires a successful load first.
+    /// Verifies that <see cref="ConfigStore{TConfig}.Export(string)"/> requires a successful load first.
     /// </summary>
     [TestMethod]
     public void Export_BeforeLoad_ThrowsInvalidOperationException()
@@ -147,7 +147,7 @@ public partial class SettingsStoreTests
         var exportPath = Path.Combine(Path.GetTempPath(), $"export_{Guid.NewGuid()}.json");
         try
         {
-            var store = new SettingsStore<TestConfig>(runtimePath);
+            var store = new ConfigStore<TestConfig>(runtimePath);
 
             Assert.ThrowsExactly<InvalidOperationException>(() => store.Export(exportPath));
         }
@@ -161,7 +161,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.Import(string, SettingsImportOptions?)"/> requires a successful load first.
+    /// Verifies that <see cref="ConfigStore{TConfig}.Import(string, ConfigImportOptions?)"/> requires a successful load first.
     /// </summary>
     [TestMethod]
     public void Import_BeforeLoad_ThrowsInvalidOperationException()
@@ -171,7 +171,7 @@ public partial class SettingsStoreTests
         try
         {
             File.WriteAllText(importPath, "{}");
-            var store = new SettingsStore<TestConfig>(runtimePath);
+            var store = new ConfigStore<TestConfig>(runtimePath);
 
             Assert.ThrowsExactly<InvalidOperationException>(() => store.Import(importPath));
         }
@@ -185,7 +185,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.Export(string)"/> rejects calls after disposal.
+    /// Verifies that <see cref="ConfigStore{TConfig}.Export(string)"/> rejects calls after disposal.
     /// </summary>
     [TestMethod]
     public void Export_AfterDispose_ThrowsObjectDisposedException()
@@ -194,7 +194,7 @@ public partial class SettingsStoreTests
         var exportPath = Path.Combine(Path.GetTempPath(), $"export_{Guid.NewGuid()}.json");
         try
         {
-            var store = new SettingsStore<TestConfig>(runtimePath);
+            var store = new ConfigStore<TestConfig>(runtimePath);
             _ = store.Load();
             store.Dispose();
 
@@ -210,7 +210,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.Import(string, SettingsImportOptions?)"/> rejects calls after disposal.
+    /// Verifies that <see cref="ConfigStore{TConfig}.Import(string, ConfigImportOptions?)"/> rejects calls after disposal.
     /// </summary>
     [TestMethod]
     public void Import_AfterDispose_ThrowsObjectDisposedException()
@@ -220,7 +220,7 @@ public partial class SettingsStoreTests
         try
         {
             File.WriteAllText(importPath, "{}");
-            var store = new SettingsStore<TestConfig>(runtimePath);
+            var store = new ConfigStore<TestConfig>(runtimePath);
             _ = store.Load();
             store.Dispose();
 
@@ -245,7 +245,7 @@ public partial class SettingsStoreTests
         var tempPath = Path.GetTempFileName();
         try
         {
-            var store = new SettingsStore<TestConfig>(tempPath);
+            var store = new ConfigStore<TestConfig>(tempPath);
             // Act - call Dispose multiple times
             store.Dispose();
             store.Dispose();
@@ -270,7 +270,7 @@ public partial class SettingsStoreTests
         var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".json");
         try
         {
-            var store = new SettingsStore<TestConfig>(tempPath);
+            var store = new ConfigStore<TestConfig>(tempPath);
             store.Load();
             // Act
             store.Dispose();
@@ -298,7 +298,7 @@ public partial class SettingsStoreTests
             File.Delete(filePath);
         }
 
-        var store = new SettingsStore<TestConfig>(filePath);
+        var store = new ConfigStore<TestConfig>(filePath);
         // Act
         var result = store.Load();
         // Assert
@@ -321,7 +321,7 @@ public partial class SettingsStoreTests
     {
         // Arrange
         var filePath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(filePath);
+        var store = new ConfigStore<TestConfig>(filePath);
         // Assert initial state
         Assert.IsFalse(store.IsLoaded, "Store should start in unloaded state");
         Assert.IsFalse(store.IsDisposed, "Store should not be disposed initially");
@@ -340,18 +340,18 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Creates a SettingsStore instance and uses reflection to set internal state for testing.
+    /// Creates a ConfigStore instance and uses reflection to set internal state for testing.
     /// </summary>
-    private static SettingsStore<TestConfig> CreateSettingsStoreWithState(bool isLoaded, bool isDisposed, Dictionary<string, IParameter>? parameters = null)
+    private static ConfigStore<TestConfig> CreateConfigStoreWithState(bool isLoaded, bool isDisposed, Dictionary<string, IParameter>? parameters = null)
     {
-        var store = new SettingsStore<TestConfig>("test.json");
-        var loadedField = typeof(SettingsStore<TestConfig>).GetField("_loaded", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var store = new ConfigStore<TestConfig>("test.json");
+        var loadedField = typeof(ConfigStore<TestConfig>).GetField("_loaded", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         loadedField!.SetValue(store, isLoaded);
-        var disposedField = typeof(SettingsStore<TestConfig>).GetField("_disposed", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var disposedField = typeof(ConfigStore<TestConfig>).GetField("_disposed", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         disposedField!.SetValue(store, isDisposed);
         if (parameters != null)
         {
-            var parametersField = typeof(SettingsStore<TestConfig>).GetField("_parameters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var parametersField = typeof(ConfigStore<TestConfig>).GetField("_parameters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var existingParameters = (Dictionary<string, IParameter>)parametersField!.GetValue(store)!;
             existingParameters.Clear();
             foreach (var kvp in parameters)
@@ -383,7 +383,7 @@ public partial class SettingsStoreTests
     {
         // Arrange
         var parameters = new Dictionary<string, IParameter>();
-        var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
+        var store = CreateConfigStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var listenerCalled = false;
         void listener(int oldVal, int newVal) => listenerCalled = true;
         // Act
@@ -417,7 +417,7 @@ public partial class SettingsStoreTests
                 boolParam
             }
         };
-        var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
+        var store = CreateConfigStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var intListenerCallCount = 0;
         void intListener(int oldVal, int newVal) => intListenerCallCount++;
         // Act
@@ -454,7 +454,7 @@ public partial class SettingsStoreTests
                 intParam3
             }
         };
-        var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
+        var store = CreateConfigStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var callCount = 0;
         void listener(int oldVal, int newVal) => callCount++;
         // Act
@@ -481,7 +481,7 @@ public partial class SettingsStoreTests
                 parameter
             }
         };
-        var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
+        var store = CreateConfigStoreWithState(isLoaded: true, isDisposed: false, parameters);
         int? capturedOldValue = null;
         int? capturedNewValue = null;
         void listener(int oldVal, int newVal)
@@ -513,7 +513,7 @@ public partial class SettingsStoreTests
                 parameter
             }
         };
-        var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
+        var store = CreateConfigStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var callCount = 0;
         void listener(int oldVal, int newVal) => callCount++;
         // Act
@@ -545,7 +545,7 @@ public partial class SettingsStoreTests
                 boolParam
             }
         };
-        var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
+        var store = CreateConfigStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var intListenerCallCount = 0;
         void intListener(int oldVal, int newVal) => intListenerCallCount++;
         // Act
@@ -576,7 +576,7 @@ public partial class SettingsStoreTests
                 stringParam
             }
         };
-        var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
+        var store = CreateConfigStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var intCallCount = 0;
         var stringCallCount = 0;
         void intListener(int oldVal, int newVal) => intCallCount++;
@@ -606,7 +606,7 @@ public partial class SettingsStoreTests
                 parameter
             }
         };
-        var store = CreateSettingsStoreWithState(isLoaded: true, isDisposed: false, parameters);
+        var store = CreateConfigStoreWithState(isLoaded: true, isDisposed: false, parameters);
         var callCount = 0;
         void listener(int oldVal, int newVal) => callCount++;
         // Act
@@ -624,7 +624,7 @@ public partial class SettingsStoreTests
     {
         // Arrange
         var tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempFilePath);
+        var store = new ConfigStore<TestConfig>(tempFilePath);
         var config = store.Load();
         var callCount = 0;
         void listener() => callCount++;
@@ -653,7 +653,7 @@ public partial class SettingsStoreTests
     {
         // Arrange
         var tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempFilePath);
+        var store = new ConfigStore<TestConfig>(tempFilePath);
         var config = store.Load();
         var callCount = 0;
         void listener() => callCount++;
@@ -683,7 +683,7 @@ public partial class SettingsStoreTests
     {
         // Arrange
         var tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempFilePath);
+        var store = new ConfigStore<TestConfig>(tempFilePath);
         var config = store.Load();
         var callCount = 0;
         void listener() => callCount++;
@@ -713,7 +713,7 @@ public partial class SettingsStoreTests
     {
         // Arrange
         var tempFilePath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempFilePath);
+        var store = new ConfigStore<TestConfig>(tempFilePath);
         var config = store.Load();
         var callCount = 0;
         void listener() => callCount++;
@@ -747,27 +747,27 @@ public partial class SettingsStoreTests
 
     #endregion
     /// <summary>
-    /// Verifies that <see cref = "SettingsStore{TConfig}.IsDisposed"/> returns <see langword="false"/>
+    /// Verifies that <see cref = "ConfigStore{TConfig}.IsDisposed"/> returns <see langword="false"/>
     /// immediately after construction before any disposal has occurred.
     /// </summary>
     [TestMethod]
     public void IsDisposed_AfterConstruction_ReturnsFalse()
     {
         // Arrange & Act
-        var store = new SettingsStore<TestConfig>("test.json");
+        var store = new ConfigStore<TestConfig>("test.json");
         // Assert
         Assert.IsFalse(store.IsDisposed);
     }
 
     /// <summary>
-    /// Verifies that <see cref = "SettingsStore{TConfig}.IsDisposed"/> returns <see langword="true"/>
-    /// after the <see cref = "SettingsStore{TConfig}.Dispose"/> method has been called.
+    /// Verifies that <see cref = "ConfigStore{TConfig}.IsDisposed"/> returns <see langword="true"/>
+    /// after the <see cref = "ConfigStore{TConfig}.Dispose"/> method has been called.
     /// </summary>
     [TestMethod]
     public void IsDisposed_AfterDispose_ReturnsTrue()
     {
         // Arrange
-        var store = new SettingsStore<TestConfig>("test.json");
+        var store = new ConfigStore<TestConfig>("test.json");
         // Act
         store.Dispose();
         // Assert
@@ -784,7 +784,7 @@ public partial class SettingsStoreTests
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_config_{Guid.NewGuid()}.json");
         try
         {
-            var store = new SettingsStore<TestConfig>(tempPath);
+            var store = new ConfigStore<TestConfig>(tempPath);
             var config = store.Load();
             // Act
             store.Save();
@@ -801,15 +801,15 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Tests that <see cref = "SettingsStore{TConfig}.IsLoaded"/> returns false immediately after construction
-    /// and before <see cref = "SettingsStore{TConfig}.Load"/> has been called.
+    /// Tests that <see cref = "ConfigStore{TConfig}.IsLoaded"/> returns false immediately after construction
+    /// and before <see cref = "ConfigStore{TConfig}.Load"/> has been called.
     /// </summary>
     [TestMethod]
     public void IsLoaded_AfterConstruction_ReturnsFalse()
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         // Act
         var result = store.IsLoaded;
         // Assert
@@ -821,15 +821,15 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Tests that <see cref = "SettingsStore{TConfig}.IsLoaded"/> returns true after
-    /// <see cref = "SettingsStore{TConfig}.Load"/> has been successfully called.
+    /// Tests that <see cref = "ConfigStore{TConfig}.IsLoaded"/> returns true after
+    /// <see cref = "ConfigStore{TConfig}.Load"/> has been successfully called.
     /// </summary>
     [TestMethod]
     public void IsLoaded_AfterLoadCompletes_ReturnsTrue()
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         // Act
         _ = store.Load();
         var result = store.IsLoaded;
@@ -842,15 +842,15 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Tests that <see cref = "SettingsStore{TConfig}.IsLoaded"/> remains true after
-    /// <see cref = "SettingsStore{TConfig}.Dispose"/> has been called on a loaded store.
+    /// Tests that <see cref = "ConfigStore{TConfig}.IsLoaded"/> remains true after
+    /// <see cref = "ConfigStore{TConfig}.Dispose"/> has been called on a loaded store.
     /// </summary>
     [TestMethod]
     public void IsLoaded_AfterDispose_RemainsTrue()
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         _ = store.Load();
         // Act
         store.Dispose();
@@ -863,15 +863,15 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Tests that <see cref = "SettingsStore{TConfig}.IsLoaded"/> remains false after
-    /// <see cref = "SettingsStore{TConfig}.Dispose"/> has been called on a store that was never loaded.
+    /// Tests that <see cref = "ConfigStore{TConfig}.IsLoaded"/> remains false after
+    /// <see cref = "ConfigStore{TConfig}.Dispose"/> has been called on a store that was never loaded.
     /// </summary>
     [TestMethod]
     public void IsLoaded_AfterDisposeWithoutLoad_RemainsFalse()
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         // Act
         store.Dispose();
         var result = store.IsLoaded;
@@ -883,19 +883,19 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Tests that <see cref = "SettingsStore{TConfig}.IsLoaded"/> returns true when a valid persisted
-    /// configuration file exists and <see cref = "SettingsStore{TConfig}.Load"/> successfully loads values from it.
+    /// Tests that <see cref = "ConfigStore{TConfig}.IsLoaded"/> returns true when a valid persisted
+    /// configuration file exists and <see cref = "ConfigStore{TConfig}.Load"/> successfully loads values from it.
     /// </summary>
     [TestMethod]
     public void IsLoaded_AfterLoadingExistingFile_ReturnsTrue()
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var initialStore = new SettingsStore<TestConfig>(tempPath);
+        var initialStore = new ConfigStore<TestConfig>(tempPath);
         _ = initialStore.Load();
         initialStore.Save();
         initialStore.Dispose();
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         // Act
         _ = store.Load();
         var result = store.IsLoaded;
@@ -908,15 +908,15 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Tests that <see cref = "SettingsStore{TConfig}.IsLoaded"/> is not affected by multiple reads
-    /// and consistently returns true after <see cref = "SettingsStore{TConfig}.Load"/> completes.
+    /// Tests that <see cref = "ConfigStore{TConfig}.IsLoaded"/> is not affected by multiple reads
+    /// and consistently returns true after <see cref = "ConfigStore{TConfig}.Load"/> completes.
     /// </summary>
     [TestMethod]
     public void IsLoaded_MultipleReads_ConsistentlyReturnsTrue()
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         _ = store.Load();
         // Act & Assert - verify multiple reads return the same value
         for (var i = 0; i < 100; i++)
@@ -958,11 +958,11 @@ public partial class SettingsStoreTests
     [DataRow("my config.json", "Filename with spaces")]
     [DataRow("config@#$.json", "Filename with special characters")]
     [DataRow("X:\\very\\long\\nested\\path\\to\\some\\configuration\\file\\location\\config.json", "Long path")]
-    [DataRow("C:\\Users\\User Name\\AppData\\Local\\Config Files\\settings.json", "Path with spaces")]
+    [DataRow("C:\\Users\\User Name\\AppData\\Local\\Config Files\\config.json", "Path with spaces")]
     public void Constructor_ValidFilePath_CreatesInstance(string filePath, string testCase)
     {
         // Act
-        var store = new SettingsStore<TestConfig>(filePath);
+        var store = new ConfigStore<TestConfig>(filePath);
         // Assert
         Assert.IsNotNull(store, $"Failed for test case: {testCase}");
         Assert.IsFalse(store.IsLoaded, $"Store should not be loaded immediately after construction. Failed for test case: {testCase}");
@@ -975,13 +975,13 @@ public partial class SettingsStoreTests
     [TestMethod]
     public void Constructor_WhitespaceFilePath_ThrowsArgumentException()
     {
-        var exception = Assert.ThrowsExactly<ArgumentException>(() => _ = new SettingsStore<TestConfig>("   "));
+        var exception = Assert.ThrowsExactly<ArgumentException>(() => _ = new ConfigStore<TestConfig>("   "));
 
         Assert.AreEqual("filePath", exception.ParamName);
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.Load"/> can only be called once per store instance.
+    /// Verifies that <see cref="ConfigStore{TConfig}.Load"/> can only be called once per store instance.
     /// </summary>
     [TestMethod]
     public void Load_CalledTwice_ThrowsInvalidOperationException()
@@ -989,7 +989,7 @@ public partial class SettingsStoreTests
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         try
         {
-            var store = new SettingsStore<TestConfig>(tempPath);
+            var store = new ConfigStore<TestConfig>(tempPath);
             _ = store.Load();
 
             Assert.ThrowsExactly<InvalidOperationException>(() => store.Load());
@@ -1002,7 +1002,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.Load"/> leaves the store unloaded when registration fails.
+    /// Verifies that <see cref="ConfigStore{TConfig}.Load"/> leaves the store unloaded when registration fails.
     /// </summary>
     [TestMethod]
     public void Load_WhenRegistrationThrowsDuplicateKey_LeavesStoreUnloaded()
@@ -1010,7 +1010,7 @@ public partial class SettingsStoreTests
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         try
         {
-            var store = new SettingsStore<DuplicateKeyConfig>(tempPath);
+            var store = new ConfigStore<DuplicateKeyConfig>(tempPath);
 
             Assert.ThrowsExactly<InvalidOperationException>(() => store.Load());
             Assert.IsFalse(store.IsLoaded);
@@ -1023,7 +1023,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.Save"/> requires a successful load first.
+    /// Verifies that <see cref="ConfigStore{TConfig}.Save"/> requires a successful load first.
     /// </summary>
     [TestMethod]
     public void Save_BeforeLoad_ThrowsInvalidOperationException()
@@ -1031,7 +1031,7 @@ public partial class SettingsStoreTests
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         try
         {
-            var store = new SettingsStore<TestConfig>(tempPath);
+            var store = new ConfigStore<TestConfig>(tempPath);
 
             Assert.ThrowsExactly<InvalidOperationException>(() => store.Save());
         }
@@ -1043,7 +1043,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.Import(string, SettingsImportOptions?)"/> rejects envelope documents whose schema identifier does not match the current config type.
+    /// Verifies that <see cref="ConfigStore{TConfig}.Import(string, ConfigImportOptions?)"/> rejects envelope documents whose schema identifier does not match the current config type.
     /// </summary>
     [TestMethod]
     public void Import_MismatchedSchemaId_ReturnsFailedReportAndLeavesValuesUnchanged()
@@ -1063,10 +1063,10 @@ public partial class SettingsStoreTests
 }
 """);
 
-            var store = new SettingsStore<TestConfig>(runtimePath);
+            var store = new ConfigStore<TestConfig>(runtimePath);
             var config = store.Load();
 
-            var report = store.Import(importPath, new SettingsImportOptions { SaveAfterImport = false });
+            var report = store.Import(importPath, new ConfigImportOptions { SaveAfterImport = false });
 
             Assert.IsFalse(report.Success);
             Assert.AreEqual(10, config.Value1.Value);
@@ -1081,7 +1081,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.Import(string, SettingsImportOptions?)"/> rejects newer schema versions before applying any values.
+    /// Verifies that <see cref="ConfigStore{TConfig}.Import(string, ConfigImportOptions?)"/> rejects newer schema versions before applying any values.
     /// </summary>
     [TestMethod]
     public void Import_NewerSchemaVersion_ReturnsFailedReportAndLeavesValuesUnchanged()
@@ -1101,10 +1101,10 @@ public partial class SettingsStoreTests
 }
 """);
 
-            var store = new SettingsStore<TestConfig>(runtimePath);
+            var store = new ConfigStore<TestConfig>(runtimePath);
             var config = store.Load();
 
-            var report = store.Import(importPath, new SettingsImportOptions { SaveAfterImport = false });
+            var report = store.Import(importPath, new ConfigImportOptions { SaveAfterImport = false });
 
             Assert.IsFalse(report.Success);
             Assert.AreEqual(10, config.Value1.Value);
@@ -1140,7 +1140,7 @@ public partial class SettingsStoreTests
 }
 """);
 
-            var store = new SettingsStore<TestConfig>(runtimePath);
+            var store = new ConfigStore<TestConfig>(runtimePath);
             var config = store.Load();
 
             var report = store.Import(importPath);
@@ -1164,7 +1164,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.CopyValuesTo"/> rejects a null target.
+    /// Verifies that <see cref="ConfigStore{TConfig}.CopyValuesTo"/> rejects a null target.
     /// </summary>
     [TestMethod]
     public void CopyValuesTo_NullTarget_ThrowsArgumentNullException()
@@ -1172,7 +1172,7 @@ public partial class SettingsStoreTests
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         try
         {
-            var store = new SettingsStore<TestConfig>(tempPath);
+            var store = new ConfigStore<TestConfig>(tempPath);
             _ = store.Load();
 
             Assert.ThrowsExactly<ArgumentNullException>(() => store.CopyValuesTo(null!));
@@ -1185,7 +1185,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.CopyValuesTo"/> requires a target store that has already loaded.
+    /// Verifies that <see cref="ConfigStore{TConfig}.CopyValuesTo"/> requires a target store that has already loaded.
     /// </summary>
     [TestMethod]
     public void CopyValuesTo_TargetNotLoaded_ThrowsInvalidOperationException()
@@ -1194,8 +1194,8 @@ public partial class SettingsStoreTests
         var targetPath = Path.Combine(Path.GetTempPath(), $"target_{Guid.NewGuid()}.json");
         try
         {
-            var source = new SettingsStore<TestConfig>(sourcePath);
-            var target = new SettingsStore<TestConfig>(targetPath);
+            var source = new ConfigStore<TestConfig>(sourcePath);
+            var target = new ConfigStore<TestConfig>(targetPath);
             _ = source.Load();
 
             Assert.ThrowsExactly<InvalidOperationException>(() => source.CopyValuesTo(target));
@@ -1210,7 +1210,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="ISettingsStore{TConfig}.CopyValuesTo(ISettingsStore{TConfig}, bool)"/>
+    /// Verifies that <see cref="IConfigStore{TConfig}.CopyValuesTo(IConfigStore{TConfig}, bool)"/>
     /// rejects target implementations that do not participate in Umbra's internal copy-target contract.
     /// </summary>
     [TestMethod]
@@ -1220,9 +1220,9 @@ public partial class SettingsStoreTests
         var sourcePath = Path.Combine(Path.GetTempPath(), $"source_{Guid.NewGuid()}.json");
         try
         {
-            ISettingsStore<TestConfig> source = new SettingsStore<TestConfig>(sourcePath);
+            IConfigStore<TestConfig> source = new ConfigStore<TestConfig>(sourcePath);
             _ = source.Load();
-            var unsupportedTarget = new UnsupportedSettingsStoreTarget();
+            var unsupportedTarget = new UnsupportedConfigStoreTarget();
 
             var exception = Assert.ThrowsExactly<InvalidOperationException>(() => source.CopyValuesTo(unsupportedTarget));
 
@@ -1246,8 +1246,8 @@ public partial class SettingsStoreTests
         var targetPath = Path.Combine(Path.GetTempPath(), $"target_{Guid.NewGuid()}.json");
         try
         {
-            var source = new SettingsStore<TestConfig>(sourcePath);
-            var target = new SettingsStore<TestConfig>(targetPath);
+            var source = new ConfigStore<TestConfig>(sourcePath);
+            var target = new ConfigStore<TestConfig>(targetPath);
             var sourceConfig = source.Load();
             var targetConfig = target.Load();
             var callCount = 0;
@@ -1275,7 +1275,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="ISettingsStore{TConfig}.CopyValuesTo"/> is available and usable
+    /// Verifies that <see cref="IConfigStore{TConfig}.CopyValuesTo"/> is available and usable
     /// through the public interface surface.
     /// </summary>
     [TestMethod]
@@ -1286,8 +1286,8 @@ public partial class SettingsStoreTests
         var targetPath = Path.Combine(Path.GetTempPath(), $"target_{Guid.NewGuid()}.json");
         try
         {
-            ISettingsStore<TestConfig> source = new SettingsStore<TestConfig>(sourcePath);
-            var target = new SettingsStore<TestConfig>(targetPath);
+            IConfigStore<TestConfig> source = new ConfigStore<TestConfig>(sourcePath);
+            var target = new ConfigStore<TestConfig>(targetPath);
             var sourceConfig = source.Load();
             var targetConfig = target.Load();
 
@@ -1312,7 +1312,7 @@ public partial class SettingsStoreTests
     }
 
     /// <summary>
-    /// Verifies that <see cref="SettingsStore{TConfig}.ResetAll"/> skips delegate-backed parameters.
+    /// Verifies that <see cref="ConfigStore{TConfig}.ResetAll"/> skips delegate-backed parameters.
     /// </summary>
     [TestMethod]
     public void ResetAll_WithDelegateParameter_SkipsDelegateParameter()
@@ -1320,7 +1320,7 @@ public partial class SettingsStoreTests
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
         try
         {
-            var store = new SettingsStore<TestConfigWithDelegates>(tempPath);
+            var store = new ConfigStore<TestConfigWithDelegates>(tempPath);
             var config = store.Load();
             var originalDelegate = config.DelegateValue.Value;
 
@@ -1354,10 +1354,10 @@ public partial class SettingsStoreTests
 }
 
 /// <summary>
-/// Unit tests for <see cref = "SettingsStore{TConfig}.RemoveListenerFromAll(Action)"/>.
+/// Unit tests for <see cref = "ConfigStore{TConfig}.RemoveListenerFromAll(Action)"/>.
 /// </summary>
 [TestClass]
-public partial class SettingsStoreTests_RemoveListenerFromAll
+public partial class ConfigStoreTests_RemoveListenerFromAll
 {
     /// <summary>
     /// Test configuration class with a single parameter for testing.
@@ -1402,7 +1402,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         var config = store.Load();
         var callCount = 0;
         void listener() => callCount++;
@@ -1434,7 +1434,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         var config = store.Load();
         var callCount = 0;
         void listener() => callCount++;
@@ -1467,7 +1467,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         store.Load();
         static void listener()
         {
@@ -1495,7 +1495,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<EmptyConfig>(tempPath);
+        var store = new ConfigStore<EmptyConfig>(tempPath);
         store.Load();
         static void listener()
         {
@@ -1525,7 +1525,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<MultiParameterConfig>(tempPath);
+        var store = new ConfigStore<MultiParameterConfig>(tempPath);
         var config = store.Load();
         var callCount = 0;
         void listener() => callCount++;
@@ -1559,7 +1559,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         var config = store.Load();
         static void listener()
         {
@@ -1590,7 +1590,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     {
         // Arrange
         var tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(tempPath);
+        var store = new ConfigStore<TestConfig>(tempPath);
         var config = store.Load();
         var callCount1 = 0;
         var callCount2 = 0;
@@ -1625,7 +1625,7 @@ public partial class SettingsStoreTests_RemoveListenerFromAll
     {
         // Arrange
         var configPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"test_{Guid.NewGuid()}.json");
-        var store = new SettingsStore<TestConfig>(configPath);
+        var store = new ConfigStore<TestConfig>(configPath);
         var config = store.Load();
         static void listener(double oldVal, double newVal)
         {

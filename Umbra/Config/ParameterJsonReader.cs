@@ -7,7 +7,7 @@ namespace Umbra.Config;
 /// Converts persisted JSON values into objects that can be applied to registered <see cref="IParameter"/> instances.
 /// </summary>
 /// <remarks>
-/// <see cref="SettingsPersistence"/> uses this helper while loading a settings file. Values are applied through <see cref="IParameter.SetValueWithoutNotify(object?)"/> so persisted-state restoration does not trigger change notifications.
+/// <see cref="ConfigPersistence"/> uses this helper while loading a config file. Values are applied through <see cref="IParameter.SetValueWithoutNotify(object?)"/> so persisted-state restoration does not trigger change notifications.
 /// </remarks>
 internal static class ParameterJsonReader
 {

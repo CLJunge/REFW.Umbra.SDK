@@ -11,7 +11,7 @@ namespace Umbra.SamplePlugin.Config;
 /// </summary>
 /// <remarks>
 /// This config is intentionally broad rather than minimal so the sample plugin can exercise most
-/// of Umbra's settings surface in one place: hotkeys, booleans, numeric sliders and drags,
+/// of Umbra's config surface in one place: hotkeys, booleans, numeric sliders and drags,
 /// strings, enums, action buttons, custom drawers, nested-group drawers, category scoping,
 /// type-level metadata fallback, indentation, label margins, ordering, spacing, and visibility
 /// predicates.
@@ -46,13 +46,13 @@ public record PluginConfig
     public Parameter<Action> ResetAllSamples { get; init; }
 
     /// <summary>
-    /// Gets or sets the general sample settings, including the enable toggle and hotkey drawers.
+    /// Gets or sets the general sample config group, including the enable toggle and hotkey drawers.
     /// </summary>
     [UmbraParameter]
     [UmbraCategory("General")]
     [UmbraPrefix("general")]
     [UmbraCollapseAsTree(true)]
-    public GeneralSettings General { get; set; } = new();
+    public GeneralConfig General { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the boolean checkbox samples.
@@ -243,10 +243,10 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// General sample settings covering the basic boolean and hotkey controls used by many plugins.
+    /// General sample config covering the basic boolean and hotkey controls used by many plugins.
     /// </summary>
     [UmbraAutoRegister]
-    public record GeneralSettings
+    public record GeneralConfig
     {
         /// <summary>Gets or sets whether the sample plugin is enabled.</summary>
         [UmbraParameter]
@@ -274,7 +274,7 @@ public record PluginConfig
         [UmbraDescription("When enabled, the sample plugin emits extra diagnostic log lines during manual testing.")]
         public Parameter<bool> ShowVerboseLogs { get; set; } = new(false);
 
-        /// <summary>Resets the general sample settings to their defaults.</summary>
+        /// <summary>Resets the general sample config values to their defaults.</summary>
         [UmbraParameter]
         [UmbraDisplayName("Reset General")]
         [UmbraDescription("Resets the sample plugin enable toggle, hotkeys, and verbose logging flag.")]
@@ -282,8 +282,8 @@ public record PluginConfig
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetGeneral { get; init; }
 
-        /// <summary>Initializes a new <see cref="GeneralSettings"/> and wires the reset action.</summary>
-        public GeneralSettings()
+        /// <summary>Initializes a new <see cref="GeneralConfig"/> and wires the reset action.</summary>
+        public GeneralConfig()
         {
             ResetGeneral = new(() =>
             {
@@ -558,7 +558,7 @@ public record PluginConfig
         [UmbraPrefix("graphics")]
         [UmbraCollapseAsTree(true)]
         [UmbraParameterOrder(0)]
-        public ScopedBranchSettings Graphics { get; set; } = new()
+        public ScopedBranchConfig Graphics { get; set; } = new()
         {
             Intensity = new(.25f),
             Advanced = new()
@@ -575,7 +575,7 @@ public record PluginConfig
         [UmbraPrefix("audio")]
         [UmbraCollapseAsTree(true)]
         [UmbraParameterOrder(1)]
-        public ScopedBranchSettings Audio { get; set; } = new()
+        public ScopedBranchConfig Audio { get; set; } = new()
         {
             Enabled = new(false),
             ShowAdvanced = new(false),
@@ -594,7 +594,7 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraPrefix("typeLevelFallback")]
         [UmbraParameterOrder(2)]
-        public TypeLevelPresentationSettings TypeLevelFallback { get; set; } = new();
+        public TypeLevelPresentationConfig TypeLevelFallback { get; set; } = new();
 
         /// <summary>
         /// Gets or sets the nested group whose property-level category overrides its type-level fallback metadata.
@@ -604,7 +604,7 @@ public record PluginConfig
         [UmbraPrefix("propertyOverride")]
         [UmbraCollapseAsTree]
         [UmbraParameterOrder(3)]
-        public TypeLevelPresentationSettings PropertyOverride { get; set; } = new()
+        public TypeLevelPresentationConfig PropertyOverride { get; set; } = new()
         {
             SampleValue = new(77),
             Notes = new("Property-level category should win.")
@@ -616,14 +616,14 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraPrefix("indentedLayout")]
         [UmbraParameterOrder(4)]
-        public IndentedLayoutSettings IndentedLayout { get; set; } = new();
+        public IndentedLayoutConfig IndentedLayout { get; set; } = new();
     }
 
     /// <summary>
     /// Shared branch used by the nested-type tests to validate local category scoping and nested visibility.
     /// </summary>
     [UmbraAutoRegister]
-    public record ScopedBranchSettings
+    public record ScopedBranchConfig
     {
         /// <summary>Gets or sets whether this branch is enabled.</summary>
         [UmbraParameter]
@@ -659,14 +659,14 @@ public record PluginConfig
         [UmbraSpacingBefore]
         [UmbraSpacingAfter]
         [UmbraParameterOrder(2)]
-        public ScopedAdvancedSettings Advanced { get; set; } = new();
+        public ScopedAdvancedConfig Advanced { get; set; } = new();
     }
 
     /// <summary>
     /// Second-level nested branch used by the scoped-branch demo.
     /// </summary>
     [UmbraAutoRegister]
-    public record ScopedAdvancedSettings
+    public record ScopedAdvancedConfig
     {
         /// <summary>Gets or sets the advanced threshold value.</summary>
         [UmbraParameter]
@@ -694,12 +694,12 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// Nested settings group that declares its own presentation metadata at the type level.
+    /// Nested config group that declares its own presentation metadata at the type level.
     /// </summary>
     [UmbraAutoRegister]
     [UmbraCategory("Type-Level Fallback")]
     [UmbraCollapseAsTree]
-    public record TypeLevelPresentationSettings
+    public record TypeLevelPresentationConfig
     {
         /// <summary>Gets or sets the sample numeric value rendered in the fallback group.</summary>
         [UmbraParameter]
@@ -719,14 +719,14 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// Nested settings group that demonstrates class-level indentation and label-margin metadata.
+    /// Nested config group that demonstrates class-level indentation and label-margin metadata.
     /// </summary>
     [UmbraAutoRegister]
     [UmbraCategory("Indented Layout")]
     [UmbraCollapseAsTree(true)]
     [UmbraIndent(18f)]
     [UmbraLabelMargin(16f)]
-    public record IndentedLayoutSettings
+    public record IndentedLayoutConfig
     {
         /// <summary>Gets or sets the primary layout scale.</summary>
         [UmbraParameter]
@@ -873,7 +873,7 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// Sample nested settings group rendered by a custom nested-group drawer.
+    /// Sample nested config group rendered by a custom nested-group drawer.
     /// Multiple instances of this type intentionally reuse the same local widget labels so the
     /// sample can validate nested-group ImGui ID scoping manually.
     /// </summary>

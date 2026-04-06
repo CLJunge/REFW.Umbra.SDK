@@ -118,16 +118,16 @@ public sealed class TypeDrawMetadataTests
         var result = TypeDrawMetadata.For(testType);
 
         // Assert
-        Assert.IsTrue(result.IsAutoRegisterSettings);
+        Assert.IsTrue(result.IsAutoRegisterConfig);
         Assert.AreEqual("Root Category", result.Category);
-        Assert.AreEqual("rootPrefix", result.SettingsPrefix);
+        Assert.AreEqual("rootPrefix", result.ConfigPrefix);
         Assert.IsNotNull(result.IndentAttr);
         Assert.IsNotNull(result.CollapseAttr);
         Assert.IsNotNull(result.LabelMarginAttr);
     }
 
     /// <summary>
-    /// Tests that property-level metadata captures parameter and nested-group settings information.
+    /// Tests that property-level metadata captures parameter and nested-group information.
     /// </summary>
     [TestMethod]
     public void For_TypeWithAnnotatedProperties_PopulatesPropertyMetadata()
@@ -148,8 +148,8 @@ public sealed class TypeDrawMetadataTests
 
         Assert.IsNotNull(nestedProperty);
         Assert.IsFalse(nestedProperty.IsParameter);
-        Assert.AreEqual("nestedPrefix", nestedProperty.SettingsPrefix);
-        Assert.AreEqual("nestedKey", nestedProperty.SettingsParameterKeyOverride);
+        Assert.AreEqual("nestedPrefix", nestedProperty.ConfigPrefix);
+        Assert.AreEqual("nestedKey", nestedProperty.ConfigParameterKeyOverride);
         Assert.IsNotNull(nestedProperty.CollapseAttr);
         Assert.IsNotNull(nestedProperty.IndentAttr);
         Assert.IsNotNull(nestedProperty.LabelMarginAttr);

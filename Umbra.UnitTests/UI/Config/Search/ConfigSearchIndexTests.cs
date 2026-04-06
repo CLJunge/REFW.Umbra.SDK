@@ -14,8 +14,8 @@ public sealed class ConfigSearchIndexTests
     {
         // Arrange
         var index = new ConfigSearchIndex();
-        index.AddParameterResult("alpha", "Master Volume", "Adjusts global audio level.", "Audio", "settings.audio");
-        index.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "settings.graphics");
+        index.AddParameterResult("alpha", "Master Volume", "Adjusts global audio level.", "Audio", "config.audio");
+        index.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "config.graphics");
 
         // Act
         var labelMatches = index.FindMatches("MASTER");
@@ -36,7 +36,7 @@ public sealed class ConfigSearchIndexTests
     {
         // Arrange
         var index = new ConfigSearchIndex();
-        index.AddParameterResult("alpha", "Master Volume", null, "Audio", "settings.audio");
+        index.AddParameterResult("alpha", "Master Volume", null, "Audio", "config.audio");
 
         // Act
         var matches = index.FindMatches(string.Empty);
@@ -55,14 +55,14 @@ public sealed class ConfigSearchIndexTests
         var index = new ConfigSearchIndex();
 
         // Act
-        index.AddParameterResult("alpha", "Master Volume", null, "Audio", "settings.audio");
+        index.AddParameterResult("alpha", "Master Volume", null, "Audio", "config.audio");
 
         // Assert
         Assert.HasCount(3, index.Branches);
-        Assert.AreEqual("group:settings", index.Branches[0].BranchId);
-        Assert.AreEqual("group:settings.audio", index.Branches[1].BranchId);
-        Assert.AreEqual("category:settings.audio|Audio", index.Branches[2].BranchId);
-        Assert.AreEqual("group:settings.audio", index.Branches[2].ParentBranchId);
+        Assert.AreEqual("group:config", index.Branches[0].BranchId);
+        Assert.AreEqual("group:config.audio", index.Branches[1].BranchId);
+        Assert.AreEqual("category:config.audio|Audio", index.Branches[2].BranchId);
+        Assert.AreEqual("group:config.audio", index.Branches[2].ParentBranchId);
         Assert.HasCount(3, index.Entries[0].AncestorBranchIds);
     }
 
@@ -74,7 +74,7 @@ public sealed class ConfigSearchIndexTests
     {
         // Arrange
         var index = new ConfigSearchIndex();
-        index.AddParameterResult("alpha", "Master Volume", null, "Audio", "settings.audio");
+        index.AddParameterResult("alpha", "Master Volume", null, "Audio", "config.audio");
 
         // Act
         index.PrependRootBranch("root:test-scope");

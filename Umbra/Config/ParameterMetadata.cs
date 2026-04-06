@@ -8,7 +8,7 @@ namespace Umbra.Config;
 /// Stores the descriptive and UI metadata resolved for a registered <see cref="Parameter{T}"/>.
 /// </summary>
 /// <remarks>
-/// <see cref="ParameterMetadataReader"/> builds this object from attributes applied to the parameter's declaring member and containing settings types. The settings UI consumes the resulting values to choose labels, grouping, spacing, validation hints, and drawer behavior without rescanning attributes during rendering.
+/// <see cref="ParameterMetadataReader"/> builds this object from attributes applied to the parameter's declaring member and containing config types. The config UI consumes the resulting values to choose labels, grouping, spacing, validation hints, and drawer behavior without rescanning attributes during rendering.
 /// </remarks>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class ParameterMetadata
@@ -29,7 +29,7 @@ public sealed class ParameterMetadata
     /// Gets the fully resolved display label for this parameter. Equals <see cref="DisplayName"/>
     /// when a <c>[UmbraDisplayName(...)]</c> attribute is present; otherwise the property name
     /// converted to a human-readable form (e.g. <c>"FieldOfView"</c> → <c>"Field Of View"</c>).
-    /// Pre-computed by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to
+    /// Pre-computed by <see cref="ParameterMetadataReader"/> during <see cref="ConfigStore{TConfig}.Load()"/> to
     /// avoid repeated <see cref="System.Text.StringBuilder"/> allocations at draw-tree construction time.
     /// </summary>
     internal string ResolvedLabel { get; init; } = string.Empty;
@@ -141,7 +141,7 @@ public sealed class ParameterMetadata
     public (Vector4 Normal, Vector4 Hovered, Vector4 Active)? CustomButtonColors { get; init; }
 
     /// <summary>
-    /// Gets the explicit pixel width for a settings control's editing widget.
+    /// Gets the explicit pixel width for a parameter control's editing widget.
     /// Sourced from <see cref="UmbraControlWidthAttribute"/>.
     /// </summary>
     /// <remarks>
@@ -243,7 +243,7 @@ public sealed class ParameterMetadata
     /// attribute is present; otherwise the value inferred from the decimal-place count of
     /// <see cref="Step"/>, defaulting to <c>"%.2f"</c>. Precomputed by
     /// <see cref="ParameterMetadataReader"/> during
-    /// <see cref="SettingsStore{TConfig}.Load()"/> to eliminate <c>Number.FormatFloat</c> overhead at
+    /// <see cref="ConfigStore{TConfig}.Load()"/> to eliminate <c>Number.FormatFloat</c> overhead at
     /// draw-tree construction time.
     /// </summary>
     internal string InferredFloatFormat { get; init; } = "%.2f";
@@ -251,7 +251,7 @@ public sealed class ParameterMetadata
     /// <summary>
     /// Gets the pre-computed hidden ImGui control label (<c>"##" + Key</c>) for this parameter,
     /// or <see langword="null"/> when the parameter key was not available at metadata-read time.
-    /// Cached by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to avoid
+    /// Cached by <see cref="ParameterMetadataReader"/> during <see cref="ConfigStore{TConfig}.Load()"/> to avoid
     /// a <c>string.Concat</c> allocation per parameter per <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/> construction.
     /// </summary>
     internal string? HiddenLabel { get; init; }

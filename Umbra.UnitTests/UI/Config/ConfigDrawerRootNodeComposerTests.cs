@@ -30,10 +30,10 @@ public sealed class ConfigDrawerRootNodeComposerTests
 
         // Assert
         Assert.AreSame(nodes, composedNodes);
-        Assert.AreEqual("group:settings", searchIndex.Branches[0].BranchId);
-        Assert.AreEqual("group:settings.audio", searchIndex.Branches[1].BranchId);
-        Assert.AreEqual("category:settings.audio|Audio", searchIndex.Branches[2].BranchId);
-        Assert.AreEqual("group:settings", searchIndex.Entries[0].AncestorBranchIds[0]);
+        Assert.AreEqual("group:config", searchIndex.Branches[0].BranchId);
+        Assert.AreEqual("group:config.audio", searchIndex.Branches[1].BranchId);
+        Assert.AreEqual("category:config.audio|Audio", searchIndex.Branches[2].BranchId);
+        Assert.AreEqual("group:config", searchIndex.Entries[0].AncestorBranchIds[0]);
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public sealed class ConfigDrawerRootNodeComposerTests
     private static ConfigSearchIndex CreateSearchIndex()
     {
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Master Volume", null, "Audio", "settings.audio");
+        searchIndex.AddParameterResult("alpha", "Master Volume", null, "Audio", "config.audio");
         return searchIndex;
     }
 

@@ -26,8 +26,8 @@ internal static class ParameterMetadataReader
     /// <summary>
     /// Builds a <see cref="ParameterMetadata"/> instance from the attributes applied to <paramref name="member"/>.
     /// </summary>
-    /// <param name="member">The reflected settings member whose attributes should be read.</param>
-    /// <param name="inheritedCategory">The category inherited from an enclosing settings scope, or <see langword="null"/> when none applies.</param>
+    /// <param name="member">The reflected config member whose attributes should be read.</param>
+    /// <param name="inheritedCategory">The category inherited from an enclosing config scope, or <see langword="null"/> when none applies.</param>
     /// <param name="parameterKey">The fully qualified persisted key, used to precompute cached UI labels when available.</param>
     /// <returns>The resolved metadata for <paramref name="member"/>.</returns>
     internal static ParameterMetadata ReadFrom(MemberInfo member, string? inheritedCategory = null, string? parameterKey = null)
@@ -99,7 +99,7 @@ internal static class ParameterMetadataReader
     /// <summary>
     /// Reads the validation-specific attribute metadata applied to <paramref name="member"/>.
     /// </summary>
-    /// <param name="member">The reflected settings member whose validation attributes should be read.</param>
+    /// <param name="member">The reflected config member whose validation attributes should be read.</param>
     /// <returns>The resolved validation-specific metadata values.</returns>
     private static ValidationMetadataValues ReadValidationMetadata(MemberInfo member)
     {

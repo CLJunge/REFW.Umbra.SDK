@@ -320,7 +320,7 @@ public class NestedNodeComposerTests
         // Use a drawer type that doesn't support the group type to force BuildDrawAction to return null
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(IncompatibleDrawer));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, settingsPrefix: null, settingsParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act
@@ -342,7 +342,7 @@ public class NestedNodeComposerTests
         var nestedDrawerAttrMock = new Mock<INestedDrawerAttribute>();
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(TestNestedGroupDrawer));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 5, spacingBefore: 2, spacingAfter: 3, settingsPrefix: null, settingsParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 5, spacingBefore: 2, spacingAfter: 3, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act
@@ -367,7 +367,7 @@ public class NestedNodeComposerTests
         var nestedDrawerAttrMock = new Mock<INestedDrawerAttribute>();
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(TestNestedGroupDrawer));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 10, spacingBefore: 1, spacingAfter: 1, settingsPrefix: null, settingsParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 10, spacingBefore: 1, spacingAfter: 1, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act
@@ -392,7 +392,7 @@ public class NestedNodeComposerTests
         var nestedDrawerAttrMock = new Mock<INestedDrawerAttribute>();
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(DisposableTestNestedGroupDrawer));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, settingsPrefix: null, settingsParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act
@@ -418,7 +418,7 @@ public class NestedNodeComposerTests
         // Use a drawer type without parameterless constructor to trigger exception during Activator.CreateInstance
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(InvalidDrawerWithoutDefaultConstructor));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, settingsPrefix: null, settingsParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act

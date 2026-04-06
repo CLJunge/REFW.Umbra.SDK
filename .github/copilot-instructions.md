@@ -50,12 +50,12 @@ When generating or modifying code for this repository:
 
 ## UI and configuration
 - Use **ImGui** for in-game UI. Do not introduce WPF, WinForms, MAUI, Blazor, or ASP.NET UI patterns.
-- Prefer `PluginPanel` as the top-level plugin UI when settings and live state are shown together.
+- Prefer `PluginPanel` as the top-level plugin UI when config and live state are shown together.
 - Use `ConfigSection<TConfig>` / `LiveStateSection<T>` with `PluginPanel`; use `ConfigDrawer<TConfig>` directly only for config-only surfaces.
 - Prefer the existing `Umbra.Config` model:
   - mark config types with `[UmbraAutoRegister]`
   - store values in `Parameter<T>` properties marked with `[UmbraParameter]`
-  - load and save through `SettingsStore<TConfig>`
+  - load and save through `ConfigStore<TConfig>`
   - create `DeferredSaveController<TConfig>` only after `Load()` completes
 - For nested config groups, put `[UmbraPrefix("...")]` on the parent property, not the nested type.
 - Reuse existing helpers where applicable: `KeyboardInput`, `ImGuiWidgets`, and drawers under `Umbra.UI.Config.Drawers`.

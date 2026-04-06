@@ -6,10 +6,10 @@ namespace Umbra.Config;
 /// Tracks listener subscriptions attached to a store's registered parameter set and the cleanup actions required to remove them.
 /// </summary>
 /// <remarks>
-/// This registry isolates listener bookkeeping from <see cref="SettingsStore{TConfig}"/> so the store can remain focused on lifecycle and persistence. Each add call records one cleanup action, so repeated registrations of the same listener are tracked independently.
+/// This registry isolates listener bookkeeping from <see cref="ConfigStore{TConfig}"/> so the store can remain focused on lifecycle and persistence. Each add call records one cleanup action, so repeated registrations of the same listener are tracked independently.
 /// </remarks>
 [DebuggerDisplay("Tracked listener registrations: {_cleanupRegistrations.Count}")]
-internal sealed class SettingsStoreListenerRegistry : IDisposable
+internal sealed class ConfigStoreListenerRegistry : IDisposable
 {
     private sealed class ListenerCleanupRegistration(
         Action cleanup,

@@ -200,8 +200,8 @@ public sealed class ConfigDrawerTests
         var alphaNode = new SearchAwareTestNode("alpha");
         var betaNode = new SearchAwareTestNode("beta");
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Master Volume", "Adjusts output level.", "Audio", "settings.audio");
-        searchIndex.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "settings.graphics");
+        searchIndex.AddParameterResult("alpha", "Master Volume", "Adjusts output level.", "Audio", "config.audio");
+        searchIndex.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "config.graphics");
 
         using var drawer = new ConfigDrawer<TestConfig>(
             "test-scope",
@@ -240,8 +240,8 @@ public sealed class ConfigDrawerTests
         var alphaNode = new ParameterNode(static () => { }, order: 0, spacingBefore: 0, spacingAfter: 0, renderer: alphaRenderer, resultId: "alpha");
         var betaNode = new ParameterNode(static () => { }, order: 1, spacingBefore: 0, spacingAfter: 0, renderer: betaRenderer, resultId: "beta");
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "settings.graphics");
-        searchIndex.AddParameterResult("beta", "Brightness", null, "Graphics", "settings.graphics");
+        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "config.graphics");
+        searchIndex.AddParameterResult("beta", "Brightness", null, "Graphics", "config.graphics");
 
         using var drawer = new ConfigDrawer<TestConfig>(
             "test-scope",
@@ -276,8 +276,8 @@ public sealed class ConfigDrawerTests
         var alphaNode = new SearchAwareTestNode("alpha");
         var betaNode = new SearchAwareTestNode("beta");
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "settings.graphics");
-        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "settings.gameplay");
+        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "config.graphics");
+        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "config.gameplay");
 
         using var drawer = new ConfigDrawer<TestConfig>(
             "test-scope",
@@ -325,8 +325,8 @@ public sealed class ConfigDrawerTests
         var alphaNode = new ParameterNode(static () => { }, order: 0, spacingBefore: 0, spacingAfter: 0, renderer: alphaRenderer, resultId: "alpha");
         var betaNode = new ParameterNode(static () => { }, order: 1, spacingBefore: 0, spacingAfter: 0, renderer: betaRenderer, resultId: "beta");
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "settings.graphics");
-        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "settings.gameplay");
+        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "config.graphics");
+        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "config.gameplay");
 
         using var drawer = new ConfigDrawer<TestConfig>(
             "test-scope",
@@ -668,7 +668,7 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Configuration class with a nested settings group.
+    /// Configuration class with a nested group.
     /// </summary>
     [UmbraAutoRegister]
     private sealed class ConfigWithNestedGroup
