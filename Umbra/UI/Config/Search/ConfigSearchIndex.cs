@@ -87,11 +87,13 @@ internal sealed class ConfigSearchIndex
         for (var i = 0; i < _entries.Count; i++)
         {
             var entry = _entries[i];
+            if (!entry.NormalizedSearchText.Contains(normalizedQuery, StringComparison.Ordinal))
+                continue;
+
             if (!IsResultVisible(entry.ResultId))
                 continue;
 
-            if (entry.NormalizedSearchText.Contains(normalizedQuery, StringComparison.Ordinal))
-                matches.Add(entry.ResultId);
+            matches.Add(entry.ResultId);
         }
 
         return matches;
