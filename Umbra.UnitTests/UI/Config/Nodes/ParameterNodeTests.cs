@@ -386,6 +386,54 @@ public sealed class ParameterNodeTests
         Assert.AreEqual(0, renderer.KeyboardFocusCount);
     }
 
+    /// <summary>
+    /// Verifies that a matching result stays hidden during search when the runtime visibility predicate is false.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenMatchingResultIsRuntimeHidden_HidesNode()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        var node = new ParameterNode(static () => false, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
+        var renderState = CreateRenderState(["alpha"], focusedResultId: null, pendingScrollResultId: null, pendingFocusResultId: null);
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsFalse(visible);
+        Assert.AreEqual(0, drawCallCount);
+        Assert.AreEqual(0, renderer.PushStyleColorCount);
+        Assert.AreEqual(0, renderer.KeyboardFocusCount);
+    }
+
+    /// <summary>
+    /// Verifies that a hidden wrapper does not stay visible during search just because a child result matches.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenMatchingChildIsWrappedByHiddenNode_HidesWrapper()
+    {
+        // Arrange
+        var wrapperRenderer = new TestParameterNodeRenderer();
+        var childRenderer = new TestParameterNodeRenderer();
+        var childDrawCallCount = 0;
+        var childNode = new ParameterNode(static () => true, () => childDrawCallCount++, resultId: "alpha", renderer: childRenderer, order: 0, spacingBefore: 0, spacingAfter: 0);
+        var wrapperNode = new ParameterNode(static () => false, static () => { }, order: 0, spacingBefore: 0, spacingAfter: 0, renderer: wrapperRenderer, children: [childNode]);
+        var renderState = CreateRenderState(["alpha"], focusedResultId: null, pendingScrollResultId: null, pendingFocusResultId: null);
+
+        // Act
+        var visible = ((IConfigSearchNode)wrapperNode).ApplySearch(renderState);
+        wrapperNode.Draw();
+
+        // Assert
+        Assert.IsFalse(visible);
+        Assert.AreEqual(0, childDrawCallCount);
+        Assert.AreEqual(0, childRenderer.PushStyleColorCount);
+        Assert.AreEqual(0, wrapperRenderer.PushStyleColorCount);
+    }
+
     private static ConfigSearchRenderState CreateRenderState(
         string[] matchIds,
         string? focusedResultId,

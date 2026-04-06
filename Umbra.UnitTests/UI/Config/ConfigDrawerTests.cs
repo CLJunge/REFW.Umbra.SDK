@@ -125,6 +125,57 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
+    /// Tests that the drawer reports no active search query before the user enters search text.
+    /// </summary>
+    [TestMethod]
+    public void HasActiveSearchQuery_BeforeQueryEntry_ReturnsFalse()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope();
+        renderer.TextWidths["Search"] = 36f;
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = true });
+
+        // Act
+        var hasActiveSearchQuery = drawer.HasActiveSearchQuery;
+
+        // Assert
+        Assert.IsFalse(hasActiveSearchQuery);
+    }
+
+    /// <summary>
+    /// Tests that the drawer reports an active search query after the user enters non-empty search text.
+    /// </summary>
+    [TestMethod]
+    public void HasActiveSearchQuery_AfterQueryEntry_ReturnsTrue()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope
+        {
+            NextInputTextResult = true,
+            NextInputTextValue = "audio"
+        };
+        renderer.TextWidths["Search"] = 36f;
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = true });
+
+        // Act
+        drawer.Draw();
+        var hasActiveSearchQuery = drawer.HasActiveSearchQuery;
+
+        // Assert
+        Assert.IsTrue(hasActiveSearchQuery);
+    }
+
+    /// <summary>
     /// Tests that the search row reuses cached button and label measurements when the available width is unchanged.
     /// </summary>
     [TestMethod]
@@ -305,6 +356,46 @@ public sealed class ConfigDrawerTests
         Assert.IsTrue(alphaFocusedAfterFirstNext);
         Assert.IsTrue(betaFocusedAfterSecondNext);
         Assert.IsTrue(alphaNode.LastIsFocused);
+    }
+
+    /// <summary>
+    /// Tests that navigation skips matching results that are currently hidden by runtime visibility.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenMatchingResultIsHidden_NavigationFocusesVisibleMatch()
+    {
+        // Arrange
+        var drawerRenderer = new TestConfigDrawerScope
+        {
+            NextInputTextResult = true,
+            NextInputTextValue = "ga"
+        };
+        drawerRenderer.TextWidths["Search"] = 36f;
+        var hiddenRenderer = new TestParameterNodeRenderer();
+        var visibleRenderer = new TestParameterNodeRenderer();
+        var hiddenNode = new ParameterNode(static () => false, static () => { }, order: 0, spacingBefore: 0, spacingAfter: 0, renderer: hiddenRenderer, resultId: "alpha");
+        var visibleNode = new ParameterNode(static () => true, static () => { }, order: 1, spacingBefore: 0, spacingAfter: 0, renderer: visibleRenderer, resultId: "beta");
+        var searchIndex = new ConfigSearchIndex();
+        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "config.graphics", static () => false);
+        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "config.gameplay", static () => true);
+
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [hiddenNode, visibleNode],
+            [],
+            drawerRenderer,
+            new ConfigDrawerOptions { ShowSearchBar = true },
+            searchIndex);
+
+        // Act
+        drawer.Draw();
+        drawerRenderer.ButtonResults.Enqueue(false);
+        drawerRenderer.ButtonResults.Enqueue(true);
+        drawer.Draw();
+
+        // Assert
+        Assert.AreEqual(0, hiddenRenderer.KeyboardFocusCount);
+        Assert.AreEqual(1, visibleRenderer.KeyboardFocusCount);
     }
 
     /// <summary>

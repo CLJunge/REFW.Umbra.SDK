@@ -164,7 +164,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     public void Draw()
     {
         if (!_searchVisible) return;
-        if (!_alwaysVisible && !_isVisible!()) return;
+        if (!IsRuntimeVisible()) return;
 
         for (var i = 0; i < _spacingBefore; i++) _renderer.Spacing();
 
@@ -229,12 +229,12 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
                     hasVisibleChild = true;
             }
 
-            _searchVisible = hasVisibleChild;
+            _searchVisible = hasVisibleChild && IsRuntimeVisible();
             _searchVisualState = SearchMatchVisualState.None;
-            return hasVisibleChild;
+            return _searchVisible;
         }
 
-        var isMatch = searchState.IsMatch(_resultId);
+        var isMatch = searchState.IsMatch(_resultId) && IsRuntimeVisible();
         _searchVisible = isMatch;
         _searchVisualState = !isMatch
             ? SearchMatchVisualState.None
@@ -256,6 +256,9 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
 
         return isMatch;
     }
+
+    private bool IsRuntimeVisible()
+        => _alwaysVisible || _isVisible!();
 
     private void DrawCore()
     {
