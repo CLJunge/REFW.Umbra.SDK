@@ -1,20 +1,20 @@
 # REFW.Umbra
 
-`Umbra` is a support library for building managed `REFramework.NET` mods and plugins for RE Engine games. It provides reusable building blocks for typed settings, ImGui-based UI, plugin lifecycle hosting, logging, keyboard input, managed-object resolution, and runtime game detection inside the game process.
+`Umbra` is a support library for building managed `REFramework.NET` mods and plugins for RE Engine games. It provides reusable building blocks for typed config, ImGui-based UI, plugin lifecycle hosting, logging, keyboard input, managed-object resolution, and runtime game detection inside the game process.
 
 The repository contains three projects:
 
-- `Umbra` - the reusable runtime/config/UI library
-- `Umbra.SamplePlugin` - a reference plugin showing the recommended host, config, panel, deferred-save, benchmark, and robust-shutdown patterns
-- `Umbra.UnitTests` - automated coverage for settings, UI composition, lifecycle helpers, logging, runtime helpers, and persistence behavior
+- `Umbra` - the reusable runtime, config, logging, and UI library
+- `Umbra.SamplePlugin` - a reference plugin showing the recommended host, config, panel, deferred-save, import/export, benchmark, and robust-shutdown patterns
+- `Umbra.UnitTests` - automated coverage for config, UI composition, lifecycle helpers, logging, runtime helpers, import/export behavior, and persistence behavior
 
 ## Features
 
-- Attribute-driven settings registration with `ConfigStore<TConfig>` and `Parameter<T>`
+- Attribute-driven config registration with `ConfigStore<TConfig>` and `Parameter<T>`
 - JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable enum parameters
 - Config import/export via `ConfigStore<TConfig>.Import(...)` and `Export(...)`, with versioned exchange documents and legacy flat-file import support
 - Deferred auto-save with `DeferredSaveController<TConfig>`
-- Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
+- Pre-built ImGui config UI with `ConfigDrawer<TConfig>`
 - Built-in config search/filter UI with visible-match filtering, highlight styling, and previous/next result navigation in `ConfigDrawer<TConfig>` and `ConfigSection<TConfig>`
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
 - Validation attributes with inline feedback for rejected edits in `ConfigDrawer<TConfig>`
@@ -48,7 +48,7 @@ The recommended pattern is:
 | `Initialize()` | Load config, create state, build panels |
 | `Shutdown()` | Run best-effort teardown steps: flush/dispose controllers, save/dispose stores, dispose panels, and log any cleanup failures |
 | `OnPreUpdateBehavior()` | Per-frame gameplay or polling logic |
-| `OnPreImGuiDrawUI()` | Draw settings/status UI and tick deferred saves |
+| `OnPreImGuiDrawUI()` | Draw config/status UI and tick deferred saves |
 | `OnPreImGuiRenderer()` | Draw overlay UI during the renderer pass |
 
 ## Game detection with `GameContext`
@@ -149,15 +149,15 @@ Import compatibility rules:
 - imported values are applied through the existing `Parameter<T>` validation pipeline, so rejected values keep the last valid in-memory state
 - when `ConfigImportOptions.SaveAfterImport` is `true`, Umbra saves the accepted final state once through the normal store persistence path
 
-Config transfer UI is now an optional built-in Umbra feature rather than a plugin-defined nested config group. Enable it through `ConfigDrawerOptions.Transfer` and create the section through `ConfigSection<TConfig>.CreateWithStore(config, store, options, ...)`. The built-in control renders in its own tree node, with a configurable header and configurable placement before or after the normal config nodes. Inside that tree node it uses one shared config-file path field, exposes an explicit browse menu for import or export file selection, shows one mode-specific action button, and renders a transient status row below that button only after an import or export completes. Success and failure messages remain visible for about two seconds by default before the row collapses again, that visibility duration is configurable through `ConfigTransferOptions.StatusDisplayDuration`, and failure messages direct the user to check the logs. The transfer path is persisted in a separate sidecar file derived from the main settings-store file path, so transfer UI state stays decoupled from the actual configuration payload.
+Built-in config import/export UI is now an optional Umbra feature rather than a plugin-defined nested config group. Enable it through `ConfigDrawerOptions.Transfer` and create the section through `ConfigSection<TConfig>.CreateWithStore(config, store, options, ...)`. The built-in control renders in its own tree node, with a configurable header and configurable placement before or after the normal config nodes. Inside that tree node it uses one shared config-file path field, exposes an explicit browse menu for import or export file selection, shows one mode-specific action button, and renders a transient status row below that button only after an import or export completes. Success and failure messages remain visible for about two seconds by default before the row collapses again, that visibility duration is configurable through `ConfigTransferOptions.StatusDisplayDuration`, and failure messages direct the user to check the logs. The import/export path is persisted in a separate sidecar file derived from the main config-store file path, so the UI state stays decoupled from the actual configuration payload.
 
 ## Custom drawers and sections
 
 - `[UmbraDrawer<TDrawer>]` uses an `IParameterDrawer`
 - `[UmbraTwoColumnDrawer<TDrawer>]` uses an `ITwoColumnParameterDrawer`
-- `[UmbraNestedDrawer<TDrawer>]` uses an `INestedDrawer<T>` for a whole nested settings group
+- `[UmbraNestedDrawer<TDrawer>]` uses an `INestedDrawer<T>` for a whole nested config group
 - `[LiveStateSectionDrawer<TDrawer>]` binds a live-state type to its panel drawer
-- `PluginPanel` is the recommended top-level UI surface when a plugin needs settings and live state together
+- `PluginPanel` is the recommended top-level UI surface when a plugin needs config and live state together
 
 ## Architecture summary
 
@@ -168,7 +168,7 @@ REFW.Umbra
 │  │  ├─ Parameter<T>, IParameter, ParameterMetadata
 │  │  ├─ ConfigStore<TConfig>, ConfigStorePersistenceCoordinator<TConfig>, ConfigRegistrar
 │  │  ├─ DeferredSaveController<TConfig>
-│  │  └─ settings/UI metadata attributes
+│  │  └─ config/UI metadata attributes
 │  ├─ UI
 │  │  ├─ Config
 │  │  │  ├─ ConfigDrawer<TConfig>, ConfigSection<TConfig>
@@ -201,7 +201,7 @@ REFW.Umbra
 ├─ Umbra.SamplePlugin
 │  └─ reference plugin showing nested config groups, custom drawers, deferred saving, panel usage, benchmarking, robust shutdown, and game gating via GameContext
 └─ Umbra.UnitTests
-   └─ automated tests for settings, UI composition, lifecycle guards, runtime helpers, and logging
+   └─ automated tests for config, UI composition, lifecycle guards, runtime helpers, logging, and import/export behavior
 ```
 
 ## Main flow
@@ -255,7 +255,7 @@ The setup script downloads the latest REFramework nightly C# API package, stages
 ### Build
 
 ```bash
- dotnet build REFW.Umbra.slnx
+ dotnet build REFW.Umbra.slnx -c Release
 ```
 
 ### Test
@@ -346,8 +346,8 @@ public sealed class MyPlugin : UmbraPlugin
         RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
         RunShutdownStep("flush deferred save controller", FlushDeferredSaveController);
         RunShutdownStep("dispose deferred save controller", DisposeDeferredSaveController);
-        RunShutdownStep("save settings store", SaveConfigStore);
-        RunShutdownStep("dispose settings store", DisposeConfigStore);
+        RunShutdownStep("save config store", SaveConfigStore);
+        RunShutdownStep("dispose config store", DisposeConfigStore);
 
         Log.Info("Unloaded.");
     }
