@@ -320,11 +320,11 @@ public class NestedNodeComposerTests
         // Use a drawer type that doesn't support the group type to force BuildDrawAction to return null
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(IncompatibleDrawer));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, disableIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act
-        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: null, collapseAttr: null, indentAttr: null, out var disposable);
+        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: null, collapseAttr: null, indentAttr: null, isDisabled: null, out var disposable);
         // Assert
         Assert.IsNull(result, "Expected null when BuildDrawAction returns null");
         Assert.IsNull(disposable, "Disposable should be null when result is null");
@@ -342,11 +342,11 @@ public class NestedNodeComposerTests
         var nestedDrawerAttrMock = new Mock<INestedDrawerAttribute>();
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(TestNestedGroupDrawer));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 5, spacingBefore: 2, spacingAfter: 3, configPrefix: null, configParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, disableIf: null, order: 5, spacingBefore: 2, spacingAfter: 3, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act
-        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope.path", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: null, collapseAttr: null, indentAttr: null, out var disposable);
+        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope.path", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: null, collapseAttr: null, indentAttr: null, isDisabled: null, out var disposable);
         // Assert
         Assert.IsNotNull(result, "Expected non-null result when BuildDrawAction succeeds");
         Assert.IsInstanceOfType<IdScopeNode>(result, "Expected result to be IdScopeNode");
@@ -367,11 +367,11 @@ public class NestedNodeComposerTests
         var nestedDrawerAttrMock = new Mock<INestedDrawerAttribute>();
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(TestNestedGroupDrawer));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 10, spacingBefore: 1, spacingAfter: 1, configPrefix: null, configParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, disableIf: null, order: 10, spacingBefore: 1, spacingAfter: 1, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act
-        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope.with.category", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: "TestCategory", collapseAttr: null, indentAttr: null, out var disposable);
+        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope.with.category", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: "TestCategory", collapseAttr: null, indentAttr: null, isDisabled: null, out var disposable);
         // Assert
         Assert.IsNotNull(result, "Expected non-null result when BuildDrawAction succeeds");
         Assert.IsInstanceOfType<IdScopeNode>(result, "Expected result to be IdScopeNode");
@@ -392,11 +392,11 @@ public class NestedNodeComposerTests
         var nestedDrawerAttrMock = new Mock<INestedDrawerAttribute>();
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(DisposableTestNestedGroupDrawer));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, disableIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act
-        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: null, collapseAttr: null, indentAttr: null, out var disposable);
+        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: null, collapseAttr: null, indentAttr: null, isDisabled: null, out var disposable);
         // Assert
         Assert.IsNotNull(result, "Expected non-null result when BuildDrawAction succeeds");
         Assert.IsNotNull(disposable, "Disposable should be set when drawer implements IDisposable");
@@ -418,11 +418,11 @@ public class NestedNodeComposerTests
         // Use a drawer type without parameterless constructor to trigger exception during Activator.CreateInstance
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(InvalidDrawerWithoutDefaultConstructor));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
-        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
+        var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, disableIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
         var owner = new TestConfig();
         var nested = new TestNestedGroup();
         // Act
-        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: null, collapseAttr: null, indentAttr: null, out var disposable);
+        var result = NestedNodeComposer.CreateNestedDrawerNode(registerCategoryNode: registerCategoryNodeMock.Object, inheritedLabelMargin: null, groupScopePath: "test.scope", propMeta: propMeta, propType: typeof(TestNestedGroup), nestedDrawerAttr: nestedDrawerAttrMock.Object, nested: nested, owner: owner, localCategory: null, collapseAttr: null, indentAttr: null, isDisabled: null, out var disposable);
         // Assert
         Assert.IsNull(result, "Expected null when exception occurs during BuildDrawAction");
         Assert.IsNull(disposable, "Disposable should be null when exception occurs");

@@ -23,6 +23,7 @@ internal static class ConfigDrawTreeCollector
     /// <param name="sortNodesInPlace">Applies the caller's stable local ordering policy.</param>
     /// <param name="searchIndex">Collects the flat search index built alongside the rendered nodes.</param>
     /// <param name="inheritedVisibility">The effective runtime visibility inherited from ancestor wrappers, or <see langword="null"/> when no ancestor visibility filter applies.</param>
+    /// <param name="inheritedDisabled">The effective disabled state inherited from ancestor wrappers, or <see langword="null"/> when no ancestor disabled condition applies.</param>
     internal static void CollectInto(
         ConfigDrawScope scope,
         object obj,
@@ -31,7 +32,8 @@ internal static class ConfigDrawTreeCollector
         List<IDisposable> disposables,
         Action<List<IDrawNode>> sortNodesInPlace,
         ConfigSearchIndex searchIndex,
-        Func<bool>? inheritedVisibility = null)
+        Func<bool>? inheritedVisibility = null,
+        Func<bool>? inheritedDisabled = null)
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(obj);
@@ -60,12 +62,16 @@ internal static class ConfigDrawTreeCollector
 
                 var category = propMeta.Category ?? scope.DefaultCategory;
                 var alignmentGroup = scope.GetAlignmentGroup(category);
+                var parameterDisableIf = parameter.Metadata.DisableIf ?? propMeta.DisableIf;
+                var parameterHideIf = parameter.Metadata.HideIf ?? propMeta.HideIf;
+                var parameterDisabled = ComposeDisabled(inheritedDisabled, parameterDisableIf, obj);
                 var (node, resource) = ParameterNodeComposer.Create(
                     parameter,
                     obj,
                     alignmentGroup,
                     classIndent?.Amount,
-                    classLabelMargin?.Pixels);
+                    classLabelMargin?.Pixels,
+                    parameterDisabled);
                 if (resource is not null)
                     disposables.Add(resource);
 
@@ -75,7 +81,7 @@ internal static class ConfigDrawTreeCollector
                     parameter.Metadata.Description,
                     category,
                     scope.GroupPath,
-                    ComposeVisibility(inheritedVisibility, parameter.Metadata.HideIf, obj));
+                    ComposeVisibility(inheritedVisibility, parameterHideIf, obj));
 
                 scope.AddNode(category, node);
                 continue;
@@ -94,6 +100,7 @@ internal static class ConfigDrawTreeCollector
             var propertyIndent = propMeta.IndentAttr;
             var nestedGroupPath = NestedScopePathResolver.Resolve(scope.GroupPath, propMeta, propTypeMeta);
             var nestedVisibility = ComposeVisibility(inheritedVisibility, propMeta.HideIf, obj);
+            var nestedDisabled = ComposeDisabled(inheritedDisabled, propMeta.DisableIf, obj);
 
             if (nestedDrawerAttr is not null)
             {
@@ -109,6 +116,7 @@ internal static class ConfigDrawTreeCollector
                     nestedLocalCategory,
                     nestedCollapseAttr,
                     propertyIndent,
+                    nestedDisabled,
                     out var disposable);
                 if (drawerNode is null)
                     continue;
@@ -135,7 +143,7 @@ internal static class ConfigDrawTreeCollector
                 registerCategoryNode,
                 childAlignmentGroup);
 
-            CollectInto(childScope, nested, propType, registerCategoryNode, disposables, sortNodesInPlace, searchIndex, nestedVisibility);
+            CollectInto(childScope, nested, propType, registerCategoryNode, disposables, sortNodesInPlace, searchIndex, nestedVisibility, nestedDisabled);
 
             if (nestedLocalCategory is null)
                 sortNodesInPlace(childScope.Nodes);
@@ -207,5 +215,28 @@ internal static class ConfigDrawTreeCollector
             return inheritedVisibility;
 
         return () => inheritedVisibility() && localVisibility();
+    }
+
+    private static Func<bool>? ComposeDisabled(
+        Func<bool>? inheritedDisabled,
+        Umbra.Config.Attributes.IDisableIfAttribute? disableIf,
+        object owner)
+    {
+        var localDisabled = disableIf is null
+            ? null
+            : DisablePredicateResolver.Build(disableIf, owner);
+
+        return ComposeDisabled(inheritedDisabled, localDisabled);
+    }
+
+    private static Func<bool>? ComposeDisabled(Func<bool>? inheritedDisabled, Func<bool>? localDisabled)
+    {
+        if (inheritedDisabled is null)
+            return localDisabled;
+
+        if (localDisabled is null)
+            return inheritedDisabled;
+
+        return () => inheritedDisabled() || localDisabled();
     }
 }

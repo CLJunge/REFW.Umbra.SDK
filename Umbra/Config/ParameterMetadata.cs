@@ -238,6 +238,14 @@ public sealed class ParameterMetadata
     internal IHideIfAttribute? HideIf { get; init; }
 
     /// <summary>
+    /// Gets the cached disable-condition data sourced from <see cref="UmbraDisableIfAttribute{T}"/> on this
+    /// parameter's declaring member, or <see langword="null"/> when no such attribute is present.
+    /// Consumed by <see cref="Umbra.UI.Config.DisablePredicateResolver"/> to compile the per-frame disabled-state predicate
+    /// without requiring a second attribute scan at draw-tree construction time.
+    /// </summary>
+    internal IDisableIfAttribute? DisableIf { get; init; }
+
+    /// <summary>
     /// Gets the fully resolved printf format string used by float and double ImGui controls.
     /// Equals <see cref="Format"/> when an <see cref="UmbraFormatAttribute"/> (<c>[UmbraFormat(...)]</c>)
     /// attribute is present; otherwise the value inferred from the decimal-place count of

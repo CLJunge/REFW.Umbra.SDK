@@ -23,6 +23,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     private static readonly Vector4 FocusedFrameActiveColor = new(0.66f, 0.44f, 0.12f, 1f);
 
     private readonly Func<bool>? _isVisible;
+    private readonly Func<bool>? _isDisabled;
     private readonly bool _alwaysVisible;
     private readonly Action _draw;
     private readonly List<IDrawNode>? _children;
@@ -46,6 +47,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
     /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
     /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
+    /// <param name="isDisabled">The optional predicate evaluated each frame to determine whether the row should render disabled.</param>
     internal ParameterNode(
         Action draw,
         int order = int.MaxValue,
@@ -53,8 +55,9 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
         int spacingAfter = 0,
         float? indentAmount = null,
         string? resultId = null,
-        List<IDrawNode>? children = null)
-        : this(draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount, resultId, children)
+        List<IDrawNode>? children = null,
+        Func<bool>? isDisabled = null)
+        : this(draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount, resultId, children, isDisabled)
     {
     }
 
@@ -69,6 +72,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
     /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
     /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
+    /// <param name="isDisabled">The optional predicate evaluated each frame to determine whether the row should render disabled.</param>
     /// <exception cref="ArgumentNullException"><paramref name="draw"/> or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ParameterNode(
         Action draw,
@@ -78,7 +82,8 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
         IParameterNodeRenderer renderer,
         float? indentAmount = null,
         string? resultId = null,
-        List<IDrawNode>? children = null)
+        List<IDrawNode>? children = null,
+        Func<bool>? isDisabled = null)
     {
         ArgumentNullException.ThrowIfNull(draw);
         ArgumentNullException.ThrowIfNull(renderer);
@@ -90,6 +95,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
         _spacingAfter = spacingAfter;
         _resultId = resultId;
         _renderer = renderer;
+        _isDisabled = isDisabled;
         Order = order;
     }
 
@@ -104,6 +110,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
     /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
     /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
+    /// <param name="isDisabled">The optional predicate evaluated each frame to determine whether the row should render disabled.</param>
     internal ParameterNode(
         Func<bool> isVisible,
         Action draw,
@@ -112,8 +119,9 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
         int spacingAfter = 0,
         float? indentAmount = null,
         string? resultId = null,
-        List<IDrawNode>? children = null)
-        : this(isVisible, draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount, resultId, children)
+        List<IDrawNode>? children = null,
+        Func<bool>? isDisabled = null)
+        : this(isVisible, draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount, resultId, children, isDisabled)
     {
     }
 
@@ -129,6 +137,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
     /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
     /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
     /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
+    /// <param name="isDisabled">The optional predicate evaluated each frame to determine whether the row should render disabled.</param>
     /// <exception cref="ArgumentNullException"><paramref name="isVisible"/>, <paramref name="draw"/>, or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ParameterNode(
         Func<bool> isVisible,
@@ -139,7 +148,8 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
         IParameterNodeRenderer renderer,
         float? indentAmount = null,
         string? resultId = null,
-        List<IDrawNode>? children = null)
+        List<IDrawNode>? children = null,
+        Func<bool>? isDisabled = null)
     {
         ArgumentNullException.ThrowIfNull(isVisible);
         ArgumentNullException.ThrowIfNull(draw);
@@ -152,6 +162,7 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
         _spacingAfter = spacingAfter;
         _resultId = resultId;
         _renderer = renderer;
+        _isDisabled = isDisabled;
         Order = order;
     }
 
@@ -169,24 +180,36 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
         for (var i = 0; i < _spacingBefore; i++) _renderer.Spacing();
 
         var highlightDepth = PushSearchHighlight();
+        var disabled = IsRuntimeDisabled();
         try
         {
-            if (_indentAmount.HasValue)
+            if (disabled)
+                _renderer.BeginDisabled(true);
+
+            try
             {
-                var amount = _indentAmount.Value;
-                _renderer.Indent(amount);
-                try
+                if (_indentAmount.HasValue)
+                {
+                    var amount = _indentAmount.Value;
+                    _renderer.Indent(amount);
+                    try
+                    {
+                        DrawCore();
+                    }
+                    finally
+                    {
+                        _renderer.Unindent(amount);
+                    }
+                }
+                else
                 {
                     DrawCore();
                 }
-                finally
-                {
-                    _renderer.Unindent(amount);
-                }
             }
-            else
+            finally
             {
-                DrawCore();
+                if (disabled)
+                    _renderer.EndDisabled();
             }
         }
         finally
@@ -220,45 +243,49 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
             return true;
         }
 
+        var matchesSelf = _resultId is not null && searchState.IsMatch(_resultId);
+        var hasVisibleChild = false;
         if (_children is not null)
         {
-            var hasVisibleChild = false;
             for (var i = 0; i < _children.Count; i++)
             {
-                if (_children[i] is IConfigSearchNode searchNode && searchNode.ApplySearch(searchState))
-                    hasVisibleChild = true;
+                if (_children[i] is IConfigSearchNode searchNode)
+                {
+                    if (searchNode.ApplySearch(searchState))
+                        hasVisibleChild = true;
+
+                    continue;
+                }
+
+                hasVisibleChild = true;
             }
-
-            _searchVisible = hasVisibleChild && IsRuntimeVisible();
-            _searchVisualState = SearchMatchVisualState.None;
-            return _searchVisible;
         }
 
-        var isMatch = searchState.IsMatch(_resultId) && IsRuntimeVisible();
-        _searchVisible = isMatch;
-        _searchVisualState = !isMatch
-            ? SearchMatchVisualState.None
-            : searchState.IsFocused(_resultId)
+        _searchVisible = IsRuntimeVisible() && (matchesSelf || hasVisibleChild);
+        _searchVisualState = matchesSelf
+            ? searchState.IsFocused(_resultId)
                 ? SearchMatchVisualState.FocusedMatch
-                : SearchMatchVisualState.Match;
+                : SearchMatchVisualState.Match
+            : SearchMatchVisualState.None;
 
-        if (isMatch && searchState.ShouldScrollIntoView(_resultId))
+        if (matchesSelf && _resultId is not null)
         {
-            _scrollIntoView = true;
-            searchState.MarkScrolled(_resultId);
+            _scrollIntoView = searchState.ShouldScrollIntoView(_resultId);
+            _focusControl = searchState.ShouldFocusControl(_resultId);
+
+            if (_scrollIntoView)
+                searchState.MarkScrolled(_resultId);
+
+            if (_focusControl)
+                searchState.MarkFocused(_resultId);
         }
 
-        if (isMatch && searchState.ShouldFocusControl(_resultId))
-        {
-            _focusControl = true;
-            searchState.MarkFocused(_resultId);
-        }
-
-        return isMatch;
+        return _searchVisible;
     }
 
-    private bool IsRuntimeVisible()
-        => _alwaysVisible || _isVisible!();
+    private bool IsRuntimeVisible() => _alwaysVisible || _isVisible?.Invoke() != false;
+
+    private bool IsRuntimeDisabled() => _isDisabled?.Invoke() == true;
 
     private void DrawCore()
     {

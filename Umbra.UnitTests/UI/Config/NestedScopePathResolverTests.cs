@@ -275,6 +275,7 @@ public class NestedScopePathResolverTests
             labelMarginAttr: null,
             nestedDrawerAttr: null,
             hideIf: null,
+            disableIf: null,
             order: 0,
             spacingBefore: 0,
             spacingAfter: 0,

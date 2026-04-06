@@ -50,11 +50,13 @@ internal static class ParameterMetadataReader
         Type? drawerType = null;
         Type? twoColumnDrawerType = null;
         IHideIfAttribute? hideIf = null;
+        IDisableIfAttribute? disableIf = null;
         foreach (var attr in member.GetCustomAttributes(inherit: false))
         {
             if (attr is IDrawerAttribute cd) { drawerType = cd.DrawerType; continue; }
             if (attr is ITwoColumnDrawerAttribute tcd) { twoColumnDrawerType = tcd.DrawerType; continue; }
-            if (attr is IHideIfAttribute h) hideIf = h;
+            if (attr is IHideIfAttribute h) { hideIf = h; continue; }
+            if (attr is IDisableIfAttribute d) disableIf = d;
         }
 
         var inferredFloatFormat = format?.Format ?? FallbackFloatFormat(step?.Step);
@@ -91,6 +93,7 @@ internal static class ParameterMetadataReader
             TwoColumnDrawerType = twoColumnDrawerType,
             ValidatorType = validation.ValidatorType,
             HideIf = hideIf,
+            DisableIf = disableIf,
             InferredFloatFormat = inferredFloatFormat,
             HiddenLabel = parameterKey is not null ? string.Concat("##", parameterKey) : null,
         };

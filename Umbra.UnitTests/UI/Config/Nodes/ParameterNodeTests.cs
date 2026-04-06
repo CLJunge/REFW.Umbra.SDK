@@ -9,6 +9,76 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 public sealed class ParameterNodeTests
 {
     /// <summary>
+    /// Verifies that when the disabled predicate returns <see langword="true"/>, the draw action still runs inside one disabled region.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenDisabledPredicateReturnsTrue_WrapsDrawInDisabledRegion()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        bool isDisabled() => true;
+        void draw() => drawCallCount++;
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 0, 0, renderer, isDisabled: isDisabled);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(1, renderer.BeginDisabledCount);
+        Assert.AreEqual(1, renderer.EndDisabledCount);
+        Assert.AreEqual(true, renderer.LastBeginDisabledValue);
+    }
+
+    /// <summary>
+    /// Verifies that when the disabled predicate returns <see langword="false"/>, no disabled region is emitted.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenDisabledPredicateReturnsFalse_DoesNotEmitDisabledRegion()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        bool isDisabled() => false;
+        void draw() => drawCallCount++;
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 0, 0, renderer, isDisabled: isDisabled);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(0, renderer.BeginDisabledCount);
+        Assert.AreEqual(0, renderer.EndDisabledCount);
+    }
+
+    /// <summary>
+    /// Verifies that a hidden node does not begin a disabled region even if its disabled predicate would return <see langword="true"/>.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenNotVisible_DoesNotEmitDisabledRegion()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCalled = false;
+        bool isVisible() => false;
+        bool isDisabled() => true;
+        void draw() => drawCalled = true;
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 0, 0, renderer, isDisabled: isDisabled);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.IsFalse(drawCalled);
+        Assert.AreEqual(0, renderer.BeginDisabledCount);
+        Assert.AreEqual(0, renderer.EndDisabledCount);
+    }
+
+    /// <summary>
     /// Verifies that when <c>isVisible</c> returns <see langword="false"/>, the <see cref="ParameterNode.Draw"/>
     /// method returns immediately without invoking the draw action or spacing calls.
     /// </summary>

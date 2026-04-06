@@ -55,6 +55,7 @@ internal static class NestedNodeComposer
         string? localCategory,
         UmbraCollapseAsTreeAttribute? collapseAttr,
         UmbraIndentAttribute? indentAttr,
+        Func<bool>? isDisabled,
         out IDisposable? disposable)
     {
         disposable = null;
@@ -81,7 +82,8 @@ internal static class NestedNodeComposer
                         drawAction,
                         order: propMeta.Order,
                         spacingBefore: propMeta.SpacingBefore,
-                        spacingAfter: propMeta.SpacingAfter));
+                        spacingAfter: propMeta.SpacingAfter,
+                        isDisabled: isDisabled));
 
                 return CreateIdScopedSubtree(groupScopePath, localScope.Nodes);
             }
@@ -91,7 +93,8 @@ internal static class NestedNodeComposer
                 drawAction,
                 order: propMeta.Order,
                 spacingBefore: propMeta.SpacingBefore,
-                spacingAfter: propMeta.SpacingAfter);
+                spacingAfter: propMeta.SpacingAfter,
+                isDisabled: isDisabled);
 
             return CreateIdScopedSubtree(groupScopePath, [drawerNode]);
         }

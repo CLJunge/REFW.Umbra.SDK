@@ -71,6 +71,7 @@ internal static class TypeDrawMetadataFactory
         UmbraLabelMarginAttribute? labelMarginAttr = null;
         INestedDrawerAttribute? nestedDrawerAttr = null;
         IHideIfAttribute? hideIf = null;
+        IDisableIfAttribute? disableIf = null;
         var order = int.MaxValue;
         var spacingBefore = 0;
         var spacingAfter = 0;
@@ -85,6 +86,7 @@ internal static class TypeDrawMetadataFactory
             if (attribute is UmbraLabelMarginAttribute marginAttribute) { labelMarginAttr = marginAttribute; continue; }
             if (attribute is INestedDrawerAttribute nestedDrawerAttribute) { nestedDrawerAttr = nestedDrawerAttribute; continue; }
             if (attribute is IHideIfAttribute hideIfAttribute) { hideIf = hideIfAttribute; continue; }
+            if (attribute is IDisableIfAttribute disableIfAttribute) { disableIf = disableIfAttribute; continue; }
             if (attribute is UmbraParameterOrderAttribute orderAttribute) { order = orderAttribute.Order; continue; }
             if (attribute is UmbraSpacingBeforeAttribute beforeAttribute) { spacingBefore = beforeAttribute.Count; continue; }
             if (attribute is UmbraSpacingAfterAttribute afterAttribute) { spacingAfter = afterAttribute.Count; }
@@ -101,6 +103,7 @@ internal static class TypeDrawMetadataFactory
             labelMarginAttr,
             nestedDrawerAttr,
             hideIf,
+            disableIf,
             order,
             spacingBefore,
             spacingAfter,

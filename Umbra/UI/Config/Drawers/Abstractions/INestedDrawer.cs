@@ -8,7 +8,7 @@ namespace Umbra.UI.Config.Drawers;
 /// Prefer applying <see cref="Umbra.Config.Attributes.UmbraNestedDrawerAttribute{TDrawer}"/> to the parent property that exposes the nested group. When <see cref="ConfigDrawer{TConfig}"/> encounters the attribute on the property or, as a fallback, on the nested type, it bypasses the default recursive expansion and hands the group instance directly to this drawer each frame.
 /// </para>
 /// <para>
-/// The drawer has full ImGui layout control. Property-level wrapper attributes such as category, collapse, spacing, and hide rules are still honored around the drawer output by the surrounding configuration-drawer pipeline.
+/// The drawer has full ImGui layout control. Property-level wrapper attributes such as category, collapse, spacing, hide rules, and disable rules are still honored around the drawer output by the surrounding configuration-drawer pipeline.
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The nested configuration-group type rendered by the drawer.</typeparam>

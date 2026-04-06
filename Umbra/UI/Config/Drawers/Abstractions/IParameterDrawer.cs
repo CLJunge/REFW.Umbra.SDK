@@ -6,7 +6,7 @@ namespace Umbra.UI.Config.Drawers;
 /// Defines the contract for a custom parameter drawer with full row-layout control.
 /// </summary>
 /// <remarks>
-/// Use this interface with <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/> when a parameter needs custom label rendering or a non-standard row structure. For custom widgets that should still participate in Umbra's standard two-column layout, use <see cref="ITwoColumnParameterDrawer"/> instead.
+/// Use this interface with <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/> when a parameter needs custom label rendering or a non-standard row structure. For custom widgets that should still participate in Umbra's standard two-column layout, use <see cref="ITwoColumnParameterDrawer"/> instead. Property-level wrapper attributes such as <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> and <see cref="Umbra.Config.Attributes.UmbraDisableIfAttribute{T}"/> are still honored around the drawer output by the surrounding configuration-drawer pipeline.
 /// </remarks>
 public interface IParameterDrawer : IDisposable
 {
