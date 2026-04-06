@@ -35,7 +35,7 @@ public sealed class ConfigTransferOptions
     /// Gets or sets an optional explicit file path override for the persisted transfer config file.
     /// </summary>
     /// <remarks>
-    /// When <see langword="null"/>, Umbra derives the persisted transfer config file path from the main settings-store file path.
+    /// When <see langword="null"/>, Umbra derives the persisted transfer config file path from the main config-store file path.
     /// </remarks>
     public string? ConfigFilePath
     {
@@ -47,7 +47,7 @@ public sealed class ConfigTransferOptions
     /// Gets or sets an optional fallback directory used by the native browse dialog when the current transfer path does not resolve to an existing directory.
     /// </summary>
     /// <remarks>
-    /// When <see langword="null"/>, Umbra falls back to the directory that contains the main settings-store file.
+    /// When <see langword="null"/>, Umbra falls back to the directory that contains the main config-store file.
     /// </remarks>
     public string? BrowseFallbackDirectory
     {

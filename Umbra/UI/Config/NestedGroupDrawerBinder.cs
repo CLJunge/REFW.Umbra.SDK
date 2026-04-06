@@ -20,7 +20,7 @@ internal static class NestedDrawerBinder
     /// Cache key for one nested-group drawer binding shape.
     /// </summary>
     /// <param name="DrawerType">The concrete nested-group drawer type being instantiated.</param>
-    /// <param name="GroupType">The runtime nested settings-group type exposed by the property.</param>
+    /// <param name="GroupType">The runtime nested config-group type exposed by the property.</param>
     private readonly record struct NestedGroupDrawerFactoryKey(Type DrawerType, Type GroupType);
 
     /// <summary>

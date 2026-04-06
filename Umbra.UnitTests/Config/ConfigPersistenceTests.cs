@@ -42,13 +42,13 @@ public class ConfigPersistenceTests
     }
 
     /// <summary>
-    /// Tests that Load returns Success when the settings file exists and contains valid JSON.
+    /// Tests that Load returns Success when the config file exists and contains valid JSON.
     /// </summary>
     [TestMethod]
     public void Load_ValidJsonFile_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""testKey"": ""testValue""}";
         File.WriteAllText(filePath, json);
 
@@ -74,7 +74,7 @@ public class ConfigPersistenceTests
     public void Load_JsonDeserializesToNull_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = "null";
         File.WriteAllText(filePath, json);
 
@@ -94,7 +94,7 @@ public class ConfigPersistenceTests
     public void Load_PartialMatchingKeys_AppliesOnlyMatchingParameters()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""key1"": 42, ""key2"": ""value2"", ""key3"": true}";
         File.WriteAllText(filePath, json);
 
@@ -126,7 +126,7 @@ public class ConfigPersistenceTests
     public void Load_NoMatchingKeys_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""unmatchedKey"": ""value""}";
         File.WriteAllText(filePath, json);
 
@@ -168,7 +168,7 @@ public class ConfigPersistenceTests
     [TestMethod]
     public void Load_EmptyJsonObject_ReturnsSuccess()
     {
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         File.WriteAllText(filePath, "{}");
 
         var parameterMock = new Mock<IParameter>();
@@ -192,7 +192,7 @@ public class ConfigPersistenceTests
     public void Load_MalformedJson_ReturnsRecoveredToDefaultsOrFailed()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var invalidJson = @"{""key"": invalid}";
         File.WriteAllText(filePath, invalidJson);
 
@@ -215,7 +215,7 @@ public class ConfigPersistenceTests
     public void Load_NestedJsonObject_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""key1"": {""nested"": ""value""}}";
         File.WriteAllText(filePath, json);
 
@@ -240,7 +240,7 @@ public class ConfigPersistenceTests
     public void Load_JsonWithNullValue_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""key1"": null}";
         File.WriteAllText(filePath, json);
 
@@ -266,7 +266,7 @@ public class ConfigPersistenceTests
     public void Load_JsonWithNumericValue_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""intKey"": 42, ""floatKey"": 3.14, ""doubleKey"": 2.718}";
         File.WriteAllText(filePath, json);
 
@@ -303,7 +303,7 @@ public class ConfigPersistenceTests
     public void Load_JsonWithBooleanValue_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""boolKey1"": true, ""boolKey2"": false}";
         File.WriteAllText(filePath, json);
 
@@ -335,7 +335,7 @@ public class ConfigPersistenceTests
     public void Load_JsonWithSpecialCharacters_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""key1"": ""value with \""quotes\"" and \\ backslash""}";
         File.WriteAllText(filePath, json);
 
@@ -361,7 +361,7 @@ public class ConfigPersistenceTests
     public void Load_FileWithBOM_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""key"": ""value""}";
         File.WriteAllText(filePath, json, System.Text.Encoding.UTF8);
 
@@ -387,7 +387,7 @@ public class ConfigPersistenceTests
     public void Load_JsonWithCaseVariations_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""TestKey"": ""value1"", ""testkey"": ""value2"", ""TESTKEY"": ""value3""}";
         File.WriteAllText(filePath, json);
 
@@ -421,10 +421,10 @@ public class ConfigPersistenceTests
     public void Load_FilePathWithForwardSlashes_HandlesCorrectly()
     {
         // Arrange
-        var filePath = _testDirectory.Replace('\\', '/') + "/settings.json";
+        var filePath = _testDirectory.Replace('\\', '/') + "/config.json";
         var json = @"{""key"": ""value""}";
 
-        var normalizedPath = Path.Combine(_testDirectory, "settings.json");
+        var normalizedPath = Path.Combine(_testDirectory, "config.json");
         File.WriteAllText(normalizedPath, json);
 
         var parameterMock = new Mock<IParameter>();
@@ -448,7 +448,7 @@ public class ConfigPersistenceTests
     public void Load_JsonWithDuplicateKeys_ReturnsSuccess()
     {
         // Arrange
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         var json = @"{""key"": ""value1"", ""key"": ""value2""}";
         File.WriteAllText(filePath, json);
 
@@ -473,7 +473,7 @@ public class ConfigPersistenceTests
     [TestMethod]
     public void Load_WhenParameterAssignmentThrows_ReturnsRecoveredToDefaultsOrFailed()
     {
-        var filePath = Path.Combine(_testDirectory, "settings.json");
+        var filePath = Path.Combine(_testDirectory, "config.json");
         File.WriteAllText(filePath, @"{""key"": 42}");
 
         var parameterMock = new Mock<IParameter>();
@@ -515,7 +515,7 @@ public class ConfigPersistenceTests
             ConfigPersistence.Save(tempPath, parameters);
 
             // Assert
-            Assert.IsTrue(File.Exists(tempPath), "Settings file should be created");
+            Assert.IsTrue(File.Exists(tempPath), "Config file should be created");
             var jsonContent = File.ReadAllText(tempPath);
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonContent);
             Assert.IsNotNull(deserialized);
@@ -729,7 +729,7 @@ public class ConfigPersistenceTests
     {
         // Arrange
         var tempDir = Path.Combine(Path.GetTempPath(), $"umbra_test_dir_{Guid.NewGuid()}");
-        var tempPath = Path.Combine(tempDir, "settings.json");
+        var tempPath = Path.Combine(tempDir, "config.json");
         try
         {
             Assert.IsFalse(Directory.Exists(tempDir), "Directory should not exist initially");
@@ -749,7 +749,7 @@ public class ConfigPersistenceTests
 
             // Assert
             Assert.IsTrue(Directory.Exists(tempDir), "Parent directory should be created");
-            Assert.IsTrue(File.Exists(tempPath), "Settings file should be created");
+            Assert.IsTrue(File.Exists(tempPath), "Config file should be created");
         }
         finally
         {

@@ -15,7 +15,7 @@ internal enum ConfigTransferMode
 }
 
 /// <summary>
-/// Owns the optional built-in config transfer UI state for one settings section.
+/// Owns the optional built-in config transfer UI state for one config section.
 /// </summary>
 /// <remarks>
 /// This feature keeps transfer-path sidecar persistence, browse workflow state, and store-backed
@@ -43,7 +43,7 @@ internal sealed class ConfigTransferFeature : IDisposable
         ArgumentNullException.ThrowIfNull(drawer);
         ObjectDisposedException.ThrowIf(store.IsDisposed, store);
         if (!store.IsLoaded)
-            throw new InvalidOperationException("Built-in config transfer UI requires a loaded settings store.");
+            throw new InvalidOperationException("Built-in config transfer UI requires a loaded config store.");
 
         _store = store;
         _drawer = drawer;
@@ -230,7 +230,7 @@ internal sealed class ConfigTransferFeature : IDisposable
 }
 
 /// <summary>
-/// Persists the last-used built-in transfer path separately from the main settings file.
+/// Persists the last-used built-in transfer path separately from the main config file.
 /// </summary>
 [UmbraAutoRegister]
 internal sealed record ConfigTransferSidecarState

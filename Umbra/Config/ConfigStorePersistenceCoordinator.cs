@@ -17,7 +17,7 @@ internal sealed class ConfigStorePersistenceCoordinator<TConfig>
     private bool _saveBlockedWarningLogged;
 
     /// <summary>
-    /// Initializes a new persistence coordinator for the supplied settings file and parameter map.
+    /// Initializes a new persistence coordinator for the supplied config file and parameter map.
     /// </summary>
     /// <param name="filePath">The JSON file path used for persistence.</param>
     /// <param name="parameters">The shared registered-parameter map owned by the store.</param>
@@ -31,7 +31,7 @@ internal sealed class ConfigStorePersistenceCoordinator<TConfig>
     }
 
     /// <summary>
-    /// Gets the configured main settings file path for this coordinator.
+    /// Gets the configured main config file path for this coordinator.
     /// </summary>
     internal string FilePath => _filePath;
 
@@ -71,7 +71,7 @@ internal sealed class ConfigStorePersistenceCoordinator<TConfig>
         var loadResult = ConfigPersistence.Load(_filePath, _parameters);
         if (loadResult == ConfigPersistence.LoadResult.MissingFile)
         {
-            Logger.Info($"ConfigStore<{typeof(TConfig).Name}>: settings file '{_filePath}' vanished before it could be read; saving defaults.");
+            Logger.Info($"ConfigStore<{typeof(TConfig).Name}>: config file '{_filePath}' vanished before it could be read; saving defaults.");
             Save();
             return instance;
         }

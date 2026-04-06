@@ -6,7 +6,7 @@ using Umbra.UI.Config.Search;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Builds and renders an ImGui settings panel for a loaded configuration instance.
+/// Builds and renders an ImGui config panel for a loaded configuration instance.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -43,7 +43,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// A plugin-unique identifier string (e.g. <c>"MyPlugin"</c>) used to scope all ImGui
     /// widget IDs rendered by this drawer via <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>.
     /// Every widget ID within a <see cref="Draw"/> call is internally prefixed with this
-    /// string, preventing duplicate-ID warnings when multiple plugins render settings panels
+    /// string, preventing duplicate-ID warnings when multiple plugins render config panels
     /// in the same ImGui window. Must be non-null and non-whitespace.
     /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
@@ -146,7 +146,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     }
 
     /// <summary>
-    /// Renders the cached settings UI for the current ImGui frame.
+    /// Renders the cached config UI for the current ImGui frame.
     /// </summary>
     /// <remarks>
     /// The configured ID scope is always popped before this method returns, even if a node throws while drawing. After <see cref="Dispose"/>, this method becomes a silent no-op.

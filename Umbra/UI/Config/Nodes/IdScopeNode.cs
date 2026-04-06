@@ -7,7 +7,7 @@ namespace Umbra.UI.Config.Nodes;
 /// Wraps a subtree of configuration draw nodes in a stable ImGui ID scope.
 /// </summary>
 /// <remarks>
-/// The scope ID is typically derived from the structural settings path of a nested group so repeated local widget labels remain isolated across sibling branches of the configuration tree. The pop operation always runs even if a child node throws while drawing.
+/// The scope ID is typically derived from the structural config path of a nested group so repeated local widget labels remain isolated across sibling branches of the configuration tree. The pop operation always runs even if a child node throws while drawing.
 /// </remarks>
 internal sealed class IdScopeNode : IDrawNode, IConfigSearchNode
 {

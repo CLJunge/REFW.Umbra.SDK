@@ -1,7 +1,7 @@
 namespace Umbra.Config;
 
 /// <summary>
-/// Defines the untyped contract for a registered settings parameter.
+/// Defines the untyped contract for a registered config parameter.
 /// </summary>
 /// <remarks>
 /// Umbra uses this abstraction to store heterogeneous <see cref="Parameter{T}"/> instances in one registered parameter set, persist their values, and attach cross-parameter listeners through <see cref="ConfigStore{TConfig}"/>.

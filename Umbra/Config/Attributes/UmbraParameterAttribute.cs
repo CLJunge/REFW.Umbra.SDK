@@ -1,7 +1,7 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Marks a member as a settings-parameter declaration consumed by Umbra's registration pipeline.
+/// Marks a member as a config-parameter declaration consumed by Umbra's registration pipeline.
 /// </summary>
 /// <remarks>
 /// <see cref="ConfigStore{TConfig}.Load()"/> currently discovers only public instance properties marked with this attribute. Field targets remain allowed for attribute-shape consistency and reflective tooling, but fields are ignored by <see cref="ConfigRegistrar"/> during normal registration.

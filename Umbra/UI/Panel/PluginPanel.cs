@@ -7,7 +7,7 @@ namespace Umbra.UI.Panel;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <see cref="PluginPanel"/> is the recommended top-level UI type for plugins that need to display both configuration settings and live game state in a single panel. For plugins that only require a settings panel, <see cref="Config.ConfigDrawer{TConfig}"/> can be used directly.
+/// <see cref="PluginPanel"/> is the recommended top-level UI type for plugins that need to display both configuration values and live game state in a single panel. For plugins that only require a config panel, <see cref="Config.ConfigDrawer{TConfig}"/> can be used directly.
 /// </para>
 /// <para>
 /// The constructor-supplied ID scope is the sole separator between this panel's widget IDs and every other panel rendered into the same REFramework ImGui context. Duplicate-scope detection and release are delegated to <see cref="PluginPanelScopeRegistry"/>.

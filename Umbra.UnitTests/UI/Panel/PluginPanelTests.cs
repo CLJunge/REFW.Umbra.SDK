@@ -70,7 +70,7 @@ public sealed class PluginPanelTests_Draw
         var renderer = new TestPluginPanelRenderer();
         renderer.TreeNodeResults.Enqueue(false);
         var sectionDrawn = false;
-        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Settings", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
+        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Config", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
         panel.Add(new CallbackPanelSection("SectionA", 0, null, false, () => sectionDrawn = true));
 
         // Act
@@ -80,7 +80,7 @@ public sealed class PluginPanelTests_Draw
         Assert.HasCount(1, renderer.PushIds);
         Assert.AreEqual("RootScope", renderer.PushIds[0]);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Config", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
         Assert.IsFalse(sectionDrawn);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(0, renderer.SeparatorCount);
@@ -100,7 +100,7 @@ public sealed class PluginPanelTests_Draw
         var renderer = new TestPluginPanelRenderer();
         renderer.TreeNodeResults.Enqueue(true);
         var calls = new List<int>();
-        using var panel = new PluginPanel("OpenRootScope", rootNodeLabel: "Settings", rootNodeDefaultOpen: true, drawSeparator: true, renderer);
+        using var panel = new PluginPanel("OpenRootScope", rootNodeLabel: "Config", rootNodeDefaultOpen: true, drawSeparator: true, renderer);
         panel.Add(new CallbackPanelSection("Section2", 2, null, false, () => calls.Add(2)));
         panel.Add(new CallbackPanelSection("Section1", 1, null, false, () => calls.Add(1)));
 
@@ -110,7 +110,7 @@ public sealed class PluginPanelTests_Draw
         // Assert
         CollectionAssert.AreEqual(_expectedCalls, calls);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Config", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.SeparatorCount);
         Assert.AreEqual(1, renderer.PopIdCount);
@@ -126,14 +126,14 @@ public sealed class PluginPanelTests_Draw
         // Arrange
         var renderer = new TestPluginPanelRenderer();
         renderer.TreeNodeResults.Enqueue(false);
-        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Settings##IgnoredSuffix", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
+        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Config##IgnoredSuffix", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
 
         // Act
         panel.Draw();
 
         // Assert
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Config", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.PopIdCount);
     }
@@ -373,7 +373,7 @@ public sealed class PluginPanelTests
     [DataRow("")]
     [DataRow(" ")]
     [DataRow("Root Node")]
-    [DataRow("Settings")]
+    [DataRow("Config")]
     [DataRow("Configuration Panel")]
     public void Constructor_WithRootNodeLabel_CreatesInstance(string? rootNodeLabel)
     {
@@ -397,8 +397,8 @@ public sealed class PluginPanelTests
     /// <param name="rootNodeDefaultOpen">Whether the root node is open by default.</param>
     /// <param name="drawSeparator">Whether to draw a separator.</param>
     [TestMethod]
-    [DataRow("Plugin1", "Settings", true, true)]
-    [DataRow("Plugin2", "Config", true, false)]
+    [DataRow("Plugin1", "Config", true, true)]
+    [DataRow("Plugin2", "Settings", true, false)]
     [DataRow("Plugin3", "Panel", false, true)]
     [DataRow("Plugin4", "Options", false, false)]
     [DataRow("Plugin5", null, true, true)]

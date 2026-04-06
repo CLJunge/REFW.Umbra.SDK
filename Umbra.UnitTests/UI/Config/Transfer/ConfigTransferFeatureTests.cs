@@ -135,7 +135,7 @@ public sealed class ConfigTransferFeatureTests
         var exception = Assert.ThrowsExactly<InvalidOperationException>(
             () => _ = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true }));
 
-        Assert.AreEqual("Built-in config transfer UI requires a loaded settings store.", exception.Message);
+        Assert.AreEqual("Built-in config transfer UI requires a loaded config store.", exception.Message);
     }
 
     [TestMethod]

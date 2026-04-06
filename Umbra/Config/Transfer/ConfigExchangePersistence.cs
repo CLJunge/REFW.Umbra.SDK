@@ -54,7 +54,7 @@ internal static class ConfigExchangePersistence
         }
         catch (Exception ex)
         {
-            Logger.Exception(ex, $"ConfigExchangePersistence: failed to export settings to '{filePath}'.");
+            Logger.Exception(ex, $"ConfigExchangePersistence: failed to export config to '{filePath}'.");
         }
     }
 
@@ -73,7 +73,7 @@ internal static class ConfigExchangePersistence
             using var document = JsonDocument.Parse(File.ReadAllText(filePath));
             if (document.RootElement.ValueKind != JsonValueKind.Object)
             {
-                return Failed($"Settings import file '{filePath}' must contain a JSON object at the root.");
+                return Failed($"Config import file '{filePath}' must contain a JSON object at the root.");
             }
 
             if (TryGetEnvelopeValues(document.RootElement, out var valuesElement, out var report))
@@ -86,13 +86,13 @@ internal static class ConfigExchangePersistence
                 if (!string.Equals(schemaId, expectedSchemaId, StringComparison.Ordinal))
                 {
                     return Failed(
-                        $"Settings import schema '{schemaId ?? "<null>"}' is not compatible with the current config schema '{expectedSchemaId}'.");
+                        $"Config import schema '{schemaId ?? "<null>"}' is not compatible with the current config schema '{expectedSchemaId}'.");
                 }
 
                 if (schemaVersion > expectedSchemaVersion)
                 {
                     return Failed(
-                        $"Settings import schema version {schemaVersion} is newer than the current config schema version {expectedSchemaVersion}."
+                        $"Config import schema version {schemaVersion} is newer than the current config schema version {expectedSchemaVersion}."
                     );
                 }
 
@@ -117,17 +117,17 @@ internal static class ConfigExchangePersistence
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
         {
-            return Failed($"Settings import file '{filePath}' was not found.");
+            return Failed($"Config import file '{filePath}' was not found.");
         }
         catch (JsonException ex)
         {
             Logger.Exception(ex, $"ConfigExchangePersistence: failed to parse import file '{filePath}'.");
-            return Failed($"Settings import file '{filePath}' contains invalid JSON: {ex.Message}");
+            return Failed($"Config import file '{filePath}' contains invalid JSON: {ex.Message}");
         }
         catch (Exception ex)
         {
-            Logger.Exception(ex, $"ConfigExchangePersistence: failed to import settings from '{filePath}'.");
-            return Failed($"Settings import failed for '{filePath}': {ex.Message}");
+            Logger.Exception(ex, $"ConfigExchangePersistence: failed to import config from '{filePath}'.");
+            return Failed($"Config import failed for '{filePath}': {ex.Message}");
         }
     }
 
@@ -148,53 +148,53 @@ internal static class ConfigExchangePersistence
 
         if (!hasFormatVersion || !hasSchemaId || !hasSchemaVersion || !hasValues)
         {
-            failureReport = Failed("Settings import document looks like a versioned exchange document but is missing one or more required envelope properties.");
+            failureReport = Failed("Config import document looks like a versioned exchange document but is missing one or more required envelope properties.");
             return true;
         }
 
         if (formatVersionElement.ValueKind != JsonValueKind.Number
             || !formatVersionElement.TryGetInt32(out var formatVersion))
         {
-            failureReport = Failed("Settings import document contains an invalid 'formatVersion' value.");
+            failureReport = Failed("Config import document contains an invalid 'formatVersion' value.");
             return true;
         }
 
         if (formatVersion != ConfigExchangeDocument.CurrentFormatVersion)
         {
             failureReport = Failed(
-                $"Settings import document format version {formatVersion} is not supported. Expected {ConfigExchangeDocument.CurrentFormatVersion}.");
+                $"Config import document format version {formatVersion} is not supported. Expected {ConfigExchangeDocument.CurrentFormatVersion}.");
             return true;
         }
 
         if (schemaIdElement.ValueKind != JsonValueKind.String)
         {
-            failureReport = Failed("Settings import document contains an invalid 'schemaId' value.");
+            failureReport = Failed("Config import document contains an invalid 'schemaId' value.");
             return true;
         }
 
         var schemaId = schemaIdElement.GetString();
         if (string.IsNullOrWhiteSpace(schemaId))
         {
-            failureReport = Failed("Settings import document contains an empty 'schemaId' value.");
+            failureReport = Failed("Config import document contains an empty 'schemaId' value.");
             return true;
         }
 
         if (schemaVersionElement.ValueKind != JsonValueKind.Number
             || !schemaVersionElement.TryGetInt32(out var schemaVersion))
         {
-            failureReport = Failed("Settings import document contains an invalid 'schemaVersion' value.");
+            failureReport = Failed("Config import document contains an invalid 'schemaVersion' value.");
             return true;
         }
 
         if (schemaVersion < 1)
         {
-            failureReport = Failed("Settings import document contains a 'schemaVersion' value less than 1.");
+            failureReport = Failed("Config import document contains a 'schemaVersion' value less than 1.");
             return true;
         }
 
         if (valuesElement.ValueKind != JsonValueKind.Object)
         {
-            failureReport = Failed("Settings import document contains an invalid 'values' payload. Expected a JSON object.");
+            failureReport = Failed("Config import document contains an invalid 'values' payload. Expected a JSON object.");
             return true;
         }
 

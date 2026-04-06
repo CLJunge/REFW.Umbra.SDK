@@ -11,7 +11,7 @@ public partial class ConfigRegistrarTests
 {
     /// <summary>
     /// Tests that Register returns an empty dictionary when the config type
-    /// lacks the [UmbraAutoRegisterSettings] attribute.
+    /// lacks the <see cref="UmbraAutoRegisterAttribute"/> attribute.
     /// </summary>
     [TestMethod]
     public void Register_ConfigWithoutAttribute_ReturnsEmptyDictionary()
@@ -29,7 +29,7 @@ public partial class ConfigRegistrarTests
 
     /// <summary>
     /// Tests that Register returns an empty dictionary when the config has
-    /// the attribute but no [UmbraSettingsParameter] properties.
+    /// the attribute but no <see cref="UmbraParameterAttribute"> properties.
     /// </summary>
     [TestMethod]
     public void Register_ConfigWithNoParameters_ReturnsEmptyDictionary()
@@ -164,14 +164,14 @@ public partial class ConfigRegistrarTests
     }
 
     /// <summary>
-    /// Tests that Register correctly recurses into a nested settings group
+    /// Tests that Register correctly recurses into a nested group
     /// and registers nested parameters with a combined prefix.
     /// </summary>
     [TestMethod]
-    public void Register_NestedSettings_RegistersNestedParameters()
+    public void Register_NestedGroup_RegistersNestedParameters()
     {
         // Arrange
-        var config = new ConfigWithNestedSettings();
+        var config = new ConfigWithNestedGroup();
 
         // Act
         var result = ConfigRegistrar.Register(config);
@@ -188,7 +188,7 @@ public partial class ConfigRegistrarTests
     /// Tests that Register correctly applies a property-level prefix to a nested group.
     /// </summary>
     [TestMethod]
-    public void Register_NestedSettingsWithPropertyPrefix_AppliesPropertyPrefix()
+    public void Register_NestedGroupWithPropertyPrefix_AppliesPropertyPrefix()
     {
         // Arrange
         var config = new ConfigWithNestedPropertyPrefix();
@@ -204,13 +204,13 @@ public partial class ConfigRegistrarTests
 
     /// <summary>
     /// Tests that Register correctly combines multiple levels of prefixes
-    /// when dealing with deeply nested settings.
+    /// when dealing with deeply nested group.
     /// </summary>
     [TestMethod]
-    public void Register_DeeplyNestedSettings_CombinesPrefixesCorrectly()
+    public void Register_DeeplyNestedGroup_CombinesPrefixesCorrectly()
     {
         // Arrange
-        var config = new ConfigWithDeeplyNestedSettings();
+        var config = new ConfigWithDeeplyNestedGroup();
 
         // Act
         var result = ConfigRegistrar.Register(config);
@@ -323,7 +323,7 @@ public partial class ConfigRegistrarTests
 
         var exception = Assert.ThrowsExactly<InvalidOperationException>(() => ConfigRegistrar.Register(config));
 
-        Assert.Contains("Duplicate settings key 'enabled'", exception.Message);
+        Assert.Contains("Duplicate parameter key 'enabled'", exception.Message);
         Assert.Contains(nameof(ConfigWithDuplicateKeys.Enabled1), exception.Message);
         Assert.Contains(nameof(ConfigWithDuplicateKeys.Enabled2), exception.Message);
     }
@@ -508,7 +508,7 @@ public partial class ConfigRegistrarTests
     }
 
     [UmbraAutoRegister]
-    internal class ConfigWithNestedSettings
+    internal class ConfigWithNestedGroup
     {
         [UmbraParameter]
         public Parameter<bool> TopLevel { get; set; } = new(true);
@@ -535,7 +535,7 @@ public partial class ConfigRegistrarTests
 
     [UmbraAutoRegister]
     [UmbraPrefix("root")]
-    internal class ConfigWithDeeplyNestedSettings
+    internal class ConfigWithDeeplyNestedGroup
     {
         [UmbraParameter]
         [UmbraPrefix("level1")]

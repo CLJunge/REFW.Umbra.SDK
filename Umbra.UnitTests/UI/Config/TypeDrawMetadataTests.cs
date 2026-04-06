@@ -127,7 +127,7 @@ public sealed class TypeDrawMetadataTests
     }
 
     /// <summary>
-    /// Tests that property-level metadata captures parameter and nested-group settings information.
+    /// Tests that property-level metadata captures parameter and nested-group information.
     /// </summary>
     [TestMethod]
     public void For_TypeWithAnnotatedProperties_PopulatesPropertyMetadata()

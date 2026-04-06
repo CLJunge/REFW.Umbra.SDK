@@ -8,7 +8,7 @@ namespace Umbra.Config;
 /// Stores the descriptive and UI metadata resolved for a registered <see cref="Parameter{T}"/>.
 /// </summary>
 /// <remarks>
-/// <see cref="ParameterMetadataReader"/> builds this object from attributes applied to the parameter's declaring member and containing settings types. The settings UI consumes the resulting values to choose labels, grouping, spacing, validation hints, and drawer behavior without rescanning attributes during rendering.
+/// <see cref="ParameterMetadataReader"/> builds this object from attributes applied to the parameter's declaring member and containing config types. The config UI consumes the resulting values to choose labels, grouping, spacing, validation hints, and drawer behavior without rescanning attributes during rendering.
 /// </remarks>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class ParameterMetadata
@@ -141,7 +141,7 @@ public sealed class ParameterMetadata
     public (Vector4 Normal, Vector4 Hovered, Vector4 Active)? CustomButtonColors { get; init; }
 
     /// <summary>
-    /// Gets the explicit pixel width for a settings control's editing widget.
+    /// Gets the explicit pixel width for a parameter control's editing widget.
     /// Sourced from <see cref="UmbraControlWidthAttribute"/>.
     /// </summary>
     /// <remarks>

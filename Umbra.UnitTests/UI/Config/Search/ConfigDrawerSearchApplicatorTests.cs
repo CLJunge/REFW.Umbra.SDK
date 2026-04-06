@@ -39,8 +39,8 @@ public sealed class ConfigDrawerSearchApplicatorTests
         var betaNode = new SearchAwareTestNode("beta");
         var nodes = new List<IDrawNode> { alphaNode, betaNode };
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Master Volume", "Adjusts output level.", "Audio", "settings.audio");
-        searchIndex.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "settings.graphics");
+        searchIndex.AddParameterResult("alpha", "Master Volume", "Adjusts output level.", "Audio", "config.audio");
+        searchIndex.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "config.graphics");
         var searchState = new ConfigDrawerSearchState();
         searchState.SetQuery("audio");
         searchState.SetMatches(searchIndex.FindMatches(searchState.NormalizedQuery));
@@ -68,7 +68,7 @@ public sealed class ConfigDrawerSearchApplicatorTests
         var root = new RootTreeNode("Root", defaultOpen: false, [child], "root:test", renderer);
         var nodes = new List<IDrawNode> { root };
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Master Volume", null, "Audio", "settings.audio");
+        searchIndex.AddParameterResult("alpha", "Master Volume", null, "Audio", "config.audio");
         searchIndex.PrependRootBranch("root:test");
         var searchState = new ConfigDrawerSearchState();
         searchState.SetQuery("audio");
@@ -94,8 +94,8 @@ public sealed class ConfigDrawerSearchApplicatorTests
         var betaNode = new SearchAwareTestNode("beta");
         var nodes = new List<IDrawNode> { alphaNode, betaNode };
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "settings.graphics");
-        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "settings.gameplay");
+        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "config.graphics");
+        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "config.gameplay");
         var searchState = new ConfigDrawerSearchState();
         searchState.SetQuery("ga");
         searchState.SetMatches(searchIndex.FindMatches(searchState.NormalizedQuery));

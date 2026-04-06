@@ -23,7 +23,7 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Verifies that the constructor rejects a null settings store.
+    /// Verifies that the constructor rejects a null config store.
     /// </summary>
     [TestMethod]
     public void Constructor_WhenStoreIsNull_ThrowsArgumentNullException()
@@ -34,7 +34,7 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Verifies that the constructor rejects a disposed settings store.
+    /// Verifies that the constructor rejects a disposed config store.
     /// </summary>
     [TestMethod]
     public void Constructor_WhenStoreIsDisposed_ThrowsObjectDisposedException()
@@ -46,7 +46,7 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Verifies that the constructor requires the settings store to be loaded first.
+    /// Verifies that the constructor requires the config store to be loaded first.
     /// </summary>
     [TestMethod]
     public void Constructor_WhenStoreIsNotLoaded_ThrowsInvalidOperationException()
@@ -281,7 +281,7 @@ public sealed partial class DeferredSaveControllerTests
     }
 
     /// <summary>
-    /// Creates a mock settings store configured to appear loaded and not disposed.
+    /// Creates a mock settings config configured to appear loaded and not disposed.
     /// </summary>
     private static Mock<IConfigStore<TestConfig>> CreateMockStore()
     {

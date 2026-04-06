@@ -18,7 +18,7 @@ public class NestedScopePathResolverTests
     {
         // Arrange
         var parentPath = "parent.path";
-        var expectedSegment = "propSettingsPrefix";
+        var expectedSegment = "propConfigPrefix";
         var propMeta = CreatePropertyMetadata(
             configPrefix: expectedSegment,
             configParameterKeyOverride: null,
@@ -29,7 +29,7 @@ public class NestedScopePathResolverTests
         var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
-        Assert.AreEqual("parent.path.propSettingsPrefix", result);
+        Assert.AreEqual("parent.path.propConfigPrefix", result);
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ public class NestedScopePathResolverTests
     {
         // Arrange
         var parentPath = "parent";
-        var expectedSegment = "typeSettingsPrefix";
+        var expectedSegment = "typeConfigPrefix";
         var propMeta = CreatePropertyMetadata(
             configPrefix: null,
             configParameterKeyOverride: "keyOverride",
@@ -52,7 +52,7 @@ public class NestedScopePathResolverTests
         var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
-        Assert.AreEqual("parent.typeSettingsPrefix", result);
+        Assert.AreEqual("parent.typeConfigPrefix", result);
     }
 
     /// <summary>

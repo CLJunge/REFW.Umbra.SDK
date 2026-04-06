@@ -12,7 +12,7 @@ using Umbra.UI.Panel.Benchmark;
 namespace Umbra.SamplePlugin;
 
 /// <summary>
-/// Sample REFramework.NET plugin instance that demonstrates Umbra settings registration,
+/// Sample REFramework.NET plugin instance that demonstrates Umbra config registration,
 /// automatic deferred persistence, panel-based ImGui rendering, and optional reusable
 /// plugin-panel benchmarking in <c>BENCHMARK</c> builds.
 /// </summary>
@@ -90,8 +90,8 @@ public sealed class SamplePlugin : UmbraPlugin
         RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
         RunShutdownStep("flush deferred save controller", FlushDeferredSaveController);
         RunShutdownStep("dispose deferred save controller", DisposeDeferredSaveController);
-        RunShutdownStep("save settings store", SaveConfigStore);
-        RunShutdownStep("dispose settings store", DisposeConfigStore);
+        RunShutdownStep("save config store", SaveConfigStore);
+        RunShutdownStep("dispose config store", DisposeConfigStore);
 
         _config = null;
 

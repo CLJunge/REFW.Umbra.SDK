@@ -100,8 +100,8 @@ public sealed class ConfigDrawerSearchControllerTests
             NextInputTextValue = "audio"
         };
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Master Volume", "Adjusts output level.", "Audio", "settings.audio");
-        searchIndex.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "settings.graphics");
+        searchIndex.AddParameterResult("alpha", "Master Volume", "Adjusts output level.", "Audio", "config.audio");
+        searchIndex.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "config.graphics");
         var controller = new ConfigDrawerSearchController(
             new ConfigDrawerOptions { ShowSearchBar = true },
             renderer,
@@ -133,8 +133,8 @@ public sealed class ConfigDrawerSearchControllerTests
             NextInputTextValue = "ga"
         };
         var searchIndex = new ConfigSearchIndex();
-        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "settings.graphics");
-        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "settings.gameplay");
+        searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "config.graphics");
+        searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "config.gameplay");
         var controller = new ConfigDrawerSearchController(
             new ConfigDrawerOptions { ShowSearchBar = true },
             renderer,

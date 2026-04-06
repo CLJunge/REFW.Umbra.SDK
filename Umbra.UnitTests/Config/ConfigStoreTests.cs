@@ -75,7 +75,7 @@ public partial class ConfigStoreTests
     }
 
     /// <summary>
-    /// Unsupported settings-store implementation used to verify the interface-based copy contract.
+    /// Unsupported config-store implementation used to verify the interface-based copy contract.
     /// </summary>
     private sealed class UnsupportedConfigStoreTarget : IConfigStore<TestConfig>
     {
@@ -958,7 +958,7 @@ public partial class ConfigStoreTests
     [DataRow("my config.json", "Filename with spaces")]
     [DataRow("config@#$.json", "Filename with special characters")]
     [DataRow("X:\\very\\long\\nested\\path\\to\\some\\configuration\\file\\location\\config.json", "Long path")]
-    [DataRow("C:\\Users\\User Name\\AppData\\Local\\Config Files\\settings.json", "Path with spaces")]
+    [DataRow("C:\\Users\\User Name\\AppData\\Local\\Config Files\\config.json", "Path with spaces")]
     public void Constructor_ValidFilePath_CreatesInstance(string filePath, string testCase)
     {
         // Act

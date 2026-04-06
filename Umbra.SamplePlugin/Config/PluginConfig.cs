@@ -11,7 +11,7 @@ namespace Umbra.SamplePlugin.Config;
 /// </summary>
 /// <remarks>
 /// This config is intentionally broad rather than minimal so the sample plugin can exercise most
-/// of Umbra's settings surface in one place: hotkeys, booleans, numeric sliders and drags,
+/// of Umbra's config surface in one place: hotkeys, booleans, numeric sliders and drags,
 /// strings, enums, action buttons, custom drawers, nested-group drawers, category scoping,
 /// type-level metadata fallback, indentation, label margins, ordering, spacing, and visibility
 /// predicates.
@@ -46,7 +46,7 @@ public record PluginConfig
     public Parameter<Action> ResetAllSamples { get; init; }
 
     /// <summary>
-    /// Gets or sets the general sample settings, including the enable toggle and hotkey drawers.
+    /// Gets or sets the general sample config group, including the enable toggle and hotkey drawers.
     /// </summary>
     [UmbraParameter]
     [UmbraCategory("General")]
@@ -243,7 +243,7 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// General sample settings covering the basic boolean and hotkey controls used by many plugins.
+    /// General sample config covering the basic boolean and hotkey controls used by many plugins.
     /// </summary>
     [UmbraAutoRegister]
     public record GeneralConfig
@@ -274,7 +274,7 @@ public record PluginConfig
         [UmbraDescription("When enabled, the sample plugin emits extra diagnostic log lines during manual testing.")]
         public Parameter<bool> ShowVerboseLogs { get; set; } = new(false);
 
-        /// <summary>Resets the general sample settings to their defaults.</summary>
+        /// <summary>Resets the general sample config values to their defaults.</summary>
         [UmbraParameter]
         [UmbraDisplayName("Reset General")]
         [UmbraDescription("Resets the sample plugin enable toggle, hotkeys, and verbose logging flag.")]
@@ -694,7 +694,7 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// Nested settings group that declares its own presentation metadata at the type level.
+    /// Nested config group that declares its own presentation metadata at the type level.
     /// </summary>
     [UmbraAutoRegister]
     [UmbraCategory("Type-Level Fallback")]
@@ -719,7 +719,7 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// Nested settings group that demonstrates class-level indentation and label-margin metadata.
+    /// Nested config group that demonstrates class-level indentation and label-margin metadata.
     /// </summary>
     [UmbraAutoRegister]
     [UmbraCategory("Indented Layout")]
@@ -873,7 +873,7 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// Sample nested settings group rendered by a custom nested-group drawer.
+    /// Sample nested config group rendered by a custom nested-group drawer.
     /// Multiple instances of this type intentionally reuse the same local widget labels so the
     /// sample can validate nested-group ImGui ID scoping manually.
     /// </summary>

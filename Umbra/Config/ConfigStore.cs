@@ -5,7 +5,7 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Owns the public lifecycle and registered parameter set of a typed settings store.
+/// Owns the public lifecycle and registered parameter set of a typed config store.
 /// </summary>
 /// <remarks>
 /// Persistence orchestration is delegated to <see cref="ConfigStorePersistenceCoordinator{TConfig}"/>, and listener bookkeeping is delegated to <see cref="ConfigStoreListenerRegistry"/>. This type remains responsible for public lifecycle guards, the shared registered parameter map, and parameter-level operations over that map.
@@ -29,7 +29,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     /// Initializes a new instance of <see cref="ConfigStore{TConfig}"/> with the specified file path.
     /// </summary>
     /// <param name="filePath">
-    /// The absolute or relative path to the JSON file used for persisting settings.
+    /// The absolute or relative path to the JSON file used for persisting config data.
     /// </param>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="filePath"/> is <see langword="null"/>, empty, or whitespace.
@@ -63,7 +63,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     public bool IsDisposed => _disposed;
 
     /// <summary>
-    /// Gets the configured main settings file path for this store.
+    /// Gets the configured main config file path for this store.
     /// </summary>
     public string FilePath => _persistenceCoordinator.FilePath;
 
@@ -99,10 +99,10 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     }
 
     /// <summary>
-    /// Imports compatible values from a versioned config exchange document or a legacy flat settings file.
+    /// Imports compatible values from a versioned config exchange document or a legacy flat config file.
     /// </summary>
     /// <param name="filePath">The source file path.</param>
-    /// <param name="options">Optional import finalization settings.</param>
+    /// <param name="options">Optional import finalization options.</param>
     /// <returns>A structured report describing the import outcome.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is <see langword="null"/>, empty, or whitespace.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
@@ -129,7 +129,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     /// <returns>A fully initialized <typeparamref name="TConfig"/> instance populated from persisted values or declared defaults.</returns>
     /// <remarks>
     /// <para>
-    /// <typeparamref name="TConfig"/> must be decorated with <see cref="Attributes.UmbraAutoRegisterAttribute"/> for Umbra to discover its public instance properties marked with <see cref="Attributes.UmbraParameterAttribute"/>. Nested settings-group properties must expose types that are also decorated with that attribute.
+    /// <typeparamref name="TConfig"/> must be decorated with <see cref="Attributes.UmbraAutoRegisterAttribute"/> for Umbra to discover its public instance properties marked with <see cref="Attributes.UmbraParameterAttribute"/>. Nested config-group properties must expose types that are also decorated with that attribute.
     /// </para>
     /// <para>
     /// Persisted values are matched by exact fully qualified key during load. Changing key derivation, such as by changing an <see cref="Attributes.UmbraPrefixAttribute"/>, effectively renames the persisted entries and does not migrate existing JSON automatically.
@@ -159,7 +159,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     /// <summary>
     /// Copies this store's registered parameter values into the corresponding parameters of <paramref name="target"/>, matched by key.
     /// </summary>
-    /// <param name="target">The destination settings store to copy values into.</param>
+    /// <param name="target">The destination config store to copy values into.</param>
     /// <param name="setWithoutNotifying"><see langword="true"/> to apply copied values through the target store's silent mutation path; otherwise, <see langword="false"/>.</param>
     /// <remarks>
     /// Both stores must already be loaded so their registered parameter maps are stable. Parameters that exist in this store but not in <paramref name="target"/> are ignored. When <paramref name="setWithoutNotifying"/> is <see langword="true"/>, copied values bypass both change notification and metadata-based validation on the target parameters.
@@ -394,7 +394,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     /// Releases this store's remaining listener registrations and marks the instance as disposed.
     /// </summary>
     /// <remarks>
-    /// Repeated calls after the first one do nothing. This method does not persist settings automatically.
+    /// Repeated calls after the first one do nothing. This method does not persist config automatically.
     /// </remarks>
     public void Dispose()
     {

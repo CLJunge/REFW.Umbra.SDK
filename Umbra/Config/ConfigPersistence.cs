@@ -5,7 +5,7 @@ using Umbra.Logging;
 namespace Umbra.Config;
 
 /// <summary>
-/// Reads and writes registered settings values to the JSON file used by a <see cref="ConfigStore{TConfig}"/>.
+/// Reads and writes registered config values to the JSON file used by a <see cref="ConfigStore{TConfig}"/>.
 /// </summary>
 /// <remarks>
 /// This helper serializes only the registered parameter map, leaving store lifecycle and recovery policy orchestration to <see cref="ConfigStorePersistenceCoordinator{TConfig}"/>.
@@ -13,17 +13,17 @@ namespace Umbra.Config;
 internal static class ConfigPersistence
 {
     /// <summary>
-    /// Describes the outcome of a settings-file load attempt.
+    /// Describes the outcome of a config-file load attempt.
     /// </summary>
     internal enum LoadResult
     {
         /// <summary>
-        /// The settings file was read successfully.
+        /// The config file was read successfully.
         /// </summary>
         Success,
 
         /// <summary>
-        /// The settings file was not present when the read was attempted.
+        /// The config file was not present when the read was attempted.
         /// </summary>
         /// <remarks>
         /// Callers treat this the same as a successful load with no persisted values and can write fresh defaults.
@@ -31,12 +31,12 @@ internal static class ConfigPersistence
         MissingFile,
 
         /// <summary>
-        /// The settings file was unreadable, but it was moved aside so defaults can be rewritten safely.
+        /// The config file was unreadable, but it was moved aside so defaults can be rewritten safely.
         /// </summary>
         RecoveredToDefaults,
 
         /// <summary>
-        /// The settings file was unreadable and could not be moved aside, so the original file was left untouched.
+        /// The config file was unreadable and could not be moved aside, so the original file was left untouched.
         /// </summary>
         Failed
     }
@@ -53,7 +53,7 @@ internal static class ConfigPersistence
     /// Serializes every persisted registered parameter value and overwrites the destination JSON file.
     /// </summary>
     /// <param name="filePath">The absolute or relative destination file path.</param>
-    /// <param name="parameters">The registered parameter map keyed by persisted setting name.</param>
+    /// <param name="parameters">The registered parameter map keyed by persisted config key.</param>
     /// <remarks>
     /// Delegate-valued parameters are skipped because they do not represent persisted state. If the parent directory of <paramref name="filePath"/> does not exist yet, it is created automatically.
     /// </remarks>
@@ -77,7 +77,7 @@ internal static class ConfigPersistence
         }
         catch (Exception ex)
         {
-            Logger.Exception(ex, $"ConfigPersistence: failed to save settings to '{filePath}'.");
+            Logger.Exception(ex, $"ConfigPersistence: failed to save config to '{filePath}'.");
         }
     }
 
@@ -85,7 +85,7 @@ internal static class ConfigPersistence
     /// Reads the specified JSON file and applies matching persisted values to the registered parameter map.
     /// </summary>
     /// <param name="filePath">The absolute or relative source file path.</param>
-    /// <param name="parameters">The registered parameter map keyed by persisted setting name.</param>
+    /// <param name="parameters">The registered parameter map keyed by persisted config key.</param>
     /// <returns>The outcome of the load attempt.</returns>
     /// <remarks>
     /// Matching values are applied through <see cref="IParameter.SetValueWithoutNotify(object?)"/>, so loading does not raise <see cref="IParameter.ValueChanged"/> and does not run metadata-based validation.
@@ -111,62 +111,62 @@ internal static class ConfigPersistence
         }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
         {
-            Logger.Info($"ConfigPersistence: settings file '{filePath}' not found (race condition or external deletion); using defaults.");
+            Logger.Info($"ConfigPersistence: config file '{filePath}' not found (race condition or external deletion); using defaults.");
             return LoadResult.MissingFile;
         }
         catch (Exception ex)
         {
-            Logger.Exception(ex, $"ConfigPersistence: failed to load settings from '{filePath}'.");
-            return TryBackupUnreadableSettingsFile(filePath, out var backupPath)
+            Logger.Exception(ex, $"ConfigPersistence: failed to load config from '{filePath}'.");
+            return TryBackupUnreadableConfigFile(filePath, out var backupPath)
                 ? LogRecoveredToDefaults(filePath, backupPath)
                 : LoadResult.Failed;
         }
     }
 
     /// <summary>
-    /// Attempts to move an unreadable settings file aside to a timestamped backup path in the same directory.
+    /// Attempts to move an unreadable config file aside to a timestamped backup path in the same directory.
     /// </summary>
-    /// <param name="filePath">The unreadable settings file path.</param>
+    /// <param name="filePath">The unreadable config file path.</param>
     /// <param name="backupPath">Receives the generated backup path when the move succeeds.</param>
     /// <returns><see langword="true"/> when the file was moved successfully; otherwise <see langword="false"/>.</returns>
-    private static bool TryBackupUnreadableSettingsFile(string filePath, out string backupPath)
+    private static bool TryBackupUnreadableConfigFile(string filePath, out string backupPath)
     {
         backupPath = string.Empty;
 
         try
         {
-            backupPath = GetUnreadableSettingsBackupPath(filePath);
+            backupPath = GetUnreadableConfigBackupPath(filePath);
             File.Move(filePath, backupPath);
             return true;
         }
         catch (Exception backupEx)
         {
             Logger.Exception(backupEx,
-                $"ConfigPersistence: failed to back up unreadable settings file '{filePath}' before rewriting defaults.");
+                $"ConfigPersistence: failed to back up unreadable config file '{filePath}' before rewriting defaults.");
             backupPath = string.Empty;
             return false;
         }
     }
 
     /// <summary>
-    /// Logs a recovery message after an unreadable settings file has been moved aside.
+    /// Logs a recovery message after an unreadable config file has been moved aside.
     /// </summary>
-    /// <param name="filePath">The original unreadable settings file path.</param>
+    /// <param name="filePath">The original unreadable config file path.</param>
     /// <param name="backupPath">The backup path that now holds the unreadable file.</param>
     /// <returns><see cref="LoadResult.RecoveredToDefaults"/>.</returns>
     private static LoadResult LogRecoveredToDefaults(string filePath, string backupPath)
     {
         Logger.Warning(
-            $"ConfigPersistence: moved unreadable settings file '{filePath}' to '{backupPath}'. Defaults will be rewritten.");
+            $"ConfigPersistence: moved unreadable config file '{filePath}' to '{backupPath}'. Defaults will be rewritten.");
         return LoadResult.RecoveredToDefaults;
     }
 
     /// <summary>
-    /// Generates a unique backup path for an unreadable settings file.
+    /// Generates a unique backup path for an unreadable config file.
     /// </summary>
-    /// <param name="filePath">The original unreadable settings file path.</param>
+    /// <param name="filePath">The original unreadable config file path.</param>
     /// <returns>A non-existent backup path in the same directory.</returns>
-    private static string GetUnreadableSettingsBackupPath(string filePath)
+    private static string GetUnreadableConfigBackupPath(string filePath)
     {
         var directoryPath = Path.GetDirectoryName(Path.GetFullPath(filePath)) ?? string.Empty;
         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);

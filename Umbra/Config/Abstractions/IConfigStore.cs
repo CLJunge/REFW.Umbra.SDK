@@ -1,7 +1,7 @@
 namespace Umbra.Config;
 
 /// <summary>
-/// Defines the lifecycle, persistence, reset, copy, and listener operations exposed by a typed settings store.
+/// Defines the lifecycle, persistence, reset, copy, and listener operations exposed by a typed config store.
 /// </summary>
 /// <remarks>
 /// Implementations discover and register a stable parameter set during <see cref="Load"/>, then expose persistence and listener operations over that registered set for the remainder of the store instance's lifetime. Unless stated otherwise, operations that inspect or mutate registered parameters require <see cref="Load"/> to have completed successfully first.
@@ -49,10 +49,10 @@ public interface IConfigStore<TConfig> : IDisposable
     void Export(string filePath);
 
     /// <summary>
-    /// Imports compatible values from a config exchange document or a legacy flat settings file.
+    /// Imports compatible values from a config exchange document or a legacy flat config file.
     /// </summary>
     /// <param name="filePath">The source file path to import from.</param>
-    /// <param name="options">Optional import finalization settings.</param>
+    /// <param name="options">Optional import finalization options.</param>
     /// <returns>A structured report describing applied, ignored, and rejected keys.</returns>
     /// <remarks>
     /// Requires <see cref="Load"/> to have completed successfully so the store has a stable registered parameter set to receive imported values.

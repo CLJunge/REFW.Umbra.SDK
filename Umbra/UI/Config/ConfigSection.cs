@@ -118,7 +118,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     }
 
     /// <summary>
-    /// Creates a config section with access to the loaded settings store for optional built-in transfer UI.
+    /// Creates a config section with access to the loaded config store for optional built-in transfer UI.
     /// </summary>
     /// <remarks>
     /// When enabled through <see cref="ConfigDrawerOptions.Transfer"/>, the built-in transfer UI is rendered
@@ -126,7 +126,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// transfer placement option, rather than as part of the config object graph.
     /// </remarks>
     /// <param name="config">The already loaded configuration instance to render.</param>
-    /// <param name="store">The loaded settings store associated with <paramref name="config"/>.</param>
+    /// <param name="store">The loaded config store associated with <paramref name="config"/>.</param>
     /// <param name="idScope">Optional stable ImGui widget ID sub-scope for this section.</param>
     /// <param name="sectionLabel">Optional label for a collapsible section wrapped around this section by the owning <see cref="PluginPanel"/>.</param>
     /// <param name="expandedByDefault">Whether the optional section starts expanded.</param>
@@ -143,7 +143,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         => CreateWithStore(config, store, ConfigDrawerOptions.Default, idScope, sectionLabel, expandedByDefault, suppressTreeNode);
 
     /// <summary>
-    /// Creates a config section with access to the loaded settings store for optional built-in transfer UI and the supplied drawer options.
+    /// Creates a config section with access to the loaded config store for optional built-in transfer UI and the supplied drawer options.
     /// </summary>
     /// <remarks>
     /// When enabled through <see cref="ConfigDrawerOptions.Transfer"/>, the built-in transfer UI is rendered
@@ -151,7 +151,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// transfer placement option, rather than as part of the config object graph.
     /// </remarks>
     /// <param name="config">The already loaded configuration instance to render.</param>
-    /// <param name="store">The loaded settings store associated with <paramref name="config"/>.</param>
+    /// <param name="store">The loaded config store associated with <paramref name="config"/>.</param>
     /// <param name="options">The optional feature flags that customize the wrapped drawer behavior.</param>
     /// <param name="idScope">Optional stable ImGui widget ID sub-scope for this section.</param>
     /// <param name="sectionLabel">Optional label for a collapsible section wrapped around this section by the owning <see cref="PluginPanel"/>.</param>

@@ -39,7 +39,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
     /// for parameter changes on <paramref name="store"/>.
     /// </summary>
     /// <param name="store">
-    /// The settings store to drive saves for. <strong>Must have already been loaded via
+    /// The config store to drive saves for. <strong>Must have already been loaded via
     /// <see cref="IConfigStore{TConfig}.Load"/> before this constructor is called.</strong>
     /// </param>
     /// <param name="debounceWindow">
@@ -58,10 +58,10 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         ArgumentNullException.ThrowIfNull(store);
         if (store.IsDisposed)
             throw new ObjectDisposedException(nameof(store),
-                $"DeferredSaveController<{typeof(TConfig).Name}> cannot attach to a disposed settings store.");
+                $"DeferredSaveController<{typeof(TConfig).Name}> cannot attach to a disposed config store.");
         if (!store.IsLoaded)
             throw new InvalidOperationException(
-                $"DeferredSaveController<{typeof(TConfig).Name}> requires a settings store that has already completed Load().");
+                $"DeferredSaveController<{typeof(TConfig).Name}> requires a config store that has already completed Load().");
 
         _store = store;
         DebounceWindow = debounceWindow ?? TimeSpan.FromSeconds(1);
@@ -111,7 +111,7 @@ public sealed class DeferredSaveController<TConfig> : IDisposable where TConfig 
         {
             if (_anyPending)
                 Logger.Warning(
-                    $"DeferredSaveController<{typeof(TConfig).Name}>: dropping pending changes because the settings store was already disposed.");
+                    $"DeferredSaveController<{typeof(TConfig).Name}>: dropping pending changes because the config store was already disposed.");
             ClearPendingState();
             return;
         }

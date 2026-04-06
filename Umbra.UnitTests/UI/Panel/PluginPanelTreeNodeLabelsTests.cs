@@ -323,11 +323,11 @@ public class PluginPanelTreeNodeLabelsTests
     [TestMethod]
     public void Sanitize_LabelWithAppendedSectionSuffix_ReturnsVisiblePrefixOnly()
     {
-        var input = "General Settings##PluginConfig";
+        var input = "General##PluginConfig";
 
         var result = PluginPanelTreeNodeLabels.Sanitize(input);
 
-        Assert.AreEqual("General Settings", result);
+        Assert.AreEqual("General", result);
     }
 
     /// <summary>
