@@ -6,7 +6,7 @@ namespace Umbra.UI.Config.Drawers;
 /// Defines the contract for a custom parameter widget that participates in Umbra's two-column layout.
 /// </summary>
 /// <remarks>
-/// The configuration-drawer pipeline renders the label, optional help UI, alignment, and item width before calling <see cref="Draw"/>. Implementations should therefore render only the editing widget itself.
+/// The configuration-drawer pipeline renders the label, optional help UI, alignment, and item width before calling <see cref="Draw"/>. Implementations should therefore render only the editing widget itself. Property-level wrapper attributes such as <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> and <see cref="Umbra.Config.Attributes.UmbraDisableIfAttribute{T}"/> are still honored around the composed row by the surrounding configuration-drawer pipeline.
 /// </remarks>
 public interface ITwoColumnParameterDrawer : IDisposable
 {

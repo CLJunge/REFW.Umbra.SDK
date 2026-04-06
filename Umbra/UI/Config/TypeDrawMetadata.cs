@@ -28,6 +28,7 @@ internal sealed class TypeDrawMetadata
         UmbraLabelMarginAttribute? labelMarginAttr,
         INestedDrawerAttribute? nestedDrawerAttr,
         IHideIfAttribute? hideIf,
+        IDisableIfAttribute? disableIf,
         int order,
         int spacingBefore,
         int spacingAfter,
@@ -44,6 +45,7 @@ internal sealed class TypeDrawMetadata
         internal UmbraLabelMarginAttribute? LabelMarginAttr { get; } = labelMarginAttr;
         internal INestedDrawerAttribute? NestedDrawerAttr { get; } = nestedDrawerAttr;
         internal IHideIfAttribute? HideIf { get; } = hideIf;
+        internal IDisableIfAttribute? DisableIf { get; } = disableIf;
         internal int Order { get; } = order;
         internal int SpacingBefore { get; } = spacingBefore;
         internal int SpacingAfter { get; } = spacingAfter;

@@ -19,7 +19,8 @@ internal static class ParameterNodeComposer
         object owner,
         LabelAlignmentGroup alignmentGroup,
         float? classIndentAmount,
-        float? classLabelMarginPixels)
+        float? classLabelMarginPixels,
+        Func<bool>? isDisabled = null)
     {
         var meta = parameter.Metadata;
         if (classLabelMarginPixels.HasValue && alignmentGroup.Margin != classLabelMarginPixels.Value)
@@ -36,7 +37,8 @@ internal static class ParameterNodeComposer
                     meta.SpacingBefore,
                     meta.SpacingAfter,
                     indentAmount,
-                    parameter.Key),
+                    parameter.Key,
+                    isDisabled: isDisabled),
                 resource);
 
         var isVisible = VisibilityPredicateResolver.Build(meta.HideIf, owner);
@@ -49,7 +51,8 @@ internal static class ParameterNodeComposer
                 meta.SpacingBefore,
                 meta.SpacingAfter,
                 indentAmount,
-                parameter.Key),
+                parameter.Key,
+                isDisabled: isDisabled),
             resource);
     }
 }

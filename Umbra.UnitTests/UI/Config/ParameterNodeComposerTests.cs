@@ -233,4 +233,45 @@ public class ParameterNodeComposerTests
         Assert.AreEqual(9f, alignmentGroup.Margin);
     }
 
+    /// <summary>
+    /// Tests that a two-column custom drawer still receives the composed disabled predicate and returns its drawer resource.
+    /// </summary>
+    [TestMethod]
+    public void Create_TwoColumnCustomDrawerWithDisabledPredicate_ComposesNodeAndReturnsDrawerResource()
+    {
+        var metadata = new ParameterMetadata
+        {
+            ResolvedLabel = "TestLabel",
+            Order = 0,
+            SpacingBefore = 0,
+            SpacingAfter = 0,
+            TwoColumnDrawerType = typeof(ParameterNodeComposerTestsTwoColumnDrawer)
+        };
+        var parameter = new Parameter<int>(42) { Metadata = metadata };
+        var alignmentGroup = new LabelAlignmentGroup();
+        static bool isDisabled() => true;
+
+        var (node, resource) = ParameterNodeComposer.Create(parameter, new object(), alignmentGroup, null, null, isDisabled);
+        var disabledPredicate = GetPrivateField<Func<bool>?>(node, "_isDisabled");
+
+        Assert.IsNotNull(disabledPredicate);
+        Assert.IsTrue(disabledPredicate!());
+        Assert.IsNotNull(resource);
+        Assert.IsInstanceOfType<ParameterNodeComposerTestsTwoColumnDrawer>(resource);
+    }
+
+    private static T GetPrivateField<T>(object instance, string fieldName)
+    {
+        var field = instance.GetType().GetField(fieldName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.IsNotNull(field);
+        return (T)field.GetValue(instance)!;
+    }
+
+    private sealed class ParameterNodeComposerTestsTwoColumnDrawer : Drawers.ITwoColumnParameterDrawer
+    {
+        public void Draw(IParameter parameter)
+        {
+            _ = parameter;
+        }
+    }
 }

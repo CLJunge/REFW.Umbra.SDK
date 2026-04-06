@@ -9,6 +9,9 @@ internal sealed class TestParameterNodeRenderer : IParameterNodeRenderer
     public int SpacingCount { get; private set; }
     public int IndentCount { get; private set; }
     public int UnindentCount { get; private set; }
+    public int BeginDisabledCount { get; private set; }
+    public int EndDisabledCount { get; private set; }
+    public bool? LastBeginDisabledValue { get; private set; }
     public int PushStyleColorCount { get; private set; }
     public int PopStyleColorCount { get; private set; }
     public int ScrollHereCount { get; private set; }
@@ -29,6 +32,14 @@ internal sealed class TestParameterNodeRenderer : IParameterNodeRenderer
         UnindentCount++;
         LastUnindentAmount = amount;
     }
+
+    public void BeginDisabled(bool disabled)
+    {
+        BeginDisabledCount++;
+        LastBeginDisabledValue = disabled;
+    }
+
+    public void EndDisabled() => EndDisabledCount++;
 
     public void PushStyleColor(Hexa.NET.ImGui.ImGuiCol color, System.Numerics.Vector4 value)
     {

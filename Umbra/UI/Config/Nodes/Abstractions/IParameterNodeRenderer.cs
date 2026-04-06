@@ -3,12 +3,12 @@ using Umbra.UI.Config.Rendering;
 namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
-/// Defines the spacing, indentation, highlight, scroll, and keyboard-focus operations used by <see cref="ParameterNode"/>.
+/// Defines the spacing, indentation, disabled-region, highlight, scroll, and keyboard-focus operations used by <see cref="ParameterNode"/>.
 /// </summary>
 /// <remarks>
-/// This composed seam isolates parameter-node layout primitives from the shared ImGui render context so tests can verify visibility, spacing, indentation, highlight, scroll, and focus behavior without requiring an active ImGui frame.
+/// This composed seam isolates parameter-node layout primitives from the shared ImGui render context so tests can verify visibility, disabled rendering, spacing, indentation, highlight, scroll, and focus behavior without requiring an active ImGui frame.
 /// </remarks>
-internal interface IParameterNodeRenderer : ISpacingOps, IIndentationOps, IButtonStyleColorSink
+internal interface IParameterNodeRenderer : ISpacingOps, IIndentationOps, IDisabledRegionOps, IButtonStyleColorSink
 {
     /// <summary>
     /// Scrolls the current item into view.

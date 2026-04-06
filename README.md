@@ -16,6 +16,7 @@ The repository contains three projects:
 - Deferred auto-save with `DeferredSaveController<TConfig>`
 - Pre-built ImGui config UI with `ConfigDrawer<TConfig>`
 - Built-in config search/filter UI with visible-match filtering, highlight styling, and previous/next result navigation in `ConfigDrawer<TConfig>` and `ConfigSection<TConfig>`
+- Conditional hide and disable attributes for parameters and nested config groups, including recursive disable propagation through nested children
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
 - Validation attributes with inline feedback for rejected edits in `ConfigDrawer<TConfig>`
 - Custom parameter drawers, two-column drawers, and nested-group drawers
@@ -102,6 +103,8 @@ When `ConfigDrawerOptions.ShowSearchBar` is enabled, the built-in config UI adds
 
 Query changes do not auto-focus results. Focus moves only when the user navigates with the previous/next controls.
 
+Parameters hidden by `UmbraHideIfAttribute<T>` are excluded from visible search matches while hidden. Parameters and nested groups disabled by `UmbraDisableIfAttribute<T>` remain visible and searchable. When a nested group is disabled, Umbra disables descendant controls recursively while keeping surrounding tree-node wrappers interactive so users can still expand or collapse the branch.
+
 ## Validation attributes
 
 - `[UmbraRequired]` rejects `null` and empty strings
@@ -158,6 +161,8 @@ Built-in config import/export UI is now an optional Umbra feature rather than a 
 - `[UmbraNestedDrawer<TDrawer>]` uses an `INestedDrawer<T>` for a whole nested config group
 - `[LiveStateSectionDrawer<TDrawer>]` binds a live-state type to its panel drawer
 - `PluginPanel` is the recommended top-level UI surface when a plugin needs config and live state together
+
+Hide and disable wrapper attributes continue to apply around custom parameter drawers, two-column drawers, and custom nested-group drawers.
 
 ## Architecture summary
 
