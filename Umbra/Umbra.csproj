@@ -38,6 +38,7 @@
 
         <!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
         <UmbraDeployScript>$(MSBuildProjectDirectory)\..\scripts\deploy_reframework_deps.bat</UmbraDeployScript>
+        <UmbraCleanUpScript>$(MSBuildProjectDirectory)\..\scripts\remove_reframework_deps.bat</UmbraCleanUpScript>
         <Title>REFW.Umbra</Title>
         <Configurations>Debug;Release;Benchmark</Configurations>
     </PropertyGroup>

@@ -37,6 +37,21 @@
     </Target>
 
     <!--
+    Clean up the local game directory after a successful Clean in Visual Studio. This is necessary
+    to remove old DLLs that would otherwise be left behind and cause confusion about which version
+    is currently deployed.
+
+    Each participating project sets $(UmbraCleanUpScript) in its own PropertyGroup to the absolute
+    path of the appropriate cleanup batch file. Projects that leave the property empty (the default)
+    are silently skipped by the Condition below.
+    -->    
+    <Target Name="PostClean_RemoveLocal"
+            AfterTargets="Clean"
+            Condition="'$(RunLocalDevBuildHooks)' == 'true' And '$(UmbraCleanUpScript)' != '' And Exists('$(UmbraCleanUpScript)')">
+        <Exec Command="call &quot;$(UmbraCleanUpScript)&quot; &quot;$(AssemblyName)&quot;" />
+    </Target>
+        
+    <!--
     Upload the generated NuGet package to a private feed after packing a build in Visual Studio. This is used
     to facilitate local testing of the SDK and plugin packages in other projects without needing to manually copy .nupkg files around
     or require the package to be published to 'nuget.org' first.
