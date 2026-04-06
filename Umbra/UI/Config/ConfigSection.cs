@@ -196,12 +196,14 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     {
         if (_disposed) return;
 
-        if (_transferFeature?.Placement == ConfigTransferPlacement.BeforeConfig)
+        if (ShouldDrawTransferFeature(_transferFeature is not null, _drawer.HasActiveSearchQuery)
+            && _transferFeature!.Placement == ConfigTransferPlacement.BeforeConfig)
             DrawTransferFeature();
 
         _drawer.Draw();
 
-        if (_transferFeature?.Placement != ConfigTransferPlacement.BeforeConfig)
+        if (ShouldDrawTransferFeature(_transferFeature is not null, _drawer.HasActiveSearchQuery)
+            && _transferFeature!.Placement != ConfigTransferPlacement.BeforeConfig)
             DrawTransferFeature();
     }
 
@@ -248,6 +250,9 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
             _renderContext.TreePop();
         }
     }
+
+    internal static bool ShouldDrawTransferFeature(bool hasTransferFeature, bool hasActiveSearchQuery)
+        => hasTransferFeature && !hasActiveSearchQuery;
 
     private static (string? Label, bool ExpandedByDefault)? GetRootNodeMetadata(Type type)
     {

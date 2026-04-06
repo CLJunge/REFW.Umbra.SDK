@@ -638,6 +638,45 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
+    /// Tests that the transfer UI should be hidden while search is active.
+    /// </summary>
+    [TestMethod]
+    public void ShouldDrawTransferFeature_HasTransferAndActiveSearch_ReturnsFalse()
+    {
+        // Act
+        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawTransferFeature(hasTransferFeature: true, hasActiveSearchQuery: true);
+
+        // Assert
+        Assert.IsFalse(shouldDraw);
+    }
+
+    /// <summary>
+    /// Tests that the transfer UI should be shown when transfer exists and search is inactive.
+    /// </summary>
+    [TestMethod]
+    public void ShouldDrawTransferFeature_HasTransferAndNoActiveSearch_ReturnsTrue()
+    {
+        // Act
+        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawTransferFeature(hasTransferFeature: true, hasActiveSearchQuery: false);
+
+        // Assert
+        Assert.IsTrue(shouldDraw);
+    }
+
+    /// <summary>
+    /// Tests that the transfer UI should remain hidden when no transfer feature exists.
+    /// </summary>
+    [TestMethod]
+    public void ShouldDrawTransferFeature_NoTransferFeature_ReturnsFalse()
+    {
+        // Act
+        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawTransferFeature(hasTransferFeature: false, hasActiveSearchQuery: false);
+
+        // Assert
+        Assert.IsFalse(shouldDraw);
+    }
+
+    /// <summary>
     /// Tests that <see cref="ConfigSection{TConfig}.ExpandedByDefault"/> returns false when
     /// <paramref name="suppressTreeNode"/> is true, regardless of other parameters.
     /// </summary>

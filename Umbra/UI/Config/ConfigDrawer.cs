@@ -146,6 +146,11 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     }
 
     /// <summary>
+    /// Gets a value indicating whether the built-in search row currently has an active non-empty query.
+    /// </summary>
+    internal bool HasActiveSearchQuery => _searchController.CurrentState?.HasActiveQuery ?? false;
+
+    /// <summary>
     /// Renders the cached config UI for the current ImGui frame.
     /// </summary>
     /// <remarks>

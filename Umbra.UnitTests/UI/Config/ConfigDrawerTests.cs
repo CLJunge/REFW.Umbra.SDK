@@ -125,6 +125,57 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
+    /// Tests that the drawer reports no active search query before the user enters search text.
+    /// </summary>
+    [TestMethod]
+    public void HasActiveSearchQuery_BeforeQueryEntry_ReturnsFalse()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope();
+        renderer.TextWidths["Search"] = 36f;
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = true });
+
+        // Act
+        var hasActiveSearchQuery = drawer.HasActiveSearchQuery;
+
+        // Assert
+        Assert.IsFalse(hasActiveSearchQuery);
+    }
+
+    /// <summary>
+    /// Tests that the drawer reports an active search query after the user enters non-empty search text.
+    /// </summary>
+    [TestMethod]
+    public void HasActiveSearchQuery_AfterQueryEntry_ReturnsTrue()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope
+        {
+            NextInputTextResult = true,
+            NextInputTextValue = "audio"
+        };
+        renderer.TextWidths["Search"] = 36f;
+        using var drawer = new ConfigDrawer<TestConfig>(
+            "test-scope",
+            [],
+            [],
+            renderer,
+            new ConfigDrawerOptions { ShowSearchBar = true });
+
+        // Act
+        drawer.Draw();
+        var hasActiveSearchQuery = drawer.HasActiveSearchQuery;
+
+        // Assert
+        Assert.IsTrue(hasActiveSearchQuery);
+    }
+
+    /// <summary>
     /// Tests that the search row reuses cached button and label measurements when the available width is unchanged.
     /// </summary>
     [TestMethod]
