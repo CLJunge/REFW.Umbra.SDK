@@ -1,3 +1,5 @@
+using Umbra.Logging;
+
 namespace Umbra;
 
 /// <summary>
@@ -91,7 +93,38 @@ public sealed class PluginHost<TPlugin>
     private void InitializeInstance()
     {
         var instance = _factory();
-        instance.Initialize();
-        _instance = instance;
+        try
+        {
+            instance.Initialize();
+            _instance = instance;
+        }
+        catch (Exception initializationException)
+        {
+            CleanupFailedInitialization(instance, initializationException);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Runs best-effort cleanup for a plugin instance whose <see cref="IUmbraPlugin.Initialize"/>
+    /// call threw before the instance could be published.
+    /// </summary>
+    /// <param name="instance">The partially initialized plugin instance.</param>
+    /// <param name="initializationException">The original initialization failure.</param>
+    private static void CleanupFailedInitialization(TPlugin instance, Exception initializationException)
+    {
+        try
+        {
+            instance.Shutdown();
+        }
+        catch (Exception shutdownException)
+        {
+            Logger.Exception(
+                shutdownException,
+                "PluginHost<{0}>: Shutdown() threw while cleaning up a failed Initialize() call. Original Initialize() exception: {1}: {2}",
+                typeof(TPlugin).Name,
+                initializationException.GetType().Name,
+                initializationException.Message);
+        }
     }
 }
