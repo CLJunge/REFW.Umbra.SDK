@@ -25,8 +25,5 @@ public static class ToastOverlay
     /// Replaces the active renderer. Intended for testing.
     /// </summary>
     /// <param name="renderer">The renderer instance to use, or <see langword="null"/> to restore the default.</param>
-    internal static void SetRenderer(IToastRenderer? renderer)
-    {
-        _renderer = renderer ?? new ImGuiToastRenderer();
-    }
+    internal static void SetRenderer(IToastRenderer? renderer) => _renderer = renderer ?? new ImGuiToastRenderer();
 }

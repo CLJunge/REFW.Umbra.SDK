@@ -1,4 +1,3 @@
-using Umbra.Config;
 using Umbra.Config.Presets;
 using Umbra.Logging;
 using Umbra.UI.Config.Drawers;
@@ -197,10 +196,7 @@ internal sealed class ConfigPresetFeature<TConfig> : IDisposable
         }
     }
 
-    private void RefreshPresetNames()
-    {
-        _cachedPresetNames = _presetStore.List();
-    }
+    private void RefreshPresetNames() => _cachedPresetNames = _presetStore.List();
 
     internal static string ResolveTreeNodeLabel(string? treeNodeLabel)
         => string.IsNullOrWhiteSpace(treeNodeLabel) ? ConfigPresetOptions.DefaultSectionLabel : treeNodeLabel;

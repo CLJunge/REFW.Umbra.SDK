@@ -1,6 +1,6 @@
 using Umbra.Config;
-using Umbra.Config.Presets;
 using Umbra.Config.Attributes;
+using Umbra.Config.Presets;
 using Umbra.UI.Config.Drawers;
 using Umbra.UI.Config.Drawers.UnitTests;
 
@@ -355,7 +355,10 @@ public sealed class ConfigPresetFeatureTests
     {
         public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName());
 
-        public TempDirectory() => Directory.CreateDirectory(Path);
+        public TempDirectory()
+        {
+            Directory.CreateDirectory(Path);
+        }
 
         public void Dispose()
         {

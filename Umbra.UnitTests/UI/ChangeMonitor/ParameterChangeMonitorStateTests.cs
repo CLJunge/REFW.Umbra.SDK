@@ -225,7 +225,7 @@ public sealed class ParameterChangeMonitorStateTests
         try
         {
             Assert.ThrowsExactly<ArgumentNullException>(
-                () => ParameterChangeMonitorState.Create(store, (ConfigChangeMonitorOptions)null!));
+                () => ParameterChangeMonitorState.Create(store, null!));
         }
         finally
         {

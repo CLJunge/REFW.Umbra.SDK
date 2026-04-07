@@ -29,8 +29,8 @@ public sealed class ConfigChangeMonitorOptionsTests
     [TestMethod]
     public void DefaultLogCapacity_MatchesConfigChangeLogDefaultCapacity()
     {
-        int expected = ConfigChangeLog.DefaultCapacity;
-        int actual = ConfigChangeMonitorOptions.DefaultLogCapacity;
+        var expected = ConfigChangeLog.DefaultCapacity;
+        var actual = ConfigChangeMonitorOptions.DefaultLogCapacity;
         Assert.AreEqual(expected, actual);
     }
 

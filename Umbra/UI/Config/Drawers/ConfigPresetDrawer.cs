@@ -186,7 +186,7 @@ internal sealed class ConfigPresetDrawer
         if (target is null)
             return -1;
 
-        for (int i = 0; i < names.Count; i++)
+        for (var i = 0; i < names.Count; i++)
         {
             if (string.Equals(names[i], target, StringComparison.Ordinal))
                 return i;
@@ -198,7 +198,7 @@ internal sealed class ConfigPresetDrawer
     private static string[] ToStringArray(List<string> names)
     {
         var result = new string[names.Count];
-        for (int i = 0; i < names.Count; i++)
+        for (var i = 0; i < names.Count; i++)
             result[i] = names[i];
 
         return result;

@@ -76,8 +76,8 @@ public sealed class ParameterChangeMonitorState : IDisposable
         IReadOnlyDictionary<string, IParameter> parameters, int logCapacity)
     {
         _parameters = parameters;
-        _snapshots = new Dictionary<string, object?>();
-        _cleanupActions = new List<Action>();
+        _snapshots = [];
+        _cleanupActions = [];
         Log = new ConfigChangeLog(logCapacity);
 
         SubscribeToParameters();
@@ -101,7 +101,7 @@ public sealed class ParameterChangeMonitorState : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        for (int i = 0; i < _cleanupActions.Count; i++)
+        for (var i = 0; i < _cleanupActions.Count; i++)
             _cleanupActions[i]();
 
         _cleanupActions.Clear();
@@ -120,7 +120,7 @@ public sealed class ParameterChangeMonitorState : IDisposable
             var key = param.Key;
             _snapshots[key] = param.GetValue();
 
-            Action handler = () => OnParameterChanged(key, param);
+            void handler() => OnParameterChanged(key, param);
             param.ValueChanged += handler;
             _cleanupActions.Add(() => param.ValueChanged -= handler);
         }

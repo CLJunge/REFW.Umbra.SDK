@@ -76,7 +76,7 @@ public sealed class ConfigPresetDrawerTests
         drawer.Draw(_presetNames, null, OnPresetSelected, OnExportClicked, OnImportClicked, false);
 
         // Assert - outer scope is enabled, then prev/combo/next are individually disabled
-        Assert.IsTrue(_renderer.DisabledScopes.Count >= 4);
+        Assert.IsGreaterThanOrEqualTo(4, _renderer.DisabledScopes.Count);
         Assert.IsFalse(_renderer.DisabledScopes[0]); // outer scope enabled
         Assert.IsTrue(_renderer.DisabledScopes[1]); // prev disabled
         Assert.IsTrue(_renderer.DisabledScopes[2]); // combo disabled
@@ -301,7 +301,7 @@ public sealed class ConfigPresetDrawerTests
         // Assert - export button should be disabled (no selected preset)
         Assert.AreEqual(0, _exportCallCount);
         // outer(false), prev(false), next(false), export(true)
-        Assert.IsTrue(_renderer.DisabledScopes.Count >= 4);
+        Assert.IsGreaterThanOrEqualTo(4, _renderer.DisabledScopes.Count);
         Assert.IsTrue(_renderer.DisabledScopes[3]); // export disabled
     }
 
@@ -427,10 +427,7 @@ public sealed class ConfigPresetDrawerTests
     /// Verifies that the constructor rejects a null renderer.
     /// </summary>
     [TestMethod]
-    public void Constructor_NullRenderer_ThrowsArgumentNullException()
-    {
-        Assert.ThrowsExactly<ArgumentNullException>(() => new ConfigPresetDrawer(null!));
-    }
+    public void Constructor_NullRenderer_ThrowsArgumentNullException() => Assert.ThrowsExactly<ArgumentNullException>(() => new ConfigPresetDrawer(null!));
 
     // --- Helpers ---
 

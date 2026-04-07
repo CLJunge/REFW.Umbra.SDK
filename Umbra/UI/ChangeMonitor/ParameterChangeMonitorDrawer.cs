@@ -31,7 +31,7 @@ public sealed class ParameterChangeMonitorDrawer : ILiveStateSectionDrawer<Param
         if (ImGui.BeginChild("##ChangeMonitorScroll", new System.Numerics.Vector2(0, state.DisplayHeight), ImGuiChildFlags.Borders))
         {
             // Render newest first
-            for (int i = entries.Count - 1; i >= 0; i--)
+            for (var i = entries.Count - 1; i >= 0; i--)
             {
                 var entry = entries[i];
                 var oldText = entry.OldValue?.ToString() ?? "(null)";

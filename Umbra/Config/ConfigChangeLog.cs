@@ -90,10 +90,10 @@ public sealed class ConfigChangeLog
             var result = new List<ConfigChangeRecord>(_count);
             if (_count == 0) return result;
 
-            int start = _count < _buffer.Length ? 0 : _head;
-            for (int i = 0; i < _count; i++)
+            var start = _count < _buffer.Length ? 0 : _head;
+            for (var i = 0; i < _count; i++)
             {
-                int idx = (start + i) % _buffer.Length;
+                var idx = (start + i) % _buffer.Length;
                 result.Add(_buffer[idx]);
             }
 

@@ -1,7 +1,6 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.Input;
-using System.Numerics;
 using Umbra.UI.Config.Drawers;
 
 namespace Umbra.SamplePlugin.Config;

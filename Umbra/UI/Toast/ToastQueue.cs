@@ -54,7 +54,7 @@ public static class ToastQueue
         lock (_lock)
         {
             PruneExpired();
-            return new List<ToastEntry>(_entries);
+            return [.. _entries];
         }
     }
 

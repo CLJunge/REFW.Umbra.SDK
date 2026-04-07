@@ -232,12 +232,12 @@ public sealed class ConfigPresetStore<TConfig>
             return result;
         }
 
-        for (int i = 0; i < files.Length; i++)
+        for (var i = 0; i < files.Length; i++)
         {
             var fileName = Path.GetFileNameWithoutExtension(files[i]);
             if (fileName.StartsWith(_presetFilePrefix, StringComparison.OrdinalIgnoreCase))
             {
-                var name = fileName.Substring(_presetFilePrefix.Length);
+                var name = fileName[_presetFilePrefix.Length..];
                 if (name.Length > 0)
                     result.Add(name);
             }
@@ -405,7 +405,7 @@ public sealed class ConfigPresetStore<TConfig>
 
         if (fileName.StartsWith(_presetFilePrefix, StringComparison.OrdinalIgnoreCase))
         {
-            var stripped = fileName.Substring(_presetFilePrefix.Length);
+            var stripped = fileName[_presetFilePrefix.Length..];
             if (stripped.Length > 0)
                 return stripped;
         }
@@ -422,10 +422,10 @@ public sealed class ConfigPresetStore<TConfig>
             throw new ArgumentException("Preset name cannot be null, empty, or whitespace.", nameof(name));
 
         var invalidChars = Path.GetInvalidFileNameChars();
-        for (int i = 0; i < name.Length; i++)
+        for (var i = 0; i < name.Length; i++)
         {
-            char c = name[i];
-            for (int j = 0; j < invalidChars.Length; j++)
+            var c = name[i];
+            for (var j = 0; j < invalidChars.Length; j++)
             {
                 if (c == invalidChars[j])
                     throw new ArgumentException($"Preset name contains invalid file-name character '{c}'.", nameof(name));

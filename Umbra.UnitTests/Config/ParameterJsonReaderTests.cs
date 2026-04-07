@@ -1,5 +1,5 @@
-using System.Text.Json;
 using System.Numerics;
+using System.Text.Json;
 using Moq;
 using Umbra.Input;
 

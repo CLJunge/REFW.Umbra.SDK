@@ -35,7 +35,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     private readonly List<ConfigChangeRecord> _stack;
     private readonly List<Action> _cleanupActions;
     private readonly int _capacity;
-   private readonly ConfigToastOptions? _toast;
+    private readonly ConfigToastOptions? _toast;
     private bool _suppressRecording;
     private bool _disposed;
 
@@ -96,9 +96,11 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
 
         _capacity = capacity;
         _toast = toast;
-        _stack = new List<ConfigChangeRecord>(capacity);
-        _snapshots = new Dictionary<string, object?>();
-        _cleanupActions = new List<Action>();
+#pragma warning disable IDE0028
+        _stack = new(capacity);
+#pragma warning restore IDE0028
+        _snapshots = [];
+        _cleanupActions = [];
 
         var target = (IConfigStoreCopyTarget<TConfig>)store;
         _parameters = target.Parameters;
@@ -124,7 +126,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     public ConfigChangeRecord? Peek()
     {
         if (_stack.Count == 0) return null;
-        return _stack[_stack.Count - 1];
+        return _stack[^1];
     }
 
     /// <summary>
@@ -143,7 +145,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     {
         if (_disposed || _stack.Count == 0) return false;
 
-        var record = _stack[_stack.Count - 1];
+        var record = _stack[^1];
         _stack.RemoveAt(_stack.Count - 1);
 
         if (!_parameters.TryGetValue(record.ParameterKey, out var param))
@@ -178,7 +180,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        for (int i = 0; i < _cleanupActions.Count; i++)
+        for (var i = 0; i < _cleanupActions.Count; i++)
             _cleanupActions[i]();
 
         _cleanupActions.Clear();
@@ -198,7 +200,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
             var key = param.Key;
             _snapshots[key] = param.GetValue();
 
-            Action handler = () => OnParameterChanged(key, param);
+            void handler() => OnParameterChanged(key, param);
             param.ValueChanged += handler;
             _cleanupActions.Add(() => param.ValueChanged -= handler);
         }

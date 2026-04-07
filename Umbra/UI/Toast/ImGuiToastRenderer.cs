@@ -65,8 +65,8 @@ internal sealed class ImGuiToastRenderer : IToastRenderer
         {
             ToastLevel.Success => new Vector4(0.3f, 1.0f, 0.3f, alpha),
             ToastLevel.Warning => new Vector4(1.0f, 0.85f, 0.2f, alpha),
-            ToastLevel.Error   => new Vector4(1.0f, 0.3f, 0.3f, alpha),
-            _                  => new Vector4(1.0f, 1.0f, 1.0f, alpha),
+            ToastLevel.Error => new Vector4(1.0f, 0.3f, 0.3f, alpha),
+            _ => new Vector4(1.0f, 1.0f, 1.0f, alpha),
         };
     }
 }

@@ -8,10 +8,7 @@ namespace Umbra.Config.UnitTests;
 [TestClass]
 public sealed class ConfigChangeLogTests
 {
-    private static ConfigChangeRecord MakeRecord(string key, object? oldVal, object? newVal)
-    {
-        return new ConfigChangeRecord(key, key, oldVal, newVal, Stopwatch.GetTimestamp());
-    }
+    private static ConfigChangeRecord MakeRecord(string key, object? oldVal, object? newVal) => new(key, key, oldVal, newVal, Stopwatch.GetTimestamp());
 
     // --- Constructor ---
 
@@ -40,19 +37,13 @@ public sealed class ConfigChangeLogTests
     /// Tests that the constructor throws for zero capacity.
     /// </summary>
     [TestMethod]
-    public void Constructor_ZeroCapacity_ThrowsArgumentOutOfRangeException()
-    {
-        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new ConfigChangeLog(0));
-    }
+    public void Constructor_ZeroCapacity_ThrowsArgumentOutOfRangeException() => Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new ConfigChangeLog(0));
 
     /// <summary>
     /// Tests that the constructor throws for negative capacity.
     /// </summary>
     [TestMethod]
-    public void Constructor_NegativeCapacity_ThrowsArgumentOutOfRangeException()
-    {
-        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new ConfigChangeLog(-1));
-    }
+    public void Constructor_NegativeCapacity_ThrowsArgumentOutOfRangeException() => Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new ConfigChangeLog(-1));
 
     // --- Push and Count ---
 
