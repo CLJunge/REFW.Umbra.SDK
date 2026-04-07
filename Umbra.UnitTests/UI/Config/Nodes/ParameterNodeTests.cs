@@ -29,7 +29,7 @@ public sealed class ParameterNodeTests
         Assert.AreEqual(1, drawCallCount);
         Assert.AreEqual(1, renderer.BeginDisabledCount);
         Assert.AreEqual(1, renderer.EndDisabledCount);
-        Assert.AreEqual(true, renderer.LastBeginDisabledValue);
+        Assert.IsTrue(renderer.LastBeginDisabledValue);
     }
 
     /// <summary>

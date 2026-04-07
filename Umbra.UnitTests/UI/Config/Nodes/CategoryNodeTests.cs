@@ -223,8 +223,8 @@ public sealed class CategoryNodeTests
 
         // Assert
         Assert.IsFalse(visible);
-        Assert.AreEqual(0, renderer.SeparatorLabels.Count);
-        Assert.AreEqual(0, renderer.TreeNodes.Count);
+        Assert.IsEmpty(renderer.SeparatorLabels);
+        Assert.IsEmpty(renderer.TreeNodes);
     }
 
     /// <summary>

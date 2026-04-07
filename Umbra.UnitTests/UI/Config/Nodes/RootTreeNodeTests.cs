@@ -210,7 +210,7 @@ public sealed class RootTreeNodeTests
 
         // Assert
         Assert.IsFalse(visible);
-        Assert.AreEqual(0, renderer.TreeNodes.Count);
+        Assert.IsEmpty(renderer.TreeNodes);
     }
 
     private static ConfigSearchRenderState CreateRenderState(params string[] forcedOpenBranchIds)

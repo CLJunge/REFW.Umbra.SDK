@@ -11,6 +11,7 @@ public sealed class ConfigTransferDrawerTests
 {
     private TestConfigTransferDrawerRenderer _renderer = null!;
     private TestConfigTransferFilePicker _picker = null!;
+    private static readonly string[] _expectedModes = ["Import", "Export"];
 
     [TestInitialize]
     public void TestInitialize()
@@ -81,7 +82,7 @@ public sealed class ConfigTransferDrawerTests
         Assert.AreEqual(ConfigTransferMode.Export, modeParameter.Value);
         Assert.HasCount(1, _renderer.Combos);
         Assert.AreEqual("##transferMode", _renderer.Combos[0].Label);
-        CollectionAssert.AreEqual(new[] { "Import", "Export" }, _renderer.Combos[0].Items);
+        CollectionAssert.AreEqual(_expectedModes, _renderer.Combos[0].Items);
     }
 
     /// <summary>
