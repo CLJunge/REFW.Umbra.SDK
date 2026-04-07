@@ -31,7 +31,7 @@ The repository contains three projects:
 
 ## Wiki
 
-For setup guides, usage walkthroughs, and additional documentation, see the Umbra wiki: <https://docs.cljunge.com/refw-umbra/>.
+For setup guides, usage walkthroughs, and additional documentation, see the [Umbra wiki](https://docs.cljunge.com/refw-umbra/).
 
 ## Runtime and plugin model
 
