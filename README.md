@@ -2,8 +2,6 @@
 
 `Umbra` is a support library for building managed `REFramework.NET` mods and plugins for RE Engine games. It provides reusable building blocks for typed config, ImGui-based UI, plugin lifecycle hosting, logging, keyboard input, managed-object resolution, and runtime game detection inside the game process.
 
-For setup guides, usage walkthroughs, and additional documentation, see the Umbra wiki: <https://docs.cljunge.com/refw-umbra/>.
-
 The repository contains three projects:
 
 - `Umbra` - the reusable runtime, config, logging, and UI library
@@ -30,6 +28,10 @@ The repository contains three projects:
 - Supported-game identifiers and display names via `REGame` and `REGameExtensions`
 - Best-effort shutdown sequencing for plugin unload cleanup
 - Optional panel benchmarking utilities in `Umbra.UI.Panel.Benchmark` when `BENCHMARK` is defined
+
+## Wiki
+
+For setup guides, usage walkthroughs, and additional documentation, see the Umbra wiki: <https://docs.cljunge.com/refw-umbra/>.
 
 ## Runtime and plugin model
 
