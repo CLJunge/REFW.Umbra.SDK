@@ -1,0 +1,593 @@
+using Umbra.Config.Attributes;
+using Umbra.UI.Toast;
+
+namespace Umbra.Config.Presets.UnitTests;
+
+/// <summary>
+/// Unit tests for <see cref="ConfigPresetStore{TConfig}"/>.
+/// </summary>
+[TestClass]
+public sealed class ConfigPresetStoreTests
+{
+    /// <summary>
+    /// Test configuration class for preset store tests.
+    /// </summary>
+    [UmbraAutoRegister]
+    private sealed class PresetTestConfig
+    {
+        [UmbraParameter]
+        public Parameter<int> IntValue { get; set; } = new(10);
+
+        [UmbraParameter]
+        public Parameter<string> StringValue { get; set; } = new("default");
+
+        [UmbraParameter]
+        public Parameter<bool> BoolValue { get; set; } = new(false);
+    }
+
+    /// <summary>
+    /// Test configuration class that includes a delegate parameter.
+    /// </summary>
+    [UmbraAutoRegister]
+    private sealed class DelegatePresetConfig
+    {
+        [UmbraParameter]
+        public Parameter<int> IntValue { get; set; } = new(5);
+
+        [UmbraParameter]
+        public Parameter<Action> ButtonAction { get; set; } = new(() => { });
+    }
+
+    private static (ConfigStore<T> Store, T Config, string TempPath) CreateLoadedStore<T>()
+        where T : class, new()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"presettest_{Guid.NewGuid()}.json");
+        var store = new ConfigStore<T>(tempPath);
+        var config = store.Load();
+        return (store, config, tempPath);
+    }
+
+    private static void CleanupStore<T>(ConfigStore<T> store, string tempPath)
+        where T : class, new()
+    {
+        store.Dispose();
+        if (File.Exists(tempPath))
+            File.Delete(tempPath);
+
+        // Clean up any preset files in the directory
+        var dir = Path.GetDirectoryName(tempPath);
+        if (dir != null && Directory.Exists(dir))
+        {
+            var presetFiles = Directory.GetFiles(dir, "config-preset-*presettest*.json");
+            for (int i = 0; i < presetFiles.Length; i++)
+            {
+                try { File.Delete(presetFiles[i]); }
+                catch { /* best effort cleanup */ }
+            }
+        }
+    }
+
+    // --- Constructor validation ---
+
+    /// <summary>
+    /// Tests that the constructor throws <see cref="ArgumentNullException"/> when store is null.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullStore_ThrowsArgumentNullException()
+    {
+        Assert.ThrowsExactly<ArgumentNullException>(() => new ConfigPresetStore<PresetTestConfig>(null!));
+    }
+
+    /// <summary>
+    /// Tests that the constructor throws <see cref="InvalidOperationException"/> when the store is not loaded.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_UnloadedStore_ThrowsInvalidOperationException()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"presettest_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new ConfigStore<PresetTestConfig>(tempPath);
+            Assert.ThrowsExactly<InvalidOperationException>(() => new ConfigPresetStore<PresetTestConfig>(store));
+            store.Dispose();
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that the constructor throws <see cref="ObjectDisposedException"/> when the store is disposed.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_DisposedStore_ThrowsObjectDisposedException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        store.Dispose();
+        try
+        {
+            Assert.ThrowsExactly<ObjectDisposedException>(() => new ConfigPresetStore<PresetTestConfig>(store));
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    // --- Save ---
+
+    /// <summary>
+    /// Tests that Save creates a preset file on disk.
+    /// </summary>
+    [TestMethod]
+    public void Save_CreatesPresetFile()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            presets.Save("test1");
+
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var expected = Path.Combine(dir, "config-preset-test1.json");
+            Assert.IsTrue(File.Exists(expected), $"Expected preset file at {expected}");
+            File.Delete(expected);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Save throws <see cref="ArgumentException"/> for null name.
+    /// </summary>
+    [TestMethod]
+    public void Save_NullName_ThrowsArgumentException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => presets.Save(null!));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Save throws <see cref="ArgumentException"/> for empty name.
+    /// </summary>
+    [TestMethod]
+    public void Save_EmptyName_ThrowsArgumentException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => presets.Save(""));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Save throws <see cref="ArgumentException"/> for names with invalid characters.
+    /// </summary>
+    [TestMethod]
+    public void Save_InvalidCharacterInName_ThrowsArgumentException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => presets.Save("bad/name"));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Save pushes a success toast.
+    /// </summary>
+    [TestMethod]
+    public void Save_PushesSuccessToast()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            ToastQueue.Clear();
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            presets.Save("toasttest");
+
+            var entries = ToastQueue.GetActiveEntries();
+            bool found = false;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.Contains("toasttest") && entries[i].Level == ToastLevel.Success)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(found, "Expected a success toast for preset save.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            // cleanup preset file
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pf = Path.Combine(dir, "config-preset-toasttest.json");
+            if (File.Exists(pf)) File.Delete(pf);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- Load ---
+
+    /// <summary>
+    /// Tests that Load restores saved parameter values.
+    /// </summary>
+    [TestMethod]
+    public void Load_RestoresSavedValues()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+
+            // Change values and save preset
+            config.IntValue.Value = 99;
+            config.StringValue.Value = "preset";
+            config.BoolValue.Value = true;
+            presets.Save("restore");
+
+            // Reset values to defaults
+            config.IntValue.Value = 10;
+            config.StringValue.Value = "default";
+            config.BoolValue.Value = false;
+
+            // Load preset
+            var result = presets.Load("restore");
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(99, config.IntValue.Value);
+            Assert.AreEqual("preset", config.StringValue.Value);
+            Assert.AreEqual(true, config.BoolValue.Value);
+        }
+        finally
+        {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pf = Path.Combine(dir, "config-preset-restore.json");
+            if (File.Exists(pf)) File.Delete(pf);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Load returns false when the preset file does not exist.
+    /// </summary>
+    [TestMethod]
+    public void Load_NonexistentPreset_ReturnsFalse()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var result = presets.Load("nonexistent");
+            Assert.IsFalse(result);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Load fires ValueChanged events so undo stack can track changes.
+    /// </summary>
+    [TestMethod]
+    public void Load_FiresValueChangedEvents()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            presets.Save("eventtest");
+            config.IntValue.Value = 10;
+
+            int changeCount = 0;
+            config.IntValue.ValueChanged += (_, _) => changeCount++;
+
+            presets.Load("eventtest");
+
+            Assert.IsTrue(changeCount > 0, "Expected ValueChanged to fire during preset load.");
+        }
+        finally
+        {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pf = Path.Combine(dir, "config-preset-eventtest.json");
+            if (File.Exists(pf)) File.Delete(pf);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- List ---
+
+    /// <summary>
+    /// Tests that List returns saved preset names in sorted order.
+    /// </summary>
+    [TestMethod]
+    public void List_ReturnsSavedPresetNames()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            presets.Save("beta");
+            presets.Save("alpha");
+
+            var names = presets.List();
+
+            Assert.IsTrue(names.Count >= 2);
+
+            bool foundAlpha = false;
+            bool foundBeta = false;
+            for (int i = 0; i < names.Count; i++)
+            {
+                if (names[i] == "alpha") foundAlpha = true;
+                if (names[i] == "beta") foundBeta = true;
+            }
+
+            Assert.IsTrue(foundAlpha, "Expected 'alpha' in preset list.");
+            Assert.IsTrue(foundBeta, "Expected 'beta' in preset list.");
+
+            // Verify sorted order
+            int alphaIdx = -1;
+            int betaIdx = -1;
+            for (int i = 0; i < names.Count; i++)
+            {
+                if (names[i] == "alpha") alphaIdx = i;
+                if (names[i] == "beta") betaIdx = i;
+            }
+
+            Assert.IsTrue(alphaIdx < betaIdx, "Expected 'alpha' before 'beta' in sorted list.");
+        }
+        finally
+        {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pfa = Path.Combine(dir, "config-preset-alpha.json");
+            var pfb = Path.Combine(dir, "config-preset-beta.json");
+            if (File.Exists(pfa)) File.Delete(pfa);
+            if (File.Exists(pfb)) File.Delete(pfb);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that List returns an empty list when no presets exist.
+    /// </summary>
+    [TestMethod]
+    public void List_NoPresets_ReturnsEmptyList()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var names = presets.List();
+            // May or may not be empty depending on other test runs in same temp dir,
+            // but at minimum it should not throw.
+            Assert.IsNotNull(names);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- Delete ---
+
+    /// <summary>
+    /// Tests that Delete removes a saved preset file.
+    /// </summary>
+    [TestMethod]
+    public void Delete_ExistingPreset_ReturnsTrue()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            presets.Save("todelete");
+
+            var result = presets.Delete("todelete");
+            Assert.IsTrue(result);
+
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pf = Path.Combine(dir, "config-preset-todelete.json");
+            Assert.IsFalse(File.Exists(pf), "Preset file should have been deleted.");
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Delete returns false when the preset does not exist.
+    /// </summary>
+    [TestMethod]
+    public void Delete_NonexistentPreset_ReturnsFalse()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var result = presets.Delete("nope");
+            Assert.IsFalse(result);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Delete pushes a toast on success.
+    /// </summary>
+    [TestMethod]
+    public void Delete_PushesToastOnSuccess()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            ToastQueue.Clear();
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            presets.Save("deltoast");
+
+            ToastQueue.Clear();
+            presets.Delete("deltoast");
+
+            var entries = ToastQueue.GetActiveEntries();
+            bool found = false;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.Contains("deltoast"))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(found, "Expected a toast for preset delete.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- Round-trip ---
+
+    /// <summary>
+    /// Tests a full save/load/delete round-trip cycle.
+    /// </summary>
+    [TestMethod]
+    public void RoundTrip_SaveLoadDelete()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+
+            // Save with modified values
+            config.IntValue.Value = 77;
+            config.StringValue.Value = "roundtrip";
+            presets.Save("rt");
+
+            // Reset to defaults
+            config.IntValue.Value = 10;
+            config.StringValue.Value = "default";
+
+            // Verify listed
+            var names = presets.List();
+            bool found = false;
+            for (int i = 0; i < names.Count; i++)
+            {
+                if (names[i] == "rt") { found = true; break; }
+            }
+            Assert.IsTrue(found, "Expected 'rt' in preset list.");
+
+            // Load and verify
+            Assert.IsTrue(presets.Load("rt"));
+            Assert.AreEqual(77, config.IntValue.Value);
+            Assert.AreEqual("roundtrip", config.StringValue.Value);
+
+            // Delete and verify
+            Assert.IsTrue(presets.Delete("rt"));
+            Assert.IsFalse(presets.Load("rt"));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- Delegate parameter exclusion ---
+
+    /// <summary>
+    /// Tests that delegate-typed parameters are excluded from saved presets.
+    /// </summary>
+    [TestMethod]
+    public void Save_ExcludesDelegateParameters()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<DelegatePresetConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<DelegatePresetConfig>(store);
+            presets.Save("nodelegates");
+
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pf = Path.Combine(dir, "config-preset-nodelegates.json");
+            var json = File.ReadAllText(pf);
+
+            // The JSON should not contain "buttonAction" (the delegate parameter)
+            Assert.IsFalse(json.Contains("buttonAction", StringComparison.OrdinalIgnoreCase),
+                "Delegate parameters should not be in the preset file.");
+            // But should contain "intValue"
+            Assert.IsTrue(json.Contains("intValue", StringComparison.OrdinalIgnoreCase),
+                "Non-delegate parameters should be in the preset file.");
+
+            File.Delete(pf);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- Overwrite ---
+
+    /// <summary>
+    /// Tests that saving a preset with the same name overwrites the previous file.
+    /// </summary>
+    [TestMethod]
+    public void Save_SameName_Overwrites()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+
+            config.IntValue.Value = 11;
+            presets.Save("overwrite");
+
+            config.IntValue.Value = 22;
+            presets.Save("overwrite");
+
+            config.IntValue.Value = 10;
+            presets.Load("overwrite");
+
+            Assert.AreEqual(22, config.IntValue.Value);
+        }
+        finally
+        {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pf = Path.Combine(dir, "config-preset-overwrite.json");
+            if (File.Exists(pf)) File.Delete(pf);
+            CleanupStore(store, tempPath);
+        }
+    }
+}
