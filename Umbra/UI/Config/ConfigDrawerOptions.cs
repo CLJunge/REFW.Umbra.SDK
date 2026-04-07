@@ -1,3 +1,6 @@
+using Umbra.Config;
+using Umbra.Config.Presets;
+using Umbra.UI.Config.Search;
 using Umbra.UI.Config.Transfer;
 
 namespace Umbra.UI.Config;
@@ -14,16 +17,21 @@ public sealed class ConfigDrawerOptions
 {
     internal static ConfigDrawerOptions Default { get; } = new()
     {
-        ShowSearchBar = false,
+        Search = null,
         SuppressRootNode = false,
-        Transfer = null
+        Transfer = null,
+        Undo = null,
+        Presets = null
     };
 
     /// <summary>
-    /// Gets or sets a value indicating whether the built-in search bar is shown.
+    /// Gets or sets the optional built-in search bar settings.
     /// </summary>
-    /// <value><see langword="true"/> to show the search bar; otherwise, <see langword="false"/>.</value>
-    public bool ShowSearchBar { get; init; }
+    /// <remarks>
+    /// When <see langword="null"/>, the built-in search bar is hidden.
+    /// When non-<see langword="null"/>, the search bar is rendered with the configured settings.
+    /// </remarks>
+    public ConfigSearchOptions? Search { get; init; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the root-node-attribute-driven root tree wrapper is suppressed.
@@ -43,19 +51,43 @@ public sealed class ConfigDrawerOptions
     /// </remarks>
     public ConfigTransferOptions? Transfer { get; init; }
 
+    /// <summary>
+    /// Gets or sets the optional undo-stack settings.
+    /// </summary>
+    /// <remarks>
+    /// When <see langword="null"/>, the undo feature is disabled.
+    /// When non-<see langword="null"/>, an undo stack is created with the configured settings.
+    /// </remarks>
+    public ConfigUndoOptions? Undo { get; init; }
+
+    /// <summary>
+    /// Gets or sets the optional preset-store settings.
+    /// </summary>
+    /// <remarks>
+    /// When <see langword="null"/>, the preset feature is disabled.
+    /// When non-<see langword="null"/>, a preset store is created with the configured settings.
+    /// </remarks>
+    public ConfigPresetOptions? Presets { get; init; }
+
     /// <summary>Initializes a new instance of <see cref="ConfigDrawerOptions"/> with all options set to their defaults.</summary>
     public ConfigDrawerOptions() { }
 
     private ConfigDrawerOptions(ConfigDrawerOptions source)
     {
-        ShowSearchBar = source.ShowSearchBar;
+        Search = source.Search;
         SuppressRootNode = source.SuppressRootNode;
         Transfer = source.Transfer;
+        Undo = source.Undo;
+        Presets = source.Presets;
     }
 
-    internal ConfigDrawerOptions WithShowSearchBar(bool showSearchBar) => new(this) { ShowSearchBar = showSearchBar };
+    internal ConfigDrawerOptions WithSearch(ConfigSearchOptions? search) => new(this) { Search = search };
 
     internal ConfigDrawerOptions WithSuppressRootNode(bool suppressRootNode) => new(this) { SuppressRootNode = suppressRootNode };
 
     internal ConfigDrawerOptions WithTransfer(ConfigTransferOptions? transfer) => new(this) { Transfer = transfer };
+
+    internal ConfigDrawerOptions WithUndo(ConfigUndoOptions? undo) => new(this) { Undo = undo };
+
+    internal ConfigDrawerOptions WithPresets(ConfigPresetOptions? presets) => new(this) { Presets = presets };
 }

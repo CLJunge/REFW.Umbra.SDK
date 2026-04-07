@@ -14,8 +14,6 @@ namespace Umbra.UI.ChangeMonitor;
 /// </remarks>
 public sealed class ParameterChangeMonitorDrawer : ILiveStateSectionDrawer<ParameterChangeMonitorState>
 {
-    private const float ChildHeight = 200f;
-
     /// <inheritdoc/>
     public void Draw(ParameterChangeMonitorState state)
     {
@@ -30,7 +28,7 @@ public sealed class ParameterChangeMonitorDrawer : ILiveStateSectionDrawer<Param
         ImGui.Text($"{entries.Count} change(s) recorded");
         ImGui.Separator();
 
-        if (ImGui.BeginChild("##ChangeMonitorScroll", new System.Numerics.Vector2(0, ChildHeight), ImGuiChildFlags.Borders))
+        if (ImGui.BeginChild("##ChangeMonitorScroll", new System.Numerics.Vector2(0, state.DisplayHeight), ImGuiChildFlags.Borders))
         {
             // Render newest first
             for (int i = entries.Count - 1; i >= 0; i--)

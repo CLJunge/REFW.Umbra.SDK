@@ -1,5 +1,6 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
+using Umbra.Config.Presets;
 using Umbra.UI.Config.Rendering;
 using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
@@ -13,7 +14,7 @@ namespace Umbra.UI.Config;
 /// When <typeparamref name="TConfig"/> carries <see cref="UmbraRootNodeAttribute"/>, this section surfaces the corresponding section label and default-open state to the owning <see cref="PluginPanel"/>, unless tree-node behavior is explicitly suppressed.
 /// </remarks>
 /// <typeparam name="TConfig">The configuration type rendered by the section.</typeparam>
-public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
+public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class, new()
 {
     private static readonly ImGuiConfigRenderContext _renderContext = ImGuiConfigRenderContext.Instance;
     private readonly ConfigDrawer<TConfig> _drawer;
@@ -22,7 +23,21 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private readonly string? _sectionLabel;
     private readonly bool _expandedByDefault;
     private ConfigTransferFeature? _transferFeature;
+    private ConfigUndoStack<TConfig>? _undoStack;
+    private ConfigPresetStore<TConfig>? _presetStore;
     private bool _disposed;
+
+    /// <summary>
+    /// Gets the undo stack owned by this section, or <see langword="null"/> when undo was not
+    /// enabled through <see cref="ConfigDrawerOptions.Undo"/>.
+    /// </summary>
+    public ConfigUndoStack<TConfig>? UndoStack => _undoStack;
+
+    /// <summary>
+    /// Gets the preset store owned by this section, or <see langword="null"/> when presets were not
+    /// enabled through <see cref="ConfigDrawerOptions.Presets"/>.
+    /// </summary>
+    public ConfigPresetStore<TConfig>? PresetStore => _presetStore;
 
     /// <summary>
     /// Initialises a new config section wrapping a <see cref="ConfigDrawer{TConfig}"/>.
@@ -171,7 +186,9 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         ArgumentNullException.ThrowIfNull(store);
         var section = new ConfigSection<TConfig>(config, options, idScope, sectionLabel, expandedByDefault, suppressTreeNode)
         {
-            _transferFeature = CreateTransferFeature(store, options)
+            _transferFeature = CreateTransferFeature(store, options),
+            _undoStack = CreateUndoStack(store, options),
+            _presetStore = CreatePresetStore(store, options)
         };
         return section;
     }
@@ -215,6 +232,9 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     {
         if (_disposed) return;
         _disposed = true;
+        _undoStack?.Dispose();
+        _undoStack = null;
+        _presetStore = null;
         _transferFeature?.Dispose();
         _transferFeature = null;
         _drawer.Dispose();
@@ -228,6 +248,22 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
             return null;
 
         return new ConfigTransferFeature(store, transferOptions);
+    }
+
+    private static ConfigUndoStack<TConfig>? CreateUndoStack(IConfigTransferStore store, ConfigDrawerOptions options)
+    {
+        if (options.Undo is not { } undoOptions || store is not ConfigStore<TConfig> configStore)
+            return null;
+
+        return new ConfigUndoStack<TConfig>(configStore, undoOptions);
+    }
+
+    private static ConfigPresetStore<TConfig>? CreatePresetStore(IConfigTransferStore store, ConfigDrawerOptions options)
+    {
+        if (options.Presets is not { } presetOptions || store is not ConfigStore<TConfig> configStore)
+            return null;
+
+        return new ConfigPresetStore<TConfig>(configStore, presetOptions);
     }
 
     private void DrawTransferFeature()

@@ -79,7 +79,7 @@ public sealed class ConfigDrawerTests
             [],
             [],
             renderer,
-            new ConfigDrawerOptions { ShowSearchBar = false });
+            new ConfigDrawerOptions());
 
         // Act
         drawer.Draw();
@@ -106,7 +106,7 @@ public sealed class ConfigDrawerTests
             [],
             [],
             renderer,
-            new ConfigDrawerOptions { ShowSearchBar = true });
+            new ConfigDrawerOptions { Search = new ConfigSearchOptions() });
 
         // Act
         drawer.Draw();
@@ -138,7 +138,7 @@ public sealed class ConfigDrawerTests
             [],
             [],
             renderer,
-            new ConfigDrawerOptions { ShowSearchBar = true });
+            new ConfigDrawerOptions { Search = new ConfigSearchOptions() });
 
         // Act
         var hasActiveSearchQuery = drawer.HasActiveSearchQuery;
@@ -165,7 +165,7 @@ public sealed class ConfigDrawerTests
             [],
             [],
             renderer,
-            new ConfigDrawerOptions { ShowSearchBar = true });
+            new ConfigDrawerOptions { Search = new Umbra.UI.Config.Search.ConfigSearchOptions() });
 
         // Act
         drawer.Draw();
@@ -191,7 +191,7 @@ public sealed class ConfigDrawerTests
             [],
             [],
             renderer,
-            new ConfigDrawerOptions { ShowSearchBar = true });
+            new ConfigDrawerOptions { Search = new Umbra.UI.Config.Search.ConfigSearchOptions() });
 
         // Act
         drawer.Draw();
@@ -220,7 +220,7 @@ public sealed class ConfigDrawerTests
             [],
             [],
             renderer,
-            new ConfigDrawerOptions { ShowSearchBar = true });
+            new ConfigDrawerOptions { Search = new Umbra.UI.Config.Search.ConfigSearchOptions() });
 
         // Act
         drawer.Draw();
@@ -259,7 +259,7 @@ public sealed class ConfigDrawerTests
             [alphaNode, betaNode],
             [],
             renderer,
-            new ConfigDrawerOptions { ShowSearchBar = true },
+            new ConfigDrawerOptions { Search = new Umbra.UI.Config.Search.ConfigSearchOptions() },
             searchIndex);
 
         // Act
@@ -299,7 +299,7 @@ public sealed class ConfigDrawerTests
             [alphaNode, betaNode],
             [],
             drawerRenderer,
-            new ConfigDrawerOptions { ShowSearchBar = true },
+            new ConfigDrawerOptions { Search = new Umbra.UI.Config.Search.ConfigSearchOptions() },
             searchIndex);
 
         // Act
@@ -335,7 +335,7 @@ public sealed class ConfigDrawerTests
             [alphaNode, betaNode],
             [],
             renderer,
-            new ConfigDrawerOptions { ShowSearchBar = true },
+            new ConfigDrawerOptions { Search = new Umbra.UI.Config.Search.ConfigSearchOptions() },
             searchIndex);
 
         // Act
@@ -384,7 +384,7 @@ public sealed class ConfigDrawerTests
             [hiddenNode, visibleNode],
             [],
             drawerRenderer,
-            new ConfigDrawerOptions { ShowSearchBar = true },
+            new ConfigDrawerOptions { Search = new Umbra.UI.Config.Search.ConfigSearchOptions() },
             searchIndex);
 
         // Act
@@ -424,7 +424,7 @@ public sealed class ConfigDrawerTests
             [alphaNode, betaNode],
             [],
             drawerRenderer,
-            new ConfigDrawerOptions { ShowSearchBar = true },
+            new ConfigDrawerOptions { Search = new Umbra.UI.Config.Search.ConfigSearchOptions() },
             searchIndex);
 
         // Act
@@ -604,7 +604,7 @@ public sealed class ConfigDrawerTests
     {
         // Arrange
         var config = new SimpleConfig();
-        var options = new ConfigDrawerOptions { ShowSearchBar = true };
+        var options = new ConfigDrawerOptions { Search = new ConfigSearchOptions() };
 
         // Act
         using var drawer = new ConfigDrawer<SimpleConfig>(config, "TestPlugin", options);

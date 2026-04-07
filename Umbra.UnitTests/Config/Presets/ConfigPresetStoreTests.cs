@@ -59,7 +59,7 @@ public sealed class ConfigPresetStoreTests
         if (dir != null && Directory.Exists(dir))
         {
             var presetFiles = Directory.GetFiles(dir, "config-preset-*presettest*.json");
-            for (int i = 0; i < presetFiles.Length; i++)
+            for (var i = 0; i < presetFiles.Length; i++)
             {
                 try { File.Delete(presetFiles[i]); }
                 catch { /* best effort cleanup */ }
@@ -73,10 +73,7 @@ public sealed class ConfigPresetStoreTests
     /// Tests that the constructor throws <see cref="ArgumentNullException"/> when store is null.
     /// </summary>
     [TestMethod]
-    public void Constructor_NullStore_ThrowsArgumentNullException()
-    {
-        Assert.ThrowsExactly<ArgumentNullException>(() => new ConfigPresetStore<PresetTestConfig>(null!));
-    }
+    public void Constructor_NullStore_ThrowsArgumentNullException() => Assert.ThrowsExactly<ArgumentNullException>(() => new ConfigPresetStore<PresetTestConfig>(null!));
 
     /// <summary>
     /// Tests that the constructor throws <see cref="InvalidOperationException"/> when the store is not loaded.
@@ -210,8 +207,8 @@ public sealed class ConfigPresetStoreTests
             presets.Save("toasttest");
 
             var entries = ToastQueue.GetActiveEntries();
-            bool found = false;
-            for (int i = 0; i < entries.Count; i++)
+            var found = false;
+            for (var i = 0; i < entries.Count; i++)
             {
                 if (entries[i].Message.Contains("toasttest") && entries[i].Level == ToastLevel.Success)
                 {
@@ -263,7 +260,7 @@ public sealed class ConfigPresetStoreTests
             Assert.IsTrue(result);
             Assert.AreEqual(99, config.IntValue.Value);
             Assert.AreEqual("preset", config.StringValue.Value);
-            Assert.AreEqual(true, config.BoolValue.Value);
+            Assert.IsTrue(config.BoolValue.Value);
         }
         finally
         {
@@ -308,12 +305,12 @@ public sealed class ConfigPresetStoreTests
             presets.Save("eventtest");
             config.IntValue.Value = 10;
 
-            int changeCount = 0;
+            var changeCount = 0;
             config.IntValue.ValueChanged += (_, _) => changeCount++;
 
             presets.Load("eventtest");
 
-            Assert.IsTrue(changeCount > 0, "Expected ValueChanged to fire during preset load.");
+            Assert.IsGreaterThan(0, changeCount, "Expected ValueChanged to fire during preset load.");
         }
         finally
         {
@@ -341,11 +338,11 @@ public sealed class ConfigPresetStoreTests
 
             var names = presets.List();
 
-            Assert.IsTrue(names.Count >= 2);
+            Assert.IsGreaterThanOrEqualTo(2, names.Count);
 
-            bool foundAlpha = false;
-            bool foundBeta = false;
-            for (int i = 0; i < names.Count; i++)
+            var foundAlpha = false;
+            var foundBeta = false;
+            for (var i = 0; i < names.Count; i++)
             {
                 if (names[i] == "alpha") foundAlpha = true;
                 if (names[i] == "beta") foundBeta = true;
@@ -355,15 +352,15 @@ public sealed class ConfigPresetStoreTests
             Assert.IsTrue(foundBeta, "Expected 'beta' in preset list.");
 
             // Verify sorted order
-            int alphaIdx = -1;
-            int betaIdx = -1;
-            for (int i = 0; i < names.Count; i++)
+            var alphaIdx = -1;
+            var betaIdx = -1;
+            for (var i = 0; i < names.Count; i++)
             {
                 if (names[i] == "alpha") alphaIdx = i;
                 if (names[i] == "beta") betaIdx = i;
             }
 
-            Assert.IsTrue(alphaIdx < betaIdx, "Expected 'alpha' before 'beta' in sorted list.");
+            Assert.IsLessThan(betaIdx, alphaIdx, "Expected 'alpha' before 'beta' in sorted list.");
         }
         finally
         {
@@ -460,8 +457,8 @@ public sealed class ConfigPresetStoreTests
             presets.Delete("deltoast");
 
             var entries = ToastQueue.GetActiveEntries();
-            bool found = false;
-            for (int i = 0; i < entries.Count; i++)
+            var found = false;
+            for (var i = 0; i < entries.Count; i++)
             {
                 if (entries[i].Message.Contains("deltoast"))
                 {
@@ -503,8 +500,8 @@ public sealed class ConfigPresetStoreTests
 
             // Verify listed
             var names = presets.List();
-            bool found = false;
-            for (int i = 0; i < names.Count; i++)
+            var found = false;
+            for (var i = 0; i < names.Count; i++)
             {
                 if (names[i] == "rt") { found = true; break; }
             }
@@ -586,6 +583,172 @@ public sealed class ConfigPresetStoreTests
         {
             var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
             var pf = Path.Combine(dir, "config-preset-overwrite.json");
+            if (File.Exists(pf)) File.Delete(pf);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- Options-based constructor ---
+
+    /// <summary>
+    /// Tests that the options-based constructor throws <see cref="ArgumentNullException"/> when store is null.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_NullStore_ThrowsArgumentNullException()
+    {
+        var options = new ConfigPresetOptions();
+        Assert.ThrowsExactly<ArgumentNullException>(
+            () => new ConfigPresetStore<PresetTestConfig>(null!, options));
+    }
+
+    /// <summary>
+    /// Tests that the options-based constructor throws <see cref="ArgumentNullException"/> when options is null.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_NullOptions_ThrowsArgumentNullException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => new ConfigPresetStore<PresetTestConfig>(store, null!));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that the options-based constructor throws when the store is not loaded.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_UnloadedStore_ThrowsInvalidOperationException()
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $"presettest_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new ConfigStore<PresetTestConfig>(tempPath);
+            var options = new ConfigPresetOptions();
+            Assert.ThrowsExactly<InvalidOperationException>(
+                () => new ConfigPresetStore<PresetTestConfig>(store, options));
+            store.Dispose();
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a custom <see cref="ConfigPresetOptions.PresetFilePrefix"/> is used for file names.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_CustomPrefix_UsesCustomPrefixForFiles()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var options = new ConfigPresetOptions { PresetFilePrefix = "custom-pfx-" };
+            var presets = new ConfigPresetStore<PresetTestConfig>(store, options);
+
+            config.IntValue.Value = 55;
+            presets.Save("pfxtest");
+
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var expected = Path.Combine(dir, "custom-pfx-pfxtest.json");
+            Assert.IsTrue(File.Exists(expected), $"Expected preset file at {expected}");
+
+            // Verify List also uses the custom prefix
+            var names = presets.List();
+            var found = false;
+            for (var i = 0; i < names.Count; i++)
+            {
+                if (names[i] == "pfxtest") { found = true; break; }
+            }
+            Assert.IsTrue(found, "Expected 'pfxtest' in preset list with custom prefix.");
+
+            File.Delete(expected);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a null/whitespace prefix falls back to <see cref="ConfigPresetOptions.DefaultPresetFilePrefix"/>.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_NullPrefix_FallsBackToDefault()
+    {
+        var options = new ConfigPresetOptions { PresetFilePrefix = null! };
+        Assert.AreEqual(ConfigPresetOptions.DefaultPresetFilePrefix, options.PresetFilePrefix);
+    }
+
+    /// <summary>
+    /// Tests that a custom <see cref="ConfigPresetOptions.PresetDirectory"/> overrides the store-derived directory.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_CustomDirectory_UsesCustomDirectory()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        var customDir = Path.Combine(Path.GetTempPath(), $"preset_custom_{Guid.NewGuid():N}");
+        try
+        {
+            var options = new ConfigPresetOptions { PresetDirectory = customDir };
+            var presets = new ConfigPresetStore<PresetTestConfig>(store, options);
+
+            config.IntValue.Value = 77;
+            presets.Save("dirtest");
+
+            var expected = Path.Combine(customDir, "config-preset-dirtest.json");
+            Assert.IsTrue(File.Exists(expected), $"Expected preset file at {expected}");
+        }
+        finally
+        {
+            if (Directory.Exists(customDir))
+                Directory.Delete(customDir, recursive: true);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that toast notifications are suppressed when <see cref="ConfigPresetOptions.ShowToastNotifications"/> is false.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_ShowToastNotificationsFalse_DoesNotPushToast()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var options = new ConfigPresetOptions { ShowToastNotifications = false };
+            var presets = new ConfigPresetStore<PresetTestConfig>(store, options);
+
+            ToastQueue.Clear();
+
+            config.IntValue.Value = 42;
+            presets.Save("notoast");
+
+            var entries = ToastQueue.GetActiveEntries();
+            var found = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.Contains("notoast"))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            Assert.IsFalse(found, "Expected no toast when ShowToastNotifications is false.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pf = Path.Combine(dir, "config-preset-notoast.json");
             if (File.Exists(pf)) File.Delete(pf);
             CleanupStore(store, tempPath);
         }

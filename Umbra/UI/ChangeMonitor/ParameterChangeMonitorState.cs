@@ -24,6 +24,7 @@ public sealed class ParameterChangeMonitorState : IDisposable
     private readonly IReadOnlyDictionary<string, IParameter> _parameters;
     private readonly Dictionary<string, object?> _snapshots;
     private readonly List<Action> _cleanupActions;
+    private float _displayHeight = ConfigChangeMonitorOptions.DefaultDisplayHeight;
     private bool _disposed;
 
     /// <summary>
@@ -51,6 +52,26 @@ public sealed class ParameterChangeMonitorState : IDisposable
         return new ParameterChangeMonitorState(target.Parameters, logCapacity);
     }
 
+    /// <summary>
+    /// Initializes a new change monitor state that tracks parameter changes on the specified store,
+    /// using the supplied <see cref="ConfigChangeMonitorOptions"/>.
+    /// </summary>
+    /// <param name="store">A loaded config store to monitor.</param>
+    /// <param name="options">The change-monitor options that control log capacity and display height.</param>
+    /// <typeparam name="TConfig">The configuration class managed by the store.</typeparam>
+    /// <exception cref="ArgumentNullException"><paramref name="store"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="store"/> has not been loaded.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="store"/> has been disposed.</exception>
+    public static ParameterChangeMonitorState Create<TConfig>(
+        ConfigStore<TConfig> store, ConfigChangeMonitorOptions options)
+        where TConfig : class, new()
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        var state = Create(store, options.LogCapacity);
+        state._displayHeight = options.DisplayHeight;
+        return state;
+    }
+
     private ParameterChangeMonitorState(
         IReadOnlyDictionary<string, IParameter> parameters, int logCapacity)
     {
@@ -66,6 +87,11 @@ public sealed class ParameterChangeMonitorState : IDisposable
     /// Gets the change log populated by this monitor.
     /// </summary>
     public ConfigChangeLog Log { get; }
+
+    /// <summary>
+    /// Gets the configured display height (in pixels) for the scrollable change list.
+    /// </summary>
+    public float DisplayHeight => _displayHeight;
 
     /// <summary>
     /// Detaches all parameter event subscriptions and prevents further recording.

@@ -1,5 +1,6 @@
 using REFrameworkNET;
 using Umbra.Config;
+using Umbra.Config.Presets;
 using Umbra.Logging;
 using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
@@ -205,7 +206,7 @@ public sealed class SamplePlugin : UmbraPlugin
                 store,
                 new ConfigDrawerOptions
                 {
-                    ShowSearchBar = true,
+                    Search = new Umbra.UI.Config.Search.ConfigSearchOptions(),
                     Transfer = new ConfigTransferOptions { Enabled = true }
                 },
                 _runtimeSectionScope));

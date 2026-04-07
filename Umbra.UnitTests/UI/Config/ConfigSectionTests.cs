@@ -1,5 +1,6 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
+using Umbra.Config.Presets;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Search;
 using Umbra.UI.Config.Transfer;
@@ -254,20 +255,6 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}"/> does not require the config type to expose a
-    /// public parameterless constructor when the caller already supplies the config instance.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ConfigWithoutParameterlessConstructor_ConstructsSuccessfully()
-    {
-        var config = new ConfigWithoutParameterlessConstructor(new Parameter<bool>(true));
-
-        using var section = new ConfigSection<ConfigWithoutParameterlessConstructor>(config);
-
-        Assert.IsNotNull(section);
-    }
-
-    /// <summary>
     /// Tests that the options-aware constructor succeeds when search-bar support is enabled.
     /// </summary>
     [TestMethod]
@@ -275,7 +262,7 @@ public sealed class ConfigSectionTests
     {
         // Arrange
         var config = new TestConfig();
-        var options = new ConfigDrawerOptions { ShowSearchBar = true };
+        var options = new ConfigDrawerOptions { Search = new ConfigSearchOptions() };
 
         // Act
         using var section = new ConfigSection<TestConfig>(config, options, idScope: "search-enabled");
@@ -295,7 +282,7 @@ public sealed class ConfigSectionTests
         var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
         var options = new ConfigDrawerOptions
         {
-            ShowSearchBar = true,
+            Search = new ConfigSearchOptions(),
             Transfer = new ConfigTransferOptions { Enabled = true }
         };
 
@@ -425,6 +412,174 @@ public sealed class ConfigSectionTests
         Assert.IsFalse(feature.ShowSeparatorBelowButtons);
     }
 
+    // --- Undo stack wiring ---
+
+    /// <summary>
+    /// Tests that the factory creates an undo stack when <see cref="ConfigDrawerOptions.Undo"/> is non-null
+    /// and the store is a <see cref="ConfigStore{TConfig}"/>.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithUndoOptionsAndConfigStore_CreatesUndoStack()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var options = new ConfigDrawerOptions { Undo = new ConfigUndoOptions() };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "undo-test");
+
+        Assert.IsNotNull(GetUndoStack(section));
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that the factory does not create an undo stack when <see cref="ConfigDrawerOptions.Undo"/> is null.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithoutUndoOptions_UndoStackIsNull()
+    {
+        using var tempDirectory = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            new TestConfig(), store, new ConfigDrawerOptions());
+
+        Assert.IsNull(GetUndoStack(section));
+    }
+
+    /// <summary>
+    /// Tests that the factory does not create an undo stack when the store is not a
+    /// <see cref="ConfigStore{TConfig}"/>, even when undo options are provided.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithUndoOptionsButNonConfigStore_UndoStackIsNull()
+    {
+        using var tempDirectory = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+        var options = new ConfigDrawerOptions { Undo = new ConfigUndoOptions() };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            new TestConfig(), store, options, idScope: "no-undo");
+
+        Assert.IsNull(GetUndoStack(section));
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigSection{TConfig}.UndoStack"/> exposes the undo stack created by the factory.
+    /// </summary>
+    [TestMethod]
+    public void UndoStack_Property_ExposesCreatedUndoStack()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var options = new ConfigDrawerOptions { Undo = new ConfigUndoOptions() };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "prop-test");
+
+        Assert.IsNotNull(section.UndoStack);
+        Assert.AreSame(GetUndoStack(section), section.UndoStack);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that disposing the section also nulls the undo stack field.
+    /// </summary>
+    [TestMethod]
+    public void Dispose_WithUndoStack_NullsUndoStack()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var options = new ConfigDrawerOptions { Undo = new ConfigUndoOptions() };
+
+        var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "dispose-test");
+        Assert.IsNotNull(section.UndoStack);
+
+        section.Dispose();
+
+        Assert.IsNull(section.UndoStack);
+        store.Dispose();
+    }
+
+    // --- Preset store wiring ---
+
+    /// <summary>
+    /// Tests that the factory creates a preset store when <see cref="ConfigDrawerOptions.Presets"/> is non-null
+    /// and the store is a <see cref="ConfigStore{TConfig}"/>.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithPresetOptionsAndConfigStore_CreatesPresetStore()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "preset-config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var options = new ConfigDrawerOptions { Presets = new ConfigPresetOptions() };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "preset-test");
+
+        Assert.IsNotNull(GetPresetStore(section));
+        Assert.IsNotNull(section.PresetStore);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that the factory does not create a preset store when <see cref="ConfigDrawerOptions.Presets"/> is null.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithoutPresetOptions_PresetStoreIsNull()
+    {
+        using var tempDirectory = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            new TestConfig(), store, new ConfigDrawerOptions());
+
+        Assert.IsNull(section.PresetStore);
+    }
+
+    /// <summary>
+    /// Tests that the factory does not create a preset store when the store is not a
+    /// <see cref="ConfigStore{TConfig}"/>, even when preset options are provided.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithPresetOptionsButNonConfigStore_PresetStoreIsNull()
+    {
+        using var tempDirectory = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+        var options = new ConfigDrawerOptions { Presets = new ConfigPresetOptions() };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            new TestConfig(), store, options, idScope: "no-preset");
+
+        Assert.IsNull(section.PresetStore);
+    }
+
+    /// <summary>
+    /// Tests that disposing the section nulls the preset store field.
+    /// </summary>
+    [TestMethod]
+    public void Dispose_WithPresetStore_NullsPresetStore()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "preset-config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var options = new ConfigDrawerOptions { Presets = new ConfigPresetOptions() };
+
+        var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "dispose-preset");
+        Assert.IsNotNull(section.PresetStore);
+
+        section.Dispose();
+
+        Assert.IsNull(section.PresetStore);
+        store.Dispose();
+    }
+
     /// <summary>
     /// Tests that the section preserves caller-enabled search while suppressing the wrapped drawer root node.
     /// </summary>
@@ -433,7 +588,7 @@ public sealed class ConfigSectionTests
     {
         // Arrange
         var config = new RootWrappedSectionConfig();
-        var options = new ConfigDrawerOptions { ShowSearchBar = true };
+        var options = new ConfigDrawerOptions { Search = new ConfigSearchOptions() };
 
         // Act
         using var section = new ConfigSection<RootWrappedSectionConfig>(config, options, idScope: "search-enabled");
@@ -506,16 +661,6 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Test configuration type without a public parameterless constructor for constraint tests.
-    /// </summary>
-    [UmbraAutoRegister]
-    internal sealed class ConfigWithoutParameterlessConstructor(Parameter<bool> enabled)
-    {
-        [UmbraParameter]
-        public Parameter<bool> Enabled { get; } = enabled;
-    }
-
-    /// <summary>
     /// Test configuration class with UmbraConfigRootNodeAttribute specifying a label.
     /// </summary>
     [UmbraAutoRegister]
@@ -555,9 +700,21 @@ public sealed class ConfigSectionTests
     }
 
     private static ConfigTransferFeature? GetTransferFeature<T>(ConfigSection<T> section)
-        where T : class
+        where T : class, new()
         => (ConfigTransferFeature?)typeof(ConfigSection<T>)
             .GetField("_transferFeature", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            ?.GetValue(section);
+
+    private static ConfigUndoStack<T>? GetUndoStack<T>(ConfigSection<T> section)
+        where T : class, new()
+        => (ConfigUndoStack<T>?)typeof(ConfigSection<T>)
+            .GetField("_undoStack", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            ?.GetValue(section);
+
+    private static ConfigPresetStore<T>? GetPresetStore<T>(ConfigSection<T> section)
+        where T : class, new()
+        => (ConfigPresetStore<T>?)typeof(ConfigSection<T>)
+            .GetField("_presetStore", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
             ?.GetValue(section);
 
     private sealed class TempDirectory : IDisposable
@@ -1305,7 +1462,7 @@ public sealed class ConfigSectionTests
     {
     }
 
-    private static ConfigDrawer<TConfig> GetDrawer<TConfig>(ConfigSection<TConfig> section) where TConfig : class => TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigSection<TConfig>, ConfigDrawer<TConfig>>(section, "_drawer");
+    private static ConfigDrawer<TConfig> GetDrawer<TConfig>(ConfigSection<TConfig> section) where TConfig : class, new() => TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigSection<TConfig>, ConfigDrawer<TConfig>>(section, "_drawer");
 
     private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class => TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigDrawer<TConfig>, List<IDrawNode>>(drawer, "_nodes");
 

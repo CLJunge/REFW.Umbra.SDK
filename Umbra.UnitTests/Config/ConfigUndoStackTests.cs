@@ -61,10 +61,7 @@ public sealed class ConfigUndoStackTests
     /// Tests that the constructor throws <see cref="ArgumentNullException"/> when store is null.
     /// </summary>
     [TestMethod]
-    public void Constructor_NullStore_ThrowsArgumentNullException()
-    {
-        Assert.ThrowsExactly<ArgumentNullException>(() => new ConfigUndoStack<UndoTestConfig>(null!));
-    }
+    public void Constructor_NullStore_ThrowsArgumentNullException() => Assert.ThrowsExactly<ArgumentNullException>(() => new ConfigUndoStack<UndoTestConfig>(null!));
 
     /// <summary>
     /// Tests that the constructor throws <see cref="InvalidOperationException"/> when the store is not loaded.
@@ -237,7 +234,7 @@ public sealed class ConfigUndoStackTests
 
             var record = undo.Peek();
             Assert.IsNotNull(record);
-            Assert.IsTrue(record.Timestamp > 0);
+            Assert.IsGreaterThan(0, record.Timestamp);
         }
         finally
         {
@@ -356,10 +353,10 @@ public sealed class ConfigUndoStackTests
             undo.TryUndo();
 
             var entries = ToastQueue.GetActiveEntries();
-            Assert.IsTrue(entries.Count > 0);
+            Assert.IsNotEmpty(entries);
 
-            bool foundUndo = false;
-            for (int i = 0; i < entries.Count; i++)
+            var foundUndo = false;
+            for (var i = 0; i < entries.Count; i++)
             {
                 if (entries[i].Message.StartsWith("Undo:", StringComparison.Ordinal))
                 {
@@ -587,6 +584,228 @@ public sealed class ConfigUndoStackTests
         }
         finally
         {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- Options-based constructor ---
+
+    /// <summary>
+    /// Tests that the options-based constructor throws <see cref="ArgumentNullException"/> when store is null.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_NullStore_ThrowsArgumentNullException()
+    {
+        var options = new ConfigUndoOptions();
+        Assert.ThrowsExactly<ArgumentNullException>(
+            () => new ConfigUndoStack<UndoTestConfig>(null!, options));
+    }
+
+    /// <summary>
+    /// Tests that the options-based constructor throws <see cref="ArgumentNullException"/> when options is null.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_NullOptions_ThrowsArgumentNullException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => new ConfigUndoStack<UndoTestConfig>(store, null!));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that the options-based constructor throws when the store is not loaded.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_UnloadedStore_ThrowsInvalidOperationException()
+    {
+        var tempPath = Path.GetTempFileName();
+        try
+        {
+            var store = new ConfigStore<UndoTestConfig>(tempPath);
+            var options = new ConfigUndoOptions();
+            Assert.ThrowsExactly<InvalidOperationException>(
+                () => new ConfigUndoStack<UndoTestConfig>(store, options));
+            store.Dispose();
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that the options-based constructor throws when the store is disposed.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_DisposedStore_ThrowsObjectDisposedException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        store.Dispose();
+        try
+        {
+            var options = new ConfigUndoOptions();
+            Assert.ThrowsExactly<ObjectDisposedException>(
+                () => new ConfigUndoStack<UndoTestConfig>(store, options));
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a stack created with default options starts empty and uses the default capacity.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_DefaultOptions_StartsEmpty()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions());
+
+            Assert.IsFalse(undo.CanUndo);
+            Assert.AreEqual(0, undo.Count);
+            Assert.IsNull(undo.Peek());
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that the options-based constructor respects a custom capacity.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_CustomCapacity_DropsOldestWhenExceeded()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            var options = new ConfigUndoOptions { Capacity = 2 };
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, options);
+
+            config.IntValue.Value = 20;
+            config.IntValue.Value = 30;
+            config.IntValue.Value = 40;
+
+            Assert.AreEqual(2, undo.Count);
+
+            undo.TryUndo();
+            Assert.AreEqual(30, config.IntValue.Value);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoOptions.Capacity"/> falls back to the default when set below 1.
+    /// </summary>
+    [TestMethod]
+    public void OptionsConstructor_CapacityBelowOne_UsesDefaultCapacity()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            var options = new ConfigUndoOptions { Capacity = 0 };
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, options);
+
+            // Default capacity is 32; push more than 1 to verify fallback didn't produce capacity < 1
+            config.IntValue.Value = 20;
+            config.IntValue.Value = 30;
+
+            Assert.AreEqual(2, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- Toast suppression ---
+
+    /// <summary>
+    /// Tests that undo does not push a toast when <see cref="ConfigUndoOptions.ShowToastOnUndo"/> is false.
+    /// </summary>
+    [TestMethod]
+    public void TryUndo_ShowToastOnUndoFalse_DoesNotPushToast()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            var options = new ConfigUndoOptions { ShowToastOnUndo = false };
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, options);
+
+            ToastQueue.Clear();
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+
+            var entries = ToastQueue.GetActiveEntries();
+            var foundUndo = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.StartsWith("Undo:", StringComparison.Ordinal))
+                {
+                    foundUndo = true;
+                    break;
+                }
+            }
+
+            Assert.IsFalse(foundUndo, "Expected no toast message when ShowToastOnUndo is false.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that undo pushes a toast when using the options-based constructor with ShowToastOnUndo true (default).
+    /// </summary>
+    [TestMethod]
+    public void TryUndo_OptionsWithShowToastOnUndoTrue_PushesToast()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            var options = new ConfigUndoOptions { ShowToastOnUndo = true };
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, options);
+
+            ToastQueue.Clear();
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+
+            var entries = ToastQueue.GetActiveEntries();
+            var foundUndo = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.StartsWith("Undo:", StringComparison.Ordinal))
+                {
+                    foundUndo = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(foundUndo, "Expected a toast message starting with 'Undo:'.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
             CleanupStore(store, tempPath);
         }
     }

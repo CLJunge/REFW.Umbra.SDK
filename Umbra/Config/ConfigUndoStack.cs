@@ -34,6 +34,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     private readonly List<ConfigChangeRecord> _stack;
     private readonly List<Action> _cleanupActions;
     private readonly int _capacity;
+    private readonly bool _showToastOnUndo;
     private bool _suppressRecording;
     private bool _disposed;
 
@@ -52,6 +53,29 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     /// <exception cref="ObjectDisposedException"><paramref name="store"/> has been disposed.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is less than 1.</exception>
     public ConfigUndoStack(ConfigStore<TConfig> store, int capacity = DefaultCapacity)
+        : this(store, capacity, showToastOnUndo: true)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new undo stack that tracks parameter changes on the specified store,
+    /// using the supplied <see cref="ConfigUndoOptions"/>.
+    /// </summary>
+    /// <param name="store">
+    /// A loaded <see cref="ConfigStore{TConfig}"/>. Must be loaded and not disposed.
+    /// </param>
+    /// <param name="options">The undo-stack options that control capacity and toast behavior.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="store"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="store"/> has not been loaded.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="store"/> has been disposed.</exception>
+    public ConfigUndoStack(ConfigStore<TConfig> store, ConfigUndoOptions options)
+        : this(store,
+              options is not null ? options.Capacity : throw new ArgumentNullException(nameof(options)),
+              options.ShowToastOnUndo)
+    {
+    }
+
+    private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, bool showToastOnUndo)
     {
         ArgumentNullException.ThrowIfNull(store);
 
@@ -65,6 +89,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
             throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Capacity must be at least 1.");
 
         _capacity = capacity;
+        _showToastOnUndo = showToastOnUndo;
         _stack = new List<ConfigChangeRecord>(capacity);
         _snapshots = new Dictionary<string, object?>();
         _cleanupActions = new List<Action>();
@@ -101,8 +126,8 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     /// </summary>
     /// <remarks>
     /// The undo operation suppresses change recording so the restoration itself does not
-    /// push a new entry onto the stack. On success a toast notification is displayed via
-    /// <see cref="ToastQueue.Push(string, ToastLevel, TimeSpan?)"/>.
+    /// push a new entry onto the stack. When toast notifications are enabled, a toast is
+    /// displayed via <see cref="ToastQueue.Push(string, ToastLevel, TimeSpan?)"/>.
     /// </remarks>
     /// <returns>
     /// <see langword="true"/> if a change was successfully undone;
@@ -129,7 +154,8 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
             _suppressRecording = false;
         }
 
-        ToastQueue.Push($"Undo: {record.DisplayLabel}", ToastLevel.Info);
+        if (_showToastOnUndo)
+            ToastQueue.Push($"Undo: {record.DisplayLabel}", ToastLevel.Info);
         return true;
     }
 

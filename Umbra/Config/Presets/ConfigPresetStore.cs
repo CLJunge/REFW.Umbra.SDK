@@ -23,11 +23,12 @@ namespace Umbra.Config.Presets;
 public sealed class ConfigPresetStore<TConfig>
     where TConfig : class, new()
 {
-    private const string PresetPrefix = "config-preset-";
     private const string PresetExtension = ".json";
 
     private readonly IReadOnlyDictionary<string, IParameter> _parameters;
     private readonly string _presetDirectory;
+    private readonly string _presetFilePrefix;
+    private readonly bool _showToastNotifications;
 
     /// <summary>
     /// Initializes a new preset store that operates on the specified loaded config store.
@@ -39,6 +40,30 @@ public sealed class ConfigPresetStore<TConfig>
     /// <exception cref="InvalidOperationException"><paramref name="store"/> has not been loaded.</exception>
     /// <exception cref="ObjectDisposedException"><paramref name="store"/> has been disposed.</exception>
     public ConfigPresetStore(ConfigStore<TConfig> store)
+        : this(store, ConfigPresetOptions.DefaultPresetFilePrefix, null, ConfigPresetOptions.DefaultShowToastNotifications)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new preset store that operates on the specified loaded config store,
+    /// using the supplied <see cref="ConfigPresetOptions"/>.
+    /// </summary>
+    /// <param name="store">
+    /// A loaded <see cref="ConfigStore{TConfig}"/>. Must be loaded and not disposed.
+    /// </param>
+    /// <param name="options">The preset-store options that control file prefix, directory, and toast behavior.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="store"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="store"/> has not been loaded.</exception>
+    /// <exception cref="ObjectDisposedException"><paramref name="store"/> has been disposed.</exception>
+    public ConfigPresetStore(ConfigStore<TConfig> store, ConfigPresetOptions options)
+        : this(store,
+              options is not null ? options.PresetFilePrefix : throw new ArgumentNullException(nameof(options)),
+              options.PresetDirectory,
+              options.ShowToastNotifications)
+    {
+    }
+
+    private ConfigPresetStore(ConfigStore<TConfig> store, string presetFilePrefix, string? presetDirectory, bool showToastNotifications)
     {
         ArgumentNullException.ThrowIfNull(store);
 
@@ -51,8 +76,18 @@ public sealed class ConfigPresetStore<TConfig>
         var target = (IConfigStoreCopyTarget<TConfig>)store;
         _parameters = target.Parameters;
 
-        var configDir = Path.GetDirectoryName(Path.GetFullPath(store.FilePath));
-        _presetDirectory = configDir ?? ".";
+        _presetFilePrefix = presetFilePrefix;
+        _showToastNotifications = showToastNotifications;
+
+        if (presetDirectory is not null)
+        {
+            _presetDirectory = presetDirectory;
+        }
+        else
+        {
+            var configDir = Path.GetDirectoryName(Path.GetFullPath(store.FilePath));
+            _presetDirectory = configDir ?? ".";
+        }
     }
 
     /// <summary>
@@ -84,12 +119,14 @@ public sealed class ConfigPresetStore<TConfig>
             Directory.CreateDirectory(_presetDirectory);
             File.WriteAllText(filePath, JsonSerializer.Serialize(dict, ConfigPersistence.JsonOptions));
             Logger.Info($"ConfigPresetStore: saved preset '{name}' ({dict.Count} parameter(s)) to '{filePath}'.");
-            ToastQueue.Push($"Preset saved: {name}", ToastLevel.Success);
+            if (_showToastNotifications)
+                ToastQueue.Push($"Preset saved: {name}", ToastLevel.Success);
         }
         catch (Exception ex)
         {
             Logger.Exception(ex, $"ConfigPresetStore: failed to save preset '{name}' to '{filePath}'.");
-            ToastQueue.Push($"Failed to save preset: {name}", ToastLevel.Error);
+            if (_showToastNotifications)
+                ToastQueue.Push($"Failed to save preset: {name}", ToastLevel.Error);
         }
     }
 
@@ -113,7 +150,8 @@ public sealed class ConfigPresetStore<TConfig>
         if (!File.Exists(filePath))
         {
             Logger.Info($"ConfigPresetStore: preset file '{filePath}' not found.");
-            ToastQueue.Push($"Preset not found: {name}", ToastLevel.Warning);
+            if (_showToastNotifications)
+                ToastQueue.Push($"Preset not found: {name}", ToastLevel.Warning);
             return false;
         }
 
@@ -143,13 +181,15 @@ public sealed class ConfigPresetStore<TConfig>
             }
 
             Logger.Info($"ConfigPresetStore: loaded preset '{name}' ({applied} of {dict.Count} key(s)) from '{filePath}'.");
-            ToastQueue.Push($"Preset loaded: {name}", ToastLevel.Success);
+            if (_showToastNotifications)
+                ToastQueue.Push($"Preset loaded: {name}", ToastLevel.Success);
             return true;
         }
         catch (Exception ex)
         {
             Logger.Exception(ex, $"ConfigPresetStore: failed to load preset '{name}' from '{filePath}'.");
-            ToastQueue.Push($"Failed to load preset: {name}", ToastLevel.Error);
+            if (_showToastNotifications)
+                ToastQueue.Push($"Failed to load preset: {name}", ToastLevel.Error);
             return false;
         }
     }
@@ -165,7 +205,7 @@ public sealed class ConfigPresetStore<TConfig>
         if (!Directory.Exists(_presetDirectory))
             return result;
 
-        var pattern = PresetPrefix + "*" + PresetExtension;
+        var pattern = _presetFilePrefix + "*" + PresetExtension;
         string[] files;
         try
         {
@@ -180,9 +220,9 @@ public sealed class ConfigPresetStore<TConfig>
         for (int i = 0; i < files.Length; i++)
         {
             var fileName = Path.GetFileNameWithoutExtension(files[i]);
-            if (fileName.StartsWith(PresetPrefix, StringComparison.OrdinalIgnoreCase))
+            if (fileName.StartsWith(_presetFilePrefix, StringComparison.OrdinalIgnoreCase))
             {
-                var name = fileName.Substring(PresetPrefix.Length);
+                var name = fileName.Substring(_presetFilePrefix.Length);
                 if (name.Length > 0)
                     result.Add(name);
             }
@@ -219,19 +259,21 @@ public sealed class ConfigPresetStore<TConfig>
         {
             File.Delete(filePath);
             Logger.Info($"ConfigPresetStore: deleted preset '{name}' at '{filePath}'.");
-            ToastQueue.Push($"Preset deleted: {name}", ToastLevel.Info);
+            if (_showToastNotifications)
+                ToastQueue.Push($"Preset deleted: {name}", ToastLevel.Info);
             return true;
         }
         catch (Exception ex)
         {
             Logger.Exception(ex, $"ConfigPresetStore: failed to delete preset '{name}' at '{filePath}'.");
-            ToastQueue.Push($"Failed to delete preset: {name}", ToastLevel.Error);
+            if (_showToastNotifications)
+                ToastQueue.Push($"Failed to delete preset: {name}", ToastLevel.Error);
             return false;
         }
     }
 
     private string GetPresetFilePath(string name) =>
-        Path.Combine(_presetDirectory, PresetPrefix + name + PresetExtension);
+        Path.Combine(_presetDirectory, _presetFilePrefix + name + PresetExtension);
 
     private static void ValidateName(string name)
     {

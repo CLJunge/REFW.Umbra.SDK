@@ -17,7 +17,7 @@ public sealed class ConfigDrawerSearchControllerTests
         // Arrange
         var renderer = new TestConfigDrawerScope();
         var controller = new ConfigDrawerSearchController(
-            new ConfigDrawerOptions { ShowSearchBar = false },
+            new ConfigDrawerOptions(),
             renderer,
             new ConfigSearchIndex());
 
@@ -43,7 +43,7 @@ public sealed class ConfigDrawerSearchControllerTests
         renderer.ButtonWidths["<##ConfigDrawerSearchPrevious"] = 40f;
         renderer.ButtonWidths[">##ConfigDrawerSearchNext"] = 44f;
         var controller = new ConfigDrawerSearchController(
-            new ConfigDrawerOptions { ShowSearchBar = true },
+            new ConfigDrawerOptions { Search = new ConfigSearchOptions() },
             renderer,
             new ConfigSearchIndex());
 
@@ -70,7 +70,7 @@ public sealed class ConfigDrawerSearchControllerTests
         renderer.ButtonWidths["<##ConfigDrawerSearchPrevious"] = 40f;
         renderer.ButtonWidths[">##ConfigDrawerSearchNext"] = 44f;
         var controller = new ConfigDrawerSearchController(
-            new ConfigDrawerOptions { ShowSearchBar = true },
+            new ConfigDrawerOptions { Search = new ConfigSearchOptions() },
             renderer,
             new ConfigSearchIndex());
 
@@ -103,7 +103,7 @@ public sealed class ConfigDrawerSearchControllerTests
         searchIndex.AddParameterResult("alpha", "Master Volume", "Adjusts output level.", "Audio", "config.audio");
         searchIndex.AddParameterResult("beta", "Gamma", "Adjusts display brightness.", "Graphics", "config.graphics");
         var controller = new ConfigDrawerSearchController(
-            new ConfigDrawerOptions { ShowSearchBar = true },
+            new ConfigDrawerOptions { Search = new ConfigSearchOptions() },
             renderer,
             searchIndex);
 
@@ -136,7 +136,7 @@ public sealed class ConfigDrawerSearchControllerTests
         searchIndex.AddParameterResult("alpha", "Gamma", null, "Graphics", "config.graphics");
         searchIndex.AddParameterResult("beta", "Game Speed", null, "Gameplay", "config.gameplay");
         var controller = new ConfigDrawerSearchController(
-            new ConfigDrawerOptions { ShowSearchBar = true },
+            new ConfigDrawerOptions { Search = new ConfigSearchOptions() },
             renderer,
             searchIndex);
 
