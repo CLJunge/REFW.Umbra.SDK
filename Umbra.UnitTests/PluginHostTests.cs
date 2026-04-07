@@ -1,6 +1,5 @@
 using Umbra.Logging;
 using Umbra.Logging.UnitTests;
-using Umbra.Runtime;
 
 namespace Umbra.UnitTests;
 

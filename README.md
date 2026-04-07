@@ -197,9 +197,9 @@ REFW.Umbra
 │  ├─ Input
 │  │  └─ KeyboardInput
 │  ├─ Runtime
-│  │  │  ├─ GameContext, GameMetadataLoader, REGame, REGameExtensions
-│  │  │  ├─ ManagedObjectResolver, REFrameworkManagedObjectBridge
-│  │  │  └─ IUmbraPlugin
+│  │  ├─ GameContext, GameMetadataLoader, REGame, REGameExtensions
+│  │  └─ ManagedObjectResolver, REFrameworkManagedObjectBridge
+│  ├─ IUmbraPlugin
 │  ├─ UmbraPlugin
 │  ├─ PluginHost<TPlugin>
 │  ├─ PluginBootstrapper

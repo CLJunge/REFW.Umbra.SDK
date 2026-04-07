@@ -1,10 +1,10 @@
-namespace Umbra.Runtime;
+namespace Umbra;
 
 /// <summary>
 /// Defines the instance lifecycle and forwarded frame callbacks consumed by Umbra's plugin-hosting APIs.
 /// </summary>
 /// <remarks>
-/// Static REFramework entry points still live on an assembly-facing host type, but they should delegate their work to a plugin instance that implements <see cref="IUmbraPlugin"/>. Single-instance coordination is typically handled by <see cref="global::Umbra.PluginHost{TPlugin}"/> or <see cref="global::Umbra.PluginBootstrapper"/>, while implementations keep mutable plugin state on the instance itself.
+/// Static REFramework entry points still live on an assembly-facing host type, but they should delegate their work to a plugin instance that implements <see cref="IUmbraPlugin"/>. Single-instance coordination is typically handled by <see cref="PluginHost{TPlugin}"/> or <see cref="PluginBootstrapper"/>, while implementations keep mutable plugin state on the instance itself.
 /// </remarks>
 public partial interface IUmbraPlugin
 {
