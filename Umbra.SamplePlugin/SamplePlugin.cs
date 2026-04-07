@@ -196,6 +196,7 @@ public sealed class SamplePlugin : UmbraPlugin
     /// Builds the plugin's normal runtime panel.
     /// </summary>
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
+    /// <param name="store">The loaded config store used for built-in transfer UI support.</param>
     /// <returns>The runtime panel.</returns>
     private static PluginPanel CreateRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
         => new PluginPanel(_runtimePanelScope)
@@ -210,15 +211,9 @@ public sealed class SamplePlugin : UmbraPlugin
                 _runtimeSectionScope));
 
     /// <summary>
-    /// Builds a duplicate panel for isolated benchmark measurement.
+    /// Creates the benchmark panel and benchmark host for isolated panel-draw measurement.
     /// </summary>
-    /// <remarks>
-    /// The benchmark panel uses the same backing config object as the runtime panel, but it owns a
-    /// separate section instance and unique ImGui scopes so widget IDs do not collide when both are
-    /// rendered in the same frame.
-    /// </remarks>
     /// <param name="config">The loaded config instance shared by the benchmark section.</param>
-    /// <returns>The benchmark panel.</returns>
 #if BENCHMARK
     private void InitializeBenchmarking(PluginConfig config)
     {
@@ -229,6 +224,16 @@ public sealed class SamplePlugin : UmbraPlugin
             GetBenchmarkDirectoryPath());
     }
 
+    /// <summary>
+    /// Builds a duplicate panel for isolated benchmark measurement.
+    /// </summary>
+    /// <remarks>
+    /// The benchmark panel uses the same backing config object as the runtime panel, but it owns a
+    /// separate section instance and unique ImGui scopes so widget IDs do not collide when both are
+    /// rendered in the same frame.
+    /// </remarks>
+    /// <param name="config">The loaded config instance shared by the benchmark section.</param>
+    /// <returns>The benchmark panel.</returns>
     private static PluginPanel CreateBenchmarkPanel(PluginConfig config)
         => new PluginPanel(_benchmarkPanelScope)
             .Add(new ConfigSection<PluginConfig>(config, _benchmarkSectionScope));

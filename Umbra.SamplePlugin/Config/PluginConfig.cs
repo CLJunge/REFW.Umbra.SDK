@@ -678,12 +678,15 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record IntegerSliderSamples
     {
+        /// <summary>Gets or sets the master volume slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Master Volume"), UmbraDescription("A ranged integer slider with a percentage-like value."), UmbraRange(0, 100)]
         public Parameter<int> MasterVolume { get; set; } = new(80);
 
+        /// <summary>Gets or sets the retry count slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Retry Count"), UmbraDescription("A small ranged integer slider used for discrete step testing."), UmbraRange(0, 10)]
         public Parameter<int> RetryCount { get; set; } = new(3);
 
+        /// <summary>Gets or sets the padding slider sample with a custom display format.</summary>
         [UmbraParameter, UmbraDisplayName("Padding"), UmbraDescription("A ranged integer slider with a custom integer display format."), UmbraRange(0, 64), UmbraFormat("%d px")]
         public Parameter<int> PaddingPixels { get; set; } = new(12);
     }
@@ -694,12 +697,15 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record IntegerDragSamples
     {
+        /// <summary>Gets or sets the horizontal offset drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Horizontal Offset"), UmbraDescription("An unconstrained integer drag sample."), UmbraStep(1)]
         public Parameter<int> HorizontalOffset { get; set; } = new(16);
 
+        /// <summary>Gets or sets the vertical offset drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Vertical Offset"), UmbraDescription("A second unconstrained integer drag sample with a negative default."), UmbraStep(1)]
         public Parameter<int> VerticalOffset { get; set; } = new(-8);
 
+        /// <summary>Gets or sets the priority bias drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Priority Bias"), UmbraDescription("An unconstrained integer drag sample with a larger drag step."), UmbraStep(5)]
         public Parameter<int> PriorityBias { get; set; } = new(25);
     }
@@ -710,12 +716,15 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record FloatSliderSamples
     {
+        /// <summary>Gets or sets the opacity slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Opacity"), UmbraDescription("A normalized float slider."), UmbraRange(0f, 1f), UmbraFormat("%.2f")]
         public Parameter<float> Opacity { get; set; } = new(.65f);
 
+        /// <summary>Gets or sets the gamma slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Gamma"), UmbraDescription("A wider float slider range for manual validation."), UmbraRange(0.5f, 3.0f), UmbraFormat("%.2f")]
         public Parameter<float> Gamma { get; set; } = new(1.20f);
 
+        /// <summary>Gets or sets the exposure slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Exposure"), UmbraDescription("A float slider with one decimal place."), UmbraRange(-2f, 2f), UmbraFormat("%.1f")]
         public Parameter<float> Exposure { get; set; } = new(.5f);
     }
@@ -726,12 +735,15 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record FloatDragSamples
     {
+        /// <summary>Gets or sets the move speed drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Move Speed"), UmbraDescription("An unconstrained float drag sample."), UmbraStep(0.05f), UmbraFormat("%.2f")]
         public Parameter<float> MoveSpeed { get; set; } = new(1.50f);
 
+        /// <summary>Gets or sets the bloom strength drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Bloom Strength"), UmbraDescription("A smaller-step float drag sample."), UmbraStep(0.01f), UmbraFormat("%.2f")]
         public Parameter<float> BloomStrength { get; set; } = new(.35f);
 
+        /// <summary>Gets or sets the camera lag drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Camera Lag"), UmbraDescription("A float drag sample with three decimal places."), UmbraStep(0.005f), UmbraFormat("%.3f")]
         public Parameter<float> CameraLag { get; set; } = new(.125f);
     }
@@ -742,9 +754,11 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record DoubleSliderSamples
     {
+        /// <summary>Gets or sets the precision scale slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Precision Scale"), UmbraDescription("A ranged double slider used to validate native double-precision slider editing."), UmbraRange(0.0, 1.0), UmbraStep(0.001), UmbraFormat("%.3f")]
         public Parameter<double> PrecisionScale { get; set; } = new(0.125);
 
+        /// <summary>Gets or sets the zoom factor slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Zoom Factor"), UmbraDescription("A second ranged double slider with a broader range."), UmbraRange(0.5, 4.0), UmbraStep(0.001), UmbraFormat("%.3f")]
         public Parameter<double> ZoomFactor { get; set; } = new(1.750);
     }
@@ -755,9 +769,11 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record DoubleDragSamples
     {
+        /// <summary>Gets or sets the world offset drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("World Offset"), UmbraDescription("An unconstrained double drag sample used to validate precision beyond float."), UmbraStep(0.125), UmbraFormat("%.3f")]
         public Parameter<double> WorldOffset { get; set; } = new(12.375);
 
+        /// <summary>Gets or sets the calibration bias drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Calibration Bias"), UmbraDescription("A second unconstrained double drag sample with a small step size."), UmbraStep(0.0005), UmbraFormat("%.4f")]
         public Parameter<double> CalibrationBias { get; set; } = new(0.0025);
     }
@@ -768,12 +784,15 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record SingleLineStringSamples
     {
+        /// <summary>Gets or sets the profile name text sample.</summary>
         [UmbraParameter, UmbraDisplayName("Profile Name"), UmbraDescription("A short single-line string sample with required and minimum-length validation."), UmbraRequired, UmbraMinLength(3), UmbraMaxLength(40)]
         public Parameter<string> ProfileName { get; set; } = new("Umbra Tester");
 
+        /// <summary>Gets or sets the export directory text sample.</summary>
         [UmbraParameter, UmbraDisplayName("Export Directory"), UmbraDescription("A longer single-line string sample with required and regex validation."), UmbraRequired, UmbraRegex("^[A-Za-z0-9_./-]+$", Message = "Use letters, digits, underscores, dots, slashes, or dashes only."), UmbraMaxLength(120)]
         public Parameter<string> ExportDirectory { get; set; } = new("data/Umbra/SamplePlugin/exports");
 
+        /// <summary>Gets or sets the search filter text sample with custom validation.</summary>
         [UmbraParameter, UmbraDisplayName("Search Filter"), UmbraDescription("A third single-line string sample that demonstrates required, minimum-length, regex, and custom-validator feedback."), UmbraRequired, UmbraMinLength(3), UmbraRegex("^[a-z0-9 _-]+$", Message = "Use lowercase letters, digits, spaces, underscores, or dashes only."), UmbraValidateWith<SearchFilterValidator>, UmbraMaxLength(60)]
         public Parameter<string> SearchFilter { get; set; } = new("player camera");
     }
@@ -784,9 +803,11 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record MultilineStringSamples
     {
+        /// <summary>Gets or sets the multi-line notes text sample.</summary>
         [UmbraParameter, UmbraDisplayName("Notes"), UmbraDescription("A short multi-line text sample that allows whitespace-only content while still rejecting null or empty text."), UmbraRequired(AllowWhitespace = true), UmbraMultiline(3), UmbraMaxLength(160)]
         public Parameter<string> Notes { get; set; } = new("Use this field to validate multi-line text persistence.");
 
+        /// <summary>Gets or sets the multi-line changelog text sample.</summary>
         [UmbraParameter, UmbraDisplayName("Changelog"), UmbraDescription("A larger multi-line text sample with more visible rows."), UmbraMultiline(5), UmbraMaxLength(320)]
         public Parameter<string> Changelog { get; set; } = new("- Added data-type sample groups\n- Added nested type tests\n- Added custom drawer coverage");
     }
