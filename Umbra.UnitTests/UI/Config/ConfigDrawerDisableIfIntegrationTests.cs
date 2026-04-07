@@ -180,9 +180,6 @@ public sealed class ConfigDrawerDisableIfIntegrationTests
 
     private sealed class ConfigDrawerDisableIfIntegrationNestedDrawer : INestedDrawer<CustomNestedDrawerDisableGroup>
     {
-        public void Draw(CustomNestedDrawerDisableGroup groupInstance)
-        {
-            _ = groupInstance;
-        }
+        public void Draw(CustomNestedDrawerDisableGroup groupInstance) => _ = groupInstance;
     }
 }

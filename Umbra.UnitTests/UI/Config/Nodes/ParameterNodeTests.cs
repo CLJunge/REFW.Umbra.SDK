@@ -530,10 +530,11 @@ public sealed class ParameterNodeTests
 
         if (pendingFocusResultId is null && searchState.PendingFocusResultId is not null)
             searchState.ClearPendingFocusTarget(searchState.PendingFocusResultId);
-
+#pragma warning disable IDE0028
         return new ConfigSearchRenderState(
             searchState,
             new HashSet<string>(matchIds, StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal));
+#pragma warning restore IDE0028
     }
 }

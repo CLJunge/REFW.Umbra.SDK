@@ -269,9 +269,6 @@ public class ParameterNodeComposerTests
 
     private sealed class ParameterNodeComposerTestsTwoColumnDrawer : Drawers.ITwoColumnParameterDrawer
     {
-        public void Draw(IParameter parameter)
-        {
-            _ = parameter;
-        }
+        public void Draw(IParameter parameter) => _ = parameter;
     }
 }
