@@ -1,3 +1,5 @@
+using Umbra.UI.Toast;
+
 namespace Umbra.Config;
 
 /// <summary>
@@ -15,11 +17,6 @@ public sealed class ConfigUndoOptions
     /// </summary>
     public const int DefaultCapacity = 32;
 
-    /// <summary>
-    /// The default value for <see cref="ShowToastOnUndo"/>.
-    /// </summary>
-    public const bool DefaultShowToastOnUndo = true;
-
     private readonly int _capacity = DefaultCapacity;
 
     /// <summary>
@@ -35,7 +32,11 @@ public sealed class ConfigUndoOptions
     }
 
     /// <summary>
-    /// Gets a value indicating whether a toast notification is displayed after a successful undo.
+    /// Gets the optional toast notification settings for undo operations.
     /// </summary>
-    public bool ShowToastOnUndo { get; init; } = DefaultShowToastOnUndo;
+    /// <remarks>
+    /// When <see langword="null"/>, no toast notification is displayed after a successful undo.
+    /// When non-<see langword="null"/>, a toast is displayed using the configured settings.
+    /// </remarks>
+    public ConfigToastOptions? Toast { get; init; }
 }

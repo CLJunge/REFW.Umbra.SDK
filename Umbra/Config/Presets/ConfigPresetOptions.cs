@@ -1,3 +1,5 @@
+using Umbra.UI.Toast;
+
 namespace Umbra.Config.Presets;
 
 /// <summary>
@@ -15,11 +17,6 @@ public sealed class ConfigPresetOptions
     /// The default file-name prefix prepended to preset names when generating preset file names.
     /// </summary>
     public const string DefaultPresetFilePrefix = "config-preset-";
-
-    /// <summary>
-    /// The default value for <see cref="ShowToastNotifications"/>.
-    /// </summary>
-    public const bool DefaultShowToastNotifications = true;
 
     private readonly string _presetFilePrefix = DefaultPresetFilePrefix;
 
@@ -44,7 +41,11 @@ public sealed class ConfigPresetOptions
     public string? PresetDirectory { get; init; }
 
     /// <summary>
-    /// Gets a value indicating whether toast notifications are shown on preset save, load, and delete.
+    /// Gets the optional toast notification settings for preset operations.
     /// </summary>
-    public bool ShowToastNotifications { get; init; } = DefaultShowToastNotifications;
+    /// <remarks>
+    /// When <see langword="null"/>, no toast notification is displayed on preset save, load, or delete.
+    /// When non-<see langword="null"/>, toasts are displayed using the configured settings.
+    /// </remarks>
+    public ConfigToastOptions? Toast { get; init; }
 }

@@ -13,7 +13,8 @@ namespace Umbra.Config;
 /// the untyped <see cref="IParameter.ValueChanged"/> event. When a parameter changes, the
 /// old snapshot value and the new current value are recorded as a
 /// <see cref="ConfigChangeRecord"/>. Calling <see cref="TryUndo"/> restores the most recent
-/// change and pushes a toast notification via <see cref="ToastQueue"/>.
+/// change and, when <see cref="ConfigUndoOptions.Toast"/> is non-<see langword="null"/>,
+/// pushes a toast notification via <see cref="ToastQueue"/>.
 /// </para>
 /// <para>
 /// Delegate-typed parameters (buttons) are excluded from tracking because they do not
@@ -34,7 +35,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     private readonly List<ConfigChangeRecord> _stack;
     private readonly List<Action> _cleanupActions;
     private readonly int _capacity;
-    private readonly bool _showToastOnUndo;
+   private readonly ConfigToastOptions? _toast;
     private bool _suppressRecording;
     private bool _disposed;
 
@@ -48,12 +49,17 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     /// Maximum number of change records to retain. When exceeded, the oldest record is dropped.
     /// Defaults to <see cref="DefaultCapacity"/>.
     /// </param>
+    /// <remarks>
+    /// Toast notifications are disabled when using this constructor. Supply a
+    /// <see cref="ConfigUndoOptions"/> instance with a non-<see langword="null"/>
+    /// <see cref="ConfigUndoOptions.Toast"/> to enable them.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="store"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException"><paramref name="store"/> has not been loaded.</exception>
     /// <exception cref="ObjectDisposedException"><paramref name="store"/> has been disposed.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is less than 1.</exception>
     public ConfigUndoStack(ConfigStore<TConfig> store, int capacity = DefaultCapacity)
-        : this(store, capacity, showToastOnUndo: true)
+        : this(store, capacity, toast: null)
     {
     }
 
@@ -71,11 +77,11 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     public ConfigUndoStack(ConfigStore<TConfig> store, ConfigUndoOptions options)
         : this(store,
               options is not null ? options.Capacity : throw new ArgumentNullException(nameof(options)),
-              options.ShowToastOnUndo)
+              options.Toast)
     {
     }
 
-    private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, bool showToastOnUndo)
+    private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, ConfigToastOptions? toast)
     {
         ArgumentNullException.ThrowIfNull(store);
 
@@ -89,7 +95,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
             throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Capacity must be at least 1.");
 
         _capacity = capacity;
-        _showToastOnUndo = showToastOnUndo;
+        _toast = toast;
         _stack = new List<ConfigChangeRecord>(capacity);
         _snapshots = new Dictionary<string, object?>();
         _cleanupActions = new List<Action>();
@@ -154,8 +160,8 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
             _suppressRecording = false;
         }
 
-        if (_showToastOnUndo)
-            ToastQueue.Push($"Undo: {record.DisplayLabel}", ToastLevel.Info);
+        if (_toast is not null)
+            ToastQueue.Push($"Undo: {record.DisplayLabel}", ToastLevel.Info, _toast.Duration);
         return true;
     }
 

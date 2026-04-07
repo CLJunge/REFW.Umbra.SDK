@@ -1,3 +1,4 @@
+using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Toast;
 
@@ -194,7 +195,7 @@ public sealed class ConfigPresetStoreTests
     }
 
     /// <summary>
-    /// Tests that Save pushes a success toast.
+    /// Tests that Save pushes a success toast when Toast options are configured.
     /// </summary>
     [TestMethod]
     public void Save_PushesSuccessToast()
@@ -203,7 +204,7 @@ public sealed class ConfigPresetStoreTests
         try
         {
             ToastQueue.Clear();
-            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var presets = new ConfigPresetStore<PresetTestConfig>(store, new ConfigPresetOptions { Toast = new ConfigToastOptions() });
             presets.Save("toasttest");
 
             var entries = ToastQueue.GetActiveEntries();
@@ -441,7 +442,7 @@ public sealed class ConfigPresetStoreTests
     }
 
     /// <summary>
-    /// Tests that Delete pushes a toast on success.
+    /// Tests that Delete pushes a toast on success when Toast options are configured.
     /// </summary>
     [TestMethod]
     public void Delete_PushesToastOnSuccess()
@@ -450,7 +451,7 @@ public sealed class ConfigPresetStoreTests
         try
         {
             ToastQueue.Clear();
-            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var presets = new ConfigPresetStore<PresetTestConfig>(store, new ConfigPresetOptions { Toast = new ConfigToastOptions() });
             presets.Save("deltoast");
 
             ToastQueue.Clear();
@@ -715,15 +716,15 @@ public sealed class ConfigPresetStoreTests
     }
 
     /// <summary>
-    /// Tests that toast notifications are suppressed when <see cref="ConfigPresetOptions.ShowToastNotifications"/> is false.
+    /// Tests that toast notifications are suppressed when <see cref="ConfigPresetOptions.Toast"/> is <see langword="null"/>.
     /// </summary>
     [TestMethod]
-    public void OptionsConstructor_ShowToastNotificationsFalse_DoesNotPushToast()
+    public void OptionsConstructor_ToastNull_DoesNotPushToast()
     {
         var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
         try
         {
-            var options = new ConfigPresetOptions { ShowToastNotifications = false };
+            var options = new ConfigPresetOptions { Toast = null };
             var presets = new ConfigPresetStore<PresetTestConfig>(store, options);
 
             ToastQueue.Clear();
@@ -742,7 +743,7 @@ public sealed class ConfigPresetStoreTests
                 }
             }
 
-            Assert.IsFalse(found, "Expected no toast when ShowToastNotifications is false.");
+            Assert.IsFalse(found, "Expected no toast when Toast is null.");
         }
         finally
         {

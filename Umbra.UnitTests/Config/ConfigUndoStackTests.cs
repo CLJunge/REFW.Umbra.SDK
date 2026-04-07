@@ -1,3 +1,4 @@
+using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Toast;
 
@@ -336,7 +337,7 @@ public sealed class ConfigUndoStackTests
     }
 
     /// <summary>
-    /// Tests that TryUndo pushes a toast notification on success.
+    /// Tests that TryUndo pushes a toast notification when Toast options are configured.
     /// </summary>
     [TestMethod]
     public void TryUndo_PushesToastOnSuccess()
@@ -344,7 +345,7 @@ public sealed class ConfigUndoStackTests
         var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
-            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new ConfigToastOptions() });
 
             // Clear any existing toasts from other tests
             ToastQueue.Clear();
@@ -737,15 +738,15 @@ public sealed class ConfigUndoStackTests
     // --- Toast suppression ---
 
     /// <summary>
-    /// Tests that undo does not push a toast when <see cref="ConfigUndoOptions.ShowToastOnUndo"/> is false.
+    /// Tests that undo does not push a toast when <see cref="ConfigUndoOptions.Toast"/> is <see langword="null"/>.
     /// </summary>
     [TestMethod]
-    public void TryUndo_ShowToastOnUndoFalse_DoesNotPushToast()
+    public void TryUndo_ToastNull_DoesNotPushToast()
     {
         var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
-            var options = new ConfigUndoOptions { ShowToastOnUndo = false };
+            var options = new ConfigUndoOptions { Toast = null };
             using var undo = new ConfigUndoStack<UndoTestConfig>(store, options);
 
             ToastQueue.Clear();
@@ -764,7 +765,7 @@ public sealed class ConfigUndoStackTests
                 }
             }
 
-            Assert.IsFalse(foundUndo, "Expected no toast message when ShowToastOnUndo is false.");
+            Assert.IsFalse(foundUndo, "Expected no toast message when Toast is null.");
         }
         finally
         {
@@ -774,15 +775,15 @@ public sealed class ConfigUndoStackTests
     }
 
     /// <summary>
-    /// Tests that undo pushes a toast when using the options-based constructor with ShowToastOnUndo true (default).
+    /// Tests that undo pushes a toast when using the options-based constructor with a non-null <see cref="ConfigToastOptions"/>.
     /// </summary>
     [TestMethod]
-    public void TryUndo_OptionsWithShowToastOnUndoTrue_PushesToast()
+    public void TryUndo_ToastOptions_PushesToast()
     {
         var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
-            var options = new ConfigUndoOptions { ShowToastOnUndo = true };
+            var options = new ConfigUndoOptions { Toast = new ConfigToastOptions() };
             using var undo = new ConfigUndoStack<UndoTestConfig>(store, options);
 
             ToastQueue.Clear();
