@@ -1,5 +1,7 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
+using Umbra.Input;
+using System.Numerics;
 using Umbra.UI.Config.Drawers;
 
 namespace Umbra.SamplePlugin.Config;
@@ -178,14 +180,14 @@ public record PluginConfig
         [UmbraDisplayName("Toggle Hotkey")]
         [UmbraDescription("The hotkey used to toggle the sample plugin on and off.")]
         [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
-        public Parameter<int> ToggleHotkey { get; set; } = new(574);
+        public Parameter<HotkeyBinding> ToggleHotkey { get; set; } = new(new HotkeyBinding(574, false, false, false));
 
         /// <summary>Gets or sets the hotkey that switches between demo views.</summary>
         [UmbraParameter]
         [UmbraDisplayName("Switch View Hotkey")]
         [UmbraDescription("The hotkey used to switch between first-person and third-person demo views.")]
         [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
-        public Parameter<int> SwitchViewHotkey { get; set; } = new(575);
+        public Parameter<HotkeyBinding> SwitchViewHotkey { get; set; } = new(new HotkeyBinding(575, false, false, false));
 
         /// <summary>Gets or sets whether the sample emits extra diagnostic logging.</summary>
         [UmbraParameter]
