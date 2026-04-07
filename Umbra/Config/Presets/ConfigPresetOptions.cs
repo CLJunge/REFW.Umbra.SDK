@@ -1,4 +1,3 @@
-using Umbra.UI.Config.Presets;
 using Umbra.UI.Toast;
 
 namespace Umbra.Config.Presets;
@@ -78,11 +77,6 @@ public sealed class ConfigPresetOptions
         get => _expandedByDefault;
         init => _expandedByDefault = value;
     }
-
-    /// <summary>
-    /// Gets or sets where the built-in preset UI is rendered relative to the main config UI.
-    /// </summary>
-    public ConfigPresetPlacement Placement { get; init; } = ConfigPresetPlacement.AfterConfig;
 
     /// <summary>
     /// Gets or sets a value indicating whether a separator is shown below the built-in preset buttons.

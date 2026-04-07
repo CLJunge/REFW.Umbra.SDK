@@ -79,7 +79,6 @@ internal sealed class ConfigPresetFeature<TConfig> : IDisposable
         _fallbackBrowseDirectory = presetStore.PresetDirectory;
         SectionLabel = ResolveTreeNodeLabel(options.SectionLabel);
         ExpandedByDefault = options.ExpandedByDefault;
-        Placement = options.Placement;
         ShowSeparatorBelowButtons = options.ShowSeparatorBelowButtons;
     }
 
@@ -94,11 +93,6 @@ internal sealed class ConfigPresetFeature<TConfig> : IDisposable
     internal bool ExpandedByDefault { get; }
 
     /// <summary>
-    /// Gets where the preset UI is rendered relative to the main config UI.
-    /// </summary>
-    internal ConfigPresetPlacement Placement { get; }
-
-    /// <summary>
     /// Gets a value indicating whether a separator is shown below the preset buttons.
     /// </summary>
     internal bool ShowSeparatorBelowButtons { get; }
@@ -111,7 +105,8 @@ internal sealed class ConfigPresetFeature<TConfig> : IDisposable
     /// <summary>
     /// Draws the preset UI controls.
     /// </summary>
-    internal void Draw()
+    /// <param name="disableControls">Whether to disable all preset controls while still rendering the section.</param>
+    internal void Draw(bool disableControls = false)
     {
         if (_disposed)
             return;
@@ -123,7 +118,8 @@ internal sealed class ConfigPresetFeature<TConfig> : IDisposable
             OnPresetSelected,
             OnExportClicked,
             OnImportClicked,
-            ShowSeparatorBelowButtons);
+            ShowSeparatorBelowButtons,
+            disableControls);
     }
 
     /// <summary>

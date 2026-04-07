@@ -212,7 +212,6 @@ public sealed class SamplePlugin : UmbraPlugin
                     Presets = new ConfigPresetOptions
                     {
                         SectionLabel = "Presets",
-                        Placement = UI.Config.Presets.ConfigPresetPlacement.AfterConfig,
                         ExpandedByDefault = true
                     }
                 },

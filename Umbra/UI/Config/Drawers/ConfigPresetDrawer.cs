@@ -51,19 +51,29 @@ internal sealed class ConfigPresetDrawer
     /// <param name="onExportClicked">Callback invoked when the user clicks the Export button.</param>
     /// <param name="onImportClicked">Callback invoked when the user clicks the Import button.</param>
     /// <param name="showSeparatorBelowButtons">When <see langword="true"/>, a separator is drawn below the button row.</param>
+    /// <param name="disableControls">When <see langword="true"/>, all preset controls are rendered disabled.</param>
     internal void Draw(
         List<string> presetNames,
         string? selectedPresetName,
         Action<string> onPresetSelected,
         Action onExportClicked,
         Action onImportClicked,
-        bool showSeparatorBelowButtons)
+        bool showSeparatorBelowButtons,
+        bool disableControls = false)
     {
         var hasPresets = presetNames.Count > 0;
-        DrawComboRow(presetNames, selectedPresetName, onPresetSelected, hasPresets);
-        DrawActionRow(selectedPresetName, onExportClicked, onImportClicked, hasPresets);
-        if (showSeparatorBelowButtons)
-            _renderer.Separator();
+        _renderer.BeginDisabled(disableControls);
+        try
+        {
+            DrawComboRow(presetNames, selectedPresetName, onPresetSelected, hasPresets);
+            DrawActionRow(selectedPresetName, onExportClicked, onImportClicked, hasPresets);
+            if (showSeparatorBelowButtons)
+                _renderer.Separator();
+        }
+        finally
+        {
+            _renderer.EndDisabled();
+        }
     }
 
     private void DrawComboRow(

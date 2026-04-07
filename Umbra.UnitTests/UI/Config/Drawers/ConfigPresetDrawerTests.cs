@@ -75,11 +75,12 @@ public sealed class ConfigPresetDrawerTests
         // Act
         drawer.Draw(_presetNames, null, OnPresetSelected, OnExportClicked, OnImportClicked, false);
 
-        // Assert - prev + combo disabled scopes + next = 3 disabled scopes total (all true)
-        Assert.IsTrue(_renderer.DisabledScopes.Count >= 3);
-        Assert.IsTrue(_renderer.DisabledScopes[0]); // prev disabled
-        Assert.IsTrue(_renderer.DisabledScopes[1]); // combo disabled
-        Assert.IsTrue(_renderer.DisabledScopes[2]); // next disabled
+        // Assert - outer scope is enabled, then prev/combo/next are individually disabled
+        Assert.IsTrue(_renderer.DisabledScopes.Count >= 4);
+        Assert.IsFalse(_renderer.DisabledScopes[0]); // outer scope enabled
+        Assert.IsTrue(_renderer.DisabledScopes[1]); // prev disabled
+        Assert.IsTrue(_renderer.DisabledScopes[2]); // combo disabled
+        Assert.IsTrue(_renderer.DisabledScopes[3]); // next disabled
 
         // Combo should show "(no presets)"
         Assert.HasCount(1, _renderer.Combos);
@@ -299,8 +300,9 @@ public sealed class ConfigPresetDrawerTests
 
         // Assert - export button should be disabled (no selected preset)
         Assert.AreEqual(0, _exportCallCount);
-        // prev(false), next(false), export(true) = 3 disabled scopes
-        Assert.IsTrue(_renderer.DisabledScopes[2]); // export disabled
+        // outer(false), prev(false), next(false), export(true)
+        Assert.IsTrue(_renderer.DisabledScopes.Count >= 4);
+        Assert.IsTrue(_renderer.DisabledScopes[3]); // export disabled
     }
 
     /// <summary>

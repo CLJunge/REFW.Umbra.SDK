@@ -219,23 +219,19 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 
         var hasActiveSearch = _drawer.HasActiveSearchQuery;
 
+        // Presets always draw at the top, but controls are disabled during active search
+        if (_presetFeature is not null)
+            DrawPresetFeature(hasActiveSearch);
+
         if (ShouldDrawFeatureSection(_transferFeature is not null, hasActiveSearch)
             && _transferFeature!.Placement == ConfigTransferPlacement.BeforeConfig)
             DrawTransferFeature();
-
-        if (ShouldDrawFeatureSection(_presetFeature is not null, hasActiveSearch)
-            && _presetFeature!.Placement == ConfigPresetPlacement.BeforeConfig)
-            DrawPresetFeature();
 
         _drawer.Draw();
 
         if (ShouldDrawFeatureSection(_transferFeature is not null, hasActiveSearch)
             && _transferFeature!.Placement != ConfigTransferPlacement.BeforeConfig)
             DrawTransferFeature();
-
-        if (ShouldDrawFeatureSection(_presetFeature is not null, hasActiveSearch)
-            && _presetFeature!.Placement != ConfigPresetPlacement.BeforeConfig)
-            DrawPresetFeature();
     }
 
     /// <inheritdoc/>
@@ -317,7 +313,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         return new ConfigPresetFeature<TConfig>(presetStore, configStore.Save, presetOptions);
     }
 
-    private void DrawPresetFeature()
+    private void DrawPresetFeature(bool disableControls = false)
     {
         var presetFeature = _presetFeature;
         if (presetFeature is null)
@@ -330,7 +326,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 
         try
         {
-            presetFeature.Draw();
+            presetFeature.Draw(disableControls);
         }
         finally
         {

@@ -95,25 +95,6 @@ public sealed class ConfigPresetFeatureTests
     }
 
     /// <summary>
-    /// Verifies that Placement is propagated from options.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_Placement_PropagatesFromOptions()
-    {
-        using var tempDir = new TempDirectory();
-        var store = CreateLoadedStore(tempDir.Path);
-        var presetStore = new ConfigPresetStore<TestPresetConfig>(store);
-        var options = new ConfigPresetOptions { Placement = ConfigPresetPlacement.BeforeConfig };
-
-        using var feature = new ConfigPresetFeature<TestPresetConfig>(
-            presetStore, () => { }, options,
-            new ConfigPresetDrawer(new TestConfigPresetDrawerRenderer()),
-            new TestConfigTransferFilePicker());
-
-        Assert.AreEqual(ConfigPresetPlacement.BeforeConfig, feature.Placement);
-    }
-
-    /// <summary>
     /// Verifies that ShowSeparatorBelowButtons defaults to true.
     /// </summary>
     [TestMethod]
@@ -295,6 +276,57 @@ public sealed class ConfigPresetFeatureTests
         feature.Dispose();
         feature.Dispose();
         feature.Dispose();
+    }
+
+    /// <summary>
+    /// Verifies that Draw with disableControls=false enables normal control interaction.
+    /// </summary>
+    [TestMethod]
+    public void Draw_DisableControlsFalse_ControlsEnabled()
+    {
+        using var tempDir = new TempDirectory();
+        var store = CreateLoadedStore(tempDir.Path);
+        var presetStore = new ConfigPresetStore<TestPresetConfig>(store);
+        var renderer = new TestConfigPresetDrawerRenderer();
+
+        using var feature = new ConfigPresetFeature<TestPresetConfig>(
+            presetStore, () => { }, new ConfigPresetOptions(),
+            new ConfigPresetDrawer(renderer),
+            new TestConfigTransferFilePicker());
+
+        feature.Draw(disableControls: false);
+
+        Assert.IsTrue(renderer.DisabledScopes.Count > 0);
+        Assert.IsFalse(renderer.DisabledScopes[0]);
+    }
+
+    /// <summary>
+    /// Verifies that Draw with disableControls=true disables all preset controls.
+    /// </summary>
+    [TestMethod]
+    public void Draw_DisableControlsTrue_ControlsDisabled()
+    {
+        using var tempDir = new TempDirectory();
+        var store = CreateLoadedStore(tempDir.Path);
+        var presetStore = new ConfigPresetStore<TestPresetConfig>(store);
+        var renderer = new TestConfigPresetDrawerRenderer();
+
+        using var feature = new ConfigPresetFeature<TestPresetConfig>(
+            presetStore, () => { }, new ConfigPresetOptions(),
+            new ConfigPresetDrawer(renderer),
+            new TestConfigTransferFilePicker());
+
+        feature.Draw(disableControls: true);
+
+        // A disabled scope should have been active
+        var hasDisabledScope = false;
+        foreach (var disabled in renderer.DisabledScopes)
+            if (disabled)
+                hasDisabledScope = true;
+
+        Assert.IsTrue(hasDisabledScope);
+        // EndDisabled should have been called to exit the disabled scope
+        Assert.IsTrue(renderer.EndDisabledCallCount > 0);
     }
 
     // --- Helpers ---
