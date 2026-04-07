@@ -185,6 +185,99 @@ public partial class ConfigStoreTests
     }
 
     /// <summary>
+    /// Verifies that export uses the declared config-schema version metadata from the config type.
+    /// </summary>
+    [TestMethod]
+    public void Export_WhenConfigTypeDeclaresSchemaVersion_WritesDeclaredVersionToExchangeDocument()
+    {
+        var runtimePath = Path.Combine(Path.GetTempPath(), $"runtime_{Guid.NewGuid()}.json");
+        var exportPath = Path.Combine(Path.GetTempPath(), $"export_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new ConfigStore<VersionedConfig>(runtimePath);
+            _ = store.Load();
+
+            store.Export(exportPath);
+
+            using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(exportPath));
+            Assert.AreEqual(7, document.RootElement.GetProperty("schemaVersion").GetInt32());
+            Assert.AreEqual(typeof(VersionedConfig).FullName, document.RootElement.GetProperty("schemaId").GetString());
+        }
+        finally
+        {
+            if (File.Exists(runtimePath))
+                File.Delete(runtimePath);
+            if (File.Exists(exportPath))
+                File.Delete(exportPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that reset still affects only non-delegate parameters after the registered-
+    /// parameter operations are delegated out of the store type.
+    /// </summary>
+    [TestMethod]
+    public void ResetAll_WithDelegateParameters_ResetsOnlyNonDelegateValues()
+    {
+        var runtimePath = Path.Combine(Path.GetTempPath(), $"runtime_{Guid.NewGuid()}.json");
+        try
+        {
+            var store = new ConfigStore<TestConfigWithDelegates>(runtimePath);
+            var config = store.Load();
+            var originalDelegate = config.DelegateValue.Value;
+
+            config.IntValue.Set(100);
+            config.StringValue.Set("changed");
+
+            store.ResetAll();
+
+            Assert.AreEqual(42, config.IntValue.Value);
+            Assert.AreEqual("default", config.StringValue.Value);
+            Assert.AreSame(originalDelegate, config.DelegateValue.Value);
+        }
+        finally
+        {
+            if (File.Exists(runtimePath))
+                File.Delete(runtimePath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that silent copy still updates matching values without raising target listeners.
+    /// </summary>
+    [TestMethod]
+    public void CopyValuesTo_WhenSetWithoutNotifyingTrue_UpdatesTargetWithoutRaisingListeners()
+    {
+        var sourcePath = Path.Combine(Path.GetTempPath(), $"source_{Guid.NewGuid()}.json");
+        var targetPath = Path.Combine(Path.GetTempPath(), $"target_{Guid.NewGuid()}.json");
+        try
+        {
+            var source = new ConfigStore<TestConfig>(sourcePath);
+            var sourceConfig = source.Load();
+            var target = new ConfigStore<TestConfig>(targetPath);
+            var targetConfig = target.Load();
+            var listenerCalls = 0;
+
+            sourceConfig.Value1.Set(321);
+            sourceConfig.Value2.Set("copied");
+            target.AddListenerToAll(() => listenerCalls++);
+
+            source.CopyValuesTo(target, setWithoutNotifying: true);
+
+            Assert.AreEqual(321, targetConfig.Value1.Value);
+            Assert.AreEqual("copied", targetConfig.Value2.Value);
+            Assert.AreEqual(0, listenerCalls);
+        }
+        finally
+        {
+            if (File.Exists(sourcePath))
+                File.Delete(sourcePath);
+            if (File.Exists(targetPath))
+                File.Delete(targetPath);
+        }
+    }
+
+    /// <summary>
     /// Verifies that <see cref="ConfigStore{TConfig}.Export(string)"/> rejects calls after disposal.
     /// </summary>
     [TestMethod]
@@ -743,6 +836,14 @@ public partial class ConfigStoreTests
 
         [UmbraParameter]
         public Parameter<string> Value2 { get; set; } = new("default");
+    }
+
+    [UmbraAutoRegister]
+    [UmbraConfigVersion(7)]
+    public partial record VersionedConfig
+    {
+        [UmbraParameter]
+        public Parameter<int> Value { get; set; } = new(10);
     }
 
     #endregion
