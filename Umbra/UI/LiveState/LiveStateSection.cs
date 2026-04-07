@@ -154,5 +154,3 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
         }
     }
 }
-
-

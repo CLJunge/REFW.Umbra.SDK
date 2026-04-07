@@ -269,5 +269,3 @@ public sealed class ParameterMetadata
     /// </summary>
     internal string DebuggerDisplay => ParameterMetadataDebuggerDisplayFormatter.Format(this);
 }
-
-

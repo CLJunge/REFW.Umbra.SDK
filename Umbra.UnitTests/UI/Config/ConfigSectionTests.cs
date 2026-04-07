@@ -1341,6 +1341,3 @@ public sealed class ConfigSectionTests
         }
     }
 }
-
-
-

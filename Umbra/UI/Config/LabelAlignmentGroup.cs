@@ -92,5 +92,3 @@ internal sealed class LabelAlignmentGroup
         return displayString;
     }
 }
-
-

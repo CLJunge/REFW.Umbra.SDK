@@ -562,5 +562,3 @@ public sealed class LiveStateSectionTests
         Assert.AreEqual(1, TestDrawer.DisposeCallCount, "Drawer should be disposed exactly once even after multiple Dispose calls.");
     }
 }
-
-

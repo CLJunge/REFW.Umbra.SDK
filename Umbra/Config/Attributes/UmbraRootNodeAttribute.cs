@@ -23,4 +23,3 @@ public sealed class UmbraRootNodeAttribute(string? label = null, bool expandedBy
     /// <value><see langword="true"/> if the root section should start expanded; otherwise, <see langword="false"/>.</value>
     public bool ExpandedByDefault { get; } = expandedByDefault;
 }
-

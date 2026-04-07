@@ -526,4 +526,3 @@ public sealed class PluginPanelTests
         public void Dispose() => disposeCallback();
     }
 }
-
