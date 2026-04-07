@@ -23,6 +23,7 @@ public sealed class PluginHostTests
         Logger.SetLogSink(_sink);
         PluginInstanceGuard.Reset();
         LifecyclePlugin.Reset();
+        InitializeFailurePlugin.Reset();
     }
 
     /// <summary>
@@ -35,6 +36,7 @@ public sealed class PluginHostTests
         Logger.ResetLogSink();
         Logger.EnableAll();
         LifecyclePlugin.Reset();
+        InitializeFailurePlugin.Reset();
     }
 
     /// <summary>
@@ -146,6 +148,73 @@ public sealed class PluginHostTests
         Assert.AreEqual(2, LifecyclePlugin.ShutdownCount);
     }
 
+    /// <summary>
+    /// Verifies that a failed initialize path runs best-effort shutdown cleanup and releases the
+    /// mutex so the same host can load successfully later.
+    /// </summary>
+    [TestMethod]
+    public void Load_WhenInitializeThrows_CallsShutdownAndAllowsReload()
+    {
+        // Arrange
+        var host = new PluginHost<InitializeFailurePlugin>(static () => new InitializeFailurePlugin());
+
+        // Act
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => host.Load());
+        InitializeFailurePlugin.ThrowOnInitialize = false;
+        var reloaded = host.Load();
+        host.Unload();
+
+        // Assert
+        Assert.AreEqual("initialize failed", exception.Message);
+        Assert.IsTrue(reloaded);
+        Assert.AreEqual(2, InitializeFailurePlugin.InitializeCount);
+        Assert.AreEqual(2, InitializeFailurePlugin.ShutdownCount);
+    }
+
+    /// <summary>
+    /// Verifies that initialize cleanup failure does not replace the original initialize exception.
+    /// </summary>
+    [TestMethod]
+    public void Load_WhenInitializeAndCleanupThrow_RethrowsInitializeException()
+    {
+        // Arrange
+        InitializeFailurePlugin.ThrowOnShutdown = true;
+        var host = new PluginHost<InitializeFailurePlugin>(static () => new InitializeFailurePlugin());
+
+        // Act
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => host.Load());
+
+        // Assert
+        Assert.AreEqual("initialize failed", exception.Message);
+        Assert.AreEqual(1, InitializeFailurePlugin.InitializeCount);
+        Assert.AreEqual(1, InitializeFailurePlugin.ShutdownCount);
+        Assert.HasCount(1, _sink.ErrorMessages);
+        Assert.Contains("Shutdown() threw while cleaning up a failed Initialize() call", _sink.ErrorMessages[0]);
+        Assert.Contains("Original Initialize() exception: InvalidOperationException: initialize failed", _sink.ErrorMessages[0]);
+    }
+
+    /// <summary>
+    /// Verifies that repeated failed loads do not publish a live instance, so forwarded callbacks
+    /// remain safe no-ops.
+    /// </summary>
+    [TestMethod]
+    public void Load_WhenInitializeThrows_ForwardedCallbacksRemainNoOps()
+    {
+        // Arrange
+        var host = new PluginHost<InitializeFailurePlugin>(static () => new InitializeFailurePlugin());
+
+        // Act
+        Assert.ThrowsExactly<InvalidOperationException>(() => host.Load());
+        host.OnPreUpdateBehavior();
+        host.OnPreImGuiDrawUI();
+        host.OnPreImGuiRenderer();
+
+        // Assert
+        Assert.AreEqual(0, InitializeFailurePlugin.PreUpdateCount);
+        Assert.AreEqual(0, InitializeFailurePlugin.PreDrawCount);
+        Assert.AreEqual(0, InitializeFailurePlugin.PreRendererCount);
+    }
+
     private sealed class LifecyclePlugin : IUmbraPlugin
     {
         private static readonly PluginLogger _log = new("LifecyclePlugin");
@@ -182,6 +251,50 @@ public sealed class PluginHostTests
             PreUpdateCount = 0;
             PreDrawCount = 0;
             PreRendererCount = 0;
+        }
+    }
+
+    private sealed class InitializeFailurePlugin : IUmbraPlugin
+    {
+        internal static int InitializeCount;
+        internal static int ShutdownCount;
+        internal static int PreUpdateCount;
+        internal static int PreDrawCount;
+        internal static int PreRendererCount;
+        internal static bool ThrowOnInitialize = true;
+        internal static bool ThrowOnShutdown;
+
+        public void Initialize()
+        {
+            InitializeCount++;
+
+            if (ThrowOnInitialize)
+                throw new InvalidOperationException("initialize failed");
+        }
+
+        public void Shutdown()
+        {
+            ShutdownCount++;
+
+            if (ThrowOnShutdown)
+                throw new InvalidOperationException("shutdown failed");
+        }
+
+        public void OnPreUpdateBehavior() => PreUpdateCount++;
+
+        public void OnPreImGuiDrawUI() => PreDrawCount++;
+
+        public void OnPreImGuiRenderer() => PreRendererCount++;
+
+        internal static void Reset()
+        {
+            InitializeCount = 0;
+            ShutdownCount = 0;
+            PreUpdateCount = 0;
+            PreDrawCount = 0;
+            PreRendererCount = 0;
+            ThrowOnInitialize = true;
+            ThrowOnShutdown = false;
         }
     }
 }

@@ -54,21 +54,10 @@ public sealed class SamplePlugin : UmbraPlugin
     {
         Log.Info("Loading...");
 
-        var configPath = GetConfigPath();
-        Log.Info($"Config path: {configPath}");
-
-        _store = new ConfigStore<PluginConfig>(configPath);
-        _config = _store.Load();
-        _config.LogTestMessage.Value = () => Log.Info("Sample Plugin is active!");
-
-        _saveController = new DeferredSaveController<PluginConfig>(_store);
-        _panel = CreateRuntimePanel(_config, _store);
+        (_config, _store) = LoadConfig();
+        InitializeRuntimePanel(_config, _store);
 #if BENCHMARK
-        _benchmarkPanel = CreateBenchmarkPanel(_config);
-        _panelBenchmark = new PluginPanelBenchmark(
-            "Sample Plugin Panel Benchmark",
-            _benchmarkPanel,
-            GetBenchmarkDirectoryPath());
+        InitializeBenchmarking(_config);
 #endif
 
         Log.Info("Loaded successfully.");
@@ -140,6 +129,22 @@ public sealed class SamplePlugin : UmbraPlugin
         => Path.Combine(GetConfigDirectoryPath(), "config.json");
 
     /// <summary>
+    /// Creates and loads the sample plugin config store, then binds runtime-backed sample actions.
+    /// </summary>
+    /// <returns>The loaded config instance and its owning config store.</returns>
+    private (PluginConfig Config, ConfigStore<PluginConfig> Store) LoadConfig()
+    {
+        var configPath = GetConfigPath();
+        Log.Info($"Config path: {configPath}");
+
+        var store = new ConfigStore<PluginConfig>(configPath);
+        var config = store.Load();
+        PluginConfigActionBinder.Bind(config, store, Log);
+
+        return (config, store);
+    }
+
+    /// <summary>
     /// Resolves the absolute path to the directory where panel benchmark artifacts are written.
     /// </summary>
     /// <returns>
@@ -177,6 +182,17 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 
     /// <summary>
+    /// Creates the runtime panel and deferred-save controller for the loaded sample config.
+    /// </summary>
+    /// <param name="config">The loaded config instance.</param>
+    /// <param name="store">The loaded config store.</param>
+    private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
+    {
+        _saveController = new DeferredSaveController<PluginConfig>(store);
+        _panel = CreateRuntimePanel(config, store);
+    }
+
+    /// <summary>
     /// Builds the plugin's normal runtime panel.
     /// </summary>
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
@@ -204,6 +220,15 @@ public sealed class SamplePlugin : UmbraPlugin
     /// <param name="config">The loaded config instance shared by the benchmark section.</param>
     /// <returns>The benchmark panel.</returns>
 #if BENCHMARK
+    private void InitializeBenchmarking(PluginConfig config)
+    {
+        _benchmarkPanel = CreateBenchmarkPanel(config);
+        _panelBenchmark = new PluginPanelBenchmark(
+            "Sample Plugin Panel Benchmark",
+            _benchmarkPanel,
+            GetBenchmarkDirectoryPath());
+    }
+
     private static PluginPanel CreateBenchmarkPanel(PluginConfig config)
         => new PluginPanel(_benchmarkPanelScope)
             .Add(new ConfigSection<PluginConfig>(config, _benchmarkSectionScope));

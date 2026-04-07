@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using Umbra.Config.Attributes;
-using Umbra.Logging;
 
 namespace Umbra.Config;
 
@@ -8,7 +6,12 @@ namespace Umbra.Config;
 /// Owns the public lifecycle and registered parameter set of a typed config store.
 /// </summary>
 /// <remarks>
-/// Persistence orchestration is delegated to <see cref="ConfigStorePersistenceCoordinator{TConfig}"/>, and listener bookkeeping is delegated to <see cref="ConfigStoreListenerRegistry"/>. This type remains responsible for public lifecycle guards, the shared registered parameter map, and parameter-level operations over that map.
+/// Persistence orchestration is delegated to <see cref="ConfigStorePersistenceCoordinator{TConfig}"/>,
+/// transfer orchestration is delegated to <see cref="ConfigStoreTransferCoordinator{TConfig}"/>,
+/// registered-parameter operations are delegated to
+/// <see cref="ConfigStoreRegisteredParameterSet{TConfig}"/>, and listener bookkeeping is
+/// delegated to <see cref="ConfigStoreListenerRegistry"/>. This type remains responsible for
+/// public lifecycle guards and composition of those collaborators.
 /// </remarks>
 /// <typeparam name="TConfig">
 /// The configuration class type. Must have a public parameterless constructor.
@@ -20,10 +23,12 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     private readonly Dictionary<string, IParameter> _parameters = [];
     private readonly ConfigStoreListenerRegistry _listenerRegistry = new();
     private readonly ConfigStorePersistenceCoordinator<TConfig> _persistenceCoordinator;
+    private readonly ConfigStoreTransferCoordinator<TConfig> _transferCoordinator;
+    private readonly ConfigStoreRegisteredParameterSet<TConfig> _registeredParameters;
     private bool _loaded;
     private bool _disposed;
 
-    IReadOnlyDictionary<string, IParameter> IConfigStoreCopyTarget<TConfig>.Parameters => _parameters;
+    IReadOnlyDictionary<string, IParameter> IConfigStoreCopyTarget<TConfig>.Parameters => _registeredParameters.Parameters;
 
     /// <summary>
     /// Initializes a new instance of <see cref="ConfigStore{TConfig}"/> with the specified file path.
@@ -40,6 +45,8 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
             throw new ArgumentException("File path cannot be null, empty, or whitespace.", nameof(filePath));
 
         _persistenceCoordinator = new ConfigStorePersistenceCoordinator<TConfig>(filePath, _parameters);
+        _transferCoordinator = new ConfigStoreTransferCoordinator<TConfig>(_parameters);
+        _registeredParameters = new ConfigStoreRegisteredParameterSet<TConfig>(_parameters);
     }
 
     /// <summary>
@@ -95,7 +102,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
 
-        ConfigExchangePersistence.Export(filePath, _parameters, GetSchemaId(), GetSchemaVersion());
+        _transferCoordinator.Export(filePath);
     }
 
     /// <summary>
@@ -113,14 +120,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
 
-        options ??= ConfigImportOptions.Default;
-        var report = ConfigExchangePersistence.Import(filePath, _parameters, GetSchemaId(), GetSchemaVersion());
-        if (!report.Success || !options.SaveAfterImport || report.AppliedCount == 0)
-            return report;
-
-        Save();
-        report.Saved = true;
-        return report;
+        return _transferCoordinator.Import(filePath, options ?? ConfigImportOptions.Default, Save);
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
                 $"ConfigStore<{typeof(TConfig).Name}>.Load() must only be called once per instance. " +
                 "Create a new ConfigStore to load a fresh configuration.");
 
-        var instance = _persistenceCoordinator.Load(CreateRegisteredDefaults);
+        var instance = _persistenceCoordinator.Load(_registeredParameters.CreateRegisteredDefaults);
         _loaded = true;
         return instance;
     }
@@ -171,30 +171,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
-        ArgumentNullException.ThrowIfNull(target);
-        ObjectDisposedException.ThrowIf(target.IsDisposed, target);
-        if (!target.IsLoaded)
-        {
-            throw new InvalidOperationException(
-                $"ConfigStore<{typeof(TConfig).Name}>.CopyValuesTo() requires a target store that has already completed Load().");
-        }
-
-        if (target is not IConfigStoreCopyTarget<TConfig> copyTarget)
-        {
-            throw new InvalidOperationException(
-                $"ConfigStore<{typeof(TConfig).Name}>.CopyValuesTo() requires a target store implementation that supports Umbra parameter-map copy operations.");
-        }
-
-        foreach (var (key, param) in _parameters)
-        {
-            if (!copyTarget.Parameters.TryGetValue(key, out var dest))
-                continue;
-
-            if (setWithoutNotifying)
-                dest.SetValueWithoutNotify(param.GetValue());
-            else
-                dest.SetValue(param.GetValue());
-        }
+        _registeredParameters.CopyValuesTo(target, setWithoutNotifying);
     }
 
     /// <summary>
@@ -377,17 +354,7 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowIfNotLoaded();
-        var count = 0;
-        foreach (var parameter in _parameters.Values)
-        {
-            if (typeof(Delegate).IsAssignableFrom(parameter.ValueType))
-                continue;
-
-            parameter.Reset();
-            count++;
-        }
-
-        Logger.Info($"ConfigStore<{typeof(TConfig).Name}>: reset {count} parameter(s) to defaults.");
+        _registeredParameters.ResetAll();
     }
 
     /// <summary>
@@ -421,31 +388,4 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
             $"ConfigStore<{typeof(TConfig).Name}> requires Load() to complete successfully before this operation can be used.");
     }
 
-    /// <summary>
-    /// Creates a fresh <typeparamref name="TConfig"/> instance and repopulates the shared parameter map from that instance's declared defaults.
-    /// </summary>
-    /// <returns>A newly created config instance registered into this store.</returns>
-    /// <remarks>
-    /// This method clears the existing shared parameter map before re-registering the newly created instance.
-    /// </remarks>
-    private TConfig CreateRegisteredDefaults()
-    {
-        var instance = new TConfig();
-        _parameters.Clear();
-
-        var discovered = ConfigRegistrar.Register(instance);
-        foreach (var (key, param) in discovered)
-            _parameters[key] = param;
-
-        return instance;
-    }
-
-    private static string GetSchemaId()
-        => typeof(TConfig).FullName ?? typeof(TConfig).Name;
-
-    private static int GetSchemaVersion()
-        => typeof(TConfig).GetCustomAttributes(typeof(UmbraConfigVersionAttribute), inherit: true)
-            is [UmbraConfigVersionAttribute attribute, ..]
-                ? attribute.Version
-                : 1;
 }

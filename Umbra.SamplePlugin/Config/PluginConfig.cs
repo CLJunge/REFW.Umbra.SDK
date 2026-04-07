@@ -36,6 +36,8 @@ public record PluginConfig
 
     /// <summary>
     /// Resets the entire sample configuration tree to its default values.
+    /// The sample plugin entry point replaces the default no-op delegate with the live store-level
+    /// reset action after loading the persisted config instance.
     /// </summary>
     [UmbraParameter]
     [UmbraDisplayName("Reset All Samples")]
@@ -43,7 +45,7 @@ public record PluginConfig
     [UmbraButtonStyle(ButtonStyle.Danger)]
     [UmbraControlWidth(-1f)]
     [UmbraParameterOrder(1)]
-    public Parameter<Action> ResetAllSamples { get; init; }
+    public Parameter<Action> ResetAllSamples { get; init; } = new(static () => { });
 
     /// <summary>
     /// Gets or sets the general sample config group, including the enable toggle and hotkey drawers.
@@ -126,89 +128,6 @@ public record PluginConfig
     [UmbraPrefix("nestedTypeTests")]
     [UmbraCollapseAsTree]
     public NestedTypeTests NestedTypes { get; set; } = new();
-
-    /// <summary>
-    /// Initializes a new <see cref="PluginConfig"/> and wires the root-level sample actions.
-    /// </summary>
-    public PluginConfig()
-    {
-        ResetAllSamples = new(() =>
-        {
-            General.IsEnabled.Reset();
-            General.ToggleHotkey.Reset();
-            General.SwitchViewHotkey.Reset();
-            General.ShowVerboseLogs.Reset();
-
-            Booleans.EnableOverlay.Reset();
-            Booleans.EnableFilmGrain.Reset();
-            Booleans.UseExperimentalPipeline.Reset();
-            Booleans.RequireRestart.Reset();
-
-            Integers.Sliders.MasterVolume.Reset();
-            Integers.Sliders.RetryCount.Reset();
-            Integers.Sliders.PaddingPixels.Reset();
-            Integers.Drags.HorizontalOffset.Reset();
-            Integers.Drags.VerticalOffset.Reset();
-            Integers.Drags.PriorityBias.Reset();
-
-            Floats.Sliders.Opacity.Reset();
-            Floats.Sliders.Gamma.Reset();
-            Floats.Sliders.Exposure.Reset();
-            Floats.Drags.MoveSpeed.Reset();
-            Floats.Drags.BloomStrength.Reset();
-            Floats.Drags.CameraLag.Reset();
-
-            Doubles.Sliders.PrecisionScale.Reset();
-            Doubles.Sliders.ZoomFactor.Reset();
-            Doubles.Drags.WorldOffset.Reset();
-            Doubles.Drags.CalibrationBias.Reset();
-
-            Strings.SingleLine.ProfileName.Reset();
-            Strings.SingleLine.ExportDirectory.Reset();
-            Strings.SingleLine.SearchFilter.Reset();
-            Strings.Multiline.Notes.Reset();
-            Strings.Multiline.Changelog.Reset();
-
-            Enums.Quality.Reset();
-            Enums.Theme.Reset();
-            Enums.Channel.Reset();
-            Enums.ShowPreviewTheme.Reset();
-            Enums.OptionalTheme.Reset();
-            Enums.PreviewTheme.Reset();
-
-            CustomDrawers.VisualMeter.Reset();
-            CustomDrawers.AccentButtonClicks.Reset();
-            CustomDrawers.PrimaryNestedDrawer.Value1.Reset();
-            CustomDrawers.PrimaryNestedDrawer.Value2.Reset();
-            CustomDrawers.PrimaryNestedDrawer.Value3.Reset();
-            CustomDrawers.PrimaryNestedDrawer.Value4.Reset();
-            CustomDrawers.SecondaryNestedDrawer.Value1.Reset();
-            CustomDrawers.SecondaryNestedDrawer.Value2.Reset();
-            CustomDrawers.SecondaryNestedDrawer.Value3.Reset();
-            CustomDrawers.SecondaryNestedDrawer.Value4.Reset();
-
-            NestedTypes.Graphics.Enabled.Reset();
-            NestedTypes.Graphics.ShowAdvanced.Reset();
-            NestedTypes.Graphics.Intensity.Reset();
-            NestedTypes.Graphics.Advanced.Threshold.Reset();
-            NestedTypes.Graphics.Advanced.Bias.Reset();
-            NestedTypes.Graphics.Advanced.Notes.Reset();
-            NestedTypes.Audio.Enabled.Reset();
-            NestedTypes.Audio.ShowAdvanced.Reset();
-            NestedTypes.Audio.Intensity.Reset();
-            NestedTypes.Audio.Advanced.Threshold.Reset();
-            NestedTypes.Audio.Advanced.Bias.Reset();
-            NestedTypes.Audio.Advanced.Notes.Reset();
-            NestedTypes.TypeLevelFallback.SampleValue.Reset();
-            NestedTypes.TypeLevelFallback.Notes.Reset();
-            NestedTypes.PropertyOverride.SampleValue.Reset();
-            NestedTypes.PropertyOverride.Notes.Reset();
-            NestedTypes.IndentedLayout.PrimaryScale.Reset();
-            NestedTypes.IndentedLayout.SecondaryScale.Reset();
-            NestedTypes.IndentedLayout.LayoutNotes.Reset();
-
-        });
-    }
 
     /// <summary>
     /// Sample quality levels used by the enum combo-box demos.
