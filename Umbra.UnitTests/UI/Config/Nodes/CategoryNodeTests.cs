@@ -56,7 +56,7 @@ public sealed class CategoryNodeTests
         // Assert
         Assert.IsEmpty(renderer.SeparatorLabels);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Test Category", false, false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Test Category", false, false, false), renderer.TreeNodes[0]);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(0, childDrawCount);
     }
@@ -110,7 +110,7 @@ public sealed class CategoryNodeTests
         Assert.HasCount(1, renderer.Indents);
         Assert.HasCount(1, renderer.Unindents);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Test Category", true, false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Test Category", true, true, false), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
         Assert.AreEqual(1, childDrawCount);
     }
@@ -247,7 +247,37 @@ public sealed class CategoryNodeTests
 
         // Assert
         Assert.IsTrue(visible);
-        Assert.AreEqual(("Test Category", false, true), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Test Category", false, false, true), renderer.TreeNodes[0]);
+    }
+
+    /// <summary>
+    /// Tests that clearing an active search restores the category tree node to its remembered pre-search state.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenQueryClears_RestoresRememberedTreeState()
+    {
+        // Arrange
+        var renderer = new TestCategoryNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(false);
+        renderer.TreeNodeResults.Enqueue(true);
+        renderer.TreeNodeResults.Enqueue(false);
+        var collapseAttr = new UmbraCollapseAsTreeAttribute(defaultOpen: true);
+        var node = new CategoryNode("Test Category", branchId: "category:test", collapseAttr, indentAttr: null, renderer);
+        node.Children.Add(new SearchableCallbackNode(visible: true));
+        var renderState = CreateRenderState("category:test");
+
+        // Act
+        node.Draw();
+        _ = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+        _ = ((IConfigSearchNode)node).ApplySearch(null);
+        node.Draw();
+
+        // Assert
+        Assert.HasCount(3, renderer.TreeNodes);
+        Assert.AreEqual(("Test Category", true, true, false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Test Category", true, false, true), renderer.TreeNodes[1]);
+        Assert.AreEqual(("Test Category", true, false, false), renderer.TreeNodes[2]);
     }
 
     private static ConfigSearchRenderState CreateRenderState(params string[] forcedOpenBranchIds)

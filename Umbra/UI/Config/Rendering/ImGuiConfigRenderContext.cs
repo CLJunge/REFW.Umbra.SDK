@@ -101,10 +101,12 @@ internal sealed class ImGuiConfigRenderContext :
     public void SeparatorText(string label) => ImGui.SeparatorText(label);
 
     /// <inheritdoc/>
-    public bool TreeNode(string label, bool defaultOpen, bool forceOpen = false)
+    public bool TreeNode(string label, bool defaultOpen, bool? openState = null, bool forceOpen = false)
     {
         if (forceOpen)
             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
+        else if (openState.HasValue)
+            ImGui.SetNextItemOpen(openState.Value, ImGuiCond.Always);
 
         var flags = defaultOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
         return ImGui.TreeNodeEx(label, flags);
