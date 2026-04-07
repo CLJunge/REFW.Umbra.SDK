@@ -207,7 +207,9 @@ public sealed class SamplePlugin : UmbraPlugin
                 new ConfigDrawerOptions
                 {
                     Search = new Umbra.UI.Config.Search.ConfigSearchOptions(),
-                    Transfer = new ConfigTransferOptions { Enabled = true }
+                    Transfer = new ConfigTransferOptions { Enabled = true },
+                    Undo = new ConfigUndoOptions(),
+                    Presets = new ConfigPresetOptions()
                 },
                 _runtimeSectionScope));
 
