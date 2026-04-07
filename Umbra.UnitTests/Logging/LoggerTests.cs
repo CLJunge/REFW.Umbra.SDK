@@ -3498,6 +3498,8 @@ public sealed class LoggerTests
     /// </summary>
     private sealed class ThrowingLogSink : ILogSink
     {
+        public void Debug(string message) => throw new InvalidOperationException("sink failed");
+
         public void Info(string message) => throw new InvalidOperationException("sink failed");
 
         public void Warning(string message) => throw new InvalidOperationException("sink failed");

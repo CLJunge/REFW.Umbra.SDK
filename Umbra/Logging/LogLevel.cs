@@ -9,6 +9,11 @@ namespace Umbra.Logging;
 public enum LogLevel
 {
     /// <summary>
+    /// Emits all messages including verbose diagnostic output intended for development and troubleshooting.
+    /// </summary>
+    Debug = -1,
+
+    /// <summary>
     /// Emits informational, warning, and error messages.
     /// </summary>
     Info = 0,

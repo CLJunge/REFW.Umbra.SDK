@@ -14,6 +14,12 @@ internal sealed class REFrameworkLogSink : ILogSink
     public void Info(string message) => API.LogInfo(message);
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// REFramework does not expose a dedicated debug log level, so debug messages are forwarded to the informational channel.
+    /// </remarks>
+    public void Debug(string message) => API.LogInfo(message);
+
+    /// <inheritdoc/>
     public void Warning(string message) => API.LogWarning(message);
 
     /// <inheritdoc/>

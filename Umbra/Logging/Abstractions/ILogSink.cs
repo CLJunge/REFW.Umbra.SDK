@@ -15,6 +15,12 @@ internal interface ILogSink
     void Info(string message);
 
     /// <summary>
+    /// Writes a debug-level message.
+    /// </summary>
+    /// <param name="message">The fully formatted debug message to emit.</param>
+    void Debug(string message);
+
+    /// <summary>
     /// Writes a warning message.
     /// </summary>
     /// <param name="message">The fully formatted warning message to emit.</param>
