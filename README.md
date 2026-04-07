@@ -44,29 +44,12 @@ Umbra
 
 ## 🚀 Getting started
 
-### Prerequisites
-
-- [.NET 10 SDK](https://dotnet.microsoft.com/)
-- Windows x64
-- An RE Engine game with [REFramework](https://github.com/praydog/REFramework) installed
-
 ### Setup
 
 ```powershell
 # Download and stage REFramework dependencies
 .\scripts\setup_reframework_deps.ps1
 ```
-
-### Build & test
-
-```bash
-dotnet build REFW.Umbra.slnx -c Release
-dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj -c Release
-```
-
-### 🔧 Local deployment hooks
-
-`Directory.Build.targets` provides optional Visual Studio hooks for developer workflows (`kill_re9.bat`, `deploy_reframework_deps.bat`, `deploy_reframework_plugin.bat`). These are gated by file existence and skipped on CI.
 
 ## 📝 Quick example
 
@@ -187,7 +170,3 @@ public static class MyPluginHost
 </details>
 
 For a more complete reference, see `Umbra.SamplePlugin` which demonstrates nested config groups, custom drawers, validation, import/export, benchmarking, robust shutdown, and game-gated loading.
-
-## 🎮 Supported games
-
-RE2 · RE3 · RE4 · RE7 · RE8 · RE9 · DMC5 · SF6 · MH Rise · MH Wilds · MH Stories 3 · DD2 · Pragmata · Star Force
