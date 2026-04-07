@@ -41,4 +41,24 @@ public abstract class UmbraPlugin : IUmbraPlugin
 
     /// <inheritdoc/>
     public virtual void OnPreImGuiRenderer() { }
+
+    /// <summary>
+    /// Executes a shutdown step by invoking the specified action and logs any exceptions that occur.
+    /// </summary>
+    /// <remarks>This method is intended to be called during shutdown sequences to ensure that exceptions in
+    /// individual steps are logged but do not interrupt the overall shutdown process. Derived classes can override this
+    /// method to customize shutdown step handling.</remarks>
+    /// <param name="stepName">The name of the shutdown step. Used for logging purposes to identify the step if an exception occurs.</param>
+    /// <param name="action">The action to execute as part of the shutdown step.</param>
+    protected virtual void RunShutdownStep(string stepName, Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            Log.Exception(ex, "Shutdown step failed: {0}.", stepName);
+        }
+    }
 }

@@ -309,16 +309,4 @@ public sealed class SamplePlugin : UmbraPlugin
         _store = null;
         store?.Dispose();
     }
-
-    private void RunShutdownStep(string stepName, Action action)
-    {
-        try
-        {
-            action();
-        }
-        catch (Exception ex)
-        {
-            Log.Exception(ex, "Shutdown step failed: {0}.", stepName);
-        }
-    }
 }
