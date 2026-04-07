@@ -31,6 +31,16 @@ public sealed class ConfigPresetStore<TConfig>
     private readonly ConfigToastOptions? _toast;
 
     /// <summary>
+    /// Gets the directory where preset files are stored.
+    /// </summary>
+    public string PresetDirectory => _presetDirectory;
+
+    /// <summary>
+    /// Gets the file-name prefix prepended to preset names when generating preset file names.
+    /// </summary>
+    public string PresetFilePrefix => _presetFilePrefix;
+
+    /// <summary>
     /// Initializes a new preset store that operates on the specified loaded config store.
     /// </summary>
     /// <param name="store">
@@ -275,6 +285,132 @@ public sealed class ConfigPresetStore<TConfig>
                 ToastQueue.Push($"Failed to delete preset: {name}", ToastLevel.Error, _toast.Duration);
             return false;
         }
+    }
+
+    /// <summary>
+    /// Exports a named preset to an external file path.
+    /// </summary>
+    /// <param name="name">The preset name to export.</param>
+    /// <param name="destinationFilePath">The destination file path.</param>
+    /// <returns>
+    /// <see langword="true"/> if the preset was copied successfully;
+    /// <see langword="false"/> if the preset file does not exist or the copy failed.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="name"/> is <see langword="null"/>, empty, whitespace, or contains
+    /// invalid file-name characters, or <paramref name="destinationFilePath"/> is
+    /// <see langword="null"/>, empty, or whitespace.
+    /// </exception>
+    public bool ExportPreset(string name, string destinationFilePath)
+    {
+        ValidateName(name);
+        if (string.IsNullOrWhiteSpace(destinationFilePath))
+            throw new ArgumentException("Destination file path cannot be null, empty, or whitespace.", nameof(destinationFilePath));
+
+        var sourceFilePath = GetPresetFilePath(name);
+        if (!File.Exists(sourceFilePath))
+        {
+            Logger.Info($"ConfigPresetStore: cannot export preset '{name}' — source file '{sourceFilePath}' not found.");
+            if (_toast is not null)
+                ToastQueue.Push($"Preset not found: {name}", ToastLevel.Warning, _toast.Duration);
+            return false;
+        }
+
+        try
+        {
+            var destinationDirectory = Path.GetDirectoryName(destinationFilePath);
+            if (!string.IsNullOrWhiteSpace(destinationDirectory))
+                Directory.CreateDirectory(destinationDirectory);
+
+            File.Copy(sourceFilePath, destinationFilePath, overwrite: true);
+            Logger.Info($"ConfigPresetStore: exported preset '{name}' to '{destinationFilePath}'.");
+            if (_toast is not null)
+                ToastQueue.Push($"Preset exported: {name}", ToastLevel.Success, _toast.Duration);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Exception(ex, $"ConfigPresetStore: failed to export preset '{name}' to '{destinationFilePath}'.");
+            if (_toast is not null)
+                ToastQueue.Push($"Failed to export preset: {name}", ToastLevel.Error, _toast.Duration);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Imports a preset from an external file into the preset directory.
+    /// </summary>
+    /// <remarks>
+    /// The preset name is derived from the source file name by stripping the configured
+    /// file prefix (if present) and the <c>.json</c> extension. The imported file is copied
+    /// into the preset directory using the standard naming convention.
+    /// </remarks>
+    /// <param name="sourceFilePath">The path to the external preset file to import.</param>
+    /// <returns>
+    /// The derived preset name when the import succeeds; <see langword="null"/> when the
+    /// source file does not exist or the copy fails.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="sourceFilePath"/> is <see langword="null"/>, empty, or whitespace.
+    /// </exception>
+    public string? ImportPreset(string sourceFilePath)
+    {
+        if (string.IsNullOrWhiteSpace(sourceFilePath))
+            throw new ArgumentException("Source file path cannot be null, empty, or whitespace.", nameof(sourceFilePath));
+
+        if (!File.Exists(sourceFilePath))
+        {
+            Logger.Info($"ConfigPresetStore: cannot import preset — source file '{sourceFilePath}' not found.");
+            if (_toast is not null)
+                ToastQueue.Push("Preset import failed: file not found", ToastLevel.Warning, _toast.Duration);
+            return null;
+        }
+
+        var name = DerivePresetName(sourceFilePath);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            Logger.Warning($"ConfigPresetStore: cannot derive preset name from '{sourceFilePath}'.");
+            if (_toast is not null)
+                ToastQueue.Push("Preset import failed: invalid file name", ToastLevel.Error, _toast.Duration);
+            return null;
+        }
+
+        var destinationFilePath = GetPresetFilePath(name);
+        try
+        {
+            Directory.CreateDirectory(_presetDirectory);
+            File.Copy(sourceFilePath, destinationFilePath, overwrite: true);
+            Logger.Info($"ConfigPresetStore: imported preset '{name}' from '{sourceFilePath}' to '{destinationFilePath}'.");
+            if (_toast is not null)
+                ToastQueue.Push($"Preset imported: {name}", ToastLevel.Success, _toast.Duration);
+            return name;
+        }
+        catch (Exception ex)
+        {
+            Logger.Exception(ex, $"ConfigPresetStore: failed to import preset from '{sourceFilePath}' to '{destinationFilePath}'.");
+            if (_toast is not null)
+                ToastQueue.Push("Failed to import preset", ToastLevel.Error, _toast.Duration);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Derives a preset name from a source file path by stripping the configured prefix and extension.
+    /// </summary>
+    internal string DerivePresetName(string sourceFilePath)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(sourceFilePath);
+        if (string.IsNullOrWhiteSpace(fileName))
+            return string.Empty;
+
+        if (fileName.StartsWith(_presetFilePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var stripped = fileName.Substring(_presetFilePrefix.Length);
+            if (stripped.Length > 0)
+                return stripped;
+        }
+
+        return fileName;
     }
 
     private string GetPresetFilePath(string name) =>

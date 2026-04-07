@@ -1,6 +1,7 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.Config.Presets;
+using Umbra.UI.Config.Presets;
 using Umbra.UI.Config.Rendering;
 using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
@@ -23,6 +24,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private readonly string? _sectionLabel;
     private readonly bool _expandedByDefault;
     private ConfigTransferFeature? _transferFeature;
+    private ConfigPresetFeature<TConfig>? _presetFeature;
     private ConfigUndoStack<TConfig>? _undoStack;
     private ConfigPresetStore<TConfig>? _presetStore;
     private bool _disposed;
@@ -184,11 +186,13 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         bool suppressTreeNode = false)
     {
         ArgumentNullException.ThrowIfNull(store);
+        var presetStore = CreatePresetStore(store, options);
         var section = new ConfigSection<TConfig>(config, options, idScope, sectionLabel, expandedByDefault, suppressTreeNode)
         {
             _transferFeature = CreateTransferFeature(store, options),
             _undoStack = CreateUndoStack(store, options),
-            _presetStore = CreatePresetStore(store, options)
+            _presetStore = presetStore,
+            _presetFeature = CreatePresetFeature(presetStore, store, options)
         };
         return section;
     }
@@ -213,15 +217,25 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     {
         if (_disposed) return;
 
-        if (ShouldDrawTransferFeature(_transferFeature is not null, _drawer.HasActiveSearchQuery)
+        var hasActiveSearch = _drawer.HasActiveSearchQuery;
+
+        if (ShouldDrawFeatureSection(_transferFeature is not null, hasActiveSearch)
             && _transferFeature!.Placement == ConfigTransferPlacement.BeforeConfig)
             DrawTransferFeature();
 
+        if (ShouldDrawFeatureSection(_presetFeature is not null, hasActiveSearch)
+            && _presetFeature!.Placement == ConfigPresetPlacement.BeforeConfig)
+            DrawPresetFeature();
+
         _drawer.Draw();
 
-        if (ShouldDrawTransferFeature(_transferFeature is not null, _drawer.HasActiveSearchQuery)
+        if (ShouldDrawFeatureSection(_transferFeature is not null, hasActiveSearch)
             && _transferFeature!.Placement != ConfigTransferPlacement.BeforeConfig)
             DrawTransferFeature();
+
+        if (ShouldDrawFeatureSection(_presetFeature is not null, hasActiveSearch)
+            && _presetFeature!.Placement != ConfigPresetPlacement.BeforeConfig)
+            DrawPresetFeature();
     }
 
     /// <inheritdoc/>
@@ -234,6 +248,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         _disposed = true;
         _undoStack?.Dispose();
         _undoStack = null;
+        _presetFeature?.Dispose();
+        _presetFeature = null;
         _presetStore = null;
         _transferFeature?.Dispose();
         _transferFeature = null;
@@ -287,8 +303,40 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         }
     }
 
-    internal static bool ShouldDrawTransferFeature(bool hasTransferFeature, bool hasActiveSearchQuery)
-        => hasTransferFeature && !hasActiveSearchQuery;
+    internal static bool ShouldDrawFeatureSection(bool hasFeature, bool hasActiveSearchQuery)
+        => hasFeature && !hasActiveSearchQuery;
+
+    private static ConfigPresetFeature<TConfig>? CreatePresetFeature(
+        ConfigPresetStore<TConfig>? presetStore,
+        IConfigTransferStore store,
+        ConfigDrawerOptions options)
+    {
+        if (presetStore is null || options.Presets is not { } presetOptions || store is not ConfigStore<TConfig> configStore)
+            return null;
+
+        return new ConfigPresetFeature<TConfig>(presetStore, configStore.Save, presetOptions);
+    }
+
+    private void DrawPresetFeature()
+    {
+        var presetFeature = _presetFeature;
+        if (presetFeature is null)
+            return;
+
+        PluginPanelTreeNodeLabels.WarnIfInvalid($"{_sectionId}.Presets", presetFeature.SectionLabel, $"config-preset section for '{_sectionId}'");
+        var presetSectionLabel = $"{PluginPanelTreeNodeLabels.Sanitize(presetFeature.SectionLabel)}##{_sectionId}.Presets";
+        if (!_renderContext.TreeNode(presetSectionLabel, presetFeature.ExpandedByDefault))
+            return;
+
+        try
+        {
+            presetFeature.Draw();
+        }
+        finally
+        {
+            _renderContext.TreePop();
+        }
+    }
 
     private static (string? Label, bool ExpandedByDefault)? GetRootNodeMetadata(Type type)
     {

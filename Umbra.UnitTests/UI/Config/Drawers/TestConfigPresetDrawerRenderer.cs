@@ -1,0 +1,122 @@
+using System.Numerics;
+
+namespace Umbra.UI.Config.Drawers.UnitTests;
+
+/// <summary>
+/// Records <see cref="ConfigPresetDrawer"/> rendering operations in memory for unit tests.
+/// </summary>
+internal sealed class TestConfigPresetDrawerRenderer : IConfigPresetDrawerRenderer
+{
+    private int _disabledScopeDepth;
+
+    public List<string> Texts { get; } = [];
+
+    public List<string> DisabledTexts { get; } = [];
+
+    public List<(Vector4 Color, string Text)> ColoredTexts { get; } = [];
+
+    public List<string> HelpMarkers { get; } = [];
+
+    public List<string> Buttons { get; } = [];
+
+    public List<(string Label, Vector2 Size)> SizedButtons { get; } = [];
+
+    public List<(string Label, int SelectedIndex, string[] Items, int ItemCount)> Combos { get; } = [];
+
+    public List<float> Widths { get; } = [];
+
+    public List<bool> DisabledScopes { get; } = [];
+
+    public int EndDisabledCallCount { get; private set; }
+
+    public int SeparatorCount { get; private set; }
+
+    public int SameLineCount { get; private set; }
+
+    public float AvailableWidth { get; set; } = 600f;
+
+    public float ItemSpacingX { get; set; } = 8f;
+
+    public Queue<bool> ButtonResults { get; } = new();
+
+    public Queue<bool> SizedButtonResults { get; } = new();
+
+    public Queue<(bool Changed, int SelectedIndex)> ComboResults { get; } = new();
+
+    public void Text(string text) => Texts.Add(text);
+
+    public void TextDisabled(string text) => DisabledTexts.Add(text);
+
+    public void TextColored(Vector4 color, string text) => ColoredTexts.Add((color, text));
+
+    public void SameLine() => SameLineCount++;
+
+    public void DrawHelpMarker(string description) => HelpMarkers.Add(description);
+
+    public bool Button(string label)
+    {
+        Buttons.Add(label);
+        if (_disabledScopeDepth > 0)
+            return false;
+
+        if (ButtonResults.Count == 0)
+            return false;
+
+        return ButtonResults.Dequeue();
+    }
+
+    public bool Button(string label, Vector2 size)
+    {
+        SizedButtons.Add((label, size));
+        if (_disabledScopeDepth > 0)
+            return false;
+
+        if (SizedButtonResults.Count == 0)
+            return false;
+
+        return SizedButtonResults.Dequeue();
+    }
+
+    public void BeginDisabled(bool disabled)
+    {
+        DisabledScopes.Add(disabled);
+        if (disabled)
+            _disabledScopeDepth++;
+    }
+
+    public void EndDisabled()
+    {
+        if (_disabledScopeDepth > 0)
+            _disabledScopeDepth--;
+
+        EndDisabledCallCount++;
+    }
+
+    public float GetAvailableWidth() => AvailableWidth;
+
+    public float GetItemSpacingX() => ItemSpacingX;
+
+    public float GetTextWidth(string text) => text.Length * 8f;
+
+    public float GetButtonWidth(string label)
+    {
+        var hiddenIdIndex = label.IndexOf("##", StringComparison.Ordinal);
+        var visibleLabel = hiddenIdIndex >= 0 ? label[..hiddenIdIndex] : label;
+        return (visibleLabel.Length * 8f) + 16f;
+    }
+
+    public void SetNextItemWidth(float width) => Widths.Add(width);
+
+    public bool Combo(string label, ref int selectedIndex, string[] items, int itemCount)
+    {
+        Combos.Add((label, selectedIndex, items, itemCount));
+        if (ComboResults.Count == 0)
+            return false;
+
+        var next = ComboResults.Dequeue();
+        selectedIndex = next.SelectedIndex;
+        return next.Changed;
+    }
+
+    public void Separator() => SeparatorCount++;
+}

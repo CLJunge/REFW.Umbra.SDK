@@ -206,10 +206,15 @@ public sealed class SamplePlugin : UmbraPlugin
                 store,
                 new ConfigDrawerOptions
                 {
-                    Search = new Umbra.UI.Config.Search.ConfigSearchOptions(),
+                    Search = new UI.Config.Search.ConfigSearchOptions(),
                     Transfer = new ConfigTransferOptions { Enabled = true },
                     Undo = new ConfigUndoOptions(),
-                    Presets = new ConfigPresetOptions()
+                    Presets = new ConfigPresetOptions
+                    {
+                        SectionLabel = "Presets",
+                        Placement = UI.Config.Presets.ConfigPresetPlacement.AfterConfig,
+                        ExpandedByDefault = true
+                    }
                 },
                 _runtimeSectionScope));
 

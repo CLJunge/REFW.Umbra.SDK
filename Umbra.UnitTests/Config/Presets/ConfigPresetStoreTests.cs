@@ -754,4 +754,333 @@ public sealed class ConfigPresetStoreTests
             CleanupStore(store, tempPath);
         }
     }
+
+    // --- PresetDirectory ---
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.PresetDirectory"/> returns the directory derived from the config store file path.
+    /// </summary>
+    [TestMethod]
+    public void PresetDirectory_ReturnsConfigStoreDirectory()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var expected = Path.GetDirectoryName(Path.GetFullPath(tempPath));
+            Assert.AreEqual(expected, presets.PresetDirectory);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.PresetDirectory"/> returns the custom directory when configured.
+    /// </summary>
+    [TestMethod]
+    public void PresetDirectory_CustomDirectory_ReturnsCustomDirectory()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        var customDir = Path.Combine(Path.GetTempPath(), $"preset_dir_{Guid.NewGuid():N}");
+        try
+        {
+            var options = new ConfigPresetOptions { PresetDirectory = customDir };
+            var presets = new ConfigPresetStore<PresetTestConfig>(store, options);
+            Assert.AreEqual(customDir, presets.PresetDirectory);
+        }
+        finally
+        {
+            if (Directory.Exists(customDir))
+                Directory.Delete(customDir, recursive: true);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- PresetFilePrefix ---
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.PresetFilePrefix"/> returns the default prefix.
+    /// </summary>
+    [TestMethod]
+    public void PresetFilePrefix_Default_ReturnsDefaultPrefix()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            Assert.AreEqual(ConfigPresetOptions.DefaultPresetFilePrefix, presets.PresetFilePrefix);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.PresetFilePrefix"/> returns the custom prefix when configured.
+    /// </summary>
+    [TestMethod]
+    public void PresetFilePrefix_CustomPrefix_ReturnsCustomPrefix()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var options = new ConfigPresetOptions { PresetFilePrefix = "my-prefix-" };
+            var presets = new ConfigPresetStore<PresetTestConfig>(store, options);
+            Assert.AreEqual("my-prefix-", presets.PresetFilePrefix);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- ExportPreset ---
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.ExportPreset"/> copies the preset file to the destination.
+    /// </summary>
+    [TestMethod]
+    public void ExportPreset_ExistingPreset_CopiesToDestination()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        var exportPath = Path.Combine(Path.GetTempPath(), $"export_{Guid.NewGuid():N}.json");
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            config.IntValue.Value = 42;
+            presets.Save("exportme");
+
+            var result = presets.ExportPreset("exportme", exportPath);
+
+            Assert.IsTrue(result);
+            Assert.IsTrue(File.Exists(exportPath));
+        }
+        finally
+        {
+            if (File.Exists(exportPath)) File.Delete(exportPath);
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pf = Path.Combine(dir, "config-preset-exportme.json");
+            if (File.Exists(pf)) File.Delete(pf);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.ExportPreset"/> returns false when the preset does not exist.
+    /// </summary>
+    [TestMethod]
+    public void ExportPreset_NonexistentPreset_ReturnsFalse()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        var exportPath = Path.Combine(Path.GetTempPath(), $"export_{Guid.NewGuid():N}.json");
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var result = presets.ExportPreset("nonexistent", exportPath);
+
+            Assert.IsFalse(result);
+            Assert.IsFalse(File.Exists(exportPath));
+        }
+        finally
+        {
+            if (File.Exists(exportPath)) File.Delete(exportPath);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.ExportPreset"/> throws for null name.
+    /// </summary>
+    [TestMethod]
+    public void ExportPreset_NullName_ThrowsArgumentException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => presets.ExportPreset(null!, "somepath.json"));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.ExportPreset"/> throws for empty destination path.
+    /// </summary>
+    [TestMethod]
+    public void ExportPreset_EmptyDestination_ThrowsArgumentException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => presets.ExportPreset("test", ""));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- ImportPreset ---
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.ImportPreset"/> copies the source file into the preset directory and returns the derived name.
+    /// </summary>
+    [TestMethod]
+    public void ImportPreset_ValidFile_CopiesAndReturnsName()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        var sourceDir = Path.Combine(Path.GetTempPath(), $"import_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(sourceDir);
+        var sourceFile = Path.Combine(sourceDir, "my-imported-preset.json");
+        File.WriteAllText(sourceFile, "{}");
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var name = presets.ImportPreset(sourceFile);
+
+            Assert.AreEqual("my-imported-preset", name);
+
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var expected = Path.Combine(dir, "config-preset-my-imported-preset.json");
+            Assert.IsTrue(File.Exists(expected));
+
+            File.Delete(expected);
+        }
+        finally
+        {
+            if (Directory.Exists(sourceDir))
+                Directory.Delete(sourceDir, recursive: true);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.ImportPreset"/> strips the configured prefix from the source file name.
+    /// </summary>
+    [TestMethod]
+    public void ImportPreset_SourceWithPrefix_StripsPrefix()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        var sourceDir = Path.Combine(Path.GetTempPath(), $"import_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(sourceDir);
+        var sourceFile = Path.Combine(sourceDir, "config-preset-prefixed.json");
+        File.WriteAllText(sourceFile, "{}");
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var name = presets.ImportPreset(sourceFile);
+
+            Assert.AreEqual("prefixed", name);
+        }
+        finally
+        {
+            if (Directory.Exists(sourceDir))
+                Directory.Delete(sourceDir, recursive: true);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.ImportPreset"/> returns null when the source file does not exist.
+    /// </summary>
+    [TestMethod]
+    public void ImportPreset_NonexistentSource_ReturnsNull()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var name = presets.ImportPreset("nonexistent-path.json");
+
+            Assert.IsNull(name);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.ImportPreset"/> throws for empty source path.
+    /// </summary>
+    [TestMethod]
+    public void ImportPreset_EmptySource_ThrowsArgumentException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => presets.ImportPreset(""));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- DerivePresetName ---
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.DerivePresetName"/> returns the file name without extension when no prefix is present.
+    /// </summary>
+    [TestMethod]
+    public void DerivePresetName_NoPrefix_ReturnsFileName()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var name = presets.DerivePresetName("some-name.json");
+            Assert.AreEqual("some-name", name);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.DerivePresetName"/> strips the configured prefix.
+    /// </summary>
+    [TestMethod]
+    public void DerivePresetName_WithPrefix_StripsPrefix()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var name = presets.DerivePresetName("config-preset-myname.json");
+            Assert.AreEqual("myname", name);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.DerivePresetName"/> returns empty string for empty file name.
+    /// </summary>
+    [TestMethod]
+    public void DerivePresetName_EmptyFileName_ReturnsEmpty()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var name = presets.DerivePresetName(".json");
+            Assert.AreEqual(string.Empty, name);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
 }

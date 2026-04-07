@@ -1,3 +1,4 @@
+using Umbra.UI.Config.Presets;
 using Umbra.UI.Toast;
 
 namespace Umbra.Config.Presets;
@@ -18,7 +19,15 @@ public sealed class ConfigPresetOptions
     /// </summary>
     public const string DefaultPresetFilePrefix = "config-preset-";
 
+    /// <summary>
+    /// The default visible section label used for the built-in preset UI.
+    /// </summary>
+    public const string DefaultSectionLabel = "Presets";
+
     private readonly string _presetFilePrefix = DefaultPresetFilePrefix;
+    private string? _sectionLabel;
+    private bool _expandedByDefault;
+    private bool _showSeparatorBelowButtons = true;
 
     /// <summary>
     /// Gets the file-name prefix prepended to preset names.
@@ -48,4 +57,39 @@ public sealed class ConfigPresetOptions
     /// When non-<see langword="null"/>, toasts are displayed using the configured settings.
     /// </remarks>
     public ConfigToastOptions? Toast { get; init; }
+
+    /// <summary>
+    /// Gets or sets the visible section label used to wrap the built-in preset UI.
+    /// </summary>
+    /// <remarks>
+    /// When <see langword="null"/> or whitespace, Umbra uses <see cref="DefaultSectionLabel"/>.
+    /// </remarks>
+    public string? SectionLabel
+    {
+        get => _sectionLabel;
+        init => _sectionLabel = value;
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the built-in preset section starts expanded.
+    /// </summary>
+    public bool ExpandedByDefault
+    {
+        get => _expandedByDefault;
+        init => _expandedByDefault = value;
+    }
+
+    /// <summary>
+    /// Gets or sets where the built-in preset UI is rendered relative to the main config UI.
+    /// </summary>
+    public ConfigPresetPlacement Placement { get; init; } = ConfigPresetPlacement.AfterConfig;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a separator is shown below the built-in preset buttons.
+    /// </summary>
+    public bool ShowSeparatorBelowButtons
+    {
+        get => _showSeparatorBelowButtons;
+        init => _showSeparatorBelowButtons = value;
+    }
 }

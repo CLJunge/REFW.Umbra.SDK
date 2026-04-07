@@ -795,39 +795,39 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Tests that the transfer UI should be hidden while search is active.
+    /// Tests that a feature section should be hidden while search is active.
     /// </summary>
     [TestMethod]
-    public void ShouldDrawTransferFeature_HasTransferAndActiveSearch_ReturnsFalse()
+    public void ShouldDrawFeatureSection_HasFeatureAndActiveSearch_ReturnsFalse()
     {
         // Act
-        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawTransferFeature(hasTransferFeature: true, hasActiveSearchQuery: true);
+        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawFeatureSection(hasFeature: true, hasActiveSearchQuery: true);
 
         // Assert
         Assert.IsFalse(shouldDraw);
     }
 
     /// <summary>
-    /// Tests that the transfer UI should be shown when transfer exists and search is inactive.
+    /// Tests that a feature section should be shown when the feature exists and search is inactive.
     /// </summary>
     [TestMethod]
-    public void ShouldDrawTransferFeature_HasTransferAndNoActiveSearch_ReturnsTrue()
+    public void ShouldDrawFeatureSection_HasFeatureAndNoActiveSearch_ReturnsTrue()
     {
         // Act
-        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawTransferFeature(hasTransferFeature: true, hasActiveSearchQuery: false);
+        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawFeatureSection(hasFeature: true, hasActiveSearchQuery: false);
 
         // Assert
         Assert.IsTrue(shouldDraw);
     }
 
     /// <summary>
-    /// Tests that the transfer UI should remain hidden when no transfer feature exists.
+    /// Tests that a feature section should remain hidden when no feature exists.
     /// </summary>
     [TestMethod]
-    public void ShouldDrawTransferFeature_NoTransferFeature_ReturnsFalse()
+    public void ShouldDrawFeatureSection_NoFeature_ReturnsFalse()
     {
         // Act
-        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawTransferFeature(hasTransferFeature: false, hasActiveSearchQuery: false);
+        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawFeatureSection(hasFeature: false, hasActiveSearchQuery: false);
 
         // Assert
         Assert.IsFalse(shouldDraw);
