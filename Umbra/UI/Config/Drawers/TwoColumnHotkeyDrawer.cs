@@ -1,13 +1,14 @@
 using Umbra.Config;
+using Umbra.Input;
 using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
-/// Renders a two-column hotkey-capture widget for a <see cref="Parameter{T}"/> whose value type is <see cref="int"/>.
+/// Renders a two-column hotkey-capture widget for a <see cref="Parameter{T}"/> whose value type is <see cref="HotkeyBinding"/>.
 /// </summary>
 /// <remarks>
-/// The integer value represents an <see cref="Hexa.NET.ImGui.ImGuiKey"/> cast to <see cref="int"/>. The configuration-drawer pipeline renders the label in the left column before calling <see cref="Draw"/>, so this drawer renders only the key text and Change or Cancel button in the right column. Capture-mode coordination is shared with <see cref="HotkeyDrawer"/> through <see cref="HotkeyCaptureController"/> and <see cref="HotkeyCaptureState"/>.
+/// The binding value includes a primary <see cref="Hexa.NET.ImGui.ImGuiKey"/> plus Ctrl/Shift/Alt modifiers. The configuration-drawer pipeline renders the label in the left column before calling <see cref="Draw"/>, so this drawer renders only the binding text and Change or Cancel button in the right column. Capture-mode coordination is shared with <see cref="HotkeyDrawer"/> through <see cref="HotkeyCaptureController"/> and <see cref="HotkeyCaptureState"/>.
 /// </remarks>
 public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
 {
@@ -43,15 +44,15 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
     {
         if (_captureController.IsDisposed) return;
 
-        if (parameter is not Parameter<int> p)
+        if (parameter is not Parameter<HotkeyBinding> p)
         {
-            _renderer.TextDisabled("(TwoColumnHotkeyDrawer requires Parameter<int>)");
+            _renderer.TextDisabled("(TwoColumnHotkeyDrawer requires Parameter<HotkeyBinding>)");
             return;
         }
 
         _captureController.Draw(
             p,
-            _inputSource.GetKeyName(p.Value),
+            _inputSource.GetBindingDisplayName(p.Value),
             "Press any key...");
     }
 

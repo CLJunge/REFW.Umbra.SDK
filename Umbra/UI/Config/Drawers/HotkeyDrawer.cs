@@ -1,13 +1,14 @@
 using Umbra.Config;
+using Umbra.Input;
 using Umbra.UI.Config.Rendering;
 
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
-/// Renders a hotkey-capture control for a <see cref="Parameter{T}"/> whose value type is <see cref="int"/>.
+/// Renders a hotkey-capture control for a <see cref="Parameter{T}"/> whose value type is <see cref="HotkeyBinding"/>.
 /// </summary>
 /// <remarks>
-/// The integer value represents an <see cref="Hexa.NET.ImGui.ImGuiKey"/> cast to <see cref="int"/>. Capture-mode coordination is delegated to a per-drawer <see cref="HotkeyCaptureController"/>, which synchronizes with <see cref="HotkeyCaptureState"/> so only one hotkey drawer across the assembly waits for input at a time.
+/// The binding value includes a primary <see cref="Hexa.NET.ImGui.ImGuiKey"/> plus Ctrl/Shift/Alt modifiers. Capture-mode coordination is delegated to a per-drawer <see cref="HotkeyCaptureController"/>, which synchronizes with <see cref="HotkeyCaptureState"/> so only one hotkey drawer across the assembly waits for input at a time.
 /// </remarks>
 public sealed class HotkeyDrawer : IParameterDrawer
 {
@@ -43,15 +44,15 @@ public sealed class HotkeyDrawer : IParameterDrawer
     {
         if (_captureController.IsDisposed) return;
 
-        if (parameter is not Parameter<int> p)
+        if (parameter is not Parameter<HotkeyBinding> p)
         {
-            _renderer.TextDisabled($"{label}: (HotkeyDrawer requires Parameter<int>)");
+            _renderer.TextDisabled($"{label}: (HotkeyDrawer requires Parameter<HotkeyBinding>)");
             return;
         }
 
         _captureController.Draw(
             p,
-            $"{label}: {_inputSource.GetKeyName(p.Value)}",
+            $"{label}: {_inputSource.GetBindingDisplayName(p.Value)}",
             $"{label}: Press any key...");
 
         var metadata = parameter.Metadata;

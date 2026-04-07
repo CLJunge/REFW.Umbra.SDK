@@ -1,3 +1,5 @@
+using Umbra.Input;
+
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
@@ -21,4 +23,18 @@ internal interface IHotkeyInputSource
     /// <param name="key">The key value to name.</param>
     /// <returns>A human-readable key name.</returns>
     string GetKeyName(int key);
+
+    /// <summary>
+    /// Attempts to capture a full hotkey binding (key + modifiers) for the current frame.
+    /// </summary>
+    /// <param name="binding">When this method returns <see langword="true"/>, contains the captured binding.</param>
+    /// <returns><see langword="true"/> if a binding was captured; otherwise, <see langword="false"/>.</returns>
+    bool TryCaptureHotkeyBinding(out HotkeyBinding binding);
+
+    /// <summary>
+    /// Returns the human-readable display name for a hotkey binding.
+    /// </summary>
+    /// <param name="binding">The binding to describe.</param>
+    /// <returns>A display string such as <c>Ctrl+Shift+F5</c>.</returns>
+    string GetBindingDisplayName(HotkeyBinding binding);
 }

@@ -1,4 +1,5 @@
 using Umbra.Config;
+using Umbra.Input;
 
 namespace Umbra.UI.Config.Drawers;
 
@@ -35,12 +36,12 @@ internal sealed class HotkeyCaptureController : IDisposable
     internal bool IsDisposed => _disposed;
 
     /// <summary>
-    /// Renders the hotkey-capture UI for one frame and applies any captured key value.
+    /// Renders the hotkey-capture UI for one frame and applies any captured binding value.
     /// </summary>
     /// <param name="parameter">The hotkey parameter being edited.</param>
     /// <param name="currentValueText">The text shown while capture mode is inactive.</param>
     /// <param name="waitingText">The text shown while capture mode is waiting for a key press.</param>
-    internal void Draw(Parameter<int> parameter, string currentValueText, string waitingText)
+    internal void Draw(Parameter<HotkeyBinding> parameter, string currentValueText, string waitingText)
     {
         var value = parameter.Value;
         var previousValue = value;
@@ -56,7 +57,7 @@ internal sealed class HotkeyCaptureController : IDisposable
             {
                 _waiting = false;
             }
-            else if (_inputSource.TryCaptureKeyboardKey(out var captured))
+            else if (_inputSource.TryCaptureHotkeyBinding(out var captured))
             {
                 value = captured;
                 _waiting = false;

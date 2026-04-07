@@ -57,6 +57,38 @@ public static class KeyboardInput
     public static bool IsValidKey(int key) => _keyboardKeyValues.Contains(key);
 
     /// <summary>
+    /// Attempts to capture a full hotkey binding (key + modifiers) from the current ImGui frame.
+    /// </summary>
+    /// <param name="binding">When this method returns <see langword="true"/>, contains the captured binding; otherwise, <see cref="HotkeyBinding.None"/>.</param>
+    /// <returns><see langword="true"/> if a primary key was detected as pressed; otherwise, <see langword="false"/>.</returns>
+    public static bool TryCaptureHotkeyBinding(out HotkeyBinding binding)
+    {
+        if (TryCaptureKeyboardKey(out var key))
+        {
+            binding = new HotkeyBinding(key, IsCtrlHeld, IsShiftHeld, IsAltHeld);
+            return true;
+        }
+
+        binding = HotkeyBinding.None;
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether the specified hotkey binding is currently pressed (primary key pressed + all required modifiers held).
+    /// </summary>
+    /// <param name="binding">The hotkey binding to test.</param>
+    /// <returns><see langword="true"/> if the binding's key is pressed and all required modifiers are held; otherwise, <see langword="false"/>.</returns>
+    public static bool IsHotkeyPressed(HotkeyBinding binding)
+    {
+        if (binding.IsEmpty) return false;
+        if (!ImGui.IsKeyPressed((ImGuiKey)binding.Key)) return false;
+        if (binding.Ctrl && !IsCtrlHeld) return false;
+        if (binding.Shift && !IsShiftHeld) return false;
+        if (binding.Alt && !IsAltHeld) return false;
+        return true;
+    }
+
+    /// <summary>
     /// Gets a value indicating whether either Ctrl key is currently held down.
     /// </summary>
     /// <value><see langword="true"/> if <see cref="ImGuiKey.LeftCtrl"/> or <see cref="ImGuiKey.RightCtrl"/> is down; otherwise, <see langword="false"/>.</value>
