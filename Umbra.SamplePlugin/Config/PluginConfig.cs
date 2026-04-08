@@ -179,14 +179,14 @@ public record PluginConfig
         [UmbraDisplayName("Toggle Hotkey")]
         [UmbraDescription("The hotkey used to toggle the sample plugin on and off.")]
         [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
-        public Parameter<HotkeyBinding> ToggleHotkey { get; set; } = new(new HotkeyBinding(574, false, false, false));
+        public Parameter<HotkeyBinding> ToggleHotkey { get; set; } = new(new HotkeyBinding((int)UmbraKey.F3, false, false, false));
 
         /// <summary>Gets or sets the hotkey that switches between demo views.</summary>
         [UmbraParameter]
         [UmbraDisplayName("Switch View Hotkey")]
         [UmbraDescription("The hotkey used to switch between first-person and third-person demo views.")]
         [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
-        public Parameter<HotkeyBinding> SwitchViewHotkey { get; set; } = new(new HotkeyBinding(575, false, false, false));
+        public Parameter<HotkeyBinding> SwitchViewHotkey { get; set; } = new(new HotkeyBinding((int)UmbraKey.F4, false, false, false));
 
         /// <summary>Gets or sets whether the sample emits extra diagnostic logging.</summary>
         [UmbraParameter]

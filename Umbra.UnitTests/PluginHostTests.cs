@@ -72,10 +72,10 @@ public sealed class PluginHostTests
     }
 
     /// <summary>
-    /// Verifies that the host renders queued toast notifications internally during the UI pre-draw callback.
+    /// Verifies that the host renders queued toast notifications internally during the ImGui renderer callback.
     /// </summary>
     [TestMethod]
-    public void OnPreImGuiDrawUI_WhenToastIsQueued_RendersToastOverlayInternally()
+    public void OnPreImGuiRenderer_WhenToastIsQueued_RendersToastOverlayInternally()
     {
         var renderer = new TestToastRenderer();
         ToastOverlay.SetRenderer(renderer);
@@ -84,14 +84,14 @@ public sealed class PluginHostTests
         host.Load();
         ToastQueue.Push("Undo: Value");
 
-        host.OnPreImGuiDrawUI();
+        host.OnPreImGuiRenderer();
         host.Unload();
 
-        Assert.AreEqual(1, LifecyclePlugin.PreDrawCount);
+        Assert.AreEqual(1, LifecyclePlugin.PreRendererCount);
         Assert.AreEqual(1, renderer.DrawCallCount);
-        Assert.AreEqual(1, renderer.LastEntries.Count);
+        Assert.HasCount(1, renderer.LastEntries);
         Assert.AreEqual("Undo: Value", renderer.LastEntries[0].Message);
-        Assert.AreEqual(1, renderer.PreDrawCountAtRender);
+        Assert.AreEqual(1, renderer.PreRendererCountAtRender);
     }
 
     /// <summary>
@@ -347,14 +347,14 @@ public sealed class PluginHostTests
     {
         internal int DrawCallCount { get; private set; }
 
-        internal int PreDrawCountAtRender { get; private set; }
+        internal int PreRendererCountAtRender { get; private set; }
 
         internal List<ToastEntry> LastEntries { get; } = [];
 
         public void Draw(List<ToastEntry> entries)
         {
             DrawCallCount++;
-            PreDrawCountAtRender = LifecyclePlugin.PreDrawCount;
+            PreRendererCountAtRender = LifecyclePlugin.PreRendererCount;
             LastEntries.Clear();
             LastEntries.AddRange(entries);
         }

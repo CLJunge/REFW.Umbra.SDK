@@ -31,7 +31,7 @@ public class KeyboardInputTests
 
     /// <summary>
     /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>false</c>
-    /// when the key value is zero (representing <c>ImGuiKey.None</c>).
+    /// when the key value is zero (representing <c>UmbraKey.None</c>).
     /// </summary>
     [TestMethod]
     public void IsValidKey_ZeroKeyValue_ReturnsFalse()
@@ -43,7 +43,7 @@ public class KeyboardInputTests
         var result = KeyboardInput.IsValidKey(key);
 
         // Assert
-        Assert.IsFalse(result, "Expected IsValidKey to return false for key value 0 (ImGuiKey.None)");
+        Assert.IsFalse(result, "Expected IsValidKey to return false for key value 0 (UmbraKey.None)");
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public class KeyboardInputTests
 
     /// <summary>
     /// Tests that <see cref="KeyboardInput.GetKeyName"/> returns a formatted fallback string
-    /// for invalid enum values (values that do not correspond to any defined ImGuiKey member).
+    /// for invalid enum values (values that do not correspond to any defined UmbraKey member).
     /// </summary>
     /// <param name="key">The invalid key value to test.</param>
     /// <param name="expectedName">The expected formatted key name.</param>
@@ -115,7 +115,7 @@ public class KeyboardInputTests
 
     /// <summary>
     /// Tests that <see cref="KeyboardInput.GetKeyName"/> returns the canonical <c>None</c>
-    /// name for the zero value rather than the alternate zero-valued ImGui modifier alias.
+    /// name for the zero value rather than an alternate zero-valued alias.
     /// </summary>
     [TestMethod]
     public void GetKeyName_ZeroValue_ReturnsValidString()
@@ -132,14 +132,14 @@ public class KeyboardInputTests
     }
 
     /// <summary>
-    /// Tests that <see cref="KeyboardInput.GetKeyName"/> returns the enum member name for known ImGui keys.
+    /// Tests that <see cref="KeyboardInput.GetKeyName"/> returns the enum member name for known Umbra keys.
     /// </summary>
     [TestMethod]
-    [DataRow(ImGuiKey.A, "A")]
-    [DataRow(ImGuiKey.Enter, "Enter")]
-    [DataRow(ImGuiKey.LeftCtrl, "LeftCtrl")]
-    [DataRow(ImGuiKey.F12, "F12")]
-    public void GetKeyName_KnownImGuiKey_ReturnsEnumMemberName(ImGuiKey key, string expectedName)
+    [DataRow(UmbraKey.A, "A")]
+    [DataRow(UmbraKey.Enter, "Enter")]
+    [DataRow(UmbraKey.LeftCtrl, "LeftCtrl")]
+    [DataRow(UmbraKey.F12, "F12")]
+    public void GetKeyName_KnownUmbraKey_ReturnsEnumMemberName(UmbraKey key, string expectedName)
     {
         var result = KeyboardInput.GetKeyName((int)key);
 
@@ -147,33 +147,33 @@ public class KeyboardInputTests
     }
 
     /// <summary>
-    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>true</c> for real known keyboard ImGui keys.
+    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>true</c> for real known keyboard keys.
     /// </summary>
     [TestMethod]
-    [DataRow(ImGuiKey.A)]
-    [DataRow(ImGuiKey.Enter)]
-    [DataRow(ImGuiKey.LeftShift)]
-    public void IsValidKey_KnownImGuiKey_ReturnsTrue(ImGuiKey key)
+    [DataRow(UmbraKey.A)]
+    [DataRow(UmbraKey.Enter)]
+    [DataRow(UmbraKey.LeftShift)]
+    public void IsValidKey_KnownUmbraKey_ReturnsTrue(UmbraKey key)
     {
         var result = KeyboardInput.IsValidKey((int)key);
 
-        Assert.IsTrue(result, $"Expected IsValidKey to return true for known ImGui key {key}");
+        Assert.IsTrue(result, $"Expected IsValidKey to return true for known UmbraKey {key}");
     }
 
     /// <summary>
-    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>false</c> for named ImGui keys
-    /// that are not keyboard keys.
+    /// Tests that <see cref="KeyboardInput.IsValidKey(int)"/> returns <c>false</c> for values
+    /// that are not keyboard keys (out-of-range or undefined UmbraKey values).
     /// </summary>
     [TestMethod]
-    [DataRow(ImGuiKey.MouseLeft)]
-    [DataRow(ImGuiKey.MouseWheelY)]
-    [DataRow(ImGuiKey.GamepadFaceDown)]
-    [DataRow(ImGuiKey.ModCtrl)]
-    public void IsValidKey_NonKeyboardImGuiKey_ReturnsFalse(ImGuiKey key)
+    [DataRow((UmbraKey)(-1))]
+    [DataRow((UmbraKey)99999)]
+    [DataRow((UmbraKey)1)]
+    [DataRow((UmbraKey)100)]
+    public void IsValidKey_NonKeyboardValue_ReturnsFalse(UmbraKey key)
     {
         var result = KeyboardInput.IsValidKey((int)key);
 
-        Assert.IsFalse(result, $"Expected IsValidKey to return false for non-keyboard ImGui key {key}");
+        Assert.IsFalse(result, $"Expected IsValidKey to return false for non-keyboard value {key}");
     }
 
 }

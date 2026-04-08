@@ -1,4 +1,5 @@
 using REFrameworkNET;
+using REFrameworkNET.Attributes;
 using Umbra.Config;
 using Umbra.Config.Presets;
 using Umbra.Logging;
@@ -96,24 +97,42 @@ public sealed class SamplePlugin : UmbraPlugin
     public override void OnPreUpdateBehavior()
     {
 #if DEBUG
+        Logger.Info("SamplePlugin OnPreUpdateBehavior invoked.");
+
         if (!System.Diagnostics.Debugger.IsAttached
             && Input.KeyboardInput.IsCtrlHeld && Input.KeyboardInput.IsShiftHeld
             && Input.KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
-            && capturedKey == (int)Hexa.NET.ImGui.ImGuiKey.F12)
+            && capturedKey == (int)Input.UmbraKey.F12)
         {
             Log.Info("Ctrl + Shift + F12 detected, attaching debugger...");
             System.Diagnostics.Debugger.Launch();
         }
+
+        if (Input.KeyboardInput.IsCtrlHeld && Input.KeyboardInput.IsShiftHeld
+            && Input.KeyboardInput.TryCaptureKeyboardKey(out capturedKey)
+            && capturedKey == (int)Input.UmbraKey.F11)
+        {
+            Log.Info("Ctrl + Shift + F11 detected, posting test toast notifications...");
+            ToastQueue.Push("This is a test info toast.");
+            ToastQueue.Push("This is a test warning toast.", ToastLevel.Warning);
+            ToastQueue.Push("This is a test error toast.", ToastLevel.Error);
+            ToastQueue.Push("This is a test success toast.", ToastLevel.Success);
+            ToastQueue.Push("This is a test toast with a custom duration of 5 seconds.", ToastLevel.Info, TimeSpan.FromSeconds(5));
+            ToastQueue.Push("This is a test toast with a custom duration of 1 second.", ToastLevel.Info, TimeSpan.FromSeconds(1));
+        }
 #endif
     }
+
+    [Callback(typeof(REFrameworkNET.Callbacks.UpdateBehavior), CallbackType.Pre)]
+    private static void OnUpdateBehavior() => Logger.Info("SamplePlugin OnUpdateBehavior callback invoked.");
+
+    [Callback(typeof(REFrameworkNET.Callbacks.BeginRendering), CallbackType.Pre)]
+    private static void OnBeginRendering() => Logger.Info("SamplePlugin OnBeginRendering callback invoked.");
 
     /// <summary>
     /// Renders the sample plugin UI when the REFramework UI pass is active.
     /// </summary>
-    public override void OnPreImGuiDrawUI()
-    {
-        DrawUiIfActive();
-    }
+    public override void OnPreImGuiDrawUI() => DrawUiIfActive();
 
     /// <summary>
     /// Resolves the absolute path to the plugin's JSON configuration file.
@@ -183,10 +202,7 @@ public sealed class SamplePlugin : UmbraPlugin
     /// </summary>
     /// <param name="config">The loaded config instance.</param>
     /// <param name="store">The loaded config store.</param>
-    private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
-    {
-        _panel = CreateRuntimePanel(config, store);
-    }
+    private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store) => _panel = CreateRuntimePanel(config, store);
 
     /// <summary>
     /// Builds the plugin's normal runtime panel.
@@ -264,7 +280,7 @@ public sealed class SamplePlugin : UmbraPlugin
 #endif
     }
 
-    #if BENCHMARK
+#if BENCHMARK
     private void CompleteActiveBenchmarkRun()
         => _panelBenchmark?.CompleteActiveRun("PluginUnload");
 

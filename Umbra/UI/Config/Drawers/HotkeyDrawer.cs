@@ -8,7 +8,7 @@ namespace Umbra.UI.Config.Drawers;
 /// Renders a hotkey-capture control for a <see cref="Parameter{T}"/> whose value type is <see cref="HotkeyBinding"/>.
 /// </summary>
 /// <remarks>
-/// The binding value includes a primary <see cref="Hexa.NET.ImGui.ImGuiKey"/> plus Ctrl/Shift/Alt modifiers. Capture-mode coordination is delegated to a per-drawer <see cref="HotkeyCaptureController"/>, which synchronizes with <see cref="HotkeyCaptureState"/> so only one hotkey drawer across the assembly waits for input at a time.
+/// The binding value includes a primary <see cref="Umbra.Input.UmbraKey"/> plus Ctrl/Shift/Alt modifiers. Capture-mode coordination is delegated to a per-drawer <see cref="HotkeyCaptureController"/>, which synchronizes with <see cref="HotkeyCaptureState"/> so only one hotkey drawer across the assembly waits for input at a time.
 /// </remarks>
 public sealed class HotkeyDrawer : IParameterDrawer
 {

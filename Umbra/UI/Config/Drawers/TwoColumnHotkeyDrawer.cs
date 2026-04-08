@@ -8,7 +8,7 @@ namespace Umbra.UI.Config.Drawers;
 /// Renders a two-column hotkey-capture widget for a <see cref="Parameter{T}"/> whose value type is <see cref="HotkeyBinding"/>.
 /// </summary>
 /// <remarks>
-/// The binding value includes a primary <see cref="Hexa.NET.ImGui.ImGuiKey"/> plus Ctrl/Shift/Alt modifiers. The configuration-drawer pipeline renders the label in the left column before calling <see cref="Draw"/>, so this drawer renders only the binding text and Change or Cancel button in the right column. Capture-mode coordination is shared with <see cref="HotkeyDrawer"/> through <see cref="HotkeyCaptureController"/> and <see cref="HotkeyCaptureState"/>.
+/// The binding value includes a primary <see cref="Umbra.Input.UmbraKey"/> plus Ctrl/Shift/Alt modifiers. The configuration-drawer pipeline renders the label in the left column before calling <see cref="Draw"/>, so this drawer renders only the binding text and Change or Cancel button in the right column. Capture-mode coordination is shared with <see cref="HotkeyDrawer"/> through <see cref="HotkeyCaptureController"/> and <see cref="HotkeyCaptureState"/>.
 /// </remarks>
 public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
 {

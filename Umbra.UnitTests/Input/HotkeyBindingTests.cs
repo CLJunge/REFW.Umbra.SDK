@@ -12,20 +12,20 @@ public class HotkeyBindingTests
     /// Tests that <see cref="HotkeyBinding.None"/> has no key and no modifiers.
     /// </summary>
     [TestMethod]
-    public void None_HasImGuiKeyNoneAndNoModifiers()
+    public void None_HasUmbraKeyNoneAndNoModifiers()
     {
         // Arrange / Act
         var binding = HotkeyBinding.None;
 
         // Assert
-        Assert.AreEqual((int)ImGuiKey.None, binding.Key);
+        Assert.AreEqual((int)UmbraKey.None, binding.Key);
         Assert.IsFalse(binding.Ctrl);
         Assert.IsFalse(binding.Shift);
         Assert.IsFalse(binding.Alt);
     }
 
     /// <summary>
-    /// Tests that <see cref="HotkeyBinding.IsEmpty"/> returns <c>true</c> for a binding with <c>ImGuiKey.None</c>.
+    /// Tests that <see cref="HotkeyBinding.IsEmpty"/> returns <c>true</c> for a binding with <c>UmbraKey.None</c>.
     /// </summary>
     [TestMethod]
     public void IsEmpty_WhenKeyIsNone_ReturnsTrue()
@@ -44,7 +44,7 @@ public class HotkeyBindingTests
     public void IsEmpty_WhenKeyIsNotNone_ReturnsFalse()
     {
         // Arrange
-        var binding = new HotkeyBinding(574, false, false, false);
+        var binding = new HotkeyBinding((int)UmbraKey.F3, false, false, false);
 
         // Act / Assert
         Assert.IsFalse(binding.IsEmpty);
@@ -58,7 +58,7 @@ public class HotkeyBindingTests
     public void IsEmpty_WhenKeyIsNotNoneWithModifiers_ReturnsFalse()
     {
         // Arrange
-        var binding = new HotkeyBinding(574, true, true, true);
+        var binding = new HotkeyBinding((int)UmbraKey.F3, true, true, true);
 
         // Act / Assert
         Assert.IsFalse(binding.IsEmpty);
@@ -87,7 +87,7 @@ public class HotkeyBindingTests
     public void GetDisplayName_KeyOnly_ReturnsKeyName()
     {
         // Arrange
-        var key = (int)ImGuiKey.F5;
+        var key = (int)UmbraKey.F5;
         var binding = new HotkeyBinding(key, false, false, false);
 
         // Act
@@ -104,7 +104,7 @@ public class HotkeyBindingTests
     public void GetDisplayName_CtrlModifier_IncludesCtrlPrefix()
     {
         // Arrange
-        var key = (int)ImGuiKey.F5;
+        var key = (int)UmbraKey.F5;
         var binding = new HotkeyBinding(key, Ctrl: true, Shift: false, Alt: false);
 
         // Act
@@ -122,7 +122,7 @@ public class HotkeyBindingTests
     public void GetDisplayName_ShiftModifier_IncludesShiftPrefix()
     {
         // Arrange
-        var key = (int)ImGuiKey.F5;
+        var key = (int)UmbraKey.F5;
         var binding = new HotkeyBinding(key, Ctrl: false, Shift: true, Alt: false);
 
         // Act
@@ -140,7 +140,7 @@ public class HotkeyBindingTests
     public void GetDisplayName_AltModifier_IncludesAltPrefix()
     {
         // Arrange
-        var key = (int)ImGuiKey.F5;
+        var key = (int)UmbraKey.F5;
         var binding = new HotkeyBinding(key, Ctrl: false, Shift: false, Alt: true);
 
         // Act
@@ -158,7 +158,7 @@ public class HotkeyBindingTests
     public void GetDisplayName_AllModifiers_ConcatenatesCtrlShiftAltKey()
     {
         // Arrange
-        var key = (int)ImGuiKey.F5;
+        var key = (int)UmbraKey.F5;
         var binding = new HotkeyBinding(key, Ctrl: true, Shift: true, Alt: true);
 
         // Act
@@ -176,7 +176,7 @@ public class HotkeyBindingTests
     public void GetDisplayName_CtrlShiftModifiers_ConcatenatesCtrlShiftKey()
     {
         // Arrange
-        var key = (int)ImGuiKey.F5;
+        var key = (int)UmbraKey.F5;
         var binding = new HotkeyBinding(key, Ctrl: true, Shift: true, Alt: false);
 
         // Act
@@ -194,7 +194,7 @@ public class HotkeyBindingTests
     public void ToString_DelegatesToGetDisplayName()
     {
         // Arrange
-        var binding = new HotkeyBinding((int)ImGuiKey.F5, true, false, true);
+        var binding = new HotkeyBinding((int)UmbraKey.F5, true, false, true);
 
         // Act / Assert
         Assert.AreEqual(binding.GetDisplayName(), binding.ToString());
@@ -207,8 +207,8 @@ public class HotkeyBindingTests
     public void Equality_SameValues_AreEqual()
     {
         // Arrange
-        var a = new HotkeyBinding(574, true, false, true);
-        var b = new HotkeyBinding(574, true, false, true);
+        var a = new HotkeyBinding((int)UmbraKey.F3, true, false, true);
+        var b = new HotkeyBinding((int)UmbraKey.F3, true, false, true);
 
         // Act / Assert
         Assert.AreEqual(a, b);
@@ -222,8 +222,8 @@ public class HotkeyBindingTests
     public void Equality_DifferentKey_AreNotEqual()
     {
         // Arrange
-        var a = new HotkeyBinding(574, false, false, false);
-        var b = new HotkeyBinding(575, false, false, false);
+        var a = new HotkeyBinding((int)UmbraKey.F3, false, false, false);
+        var b = new HotkeyBinding((int)UmbraKey.F4, false, false, false);
 
         // Act / Assert
         Assert.AreNotEqual(a, b);
@@ -237,8 +237,8 @@ public class HotkeyBindingTests
     public void Equality_DifferentModifiers_AreNotEqual()
     {
         // Arrange
-        var a = new HotkeyBinding(574, true, false, false);
-        var b = new HotkeyBinding(574, false, true, false);
+        var a = new HotkeyBinding((int)UmbraKey.F3, true, false, false);
+        var b = new HotkeyBinding((int)UmbraKey.F3, false, true, false);
 
         // Act / Assert
         Assert.AreNotEqual(a, b);
@@ -246,13 +246,13 @@ public class HotkeyBindingTests
 
     /// <summary>
     /// Tests that <see cref="HotkeyBinding.None"/> equals a default-constructed <see cref="HotkeyBinding"/>
-    /// with <c>ImGuiKey.None</c> and all modifiers false.
+    /// with <c>UmbraKey.None</c> and all modifiers false.
     /// </summary>
     [TestMethod]
     public void None_EqualsExplicitDefaultConstruction()
     {
         // Arrange
-        var explicitNone = new HotkeyBinding((int)ImGuiKey.None, false, false, false);
+        var explicitNone = new HotkeyBinding((int)UmbraKey.None, false, false, false);
 
         // Act / Assert
         Assert.AreEqual(HotkeyBinding.None, explicitNone);

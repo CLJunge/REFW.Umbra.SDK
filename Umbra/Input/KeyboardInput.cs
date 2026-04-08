@@ -1,33 +1,80 @@
-using Hexa.NET.ImGui;
-
 namespace Umbra.Input;
 
 /// <summary>
-/// Provides ImGui-backed helpers for capturing and querying keyboard input in Umbra UI flows.
+/// Provides hardware-backed helpers for capturing and querying keyboard input in Umbra plugin flows.
 /// </summary>
 /// <remarks>
-/// This type is used by the built-in hotkey drawers to translate current-frame ImGui key state into stored hotkey values and display names. It intentionally filters out non-keyboard <see cref="ImGuiKey"/> values such as mouse, gamepad, wheel, and modifier-alias entries.
+/// <para>
+/// This type reads physical key state via Win32 <c>GetAsyncKeyState</c> through a <see cref="KeyStateTracker"/>,
+/// making it reliable regardless of ImGui frame rate, widget focus, or thread timing. Call <see cref="Update"/>
+/// once per tick before reading any key state.
+/// </para>
+/// <para>
+/// Key values exposed through the public API use <see cref="UmbraKey"/> for type-safe key identification.
+/// The internal translation between <see cref="UmbraKey"/> and Windows virtual-key codes is handled by
+/// <see cref="VirtualKeyMap"/>.
+/// </para>
 /// </remarks>
 public static class KeyboardInput
 {
-    private static readonly IReadOnlyList<ImGuiKey> _keyboardKeys = BuildKeyboardKeyList();
+    // --- VK constants for modifier queries ---
+    private const int VK_LCONTROL = 0xA2;
+    private const int VK_RCONTROL = 0xA3;
+    private const int VK_LSHIFT = 0xA0;
+    private const int VK_RSHIFT = 0xA1;
+    private const int VK_LMENU = 0xA4;
+    private const int VK_RMENU = 0xA5;
+
+    private static readonly IReadOnlyList<UmbraKey> _keyboardKeys = BuildKeyboardKeyList();
     private static readonly HashSet<int> _keyboardKeyValues = BuildKeyboardKeyValueSet();
+    private static readonly KeyStateTracker _tracker = new(new NativeKeyStateProvider(), VirtualKeyMap.GetTrackedVirtualKeys());
 
     /// <summary>
-    /// Attempts to capture the first supported keyboard key reported as pressed in the current ImGui frame.
+    /// Tracks the last <see cref="Environment.TickCount64"/> value at which <see cref="Update"/> ran,
+    /// used to deduplicate calls within the same millisecond (same frame from multiple plugin hosts).
     /// </summary>
-    /// <param name="capturedKey">When this method returns <see langword="true"/>, contains the captured <see cref="ImGuiKey"/> value cast to <see cref="int"/>; otherwise, contains <c>-1</c>.</param>
-    /// <returns><see langword="true"/> if a supported keyboard key was detected as pressed; otherwise, <see langword="false"/>.</returns>
+    private static long _lastUpdateTick;
+
+    /// <summary>
+    /// Updates the internal key state tracker by reading current hardware key state.
+    /// </summary>
     /// <remarks>
-    /// This method iterates over the filtered keyboard-only key list built from ImGui's named key range and returns the first key for which <see cref="ImGui.IsKeyPressed(Hexa.NET.ImGui.ImGuiKey,bool)"/> reports a press.
+    /// <para>
+    /// Must be called once per frame tick before any key-state queries. <c>PluginHost&lt;TPlugin&gt;</c>
+    /// calls this automatically at the start of <c>OnPreUpdateBehavior</c>.
+    /// </para>
+    /// <para>
+    /// Repeated calls within the same millisecond are deduplicated so that multiple plugin hosts
+    /// sharing the same process do not double-advance the edge tracker.
+    /// </para>
+    /// </remarks>
+    public static void Update()
+    {
+        var now = Environment.TickCount64;
+        if (now == _lastUpdateTick)
+            return;
+
+        _lastUpdateTick = now;
+        _tracker.Update();
+    }
+
+    /// <summary>
+    /// Attempts to capture the first supported keyboard key that transitioned to pressed this tick.
+    /// </summary>
+    /// <param name="capturedKey">When this method returns <see langword="true"/>, contains the captured <see cref="UmbraKey"/> value cast to <see cref="int"/>; otherwise, contains <c>-1</c>.</param>
+    /// <returns><see langword="true"/> if a supported keyboard key was detected as just pressed; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// This method queries the edge tracker for the first key-down transition this tick and maps
+    /// the Windows virtual-key code back to an <see cref="UmbraKey"/> value.
     /// </remarks>
     public static bool TryCaptureKeyboardKey(out int capturedKey)
     {
-        foreach (var key in _keyboardKeys)
+        if (_tracker.TryGetFirstPressed(out var vk))
         {
-            if (ImGui.IsKeyPressed(key))
+            var umbraKey = VirtualKeyMap.VkToUmbraKey(vk);
+            if (umbraKey != UmbraKey.None && IsValidKey((int)umbraKey))
             {
-                capturedKey = (int)key;
+                capturedKey = (int)umbraKey;
                 return true;
             }
         }
@@ -39,25 +86,25 @@ public static class KeyboardInput
     /// <summary>
     /// Returns a human-readable name for a stored hotkey value.
     /// </summary>
-    /// <param name="key">An <see cref="ImGuiKey"/> value cast to <see cref="int"/>.</param>
-    /// <returns><c>None</c> when <paramref name="key"/> equals <see cref="ImGuiKey.None"/>; otherwise, the enum member name when defined, or <c>Key(n)</c> for unknown raw values.</returns>
+    /// <param name="key">An <see cref="UmbraKey"/> value cast to <see cref="int"/>.</param>
+    /// <returns><c>None</c> when <paramref name="key"/> equals <see cref="UmbraKey.None"/>; otherwise, the enum member name when defined, or <c>Key(n)</c> for unknown raw values.</returns>
     public static string GetKeyName(int key)
     {
-        if (key == (int)ImGuiKey.None)
-            return nameof(ImGuiKey.None);
+        if (key == (int)UmbraKey.None)
+            return nameof(UmbraKey.None);
 
-        return Enum.GetName((ImGuiKey)key) ?? $"Key({key})";
+        return Enum.GetName((UmbraKey)key) ?? $"Key({key})";
     }
 
     /// <summary>
     /// Determines whether <paramref name="key"/> is one of the supported keyboard keys recognized by Umbra hotkey capture.
     /// </summary>
-    /// <param name="key">An <see cref="ImGuiKey"/> value cast to <see cref="int"/>.</param>
+    /// <param name="key">An <see cref="UmbraKey"/> value cast to <see cref="int"/>.</param>
     /// <returns><see langword="true"/> if <paramref name="key"/> is present in the filtered keyboard-key set; otherwise, <see langword="false"/>.</returns>
     public static bool IsValidKey(int key) => _keyboardKeyValues.Contains(key);
 
     /// <summary>
-    /// Attempts to capture a full hotkey binding (key + modifiers) from the current ImGui frame.
+    /// Attempts to capture a full hotkey binding (key + modifiers) from the current tick.
     /// </summary>
     /// <param name="binding">When this method returns <see langword="true"/>, contains the captured binding; otherwise, <see cref="HotkeyBinding.None"/>.</param>
     /// <returns><see langword="true"/> if a primary key was detected as pressed; otherwise, <see langword="false"/>.</returns>
@@ -74,14 +121,16 @@ public static class KeyboardInput
     }
 
     /// <summary>
-    /// Determines whether the specified hotkey binding is currently pressed (primary key pressed + all required modifiers held).
+    /// Determines whether the specified hotkey binding is currently pressed (primary key just pressed + all required modifiers held).
     /// </summary>
     /// <param name="binding">The hotkey binding to test.</param>
-    /// <returns><see langword="true"/> if the binding's key is pressed and all required modifiers are held; otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if the binding's key just transitioned to pressed and all required modifiers are held; otherwise, <see langword="false"/>.</returns>
     public static bool IsHotkeyPressed(HotkeyBinding binding)
     {
         if (binding.IsEmpty) return false;
-        if (!ImGui.IsKeyPressed((ImGuiKey)binding.Key)) return false;
+
+        var vk = VirtualKeyMap.UmbraKeyToVk((UmbraKey)binding.Key);
+        if (vk < 0 || !_tracker.JustPressed(vk)) return false;
         if (binding.Ctrl && !IsCtrlHeld) return false;
         if (binding.Shift && !IsShiftHeld) return false;
         if (binding.Alt && !IsAltHeld) return false;
@@ -89,56 +138,51 @@ public static class KeyboardInput
     }
 
     /// <summary>
+    /// Determines whether the specified <see cref="UmbraKey"/> transitioned to pressed this tick.
+    /// </summary>
+    /// <param name="key">The key to check.</param>
+    /// <returns><see langword="true"/> if the key was just pressed; otherwise, <see langword="false"/>.</returns>
+    public static bool IsKeyJustPressed(UmbraKey key)
+    {
+        var vk = VirtualKeyMap.UmbraKeyToVk(key);
+        return vk >= 0 && _tracker.JustPressed(vk);
+    }
+
+    /// <summary>
     /// Gets a value indicating whether either Ctrl key is currently held down.
     /// </summary>
-    /// <value><see langword="true"/> if <see cref="ImGuiKey.LeftCtrl"/> or <see cref="ImGuiKey.RightCtrl"/> is down; otherwise, <see langword="false"/>.</value>
-    public static bool IsCtrlHeld => ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl);
+    /// <value><see langword="true"/> if the left or right Ctrl key is physically pressed; otherwise, <see langword="false"/>.</value>
+    public static bool IsCtrlHeld => _tracker.IsDown(VK_LCONTROL) || _tracker.IsDown(VK_RCONTROL);
 
     /// <summary>
     /// Gets a value indicating whether either Shift key is currently held down.
     /// </summary>
-    /// <value><see langword="true"/> if <see cref="ImGuiKey.LeftShift"/> or <see cref="ImGuiKey.RightShift"/> is down; otherwise, <see langword="false"/>.</value>
-    public static bool IsShiftHeld => ImGui.IsKeyDown(ImGuiKey.LeftShift) || ImGui.IsKeyDown(ImGuiKey.RightShift);
+    /// <value><see langword="true"/> if the left or right Shift key is physically pressed; otherwise, <see langword="false"/>.</value>
+    public static bool IsShiftHeld => _tracker.IsDown(VK_LSHIFT) || _tracker.IsDown(VK_RSHIFT);
 
     /// <summary>
     /// Gets a value indicating whether either Alt key is currently held down.
     /// </summary>
-    /// <value><see langword="true"/> if <see cref="ImGuiKey.LeftAlt"/> or <see cref="ImGuiKey.RightAlt"/> is down; otherwise, <see langword="false"/>.</value>
-    public static bool IsAltHeld => ImGui.IsKeyDown(ImGuiKey.LeftAlt) || ImGui.IsKeyDown(ImGuiKey.RightAlt);
+    /// <value><see langword="true"/> if the left or right Alt key is physically pressed; otherwise, <see langword="false"/>.</value>
+    public static bool IsAltHeld => _tracker.IsDown(VK_LMENU) || _tracker.IsDown(VK_RMENU);
 
     /// <summary>
-    /// Builds the filtered list of keyboard-only <see cref="ImGuiKey"/> values from ImGui's named key range.
+    /// Builds the list of all <see cref="UmbraKey"/> values that represent physical keyboard keys.
     /// </summary>
-    /// <returns>A list containing only the named keys Umbra treats as physical keyboard keys.</returns>
+    /// <returns>A list containing every defined <see cref="UmbraKey"/> member except <see cref="UmbraKey.None"/>.</returns>
     /// <remarks>
-    /// Mouse buttons, gamepad inputs, joystick entries, wheel events, reserved entries, and modifier-alias names are excluded from the resulting list.
+    /// Because <see cref="UmbraKey"/> only defines keyboard-only keys, no runtime filtering of mouse,
+    /// gamepad, or modifier-alias entries is needed.
     /// </remarks>
-    private static List<ImGuiKey> BuildKeyboardKeyList()
+    private static List<UmbraKey> BuildKeyboardKeyList()
     {
-        var keys = new List<ImGuiKey>();
-        var start = (int)ImGuiKey.NamedKeyBegin;
-        var end = (int)ImGuiKey.NamedKeyEnd;
-
-        for (var i = start; i < end; i++)
+        var values = Enum.GetValues<UmbraKey>();
+        var keys = new List<UmbraKey>(values.Length);
+        foreach (var key in values)
         {
-            var key = (ImGuiKey)i;
-            var name = Enum.GetName(key);
-            if (string.IsNullOrEmpty(name)) continue;
-
-            if (name.StartsWith("mouse", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("pad", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("joy", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("button", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("wheel", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("reserved", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("mod", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            keys.Add(key);
+            if (key != UmbraKey.None)
+                keys.Add(key);
         }
-
         return keys;
     }
 
