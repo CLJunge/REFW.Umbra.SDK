@@ -4,8 +4,8 @@ namespace Umbra.UI.Toast;
 /// Static entry point for rendering all active toasts each frame.
 /// </summary>
 /// <remarks>
-/// Call <see cref="Draw"/> from the host's <c>OnPreImGuiDrawUI</c> callback. The renderer
-/// instance can be replaced via <see cref="SetRenderer"/> for testing.
+/// Call <see cref="Draw"/> from the host's <c>OnPreImGuiDrawUI</c> callback.
+/// The renderer instance can be replaced via <see cref="SetRenderer"/> for testing.
 /// </remarks>
 public static class ToastOverlay
 {
