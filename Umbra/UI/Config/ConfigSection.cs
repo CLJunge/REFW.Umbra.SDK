@@ -26,10 +26,14 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private ConfigTransferFeature? _transferFeature;
     private ConfigPresetFeature<TConfig>? _presetFeature;
     private ConfigUndoStack<TConfig>? _undoStack;
-    private IUndoShortcutInputSource? _undoInputSource;
+    private readonly IUndoShortcutInputSource? _undoInputSource;
     private ConfigPresetStore<TConfig>? _presetStore;
     private ConfigSaveController<TConfig>? _saveController;
     private bool _disposed;
+#if DEBUG
+    private readonly bool _hasSearch;
+    private readonly bool _enableDebugOverlay;
+#endif
 
     /// <summary>
     /// Gets the undo stack owned by this section, or <see langword="null"/> when undo was not
@@ -65,12 +69,21 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// When <see langword="true"/>, suppresses any tree-node metadata inferred from
     /// <see cref="UmbraRootNodeAttribute"/> on <typeparamref name="TConfig"/>.
     /// </param>
+    /// <param name="enableDebugOverlay">
+    /// When <see langword="true"/> (the default), a debug overlay is rendered at the top in <c>DEBUG</c> builds
+    /// showing which optional features are enabled or disabled. When <see langword="false"/>, the overlay is suppressed.
+    /// This parameter is ignored in <c>Release</c> builds.
+    /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
-    public ConfigSection(TConfig config, string? idScope = null,
-        string? sectionLabel = null, bool expandedByDefault = false,
-        bool suppressTreeNode = false)
-        : this(config, ConfigDrawerOptions.Default, idScope, sectionLabel, expandedByDefault, suppressTreeNode)
+    public ConfigSection(
+        TConfig config,
+        string? idScope = null,
+        string? sectionLabel = null,
+        bool expandedByDefault = false,
+        bool suppressTreeNode = false,
+        bool enableDebugOverlay = true)
+        : this(config, ConfigDrawerOptions.Default, idScope, sectionLabel, expandedByDefault, suppressTreeNode, enableDebugOverlay)
     {
     }
 
@@ -101,11 +114,21 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// When <see langword="true"/>, suppresses any tree-node metadata inferred from
     /// <see cref="UmbraRootNodeAttribute"/> on <typeparamref name="TConfig"/>.
     /// </param>
+    /// <param name="enableDebugOverlay">
+    /// When <see langword="true"/> (the default), a debug overlay is rendered at the top in <c>DEBUG</c> builds
+    /// showing which optional features are enabled or disabled. When <see langword="false"/>, the overlay is suppressed.
+    /// This parameter is ignored in <c>Release</c> builds.
+    /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
-    public ConfigSection(TConfig config, ConfigDrawerOptions options, string? idScope = null,
-        string? sectionLabel = null, bool expandedByDefault = false,
-        bool suppressTreeNode = false)
+    public ConfigSection(
+        TConfig config,
+        ConfigDrawerOptions options,
+        string? idScope = null,
+        string? sectionLabel = null,
+        bool expandedByDefault = false,
+        bool suppressTreeNode = false,
+        bool enableDebugOverlay = true)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(options);
@@ -115,6 +138,10 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         _undoInputSource = options.UndoInputSource;
         _sectionId = idScope ?? typeof(TConfig).FullName ?? typeof(TConfig).Name;
         _order = typeof(TConfig).GetDrawerAttribute<UmbraSectionOrderAttribute>()?.Order ?? int.MaxValue;
+#if DEBUG
+        _hasSearch = options.Search is not null;
+        _enableDebugOverlay = enableDebugOverlay;
+#endif
 
         if (!suppressTreeNode)
         {
@@ -162,6 +189,11 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <param name="sectionLabel">Optional label for a collapsible section wrapped around this section by the owning <see cref="PluginPanel"/>.</param>
     /// <param name="expandedByDefault">Whether the optional section starts expanded.</param>
     /// <param name="suppressTreeNode">When <see langword="true"/>, suppresses any tree-node metadata inferred from <see cref="UmbraRootNodeAttribute"/>.</param>
+    /// <param name="enableDebugOverlay">
+    /// When <see langword="true"/> (the default), a debug overlay is rendered at the top in <c>DEBUG</c> builds
+    /// showing which optional features are enabled or disabled. When <see langword="false"/>, the overlay is suppressed.
+    /// This parameter is ignored in <c>Release</c> builds.
+    /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> or <paramref name="store"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
     public static ConfigSection<TConfig> CreateWithStore(
@@ -170,8 +202,9 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         string? idScope = null,
         string? sectionLabel = null,
         bool expandedByDefault = false,
-        bool suppressTreeNode = false)
-        => CreateWithStore(config, store, ConfigDrawerOptions.Default, idScope, sectionLabel, expandedByDefault, suppressTreeNode);
+        bool suppressTreeNode = false,
+        bool enableDebugOverlay = true)
+        => CreateWithStore(config, store, ConfigDrawerOptions.Default, idScope, sectionLabel, expandedByDefault, suppressTreeNode, enableDebugOverlay);
 
     /// <summary>
     /// Creates a config section backed by the loaded config store, with automatic event-driven
@@ -200,6 +233,11 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// <param name="sectionLabel">Optional label for a collapsible section wrapped around this section by the owning <see cref="PluginPanel"/>.</param>
     /// <param name="expandedByDefault">Whether the optional section starts expanded.</param>
     /// <param name="suppressTreeNode">When <see langword="true"/>, suppresses any tree-node metadata inferred from <see cref="UmbraRootNodeAttribute"/>.</param>
+    /// <param name="enableDebugOverlay">
+    /// When <see langword="true"/> (the default), a debug overlay is rendered at the top in <c>DEBUG</c> builds
+    /// showing which optional features are enabled or disabled. When <see langword="false"/>, the overlay is suppressed.
+    /// This parameter is ignored in <c>Release</c> builds.
+    /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/>, <paramref name="store"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
     public static ConfigSection<TConfig> CreateWithStore(
@@ -209,7 +247,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         string? idScope = null,
         string? sectionLabel = null,
         bool expandedByDefault = false,
-        bool suppressTreeNode = false)
+        bool suppressTreeNode = false,
+        bool enableDebugOverlay = true)
     {
         ArgumentNullException.ThrowIfNull(store);
         var presetStore = CreatePresetStore(store, options);
@@ -234,7 +273,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
                 .WithUndoInputSource(options.UndoInputSource ?? new KeyboardUndoShortcutInputSource())
                 .WithNumericEditSink(numericSink);
 
-        var section = new ConfigSection<TConfig>(config, effectiveOptions, idScope, sectionLabel, expandedByDefault, suppressTreeNode)
+        var section = new ConfigSection<TConfig>(config, effectiveOptions, idScope, sectionLabel, expandedByDefault, suppressTreeNode, enableDebugOverlay)
         {
             _transferFeature = CreateTransferFeature(store, options),
             _undoStack = undoStack,
@@ -265,6 +304,17 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     public void Draw()
     {
         if (_disposed) return;
+
+#if DEBUG
+        if (_enableDebugOverlay)
+            ConfigSectionDebugOverlay.Draw(
+                _sectionId,
+                _hasSearch,
+                _transferFeature is not null,
+                _undoStack is not null,
+                _presetFeature is not null,
+                _saveController is not null);
+#endif
 
         TryHandleBuiltInUndo();
 
