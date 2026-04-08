@@ -26,7 +26,7 @@ internal sealed class ConfigTransferFeature : IDisposable
 {
     private readonly IConfigTransferStore _store;
     private readonly ConfigStore<ConfigTransferSidecarState> _sidecarStore;
-    private readonly DeferredSaveController<ConfigTransferSidecarState> _sidecarSaveController;
+    private readonly ConfigSaveController<ConfigTransferSidecarState> _sidecarSaveController;
     private readonly ConfigTransferDrawer _drawer;
     private readonly string? _fallbackBrowseDirectory;
     private bool _disposed;
@@ -52,7 +52,7 @@ internal sealed class ConfigTransferFeature : IDisposable
         var transferStateFilePath = ResolveSidecarFilePath(store.FilePath, options.ConfigFilePath);
         _sidecarStore = new ConfigStore<ConfigTransferSidecarState>(transferStateFilePath);
         var sidecarState = _sidecarStore.Load();
-        _sidecarSaveController = new DeferredSaveController<ConfigTransferSidecarState>(_sidecarStore);
+        _sidecarSaveController = new ConfigSaveController<ConfigTransferSidecarState>(_sidecarStore);
         ConfigFilePath = sidecarState.ConfigFilePath;
         TransferMode = sidecarState.TransferMode;
         ImportConfig = new(ImportFromPath);
@@ -85,7 +85,6 @@ internal sealed class ConfigTransferFeature : IDisposable
             return;
 
         _drawer.Draw(TransferMode, ConfigFilePath, ExecuteImportFromPath, ExecuteExportToPath, _fallbackBrowseDirectory, ShowSeparatorBelowButtons);
-        _sidecarSaveController.Tick();
     }
 
     public void Dispose()
@@ -94,9 +93,7 @@ internal sealed class ConfigTransferFeature : IDisposable
             return;
 
         _disposed = true;
-        _sidecarSaveController.Flush();
         _sidecarSaveController.Dispose();
-        _sidecarStore.Save();
         _sidecarStore.Dispose();
         _drawer.Dispose();
         GC.SuppressFinalize(this);

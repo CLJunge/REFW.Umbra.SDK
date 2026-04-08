@@ -207,7 +207,7 @@ public sealed class ConfigUndoStackTests
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store);
-            var sink = (INumericEditUndoSink)undo;
+            var sink = (INumericEditSink)undo;
 
             sink.BeginNumericEdit(config.IntValue);
             config.IntValue.Value = 20;
@@ -240,7 +240,7 @@ public sealed class ConfigUndoStackTests
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store);
-            var sink = (INumericEditUndoSink)undo;
+            var sink = (INumericEditSink)undo;
 
             sink.BeginNumericEdit(config.IntValue);
             config.IntValue.Value = 18;
@@ -269,7 +269,7 @@ public sealed class ConfigUndoStackTests
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store);
-            var sink = (INumericEditUndoSink)undo;
+            var sink = (INumericEditSink)undo;
 
             sink.BeginNumericEdit(config.IntValue);
             sink.EndNumericEdit(config.IntValue);

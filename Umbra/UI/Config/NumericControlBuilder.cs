@@ -18,15 +18,15 @@ internal static class NumericControlBuilder
     /// <summary>
     /// Builds the per-frame draw action for an <see cref="int"/> parameter.
     /// </summary>
-    internal static Action BuildInt(string label, IParameter parameter, LabelAlignmentGroup alignGroup, INumericEditUndoSink? numericEditUndoSink = null)
-        => BuildInt(label, parameter, alignGroup, _numericControlOps, numericEditUndoSink);
+    internal static Action BuildInt(string label, IParameter parameter, LabelAlignmentGroup alignGroup, INumericEditSink? numericEditSink = null)
+        => BuildInt(label, parameter, alignGroup, _numericControlOps, numericEditSink);
 
     internal static Action BuildInt(
         string label,
         IParameter parameter,
         LabelAlignmentGroup alignGroup,
         INumericControlOps numericControlOps,
-        INumericEditUndoSink? numericEditUndoSink = null,
+        INumericEditSink? numericEditSink = null,
         Action? preDraw = null,
         string? hiddenLabel = null)
     {
@@ -49,11 +49,11 @@ internal static class NumericControlBuilder
                 var activated = numericControlOps.IsItemActivated();
                 var deactivated = numericControlOps.IsItemDeactivated();
                 if (activated)
-                    numericEditUndoSink?.BeginNumericEdit(parameter);
+                    numericEditSink?.BeginNumericEdit(parameter);
                 if (changed)
                     p.Value = v;
                 if (deactivated)
-                    numericEditUndoSink?.EndNumericEdit(parameter);
+                    numericEditSink?.EndNumericEdit(parameter);
                 ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
@@ -67,11 +67,11 @@ internal static class NumericControlBuilder
             var activated = numericControlOps.IsItemActivated();
             var deactivated = numericControlOps.IsItemDeactivated();
             if (activated)
-                numericEditUndoSink?.BeginNumericEdit(parameter);
+                numericEditSink?.BeginNumericEdit(parameter);
             if (changed)
                 p.Value = v;
             if (deactivated)
-                numericEditUndoSink?.EndNumericEdit(parameter);
+                numericEditSink?.EndNumericEdit(parameter);
             ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }
@@ -79,15 +79,15 @@ internal static class NumericControlBuilder
     /// <summary>
     /// Builds the per-frame draw action for a <see cref="float"/> parameter.
     /// </summary>
-    internal static Action BuildFloat(string label, IParameter parameter, LabelAlignmentGroup alignGroup, INumericEditUndoSink? numericEditUndoSink = null)
-        => BuildFloat(label, parameter, alignGroup, _numericControlOps, numericEditUndoSink);
+    internal static Action BuildFloat(string label, IParameter parameter, LabelAlignmentGroup alignGroup, INumericEditSink? numericEditSink = null)
+        => BuildFloat(label, parameter, alignGroup, _numericControlOps, numericEditSink);
 
     internal static Action BuildFloat(
         string label,
         IParameter parameter,
         LabelAlignmentGroup alignGroup,
         INumericControlOps numericControlOps,
-        INumericEditUndoSink? numericEditUndoSink = null,
+        INumericEditSink? numericEditSink = null,
         Action? preDraw = null,
         string? hiddenLabel = null)
     {
@@ -110,11 +110,11 @@ internal static class NumericControlBuilder
                 var activated = numericControlOps.IsItemActivated();
                 var deactivated = numericControlOps.IsItemDeactivated();
                 if (activated)
-                    numericEditUndoSink?.BeginNumericEdit(parameter);
+                    numericEditSink?.BeginNumericEdit(parameter);
                 if (changed)
                     p.Value = v;
                 if (deactivated)
-                    numericEditUndoSink?.EndNumericEdit(parameter);
+                    numericEditSink?.EndNumericEdit(parameter);
                 ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
@@ -128,11 +128,11 @@ internal static class NumericControlBuilder
             var activated = numericControlOps.IsItemActivated();
             var deactivated = numericControlOps.IsItemDeactivated();
             if (activated)
-                numericEditUndoSink?.BeginNumericEdit(parameter);
+                numericEditSink?.BeginNumericEdit(parameter);
             if (changed)
                 p.Value = v;
             if (deactivated)
-                numericEditUndoSink?.EndNumericEdit(parameter);
+                numericEditSink?.EndNumericEdit(parameter);
             ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }
@@ -140,15 +140,15 @@ internal static class NumericControlBuilder
     /// <summary>
     /// Builds the per-frame draw action for a <see cref="double"/> parameter.
     /// </summary>
-    internal static Action BuildDouble(string label, IParameter parameter, LabelAlignmentGroup alignGroup, INumericEditUndoSink? numericEditUndoSink = null)
-        => BuildDouble(label, parameter, alignGroup, _numericControlOps, numericEditUndoSink);
+    internal static Action BuildDouble(string label, IParameter parameter, LabelAlignmentGroup alignGroup, INumericEditSink? numericEditSink = null)
+        => BuildDouble(label, parameter, alignGroup, _numericControlOps, numericEditSink);
 
     internal static Action BuildDouble(
         string label,
         IParameter parameter,
         LabelAlignmentGroup alignGroup,
         INumericControlOps numericControlOps,
-        INumericEditUndoSink? numericEditUndoSink = null,
+        INumericEditSink? numericEditSink = null,
         Action? preDraw = null,
         string? hiddenLabel = null)
     {
@@ -171,11 +171,11 @@ internal static class NumericControlBuilder
                 var activated = numericControlOps.IsItemActivated();
                 var deactivated = numericControlOps.IsItemDeactivated();
                 if (activated)
-                    numericEditUndoSink?.BeginNumericEdit(parameter);
+                    numericEditSink?.BeginNumericEdit(parameter);
                 if (changed)
                     p.Value = v;
                 if (deactivated)
-                    numericEditUndoSink?.EndNumericEdit(parameter);
+                    numericEditSink?.EndNumericEdit(parameter);
                 ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
@@ -189,11 +189,11 @@ internal static class NumericControlBuilder
             var activated = numericControlOps.IsItemActivated();
             var deactivated = numericControlOps.IsItemDeactivated();
             if (activated)
-                numericEditUndoSink?.BeginNumericEdit(parameter);
+                numericEditSink?.BeginNumericEdit(parameter);
             if (changed)
                 p.Value = v;
             if (deactivated)
-                numericEditUndoSink?.EndNumericEdit(parameter);
+                numericEditSink?.EndNumericEdit(parameter);
             ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }

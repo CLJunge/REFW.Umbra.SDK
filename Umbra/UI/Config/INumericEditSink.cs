@@ -3,9 +3,9 @@ using Umbra.Config;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Receives numeric edit interaction boundaries so undo-enabled config UI can group one slider or drag gesture into one undo record.
+/// Receives numeric edit interaction boundaries so config UI subsystems can react to the start and end of a slider or drag gesture.
 /// </summary>
-internal interface INumericEditUndoSink
+internal interface INumericEditSink
 {
     /// <summary>
     /// Signals that a numeric edit interaction has started for <paramref name="parameter"/>.

@@ -22,7 +22,7 @@ public sealed class ConfigDrawerOptions
         Transfer = null,
         Undo = null,
         UndoInputSource = null,
-        NumericEditUndoSink = null,
+        NumericEditSink = null,
         Presets = null
     };
 
@@ -83,14 +83,14 @@ public sealed class ConfigDrawerOptions
     internal IUndoShortcutInputSource? UndoInputSource { get; init; }
 
     /// <summary>
-    /// Gets or sets the internal numeric-edit undo sink used to group one numeric mouse interaction into one undo record.
+    /// Gets or sets the internal numeric-edit sink used to notify config subsystems of slider and drag interaction boundaries.
     /// </summary>
     /// <remarks>
-    /// When <see langword="null"/>, built-in numeric controls render without grouped numeric undo tracking.
+    /// When <see langword="null"/>, built-in numeric controls render without interaction boundary tracking.
     /// When non-<see langword="null"/>, built-in numeric controls notify this sink of interaction begin and end events.
-    /// This property remains internal because grouped numeric undo is an Umbra-owned optional feature.
+    /// This property remains internal because numeric edit lifecycle tracking is an Umbra-owned pipeline concern.
     /// </remarks>
-    internal INumericEditUndoSink? NumericEditUndoSink { get; init; }
+    internal INumericEditSink? NumericEditSink { get; init; }
 
     /// <summary>Initializes a new instance of <see cref="ConfigDrawerOptions"/> with all options set to their defaults.</summary>
     public ConfigDrawerOptions() { }
@@ -102,7 +102,7 @@ public sealed class ConfigDrawerOptions
         Transfer = source.Transfer;
         Undo = source.Undo;
         UndoInputSource = source.UndoInputSource;
-        NumericEditUndoSink = source.NumericEditUndoSink;
+        NumericEditSink = source.NumericEditSink;
         Presets = source.Presets;
     }
 
@@ -116,7 +116,7 @@ public sealed class ConfigDrawerOptions
 
     internal ConfigDrawerOptions WithUndoInputSource(IUndoShortcutInputSource? undoInputSource) => new(this) { UndoInputSource = undoInputSource };
 
-    internal ConfigDrawerOptions WithNumericEditUndoSink(INumericEditUndoSink? numericEditUndoSink) => new(this) { NumericEditUndoSink = numericEditUndoSink };
+    internal ConfigDrawerOptions WithNumericEditSink(INumericEditSink? numericEditSink) => new(this) { NumericEditSink = numericEditSink };
 
     internal ConfigDrawerOptions WithPresets(ConfigPresetOptions? presets) => new(this) { Presets = presets };
 }

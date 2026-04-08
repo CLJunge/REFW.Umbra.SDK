@@ -28,6 +28,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private ConfigUndoStack<TConfig>? _undoStack;
     private IUndoShortcutInputSource? _undoInputSource;
     private ConfigPresetStore<TConfig>? _presetStore;
+    private ConfigSaveController<TConfig>? _saveController;
     private bool _disposed;
 
     /// <summary>
@@ -190,18 +191,33 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         ArgumentNullException.ThrowIfNull(store);
         var presetStore = CreatePresetStore(store, options);
         var undoStack = CreateUndoStack(store, options);
+        var saveController = store is IConfigStore<TConfig> configStore
+            ? new ConfigSaveController<TConfig>(configStore)
+            : null;
+
+        INumericEditSink? numericSink;
+        if (undoStack is null)
+        {
+            numericSink = saveController;
+        }
+        else
+        {
+            numericSink = NumericEditSinkComposer.Compose(undoStack, saveController);
+        }
+
         var effectiveOptions = undoStack is null
-            ? options.WithUndoInputSource(null).WithNumericEditUndoSink(null)
+            ? options.WithUndoInputSource(null).WithNumericEditSink(numericSink)
             : options
                 .WithUndoInputSource(options.UndoInputSource ?? new KeyboardUndoShortcutInputSource())
-                .WithNumericEditUndoSink(undoStack);
+                .WithNumericEditSink(numericSink);
 
         var section = new ConfigSection<TConfig>(config, effectiveOptions, idScope, sectionLabel, expandedByDefault, suppressTreeNode)
         {
             _transferFeature = CreateTransferFeature(store, options),
             _undoStack = undoStack,
             _presetStore = presetStore,
-            _presetFeature = CreatePresetFeature(presetStore, store, options)
+            _presetFeature = CreatePresetFeature(presetStore, store, options),
+            _saveController = saveController
         };
 
         return section;
@@ -254,6 +270,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     {
         if (_disposed) return;
         _disposed = true;
+        _saveController?.Dispose();
+        _saveController = null;
         _undoStack?.Dispose();
         _undoStack = null;
         _presetFeature?.Dispose();

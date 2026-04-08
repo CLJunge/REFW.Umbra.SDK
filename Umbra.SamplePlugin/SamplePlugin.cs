@@ -15,7 +15,7 @@ namespace Umbra.SamplePlugin;
 
 /// <summary>
 /// Sample REFramework.NET plugin instance that demonstrates Umbra config registration,
-/// automatic deferred persistence, panel-based ImGui rendering, and optional reusable
+/// automatic persistence, panel-based ImGui rendering, and optional reusable
 /// plugin-panel benchmarking in <c>BENCHMARK</c> builds.
 /// </summary>
 /// <remarks>
@@ -40,7 +40,6 @@ public sealed class SamplePlugin : UmbraPlugin
     private PluginPanelBenchmark? _panelBenchmark;
 #endif
     private ConfigStore<PluginConfig>? _store;
-    private DeferredSaveController<PluginConfig>? _saveController;
     private PluginConfig? _config;
 
     /// <summary>
@@ -79,8 +78,6 @@ public sealed class SamplePlugin : UmbraPlugin
 #endif
 
         RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
-        RunShutdownStep("flush deferred save controller", FlushDeferredSaveController);
-        RunShutdownStep("dispose deferred save controller", DisposeDeferredSaveController);
         RunShutdownStep("save config store", SaveConfigStore);
         RunShutdownStep("dispose config store", DisposeConfigStore);
 
@@ -111,13 +108,11 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 
     /// <summary>
-    /// Renders the sample plugin UI and advances deferred persistence when the REFramework UI pass
-    /// is active.
+    /// Renders the sample plugin UI when the REFramework UI pass is active.
     /// </summary>
     public override void OnPreImGuiDrawUI()
     {
         DrawUiIfActive();
-        TickDeferredSaveController();
     }
 
     /// <summary>
@@ -184,13 +179,12 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 
     /// <summary>
-    /// Creates the runtime panel and deferred-save controller for the loaded sample config.
+    /// Creates the runtime panel for the loaded sample config.
     /// </summary>
     /// <param name="config">The loaded config instance.</param>
     /// <param name="store">The loaded config store.</param>
     private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
     {
-        _saveController = new DeferredSaveController<PluginConfig>(store);
         _panel = CreateRuntimePanel(config, store);
     }
 
@@ -270,13 +264,7 @@ public sealed class SamplePlugin : UmbraPlugin
 #endif
     }
 
-    /// <summary>
-    /// Advances deferred-save timing so pending configuration changes can flush to disk.
-    /// </summary>
-    private void TickDeferredSaveController()
-        => _saveController?.Tick();
-
-#if BENCHMARK
+    #if BENCHMARK
     private void CompleteActiveBenchmarkRun()
         => _panelBenchmark?.CompleteActiveRun("PluginUnload");
 
@@ -300,16 +288,6 @@ public sealed class SamplePlugin : UmbraPlugin
         var panel = _panel;
         _panel = null;
         panel?.Dispose();
-    }
-
-    private void FlushDeferredSaveController()
-        => _saveController?.Flush();
-
-    private void DisposeDeferredSaveController()
-    {
-        var saveController = _saveController;
-        _saveController = null;
-        saveController?.Dispose();
     }
 
     private void SaveConfigStore()

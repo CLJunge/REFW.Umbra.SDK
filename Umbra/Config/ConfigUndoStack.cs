@@ -23,7 +23,7 @@ namespace Umbra.Config;
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">The configuration class managed by the store.</typeparam>
-public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditUndoSink
+public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
     where TConfig : class, new()
 {
     private sealed class NumericEditSession(object? initialValue)
@@ -180,7 +180,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditUndoSink
     /// </summary>
     public void Clear() => _stack.Clear();
 
-    void INumericEditUndoSink.BeginNumericEdit(IParameter parameter)
+    void INumericEditSink.BeginNumericEdit(IParameter parameter)
     {
         if (_disposed)
             return;
@@ -196,7 +196,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditUndoSink
         _activeNumericEdits[key] = new NumericEditSession(initialValue);
     }
 
-    void INumericEditUndoSink.EndNumericEdit(IParameter parameter)
+    void INumericEditSink.EndNumericEdit(IParameter parameter)
     {
         if (_disposed)
             return;

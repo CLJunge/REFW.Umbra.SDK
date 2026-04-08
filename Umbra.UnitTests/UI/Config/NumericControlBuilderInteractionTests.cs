@@ -65,7 +65,7 @@ public partial class NumericControlBuilderTests
     {
         var parameter = CreateFloatParameter(1.5f, min: null, max: null, step: 0.5, format: "%.2f");
         var ops = new TestNumericControlOps();
-        var sink = new TestNumericEditUndoSink();
+        var sink = new TestNumericEditSink();
         var draw = NumericControlBuilder.BuildFloat("Value", parameter, new LabelAlignmentGroup(), ops, sink, static () => { }, "##numeric-drag-test");
 
         ops.DragFloatResults.Enqueue((true, 2.0f));
@@ -178,7 +178,7 @@ public partial class NumericControlBuilderTests
             => ItemDeactivatedResults.Count > 0 && ItemDeactivatedResults.Dequeue();
     }
 
-    private sealed class TestNumericEditUndoSink : INumericEditUndoSink
+    private sealed class TestNumericEditSink : INumericEditSink
     {
         internal List<object?> BeginValues { get; } = [];
         internal List<object?> EndValues { get; } = [];
