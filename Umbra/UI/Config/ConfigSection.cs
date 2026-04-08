@@ -138,12 +138,23 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     }
 
     /// <summary>
-    /// Creates a config section with access to the loaded config store for optional built-in transfer UI.
+    /// Creates a config section backed by the loaded config store, with automatic event-driven
+    /// persistence and optional transfer UI, undo stack, and preset store.
     /// </summary>
     /// <remarks>
-    /// When enabled through <see cref="ConfigDrawerOptions.Transfer"/>, the built-in transfer UI is rendered
-    /// in its own Umbra-owned tree node, before or after the normal config nodes according to the configured
-    /// transfer placement option, rather than as part of the config object graph.
+    /// <para>
+    /// When <paramref name="store"/> is a <see cref="ConfigStore{TConfig}"/>, a
+    /// <see cref="ConfigSaveController{TConfig}"/> is always created internally to handle
+    /// event-driven persistence. The section owns the controller's lifetime.
+    /// </para>
+    /// <para>
+    /// Optional features are created based on the default <see cref="ConfigDrawerOptions"/>:
+    /// transfer UI when <see cref="ConfigDrawerOptions.Transfer"/> is non-null and enabled,
+    /// undo stack when <see cref="ConfigDrawerOptions.Undo"/> is non-null,
+    /// and preset store when <see cref="ConfigDrawerOptions.Presets"/> is non-null.
+    /// When both the undo stack and save controller implement <see cref="INumericEditSink"/>,
+    /// they are composed so slider/drag interactions are tracked by both systems.
+    /// </para>
     /// </remarks>
     /// <param name="config">The already loaded configuration instance to render.</param>
     /// <param name="store">The loaded config store associated with <paramref name="config"/>.</param>
@@ -163,12 +174,24 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         => CreateWithStore(config, store, ConfigDrawerOptions.Default, idScope, sectionLabel, expandedByDefault, suppressTreeNode);
 
     /// <summary>
-    /// Creates a config section with access to the loaded config store for optional built-in transfer UI and the supplied drawer options.
+    /// Creates a config section backed by the loaded config store, with automatic event-driven
+    /// persistence and optional transfer UI, undo stack, and preset store using the supplied
+    /// drawer options.
     /// </summary>
     /// <remarks>
-    /// When enabled through <see cref="ConfigDrawerOptions.Transfer"/>, the built-in transfer UI is rendered
-    /// in its own Umbra-owned tree node, before or after the normal config nodes according to the configured
-    /// transfer placement option, rather than as part of the config object graph.
+    /// <para>
+    /// When <paramref name="store"/> is a <see cref="ConfigStore{TConfig}"/>, a
+    /// <see cref="ConfigSaveController{TConfig}"/> is always created internally to handle
+    /// event-driven persistence. The section owns the controller's lifetime.
+    /// </para>
+    /// <para>
+    /// Optional features are created based on <paramref name="options"/>:
+    /// transfer UI when <see cref="ConfigDrawerOptions.Transfer"/> is non-null and enabled,
+    /// undo stack when <see cref="ConfigDrawerOptions.Undo"/> is non-null,
+    /// and preset store when <see cref="ConfigDrawerOptions.Presets"/> is non-null.
+    /// When both the undo stack and save controller implement <see cref="INumericEditSink"/>,
+    /// they are composed so slider/drag interactions are tracked by both systems.
+    /// </para>
     /// </remarks>
     /// <param name="config">The already loaded configuration instance to render.</param>
     /// <param name="store">The loaded config store associated with <paramref name="config"/>.</param>

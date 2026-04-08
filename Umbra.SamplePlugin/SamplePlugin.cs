@@ -192,7 +192,7 @@ public sealed class SamplePlugin : UmbraPlugin
     /// Builds the plugin's normal runtime panel.
     /// </summary>
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
-    /// <param name="store">The loaded config store used for built-in transfer UI support.</param>
+    /// <param name="store">The loaded config store used for event-driven persistence, transfer UI, undo, and preset support.</param>
     /// <returns>The runtime panel.</returns>
     private static PluginPanel CreateRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
     {
