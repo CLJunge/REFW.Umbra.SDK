@@ -8,55 +8,51 @@
 | `Umbra.SamplePlugin` | Reference plugin demonstrating recommended patterns |
 | `Umbra.UnitTests` | Automated test coverage for all Umbra subsystems |
 
+---
+
 ## ✨ Features
 
-- ⚙️ **Attribute-driven config** — `ConfigStore<TConfig>` + `Parameter<T>` with JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable enum types
-- 💾 **Deferred auto-save** — `DeferredSaveController<TConfig>` batches writes after edits
-- 🖥️ **ImGui config UI** — `ConfigDrawer<TConfig>` with built-in search, filtering, and result navigation
-- 🧩 **Panel composition** — `PluginPanel`, `ConfigSection<TConfig>`, `LiveStateSection<T>`
-- ✅ **Validation** — `[UmbraRequired]`, `[UmbraMinLength]`, `[UmbraMaxLength]`, `[UmbraRegex]`, `[UmbraValidateWith<T>]` with inline feedback
-- 📦 **Config import/export** — versioned exchange documents with schema validation and built-in transfer UI
-- 🎨 **Custom drawers** — parameter drawers, two-column drawers, and nested-group drawers
-- 👁️ **Conditional visibility** — hide/disable attributes with recursive propagation through nested groups
-- 📝 **Logging** — per-plugin `PluginLogger` and global `Logger`
-- 🎮 **Game detection** — `GameContext.CurrentGame` identifies the active RE Engine title
-- 🛡️ **Resilient lifecycle** — best-effort shutdown sequencing for safe in-process cleanup
-- ⏱️ **Benchmarking** — optional panel-draw timing utilities when `BENCHMARK` is defined
+**Configuration**
+- Attribute-driven typed config with `Parameter<T>` for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable enum
+- JSON persistence via `ConfigStore<TConfig>` with automatic file recovery
+- Event-driven auto-save via `ConfigSaveController` — instant saves for discrete changes, deferred saves during slider/drag interactions
+- Validation attributes: `[UmbraRequired]`, `[UmbraMinLength]`, `[UmbraMaxLength]`, `[UmbraRegex]`, `[UmbraValidateWith<T>]` with inline UI feedback
+- Versioned config import/export with schema validation
+- Named presets — save, load, and delete named configuration snapshots
 
-## 📚 Documentation
+**UI**
+- Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
+- Automatic config rendering from metadata via `ConfigDrawer<TConfig>` — one-time reflection, per-frame draw
+- Built-in search, filter, and match navigation
+- Per-section undo stack with slider-aware coalescing (`INumericEditSink`)
+- Toast notifications for undo and preset operations
+- Built-in transfer UI for import/export
+- Conditional visibility and disable with `[UmbraHideIf]` and `[UmbraDisableIf]`
+- Change monitor for live per-frame config diff display
+- Custom drawers: `IParameterDrawer`, `ITwoColumnParameterDrawer`, `INestedDrawer<T>`
 
-For detailed guides, API walkthroughs, and reference documentation, see the **[Umbra Wiki](https://docs.cljunge.com/refw-umbra/)**.
+**Plugin System**
+- `PluginHost<TPlugin>` for single-instance lifecycle management and safe callback dispatch
+- `UmbraPlugin` base class with resilient `RunShutdownStep` sequencing
+- Callback forwarding: `OnPreUpdateBehavior`, `OnPreImGuiDrawUI`, `OnPreImGuiRenderer`
 
-## 🏗️ Architecture
+**Supporting**
+- Per-plugin `PluginLogger` and global `Logger` with level filtering
+- `GameContext.CurrentGame` for RE Engine title detection
+- `KeyboardInput` and `HotkeyBinding` for ImGui-backed hotkey capture
+- Optional panel draw benchmarking when `BENCHMARK` is defined
 
-```text
-Umbra
-├─ Config        → Parameter<T>, ConfigStore, DeferredSaveController, attributes
-├─ UI
-│  ├─ Config     → ConfigDrawer, ConfigSection, search, custom drawers
-│  ├─ LiveState  → LiveStateSection, drawer bindings
-│  └─ Panel      → PluginPanel, section composition, optional benchmarking
-├─ Logging       → PluginLogger, Logger, LogLevel
-├─ Input         → KeyboardInput
-├─ Runtime       → GameContext, REGame, ManagedObjectResolver
-└─ Lifecycle     → UmbraPlugin, PluginHost<T>, PluginInstanceGuard
-```
+---
 
-## 🚀 Getting started
+## 🚀 Quick Start
 
-### Setup
+### 1. Install dependencies
 
 ```powershell
-# Download and stage REFramework dependencies
 .\scripts\setup_reframework_deps.ps1
 ```
 
-## 📝 Quick example
-
-<details>
-<summary>Minimal config + plugin + host</summary>
-
-**Config:**
+### 2. Define a config type
 
 ```csharp
 using Umbra.Config;
@@ -64,24 +60,29 @@ using Umbra.Config.Attributes;
 
 [UmbraAutoRegister]
 [UmbraPrefix("myPlugin")]
-[UmbraCategory("My Plugin")]
+[UmbraRootNode("My Plugin")]
 public record MyConfig
 {
-    [UmbraParameter, UmbraDisplayName("Enabled"), UmbraDescription("Turns the plugin on or off.")]
+    [UmbraParameter]
+    [UmbraDisplayName("Enabled")]
     public Parameter<bool> IsEnabled { get; set; } = new(true);
 
-    [UmbraParameter, UmbraDisplayName("Profile Name"), UmbraRequired, UmbraMinLength(3), UmbraMaxLength(24)]
-    public Parameter<string> ProfileName { get; set; } = new("UmbraUser");
+    [UmbraParameter]
+    [UmbraDisplayName("Volume")]
+    [UmbraRange(0, 100)]
+    public Parameter<int> Volume { get; set; } = new(75);
 }
 ```
 
-**Plugin:**
+### 3. Create the plugin instance
 
 ```csharp
 using REFrameworkNET;
+using Umbra;
 using Umbra.Config;
 using Umbra.Logging;
 using Umbra.UI.Config;
+using Umbra.UI.Config.Search;
 using Umbra.UI.Panel;
 
 public sealed class MyPlugin : UmbraPlugin
@@ -90,24 +91,28 @@ public sealed class MyPlugin : UmbraPlugin
 
     private PluginPanel? _panel;
     private ConfigStore<MyConfig>? _store;
-    private DeferredSaveController<MyConfig>? _saveController;
 
     public MyPlugin() : base(_log) { }
 
     public override void Initialize()
     {
-        var pluginDir = API.GetPluginDirectory(GetType().Assembly);
-        var configPath = Path.Combine(pluginDir, "data", "MyPlugin", "config.json");
+        var configPath = Path.Combine(
+            API.GetPluginDirectory(GetType().Assembly), "data", "MyPlugin", "config.json");
 
         _store = new ConfigStore<MyConfig>(configPath);
         var config = _store.Load();
-        _saveController = new DeferredSaveController<MyConfig>(_store);
 
-        _panel = new PluginPanel("MyPlugin.RuntimePanel")
-            .Add(new ConfigSection<MyConfig>(
-                config,
-                new ConfigDrawerOptions { ShowSearchBar = true },
-                "MyPlugin.RuntimeConfigSection"));
+        // CreateWithStore wires auto-save, search, undo, and presets in one call.
+        _panel = new PluginPanel("MyPlugin.Panel")
+            .Add(ConfigSection<MyConfig>.CreateWithStore(
+                config, _store,
+                new ConfigDrawerOptions
+                {
+                    Search  = new ConfigSearchOptions(),
+                    Undo    = new ConfigUndoOptions(),
+                    Presets = new ConfigPresetOptions(),
+                },
+                "MyPlugin.Section"));
 
         Log.Info("Loaded.");
     }
@@ -115,9 +120,7 @@ public sealed class MyPlugin : UmbraPlugin
     public override void Shutdown()
     {
         RunShutdownStep("dispose panel", () => { var p = _panel; _panel = null; p?.Dispose(); });
-        RunShutdownStep("flush save controller", () => _saveController?.Flush());
-        RunShutdownStep("dispose save controller", () => { var sc = _saveController; _saveController = null; sc?.Dispose(); });
-        RunShutdownStep("save store", () => _store?.Save());
+        RunShutdownStep("save store",    () => _store?.Save());
         RunShutdownStep("dispose store", () => { var s = _store; _store = null; s?.Dispose(); });
         Log.Info("Unloaded.");
     }
@@ -125,16 +128,18 @@ public sealed class MyPlugin : UmbraPlugin
     public override void OnPreImGuiDrawUI()
     {
         if (API.IsDrawingUI()) _panel?.Draw();
-        _saveController?.Tick();
     }
 }
 ```
 
-**Static host:**
+> **Note:** `ConfigSection.CreateWithStore()` creates and owns the `ConfigSaveController` internally — no manual tick or flush required. Disposing the panel disposes the save controller.
+
+### 4. Create the static host
 
 ```csharp
 using REFrameworkNET.Attributes;
 using REFrameworkNET.Callbacks;
+using Umbra;
 using Umbra.Logging;
 using Umbra.Runtime;
 
@@ -167,6 +172,17 @@ public static class MyPluginHost
 }
 ```
 
-</details>
+### 5. Build
 
-For a more complete reference, see `Umbra.SamplePlugin` which demonstrates nested config groups, custom drawers, validation, import/export, benchmarking, robust shutdown, and game-gated loading.
+```bash
+dotnet build REFW.Umbra.slnx -c Release
+dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj -c Release
+```
+
+---
+
+## 📚 Documentation
+
+Full guides, API walkthroughs, and architecture details are in the **[Umbra Wiki](https://docs.cljunge.com/refw-umbra/)**.
+
+For a complete real-world reference, see `Umbra.SamplePlugin` — it demonstrates nested config groups, game gating, action binding, custom drawers, import/export, and resilient shutdown.
