@@ -271,4 +271,89 @@ public class KeyStateTrackerTests
         Assert.IsFalse(tracker.IsDown(VK_B));
         Assert.IsFalse(tracker.JustPressed(VK_B));
     }
+
+    /// <summary>
+    /// Tests that <see cref="KeyStateTracker.JustPressedCount"/> returns zero when no keys are pressed.
+    /// </summary>
+    [TestMethod]
+    public void JustPressedCount_NoKeysPressed_ReturnsZero()
+    {
+        // Arrange
+        var provider = new TestNativeKeyStateProvider();
+        var tracker = new KeyStateTracker(provider, TrackedKeys);
+
+        // Act
+        tracker.Update();
+
+        // Assert
+        Assert.AreEqual(0, tracker.JustPressedCount);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="KeyStateTracker.JustPressedCount"/> reflects the number of keys that just transitioned to pressed.
+    /// </summary>
+    [TestMethod]
+    public void JustPressedCount_TwoKeysPressed_ReturnsTwo()
+    {
+        // Arrange
+        var provider = new TestNativeKeyStateProvider();
+        var tracker = new KeyStateTracker(provider, TrackedKeys);
+        tracker.Update(); // baseline
+
+        provider.SetKeyDown(VK_A);
+        provider.SetKeyDown(VK_B);
+
+        // Act
+        tracker.Update();
+
+        // Assert
+        Assert.AreEqual(2, tracker.JustPressedCount);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="KeyStateTracker.GetJustPressedAt"/> returns all just-pressed VK codes.
+    /// </summary>
+    [TestMethod]
+    public void GetJustPressedAt_TwoKeysPressed_ReturnsAllKeys()
+    {
+        // Arrange
+        var provider = new TestNativeKeyStateProvider();
+        var tracker = new KeyStateTracker(provider, TrackedKeys);
+        tracker.Update(); // baseline
+
+        provider.SetKeyDown(VK_A);
+        provider.SetKeyDown(VK_B);
+        tracker.Update();
+
+        // Act
+        var pressed = new HashSet<int>();
+        for (var i = 0; i < tracker.JustPressedCount; i++)
+            pressed.Add(tracker.GetJustPressedAt(i));
+
+        // Assert
+        Assert.IsTrue(pressed.Contains(VK_A));
+        Assert.IsTrue(pressed.Contains(VK_B));
+        Assert.IsFalse(pressed.Contains(VK_C));
+    }
+
+    /// <summary>
+    /// Tests that <see cref="KeyStateTracker.JustPressedCount"/> returns zero for held keys (no new edge).
+    /// </summary>
+    [TestMethod]
+    public void JustPressedCount_KeyHeld_ReturnsZeroOnSecondTick()
+    {
+        // Arrange
+        var provider = new TestNativeKeyStateProvider();
+        var tracker = new KeyStateTracker(provider, TrackedKeys);
+        tracker.Update();
+
+        provider.SetKeyDown(VK_A);
+        tracker.Update(); // A just pressed
+
+        // Act
+        tracker.Update(); // A still held, no edge
+
+        // Assert
+        Assert.AreEqual(0, tracker.JustPressedCount);
+    }
 }

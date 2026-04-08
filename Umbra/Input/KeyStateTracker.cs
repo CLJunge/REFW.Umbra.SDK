@@ -104,6 +104,19 @@ internal sealed class KeyStateTracker
     }
 
     /// <summary>
+    /// Gets the number of keys that transitioned from up to down this tick.
+    /// </summary>
+    public int JustPressedCount => _justPressed.Count;
+
+    /// <summary>
+    /// Returns the virtual-key code of the just-pressed key at the specified index.
+    /// </summary>
+    /// <param name="index">The zero-based index into the just-pressed list.</param>
+    /// <returns>The Windows virtual-key code at the given position.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or greater than or equal to <see cref="JustPressedCount"/>.</exception>
+    public int GetJustPressedAt(int index) => _justPressed[index];
+
+    /// <summary>
     /// Determines whether the specified virtual key transitioned from down to up this tick (key-up edge).
     /// </summary>
     /// <param name="virtualKeyCode">The Windows virtual-key code to check.</param>

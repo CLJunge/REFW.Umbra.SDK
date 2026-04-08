@@ -37,4 +37,10 @@ internal interface IHotkeyInputSource
     /// <param name="binding">The binding to describe.</param>
     /// <returns>A display string such as <c>Ctrl+Shift+F5</c>.</returns>
     string GetBindingDisplayName(HotkeyBinding binding);
+
+    /// <summary>
+    /// Returns the modifier prefix for the currently held modifier keys.
+    /// </summary>
+    /// <returns>A string such as <c>Ctrl+Shift+</c> when those modifiers are held, or <see cref="string.Empty"/> when none are held.</returns>
+    string GetHeldModifierPrefix();
 }

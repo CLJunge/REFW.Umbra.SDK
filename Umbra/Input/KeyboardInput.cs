@@ -25,6 +25,7 @@ public static class KeyboardInput
     private const int VK_LMENU = 0xA4;
     private const int VK_RMENU = 0xA5;
 
+    private static readonly HashSet<int> _modifierKeyValues = BuildModifierKeyValueSet();
     private static readonly IReadOnlyList<UmbraKey> _keyboardKeys = BuildKeyboardKeyList();
     private static readonly HashSet<int> _keyboardKeyValues = BuildKeyboardKeyValueSet();
     private static readonly KeyStateTracker _tracker = new(new NativeKeyStateProvider(), VirtualKeyMap.GetTrackedVirtualKeys());
@@ -104,15 +105,36 @@ public static class KeyboardInput
     public static bool IsValidKey(int key) => _keyboardKeyValues.Contains(key);
 
     /// <summary>
+    /// Determines whether <paramref name="key"/> is a modifier key (Ctrl, Shift, Alt, or Super).
+    /// </summary>
+    /// <param name="key">An <see cref="UmbraKey"/> value cast to <see cref="int"/>.</param>
+    /// <returns><see langword="true"/> if <paramref name="key"/> is a modifier key; otherwise, <see langword="false"/>.</returns>
+    public static bool IsModifierKey(int key) => _modifierKeyValues.Contains(key);
+
+    /// <summary>
     /// Attempts to capture a full hotkey binding (key + modifiers) from the current tick.
     /// </summary>
+    /// <remarks>
+    /// Modifier keys (Ctrl, Shift, Alt, Super) are skipped so that pressing a modifier alone does not
+    /// complete the capture. The first non-modifier key that transitioned to pressed this tick is used
+    /// as the primary key, combined with the current modifier state.
+    /// </remarks>
     /// <param name="binding">When this method returns <see langword="true"/>, contains the captured binding; otherwise, <see cref="HotkeyBinding.None"/>.</param>
-    /// <returns><see langword="true"/> if a primary key was detected as pressed; otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if a non-modifier primary key was detected as pressed; otherwise, <see langword="false"/>.</returns>
     public static bool TryCaptureHotkeyBinding(out HotkeyBinding binding)
     {
-        if (TryCaptureKeyboardKey(out var key))
+        var count = _tracker.JustPressedCount;
+        for (var i = 0; i < count; i++)
         {
-            binding = new HotkeyBinding(key, IsCtrlHeld, IsShiftHeld, IsAltHeld);
+            var vk = _tracker.GetJustPressedAt(i);
+            var umbraKey = VirtualKeyMap.VkToUmbraKey(vk);
+            if (umbraKey == UmbraKey.None || !IsValidKey((int)umbraKey))
+                continue;
+
+            if (IsModifierKey((int)umbraKey))
+                continue;
+
+            binding = new HotkeyBinding((int)umbraKey, IsCtrlHeld, IsShiftHeld, IsAltHeld);
             return true;
         }
 
@@ -167,6 +189,26 @@ public static class KeyboardInput
     public static bool IsAltHeld => _tracker.IsDown(VK_LMENU) || _tracker.IsDown(VK_RMENU);
 
     /// <summary>
+    /// Returns the modifier prefix for the currently held modifier keys.
+    /// </summary>
+    /// <returns>A string such as <c>Ctrl+Shift+</c> when those modifiers are held, or <see cref="string.Empty"/> when none are held.</returns>
+    public static string GetHeldModifierPrefix()
+    {
+        var ctrl = IsCtrlHeld;
+        var shift = IsShiftHeld;
+        var alt = IsAltHeld;
+
+        if (!ctrl && !shift && !alt)
+            return string.Empty;
+
+        var parts = new List<string>(3);
+        if (ctrl) parts.Add("Ctrl");
+        if (shift) parts.Add("Shift");
+        if (alt) parts.Add("Alt");
+        return string.Join('+', parts) + "+";
+    }
+
+    /// <summary>
     /// Builds the list of all <see cref="UmbraKey"/> values that represent physical keyboard keys.
     /// </summary>
     /// <returns>A list containing every defined <see cref="UmbraKey"/> member except <see cref="UmbraKey.None"/>.</returns>
@@ -198,4 +240,20 @@ public static class KeyboardInput
 
         return keys;
     }
+
+    /// <summary>
+    /// Builds the lookup set used by <see cref="IsModifierKey(int)"/>.
+    /// </summary>
+    /// <returns>A set containing the integer values of every modifier key in <see cref="UmbraKey"/>.</returns>
+    private static HashSet<int> BuildModifierKeyValueSet() => new()
+    {
+        (int)UmbraKey.LeftCtrl,
+        (int)UmbraKey.RightCtrl,
+        (int)UmbraKey.LeftShift,
+        (int)UmbraKey.RightShift,
+        (int)UmbraKey.LeftAlt,
+        (int)UmbraKey.RightAlt,
+        (int)UmbraKey.LeftSuper,
+        (int)UmbraKey.RightSuper,
+    };
 }

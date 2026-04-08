@@ -53,7 +53,7 @@ public sealed class HotkeyDrawer : IParameterDrawer
         _captureController.Draw(
             p,
             $"{label}: {_inputSource.GetBindingDisplayName(p.Value)}",
-            $"{label}: Press any key...");
+            $"{label}: ");
 
         var metadata = parameter.Metadata;
         if (metadata.Description is not null)

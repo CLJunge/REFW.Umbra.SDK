@@ -116,6 +116,26 @@ public sealed class TwoColumnHotkeyDrawerTests
     }
 
     /// <summary>
+    /// Verifies that the waiting text includes held modifier prefix when modifiers are held.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenWaitingWithModifiersHeld_ShowsModifierPrefix()
+    {
+        // Arrange
+        var drawer = new TwoColumnHotkeyDrawer(_renderer, _inputSource);
+        _renderer.ButtonResults.Enqueue(true);
+        _inputSource.HeldModifierPrefix = "Alt+";
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false)) { Key = "testHotkey" };
+
+        // Act
+        drawer.Draw(parameter);
+        drawer.Draw(parameter);
+
+        // Assert
+        Assert.AreEqual("Alt+...", _renderer.Texts[1]);
+    }
+
+    /// <summary>
     /// Verifies that another waiting drawer prevents this drawer from entering capture mode.
     /// </summary>
     [TestMethod]

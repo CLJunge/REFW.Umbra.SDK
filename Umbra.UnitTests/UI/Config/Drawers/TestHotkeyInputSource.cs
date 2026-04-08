@@ -14,6 +14,7 @@ internal sealed class TestHotkeyInputSource : IHotkeyInputSource
 
     public int CaptureCallCount { get; private set; }
     public int BindingCaptureCallCount { get; private set; }
+    public string HeldModifierPrefix { get; set; } = "";
 
     public void SetKeyName(int key, string name) => _keyNames[key] = name;
 
@@ -70,4 +71,6 @@ internal sealed class TestHotkeyInputSource : IHotkeyInputSource
 
         return $"Key({binding.Key})";
     }
+
+    public string GetHeldModifierPrefix() => HeldModifierPrefix;
 }

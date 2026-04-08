@@ -176,4 +176,61 @@ public class KeyboardInputTests
         Assert.IsFalse(result, $"Expected IsValidKey to return false for non-keyboard value {key}");
     }
 
+    /// <summary>
+    /// Tests that <see cref="KeyboardInput.IsModifierKey(int)"/> returns <c>true</c> for all modifier keys.
+    /// </summary>
+    [TestMethod]
+    [DataRow(UmbraKey.LeftCtrl)]
+    [DataRow(UmbraKey.RightCtrl)]
+    [DataRow(UmbraKey.LeftShift)]
+    [DataRow(UmbraKey.RightShift)]
+    [DataRow(UmbraKey.LeftAlt)]
+    [DataRow(UmbraKey.RightAlt)]
+    [DataRow(UmbraKey.LeftSuper)]
+    [DataRow(UmbraKey.RightSuper)]
+    public void IsModifierKey_ModifierKey_ReturnsTrue(UmbraKey key)
+    {
+        // Act
+        var result = KeyboardInput.IsModifierKey((int)key);
+
+        // Assert
+        Assert.IsTrue(result, $"Expected IsModifierKey to return true for {key}");
+    }
+
+    /// <summary>
+    /// Tests that <see cref="KeyboardInput.IsModifierKey(int)"/> returns <c>false</c> for non-modifier keys.
+    /// </summary>
+    [TestMethod]
+    [DataRow(UmbraKey.A)]
+    [DataRow(UmbraKey.Enter)]
+    [DataRow(UmbraKey.F12)]
+    [DataRow(UmbraKey.Space)]
+    [DataRow(UmbraKey.Tab)]
+    [DataRow(UmbraKey.Escape)]
+    [DataRow(UmbraKey.Key0)]
+    [DataRow(UmbraKey.Menu)]
+    public void IsModifierKey_NonModifierKey_ReturnsFalse(UmbraKey key)
+    {
+        // Act
+        var result = KeyboardInput.IsModifierKey((int)key);
+
+        // Assert
+        Assert.IsFalse(result, $"Expected IsModifierKey to return false for {key}");
+    }
+
+    /// <summary>
+    /// Tests that <see cref="KeyboardInput.IsModifierKey(int)"/> returns <c>false</c> for invalid key values.
+    /// </summary>
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(-1)]
+    [DataRow(99999)]
+    public void IsModifierKey_InvalidValue_ReturnsFalse(int key)
+    {
+        // Act
+        var result = KeyboardInput.IsModifierKey(key);
+
+        // Assert
+        Assert.IsFalse(result, $"Expected IsModifierKey to return false for invalid key value {key}");
+    }
 }

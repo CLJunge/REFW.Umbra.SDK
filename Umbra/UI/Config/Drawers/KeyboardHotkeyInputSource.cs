@@ -18,4 +18,7 @@ internal sealed class KeyboardHotkeyInputSource : IHotkeyInputSource
 
     /// <inheritdoc/>
     public string GetBindingDisplayName(HotkeyBinding binding) => binding.GetDisplayName();
+
+    /// <inheritdoc/>
+    public string GetHeldModifierPrefix() => KeyboardInput.GetHeldModifierPrefix();
 }

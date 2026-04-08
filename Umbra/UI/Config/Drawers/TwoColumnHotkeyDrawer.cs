@@ -53,7 +53,7 @@ public sealed class TwoColumnHotkeyDrawer : ITwoColumnParameterDrawer
         _captureController.Draw(
             p,
             _inputSource.GetBindingDisplayName(p.Value),
-            "Press any key...");
+            "");
     }
 
     /// <summary>
