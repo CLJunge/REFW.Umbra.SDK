@@ -111,6 +111,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         if (idScope is not null && string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be empty or whitespace when supplied.", nameof(idScope));
 
+        _undoInputSource = options.UndoInputSource;
         _sectionId = idScope ?? typeof(TConfig).FullName ?? typeof(TConfig).Name;
         _order = typeof(TConfig).GetDrawerAttribute<UmbraSectionOrderAttribute>()?.Order ?? int.MaxValue;
 
@@ -188,16 +189,20 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     {
         ArgumentNullException.ThrowIfNull(store);
         var presetStore = CreatePresetStore(store, options);
-        var section = new ConfigSection<TConfig>(config, options, idScope, sectionLabel, expandedByDefault, suppressTreeNode)
+        var undoStack = CreateUndoStack(store, options);
+        var effectiveOptions = undoStack is null
+            ? options.WithUndoInputSource(null).WithNumericEditUndoSink(null)
+            : options
+                .WithUndoInputSource(options.UndoInputSource ?? new KeyboardUndoShortcutInputSource())
+                .WithNumericEditUndoSink(undoStack);
+
+        var section = new ConfigSection<TConfig>(config, effectiveOptions, idScope, sectionLabel, expandedByDefault, suppressTreeNode)
         {
             _transferFeature = CreateTransferFeature(store, options),
-            _undoStack = CreateUndoStack(store, options),
+            _undoStack = undoStack,
             _presetStore = presetStore,
             _presetFeature = CreatePresetFeature(presetStore, store, options)
         };
-
-        if (section._undoStack is not null)
-            section._undoInputSource = options.UndoInputSource ?? new KeyboardUndoShortcutInputSource();
 
         return section;
     }

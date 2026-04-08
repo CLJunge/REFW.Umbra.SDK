@@ -1,4 +1,5 @@
 using Umbra.Logging;
+using Umbra.UI.Toast;
 
 namespace Umbra;
 
@@ -72,12 +73,20 @@ public sealed class PluginHost<TPlugin>
     public void OnPreUpdateBehavior() => _instance?.OnPreUpdateBehavior();
 
     /// <summary>
-    /// Forwards <see cref="IUmbraPlugin.OnPreImGuiDrawUI"/> to the live plugin instance.
+    /// Forwards <see cref="IUmbraPlugin.OnPreImGuiDrawUI"/> to the live plugin instance and then renders the shared toast overlay.
     /// </summary>
     /// <remarks>
     /// If no instance is currently loaded, this method does nothing.
     /// </remarks>
-    public void OnPreImGuiDrawUI() => _instance?.OnPreImGuiDrawUI();
+    public void OnPreImGuiDrawUI()
+    {
+        var instance = _instance;
+        if (instance is null)
+            return;
+
+        instance.OnPreImGuiDrawUI();
+        ToastOverlay.Draw();
+    }
 
     /// <summary>
     /// Forwards <see cref="IUmbraPlugin.OnPreImGuiRenderer"/> to the live plugin instance.

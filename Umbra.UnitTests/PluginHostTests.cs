@@ -1,5 +1,6 @@
 using Umbra.Logging;
 using Umbra.Logging.UnitTests;
+using Umbra.UI.Toast;
 
 namespace Umbra.UnitTests;
 
@@ -21,6 +22,8 @@ public sealed class PluginHostTests
 
         Logger.EnableAll();
         Logger.SetLogSink(_sink);
+        ToastQueue.Clear();
+        ToastOverlay.SetRenderer(null);
         PluginInstanceGuard.Reset();
         LifecyclePlugin.Reset();
         InitializeFailurePlugin.Reset();
@@ -33,6 +36,8 @@ public sealed class PluginHostTests
     public void TestCleanup()
     {
         PluginInstanceGuard.Reset();
+        ToastQueue.Clear();
+        ToastOverlay.SetRenderer(null);
         Logger.ResetLogSink();
         Logger.EnableAll();
         LifecyclePlugin.Reset();
@@ -64,6 +69,46 @@ public sealed class PluginHostTests
         Assert.AreEqual(1, LifecyclePlugin.PreDrawCount);
         Assert.AreEqual(1, LifecyclePlugin.PreRendererCount);
         Assert.AreEqual(1, LifecyclePlugin.ShutdownCount);
+    }
+
+    /// <summary>
+    /// Verifies that the host renders queued toast notifications internally during the UI pre-draw callback.
+    /// </summary>
+    [TestMethod]
+    public void OnPreImGuiDrawUI_WhenToastIsQueued_RendersToastOverlayInternally()
+    {
+        var renderer = new TestToastRenderer();
+        ToastOverlay.SetRenderer(renderer);
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        host.Load();
+        ToastQueue.Push("Undo: Value");
+
+        host.OnPreImGuiDrawUI();
+        host.Unload();
+
+        Assert.AreEqual(1, LifecyclePlugin.PreDrawCount);
+        Assert.AreEqual(1, renderer.DrawCallCount);
+        Assert.AreEqual(1, renderer.LastEntries.Count);
+        Assert.AreEqual("Undo: Value", renderer.LastEntries[0].Message);
+        Assert.AreEqual(1, renderer.PreDrawCountAtRender);
+    }
+
+    /// <summary>
+    /// Verifies that the host's UI pre-draw callback remains a no-op when no plugin instance is loaded.
+    /// </summary>
+    [TestMethod]
+    public void OnPreImGuiDrawUI_WhenNoInstanceIsLoaded_DoesNotRenderToastOverlay()
+    {
+        var renderer = new TestToastRenderer();
+        ToastOverlay.SetRenderer(renderer);
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        ToastQueue.Push("Queued");
+        host.OnPreImGuiDrawUI();
+
+        Assert.AreEqual(0, renderer.DrawCallCount);
+        Assert.AreEqual(0, LifecyclePlugin.PreDrawCount);
     }
 
     /// <summary>
@@ -295,6 +340,23 @@ public sealed class PluginHostTests
             PreRendererCount = 0;
             ThrowOnInitialize = true;
             ThrowOnShutdown = false;
+        }
+    }
+
+    private sealed class TestToastRenderer : IToastRenderer
+    {
+        internal int DrawCallCount { get; private set; }
+
+        internal int PreDrawCountAtRender { get; private set; }
+
+        internal List<ToastEntry> LastEntries { get; } = [];
+
+        public void Draw(List<ToastEntry> entries)
+        {
+            DrawCallCount++;
+            PreDrawCountAtRender = LifecyclePlugin.PreDrawCount;
+            LastEntries.Clear();
+            LastEntries.AddRange(entries);
         }
     }
 }

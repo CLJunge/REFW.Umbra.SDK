@@ -22,6 +22,7 @@ public sealed class ConfigDrawerOptions
         Transfer = null,
         Undo = null,
         UndoInputSource = null,
+        NumericEditUndoSink = null,
         Presets = null
     };
 
@@ -81,6 +82,16 @@ public sealed class ConfigDrawerOptions
     /// </remarks>
     internal IUndoShortcutInputSource? UndoInputSource { get; init; }
 
+    /// <summary>
+    /// Gets or sets the internal numeric-edit undo sink used to group one numeric mouse interaction into one undo record.
+    /// </summary>
+    /// <remarks>
+    /// When <see langword="null"/>, built-in numeric controls render without grouped numeric undo tracking.
+    /// When non-<see langword="null"/>, built-in numeric controls notify this sink of interaction begin and end events.
+    /// This property remains internal because grouped numeric undo is an Umbra-owned optional feature.
+    /// </remarks>
+    internal INumericEditUndoSink? NumericEditUndoSink { get; init; }
+
     /// <summary>Initializes a new instance of <see cref="ConfigDrawerOptions"/> with all options set to their defaults.</summary>
     public ConfigDrawerOptions() { }
 
@@ -91,6 +102,7 @@ public sealed class ConfigDrawerOptions
         Transfer = source.Transfer;
         Undo = source.Undo;
         UndoInputSource = source.UndoInputSource;
+        NumericEditUndoSink = source.NumericEditUndoSink;
         Presets = source.Presets;
     }
 
@@ -103,6 +115,8 @@ public sealed class ConfigDrawerOptions
     internal ConfigDrawerOptions WithUndo(ConfigUndoOptions? undo) => new(this) { Undo = undo };
 
     internal ConfigDrawerOptions WithUndoInputSource(IUndoShortcutInputSource? undoInputSource) => new(this) { UndoInputSource = undoInputSource };
+
+    internal ConfigDrawerOptions WithNumericEditUndoSink(INumericEditUndoSink? numericEditUndoSink) => new(this) { NumericEditUndoSink = numericEditUndoSink };
 
     internal ConfigDrawerOptions WithPresets(ConfigPresetOptions? presets) => new(this) { Presets = presets };
 }

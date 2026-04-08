@@ -13,16 +13,29 @@ namespace Umbra.UI.Config;
 internal static class NumericControlBuilder
 {
     private static readonly ITextOps _textOps = ImGuiConfigRenderContext.Instance;
+    private static readonly INumericControlOps _numericControlOps = ImGuiConfigRenderContext.Instance;
 
     /// <summary>
     /// Builds the per-frame draw action for an <see cref="int"/> parameter.
     /// </summary>
-    internal static Action BuildInt(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
+    internal static Action BuildInt(string label, IParameter parameter, LabelAlignmentGroup alignGroup, INumericEditUndoSink? numericEditUndoSink = null)
+        => BuildInt(label, parameter, alignGroup, _numericControlOps, numericEditUndoSink);
+
+    internal static Action BuildInt(
+        string label,
+        IParameter parameter,
+        LabelAlignmentGroup alignGroup,
+        INumericControlOps numericControlOps,
+        INumericEditUndoSink? numericEditUndoSink = null,
+        Action? preDraw = null,
+        string? hiddenLabel = null)
     {
         var p = (Parameter<int>)parameter;
         var meta = p.Metadata;
         var fmt = meta.Format ?? "%d";
         var layout = ControlFactory.CreateControlLayout(label, parameter, alignGroup);
+        var drawPre = preDraw ?? layout.Pre;
+        var controlLabel = hiddenLabel ?? layout.HiddenLabel;
 
         if (meta.Min is not null && meta.Max is not null)
         {
@@ -31,8 +44,16 @@ internal static class NumericControlBuilder
             return () =>
             {
                 var v = p.Value;
-                layout.Pre();
-                if (ImGui.SliderInt(layout.HiddenLabel, ref v, iMin, iMax, fmt)) p.Value = v;
+                drawPre();
+                var changed = numericControlOps.SliderInt(controlLabel, ref v, iMin, iMax, fmt);
+                var activated = numericControlOps.IsItemActivated();
+                var deactivated = numericControlOps.IsItemDeactivated();
+                if (activated)
+                    numericEditUndoSink?.BeginNumericEdit(parameter);
+                if (changed)
+                    p.Value = v;
+                if (deactivated)
+                    numericEditUndoSink?.EndNumericEdit(parameter);
                 ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
@@ -41,8 +62,16 @@ internal static class NumericControlBuilder
         return () =>
         {
             var v = p.Value;
-            layout.Pre();
-            if (ImGui.DragInt(layout.HiddenLabel, ref v, step, 0, 0, fmt)) p.Value = v;
+            drawPre();
+            var changed = numericControlOps.DragInt(controlLabel, ref v, step, 0, 0, fmt);
+            var activated = numericControlOps.IsItemActivated();
+            var deactivated = numericControlOps.IsItemDeactivated();
+            if (activated)
+                numericEditUndoSink?.BeginNumericEdit(parameter);
+            if (changed)
+                p.Value = v;
+            if (deactivated)
+                numericEditUndoSink?.EndNumericEdit(parameter);
             ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }
@@ -50,12 +79,24 @@ internal static class NumericControlBuilder
     /// <summary>
     /// Builds the per-frame draw action for a <see cref="float"/> parameter.
     /// </summary>
-    internal static Action BuildFloat(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
+    internal static Action BuildFloat(string label, IParameter parameter, LabelAlignmentGroup alignGroup, INumericEditUndoSink? numericEditUndoSink = null)
+        => BuildFloat(label, parameter, alignGroup, _numericControlOps, numericEditUndoSink);
+
+    internal static Action BuildFloat(
+        string label,
+        IParameter parameter,
+        LabelAlignmentGroup alignGroup,
+        INumericControlOps numericControlOps,
+        INumericEditUndoSink? numericEditUndoSink = null,
+        Action? preDraw = null,
+        string? hiddenLabel = null)
     {
         var p = (Parameter<float>)parameter;
         var meta = p.Metadata;
         var fmt = meta.InferredFloatFormat;
         var layout = ControlFactory.CreateControlLayout(label, parameter, alignGroup);
+        var drawPre = preDraw ?? layout.Pre;
+        var controlLabel = hiddenLabel ?? layout.HiddenLabel;
 
         if (meta.Min is not null && meta.Max is not null)
         {
@@ -64,8 +105,16 @@ internal static class NumericControlBuilder
             return () =>
             {
                 var v = p.Value;
-                layout.Pre();
-                if (ImGui.SliderFloat(layout.HiddenLabel, ref v, fMin, fMax, fmt)) p.Value = v;
+                drawPre();
+                var changed = numericControlOps.SliderFloat(controlLabel, ref v, fMin, fMax, fmt);
+                var activated = numericControlOps.IsItemActivated();
+                var deactivated = numericControlOps.IsItemDeactivated();
+                if (activated)
+                    numericEditUndoSink?.BeginNumericEdit(parameter);
+                if (changed)
+                    p.Value = v;
+                if (deactivated)
+                    numericEditUndoSink?.EndNumericEdit(parameter);
                 ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
@@ -74,8 +123,16 @@ internal static class NumericControlBuilder
         return () =>
         {
             var v = p.Value;
-            layout.Pre();
-            if (ImGui.DragFloat(layout.HiddenLabel, ref v, step, 0f, 0f, fmt)) p.Value = v;
+            drawPre();
+            var changed = numericControlOps.DragFloat(controlLabel, ref v, step, 0f, 0f, fmt);
+            var activated = numericControlOps.IsItemActivated();
+            var deactivated = numericControlOps.IsItemDeactivated();
+            if (activated)
+                numericEditUndoSink?.BeginNumericEdit(parameter);
+            if (changed)
+                p.Value = v;
+            if (deactivated)
+                numericEditUndoSink?.EndNumericEdit(parameter);
             ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }
@@ -83,12 +140,24 @@ internal static class NumericControlBuilder
     /// <summary>
     /// Builds the per-frame draw action for a <see cref="double"/> parameter.
     /// </summary>
-    internal static Action BuildDouble(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
+    internal static Action BuildDouble(string label, IParameter parameter, LabelAlignmentGroup alignGroup, INumericEditUndoSink? numericEditUndoSink = null)
+        => BuildDouble(label, parameter, alignGroup, _numericControlOps, numericEditUndoSink);
+
+    internal static Action BuildDouble(
+        string label,
+        IParameter parameter,
+        LabelAlignmentGroup alignGroup,
+        INumericControlOps numericControlOps,
+        INumericEditUndoSink? numericEditUndoSink = null,
+        Action? preDraw = null,
+        string? hiddenLabel = null)
     {
         var p = (Parameter<double>)parameter;
         var meta = p.Metadata;
         var fmt = meta.InferredFloatFormat;
         var layout = ControlFactory.CreateControlLayout(label, parameter, alignGroup);
+        var drawPre = preDraw ?? layout.Pre;
+        var controlLabel = hiddenLabel ?? layout.HiddenLabel;
 
         if (meta.Min is not null && meta.Max is not null)
         {
@@ -97,8 +166,16 @@ internal static class NumericControlBuilder
             return () =>
             {
                 var v = p.Value;
-                layout.Pre();
-                if (SliderDouble(layout.HiddenLabel, ref v, dMin, dMax, fmt)) p.Value = v;
+                drawPre();
+                var changed = numericControlOps.SliderDouble(controlLabel, ref v, dMin, dMax, fmt);
+                var activated = numericControlOps.IsItemActivated();
+                var deactivated = numericControlOps.IsItemDeactivated();
+                if (activated)
+                    numericEditUndoSink?.BeginNumericEdit(parameter);
+                if (changed)
+                    p.Value = v;
+                if (deactivated)
+                    numericEditUndoSink?.EndNumericEdit(parameter);
                 ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
@@ -107,38 +184,17 @@ internal static class NumericControlBuilder
         return () =>
         {
             var v = p.Value;
-            layout.Pre();
-            if (DragDouble(layout.HiddenLabel, ref v, step, fmt)) p.Value = v;
+            drawPre();
+            var changed = numericControlOps.DragDouble(controlLabel, ref v, step, fmt);
+            var activated = numericControlOps.IsItemActivated();
+            var deactivated = numericControlOps.IsItemDeactivated();
+            if (activated)
+                numericEditUndoSink?.BeginNumericEdit(parameter);
+            if (changed)
+                p.Value = v;
+            if (deactivated)
+                numericEditUndoSink?.EndNumericEdit(parameter);
             ValidationMessageRenderer.Draw(parameter, _textOps);
         };
-    }
-
-    /// <summary>
-    /// Wraps ImGui's scalar slider API for native <see cref="double"/> editing.
-    /// </summary>
-    /// <param name="label">The ImGui widget label.</param>
-    /// <param name="value">The value being edited.</param>
-    /// <param name="min">The inclusive slider minimum.</param>
-    /// <param name="max">The inclusive slider maximum.</param>
-    /// <param name="format">The display format string.</param>
-    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
-    private static unsafe bool SliderDouble(string label, ref double value, double min, double max, string format)
-    {
-        fixed (double* pValue = &value)
-            return ImGui.SliderScalar(label, ImGuiDataType.Double, pValue, &min, &max, format);
-    }
-
-    /// <summary>
-    /// Wraps ImGui's scalar drag API for native <see cref="double"/> editing.
-    /// </summary>
-    /// <param name="label">The ImGui widget label.</param>
-    /// <param name="value">The value being edited.</param>
-    /// <param name="speed">The drag speed.</param>
-    /// <param name="format">The display format string.</param>
-    /// <returns><see langword="true"/> when the value changed; otherwise <see langword="false"/>.</returns>
-    private static unsafe bool DragDouble(string label, ref double value, float speed, string format)
-    {
-        fixed (double* pValue = &value)
-            return ImGui.DragScalar(label, ImGuiDataType.Double, pValue, speed, format);
     }
 }

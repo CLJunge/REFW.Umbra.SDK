@@ -1,4 +1,5 @@
 using Umbra.Config.Attributes;
+using Umbra.UI.Config;
 using Umbra.UI.Toast;
 
 namespace Umbra.Config.UnitTests;
@@ -189,6 +190,93 @@ public sealed class ConfigUndoStackTests
             var top = undo.Peek();
             Assert.IsNotNull(top);
             Assert.AreEqual("changed", top.NewValue);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a grouped numeric interaction records one undo entry when the value changes multiple times while active.
+    /// </summary>
+    [TestMethod]
+    public void GroupedNumericEdit_MultipleIntermediateChanges_PushesSingleRecordOnEnd()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            var sink = (INumericEditUndoSink)undo;
+
+            sink.BeginNumericEdit(config.IntValue);
+            config.IntValue.Value = 20;
+            config.IntValue.Value = 30;
+            config.IntValue.Value = 42;
+
+            Assert.AreEqual(0, undo.Count);
+
+            sink.EndNumericEdit(config.IntValue);
+
+            Assert.AreEqual(1, undo.Count);
+            var record = undo.Peek();
+            Assert.IsNotNull(record);
+            Assert.AreEqual(10, record.OldValue);
+            Assert.AreEqual(42, record.NewValue);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that undo after a grouped numeric interaction restores the interaction's initial value.
+    /// </summary>
+    [TestMethod]
+    public void TryUndo_AfterGroupedNumericEdit_RestoresInitialValue()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            var sink = (INumericEditUndoSink)undo;
+
+            sink.BeginNumericEdit(config.IntValue);
+            config.IntValue.Value = 18;
+            config.IntValue.Value = 27;
+            sink.EndNumericEdit(config.IntValue);
+
+            var result = undo.TryUndo();
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(10, config.IntValue.Value);
+            Assert.AreEqual(0, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a grouped numeric interaction records nothing when the value does not change.
+    /// </summary>
+    [TestMethod]
+    public void GroupedNumericEdit_WithoutEffectiveChange_PushesNoRecord()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            var sink = (INumericEditUndoSink)undo;
+
+            sink.BeginNumericEdit(config.IntValue);
+            sink.EndNumericEdit(config.IntValue);
+
+            Assert.IsFalse(undo.CanUndo);
+            Assert.AreEqual(0, undo.Count);
+            Assert.IsNull(undo.Peek());
         }
         finally
         {

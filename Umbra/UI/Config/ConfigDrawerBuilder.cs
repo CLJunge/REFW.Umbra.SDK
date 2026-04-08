@@ -10,7 +10,7 @@ namespace Umbra.UI.Config;
 /// <remarks>
 /// This builder owns top-level scope setup, node and disposable collection, category tracking, and final stable ordering. Recursive traversal of nested configuration scopes is delegated to <see cref="ConfigDrawTreeCollector"/>.
 /// </remarks>
-internal sealed class ConfigDrawerBuilder
+internal sealed class ConfigDrawerBuilder(INumericEditUndoSink? numericEditUndoSink = null)
 {
     private readonly List<CategoryNode> _allCategoryNodes = [];
 
@@ -55,7 +55,7 @@ internal sealed class ConfigDrawerBuilder
             labelMarginOverride ?? typeMeta.LabelMarginAttr,
             RegisterCategoryNode);
 
-        ConfigDrawTreeCollector.CollectInto(scope, obj, type, RegisterCategoryNode, Disposables, SortNodesInPlace, SearchIndex);
+        ConfigDrawTreeCollector.CollectInto(scope, obj, type, RegisterCategoryNode, Disposables, SortNodesInPlace, SearchIndex, numericEditUndoSink);
 
         foreach (var node in scope.Nodes)
             Nodes.Add(node);

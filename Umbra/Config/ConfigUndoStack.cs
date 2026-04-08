@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Umbra.UI.Config;
 using Umbra.UI.Toast;
 
 namespace Umbra.Config;
@@ -22,9 +23,14 @@ namespace Umbra.Config;
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">The configuration class managed by the store.</typeparam>
-public sealed class ConfigUndoStack<TConfig> : IDisposable
+public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditUndoSink
     where TConfig : class, new()
 {
+    private sealed class NumericEditSession(object? initialValue)
+    {
+        internal object? InitialValue { get; } = initialValue;
+    }
+
     /// <summary>
     /// The default maximum number of change records retained before the oldest is dropped.
     /// </summary>
@@ -36,6 +42,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     private readonly List<Action> _cleanupActions;
     private readonly int _capacity;
     private readonly ConfigToastOptions? _toast;
+    private readonly Dictionary<string, NumericEditSession> _activeNumericEdits;
     private bool _suppressRecording;
     private bool _disposed;
 
@@ -100,6 +107,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
         _stack = new(capacity);
 #pragma warning restore IDE0028
         _snapshots = [];
+        _activeNumericEdits = [];
         _cleanupActions = [];
 
         var target = (IConfigStoreCopyTarget<TConfig>)store;
@@ -172,6 +180,41 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
     /// </summary>
     public void Clear() => _stack.Clear();
 
+    void INumericEditUndoSink.BeginNumericEdit(IParameter parameter)
+    {
+        if (_disposed)
+            return;
+
+        ArgumentNullException.ThrowIfNull(parameter);
+        var key = parameter.Key;
+        if (_activeNumericEdits.ContainsKey(key))
+            return;
+
+        if (!_snapshots.TryGetValue(key, out var initialValue))
+            initialValue = parameter.GetValue();
+
+        _activeNumericEdits[key] = new NumericEditSession(initialValue);
+    }
+
+    void INumericEditUndoSink.EndNumericEdit(IParameter parameter)
+    {
+        if (_disposed)
+            return;
+
+        ArgumentNullException.ThrowIfNull(parameter);
+        var key = parameter.Key;
+        if (!_activeNumericEdits.TryGetValue(key, out var session))
+            return;
+
+        _activeNumericEdits.Remove(key);
+        var currentValue = parameter.GetValue();
+        _snapshots[key] = currentValue;
+        if (Equals(session.InitialValue, currentValue))
+            return;
+
+        AddRecord(key, parameter, session.InitialValue, currentValue);
+    }
+
     /// <summary>
     /// Detaches all parameter event subscriptions and clears internal state.
     /// </summary>
@@ -184,6 +227,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
             _cleanupActions[i]();
 
         _cleanupActions.Clear();
+        _activeNumericEdits.Clear();
         _stack.Clear();
         _snapshots.Clear();
     }
@@ -214,11 +258,19 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable
         var current = param.GetValue();
         _snapshots[key] = current;
 
+        if (_activeNumericEdits.ContainsKey(key))
+            return;
+
+        AddRecord(key, param, old, current);
+    }
+
+    private void AddRecord(string key, IParameter param, object? oldValue, object? newValue)
+    {
         var label = param.Metadata.ResolvedLabel;
         if (string.IsNullOrEmpty(label))
             label = key;
 
-        var record = new ConfigChangeRecord(key, label, old, current, Stopwatch.GetTimestamp());
+        var record = new ConfigChangeRecord(key, label, oldValue, newValue, Stopwatch.GetTimestamp());
 
         if (_stack.Count >= _capacity)
             _stack.RemoveAt(0);

@@ -22,6 +22,7 @@ internal sealed class ImGuiConfigRenderContext :
     IIdScopeNodeRenderer,
     IParameterNodeRenderer,
     IConfigDrawerRenderer,
+    INumericControlOps,
     IButtonStyleColorSink
 {
     /// <summary>
@@ -139,6 +140,48 @@ internal sealed class ImGuiConfigRenderContext :
     /// <inheritdoc/>
     public bool Combo(string label, ref int selectedIndex, string[] items, int itemCount)
         => ImGui.Combo(label, ref selectedIndex, items, itemCount);
+
+    /// <inheritdoc/>
+    public bool SliderInt(string label, ref int value, int min, int max, string format)
+        => ImGui.SliderInt(label, ref value, min, max, format);
+
+    /// <inheritdoc/>
+    public bool DragInt(string label, ref int value, float speed, int min, int max, string format)
+        => ImGui.DragInt(label, ref value, speed, min, max, format);
+
+    /// <inheritdoc/>
+    public bool SliderFloat(string label, ref float value, float min, float max, string format)
+        => ImGui.SliderFloat(label, ref value, min, max, format);
+
+    /// <inheritdoc/>
+    public bool DragFloat(string label, ref float value, float speed, float min, float max, string format)
+        => ImGui.DragFloat(label, ref value, speed, min, max, format);
+
+    /// <inheritdoc/>
+    public bool SliderDouble(string label, ref double value, double min, double max, string format)
+        => SliderDoubleCore(label, ref value, min, max, format);
+
+    /// <inheritdoc/>
+    public bool DragDouble(string label, ref double value, float speed, string format)
+        => DragDoubleCore(label, ref value, speed, format);
+
+    /// <inheritdoc/>
+    public bool IsItemActivated() => ImGui.IsItemActivated();
+
+    /// <inheritdoc/>
+    public bool IsItemDeactivated() => ImGui.IsItemDeactivated();
+
+    private static unsafe bool SliderDoubleCore(string label, ref double value, double min, double max, string format)
+    {
+        fixed (double* pValue = &value)
+            return ImGui.SliderScalar(label, ImGuiDataType.Double, pValue, &min, &max, format);
+    }
+
+    private static unsafe bool DragDoubleCore(string label, ref double value, float speed, string format)
+    {
+        fixed (double* pValue = &value)
+            return ImGui.DragScalar(label, ImGuiDataType.Double, pValue, speed, format);
+    }
 
     private static string GetVisibleLabelText(string label)
     {
