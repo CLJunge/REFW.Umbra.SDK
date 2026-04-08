@@ -505,6 +505,122 @@ public sealed class ConfigSectionTests
         store.Dispose();
     }
 
+    /// <summary>
+    /// Tests that the built-in undo shortcut restores the latest value change when undo is available.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_WhenShortcutPressedAndUndoAvailable_RestoresPreviousValue()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-shortcut.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var inputSource = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Undo = new ConfigUndoOptions(), UndoInputSource = inputSource },
+            idScope: "undo-shortcut",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        config.TestParameter.Value = false;
+
+        section.TryHandleBuiltInUndo();
+
+        Assert.IsTrue(config.TestParameter.Value);
+        Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
+        Assert.AreEqual(1, inputSource.DefaultUndoShortcutCheckCount);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that built-in undo does nothing when the section does not own an undo stack.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_WhenUndoStackIsMissing_DoesNotQueryInputSource()
+    {
+        var inputSource = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
+        using var section = new ConfigSection<TestConfig>(
+            new TestConfig(),
+            new ConfigDrawerOptions { UndoInputSource = inputSource },
+            idScope: "missing-undo",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        section.TryHandleBuiltInUndo();
+
+        Assert.AreEqual(0, inputSource.WantsTextInputCheckCount);
+        Assert.AreEqual(0, inputSource.DefaultUndoShortcutCheckCount);
+    }
+
+    /// <summary>
+    /// Tests that built-in undo does nothing when the owned undo stack is empty.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_WhenUndoStackIsEmpty_DoesNotQueryInputSource()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-empty.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var inputSource = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Undo = new ConfigUndoOptions(), UndoInputSource = inputSource },
+            idScope: "empty-undo",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        section.TryHandleBuiltInUndo();
+
+        Assert.IsTrue(config.TestParameter.Value);
+        Assert.AreEqual(0, inputSource.WantsTextInputCheckCount);
+        Assert.AreEqual(0, inputSource.DefaultUndoShortcutCheckCount);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that built-in undo is suppressed while text input is actively handling editing shortcuts.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_WhenTextInputIsActive_DoesNotUndo()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-text-input.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var inputSource = new TestUndoShortcutInputSource
+        {
+            DefaultUndoShortcutPressed = true,
+            WantsTextInputState = true
+        };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Undo = new ConfigUndoOptions(), UndoInputSource = inputSource },
+            idScope: "text-input-undo",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        config.TestParameter.Value = false;
+
+        section.TryHandleBuiltInUndo();
+
+        Assert.IsFalse(config.TestParameter.Value);
+        Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
+        Assert.AreEqual(0, inputSource.DefaultUndoShortcutCheckCount);
+        store.Dispose();
+    }
+
     // --- Preset store wiring ---
 
     /// <summary>

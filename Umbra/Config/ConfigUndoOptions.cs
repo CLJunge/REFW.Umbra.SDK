@@ -7,8 +7,10 @@ namespace Umbra.Config;
 /// </summary>
 /// <remarks>
 /// When supplied as a non-<see langword="null"/> value to <see cref="UI.Config.ConfigDrawerOptions.Undo"/>,
-/// the undo stack is created with the configured settings. When <see langword="null"/>,
-/// the undo feature is disabled.
+/// the undo stack is created with the configured settings. In store-backed
+/// <see cref="UI.Config.ConfigSection{TConfig}"/> instances, enabling this option also enables the
+/// built-in default Windows undo shortcut (<c>Ctrl+Z</c>) while text input is not actively handling
+/// editing shortcuts. When <see langword="null"/>, the undo feature is disabled.
 /// </remarks>
 public sealed class ConfigUndoOptions
 {

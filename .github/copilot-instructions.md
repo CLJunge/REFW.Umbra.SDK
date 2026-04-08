@@ -59,6 +59,7 @@ When generating or modifying code for this repository:
   - create `DeferredSaveController<TConfig>` only after `Load()` completes
 - For nested config groups, put `[UmbraPrefix("...")]` on the parent property, not the nested type.
 - Reuse existing helpers where applicable: `KeyboardInput`, `ImGuiWidgets`, and drawers under `Umbra.UI.Config.Drawers`.
+- Optional features should only receive related dependencies when that feature is actually enabled; for undo, the input source should be supplied only when undo is used.
 
 ## Testing patterns
 - Match the existing `MSTest` style: `[TestClass]`, `[TestMethod]`, and `[DataRow]` where appropriate.

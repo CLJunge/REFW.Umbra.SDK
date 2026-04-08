@@ -26,6 +26,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private ConfigTransferFeature? _transferFeature;
     private ConfigPresetFeature<TConfig>? _presetFeature;
     private ConfigUndoStack<TConfig>? _undoStack;
+    private IUndoShortcutInputSource? _undoInputSource;
     private ConfigPresetStore<TConfig>? _presetStore;
     private bool _disposed;
 
@@ -194,6 +195,10 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
             _presetStore = presetStore,
             _presetFeature = CreatePresetFeature(presetStore, store, options)
         };
+
+        if (section._undoStack is not null)
+            section._undoInputSource = options.UndoInputSource ?? new KeyboardUndoShortcutInputSource();
+
         return section;
     }
 
@@ -216,6 +221,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     public void Draw()
     {
         if (_disposed) return;
+
+        TryHandleBuiltInUndo();
 
         var hasActiveSearch = _drawer.HasActiveSearchQuery;
 
@@ -251,6 +258,20 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         _transferFeature = null;
         _drawer.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    internal void TryHandleBuiltInUndo()
+    {
+        var undoStack = _undoStack;
+        var undoInputSource = _undoInputSource;
+        if (undoStack is null || undoInputSource is null || !undoStack.CanUndo)
+            return;
+
+        if (undoInputSource.WantsTextInput())
+            return;
+
+        if (undoInputSource.IsDefaultUndoShortcutPressed())
+            undoStack.TryUndo();
     }
 
     private static ConfigTransferFeature? CreateTransferFeature(IConfigTransferStore store, ConfigDrawerOptions options)

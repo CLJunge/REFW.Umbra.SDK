@@ -6,6 +6,7 @@ using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
 using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
+using Umbra.UI.Toast;
 #if BENCHMARK
 using Umbra.UI.Panel.Benchmark;
 #endif
@@ -200,22 +201,26 @@ public sealed class SamplePlugin : UmbraPlugin
     /// <param name="store">The loaded config store used for built-in transfer UI support.</param>
     /// <returns>The runtime panel.</returns>
     private static PluginPanel CreateRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
-        => new PluginPanel(_runtimePanelScope)
-            .Add(ConfigSection<PluginConfig>.CreateWithStore(
-                config,
-                store,
-                new ConfigDrawerOptions
-                {
-                    Search = new UI.Config.Search.ConfigSearchOptions(),
-                    Transfer = new ConfigTransferOptions { Enabled = true },
-                    Undo = new ConfigUndoOptions(),
-                    Presets = new ConfigPresetOptions
+    {
+        var toast = new ConfigToastOptions { Duration = TimeSpan.FromSeconds(2) };
+        return new PluginPanel(_runtimePanelScope)
+                .Add(ConfigSection<PluginConfig>.CreateWithStore(
+                    config,
+                    store,
+                    new ConfigDrawerOptions
                     {
-                        SectionLabel = "Presets",
-                        ExpandedByDefault = true
-                    }
-                },
-                _runtimeSectionScope));
+                        Search = new UI.Config.Search.ConfigSearchOptions(),
+                        Transfer = new ConfigTransferOptions { Enabled = true },
+                        Undo = new ConfigUndoOptions() { Toast = toast },
+                        Presets = new ConfigPresetOptions
+                        {
+                            SectionLabel = "Presets",
+                            ExpandedByDefault = true,
+                            Toast = toast
+                        }
+                    },
+                    _runtimeSectionScope));
+    }
 
     /// <summary>
     /// Creates the benchmark panel and benchmark host for isolated panel-draw measurement.

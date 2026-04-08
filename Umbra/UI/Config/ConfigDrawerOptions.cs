@@ -21,6 +21,7 @@ public sealed class ConfigDrawerOptions
         SuppressRootNode = false,
         Transfer = null,
         Undo = null,
+        UndoInputSource = null,
         Presets = null
     };
 
@@ -69,6 +70,17 @@ public sealed class ConfigDrawerOptions
     /// </remarks>
     public ConfigPresetOptions? Presets { get; init; }
 
+    /// <summary>
+    /// Gets or sets the internal undo-shortcut input source used by store-backed config sections.
+    /// </summary>
+    /// <remarks>
+    /// When <see langword="null"/>, the built-in production undo input source is used if and only if
+    /// <see cref="Undo"/> is enabled and a section creates an undo stack. This property exists so tests
+    /// can inject deterministic keyboard state without adding undo-specific constructor parameters to
+    /// sections that do not use undo.
+    /// </remarks>
+    internal IUndoShortcutInputSource? UndoInputSource { get; init; }
+
     /// <summary>Initializes a new instance of <see cref="ConfigDrawerOptions"/> with all options set to their defaults.</summary>
     public ConfigDrawerOptions() { }
 
@@ -78,6 +90,7 @@ public sealed class ConfigDrawerOptions
         SuppressRootNode = source.SuppressRootNode;
         Transfer = source.Transfer;
         Undo = source.Undo;
+        UndoInputSource = source.UndoInputSource;
         Presets = source.Presets;
     }
 
@@ -88,6 +101,8 @@ public sealed class ConfigDrawerOptions
     internal ConfigDrawerOptions WithTransfer(ConfigTransferOptions? transfer) => new(this) { Transfer = transfer };
 
     internal ConfigDrawerOptions WithUndo(ConfigUndoOptions? undo) => new(this) { Undo = undo };
+
+    internal ConfigDrawerOptions WithUndoInputSource(IUndoShortcutInputSource? undoInputSource) => new(this) { UndoInputSource = undoInputSource };
 
     internal ConfigDrawerOptions WithPresets(ConfigPresetOptions? presets) => new(this) { Presets = presets };
 }
