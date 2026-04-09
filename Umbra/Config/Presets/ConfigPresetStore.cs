@@ -24,11 +24,15 @@ public sealed class ConfigPresetStore<TConfig>
     where TConfig : class, new()
 {
     private const string PresetExtension = ".json";
+    private const long CacheCheckIntervalMs = 1000;
 
     private readonly IReadOnlyDictionary<string, IParameter> _parameters;
     private readonly string _presetDirectory;
     private readonly string _presetFilePrefix;
     private readonly ConfigToastOptions? _toast;
+    private List<string>? _cachedNames;
+    private DateTime _lastDirectoryWriteTimeUtc;
+    private long _lastCheckTicks;
 
     /// <summary>
     /// Gets the directory where preset files are stored.
@@ -133,6 +137,7 @@ public sealed class ConfigPresetStore<TConfig>
         {
             Directory.CreateDirectory(_presetDirectory);
             File.WriteAllText(filePath, JsonSerializer.Serialize(dict, ConfigPersistence.JsonOptions));
+            InvalidateCache();
             Logger.Info($"ConfigPresetStore: saved preset '{name}' ({dict.Count} parameter(s)) to '{filePath}'.");
             if (_toast is not null)
                 ToastQueue.Push($"Preset saved: {name}", ToastLevel.Success, _toast.Duration);
@@ -212,8 +217,65 @@ public sealed class ConfigPresetStore<TConfig>
     /// <summary>
     /// Returns the names of all saved presets.
     /// </summary>
+    /// <remarks>
+    /// Results are cached internally. The cache is invalidated automatically after
+    /// <see cref="Save"/>, <see cref="Delete"/>, and <see cref="ImportPreset"/>
+    /// operations. External filesystem changes are detected via a throttled
+    /// directory-timestamp check (at most once per second).
+    /// </remarks>
     /// <returns>A list of preset names found in the preset directory.</returns>
     public List<string> List()
+    {
+        if (_cachedNames is not null)
+        {
+            var now = Environment.TickCount64;
+            if (now - _lastCheckTicks < CacheCheckIntervalMs)
+                return _cachedNames;
+
+            _lastCheckTicks = now;
+
+            if (!Directory.Exists(_presetDirectory))
+            {
+                _cachedNames = [];
+                return _cachedNames;
+            }
+
+            try
+            {
+                var currentWriteTime = Directory.GetLastWriteTimeUtc(_presetDirectory);
+                if (currentWriteTime == _lastDirectoryWriteTimeUtc)
+                    return _cachedNames;
+            }
+            catch (Exception ex)
+            {
+                Logger.Exception(ex, $"ConfigPresetStore: failed to check directory timestamp for '{_presetDirectory}'.");
+                return _cachedNames;
+            }
+        }
+
+        _cachedNames = ScanPresetNames();
+        _lastCheckTicks = Environment.TickCount64;
+
+        try
+        {
+            if (Directory.Exists(_presetDirectory))
+                _lastDirectoryWriteTimeUtc = Directory.GetLastWriteTimeUtc(_presetDirectory);
+        }
+        catch
+        {
+            // Best-effort; timestamp will be re-read on next check.
+        }
+
+        return _cachedNames;
+    }
+
+    /// <summary>
+    /// Invalidates the cached preset name list so the next <see cref="List"/> call
+    /// performs a fresh directory scan.
+    /// </summary>
+    private void InvalidateCache() => _cachedNames = null;
+
+    private List<string> ScanPresetNames()
     {
         var result = new List<string>();
 
@@ -273,6 +335,7 @@ public sealed class ConfigPresetStore<TConfig>
         try
         {
             File.Delete(filePath);
+            InvalidateCache();
             Logger.Info($"ConfigPresetStore: deleted preset '{name}' at '{filePath}'.");
             if (_toast is not null)
                 ToastQueue.Push($"Preset deleted: {name}", ToastLevel.Info, _toast.Duration);
@@ -380,6 +443,7 @@ public sealed class ConfigPresetStore<TConfig>
         {
             Directory.CreateDirectory(_presetDirectory);
             File.Copy(sourceFilePath, destinationFilePath, overwrite: true);
+            InvalidateCache();
             Logger.Info($"ConfigPresetStore: imported preset '{name}' from '{sourceFilePath}' to '{destinationFilePath}'.");
             if (_toast is not null)
                 ToastQueue.Push($"Preset imported: {name}", ToastLevel.Success, _toast.Duration);

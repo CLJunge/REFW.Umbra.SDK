@@ -1082,4 +1082,149 @@ public sealed class ConfigPresetStoreTests
             CleanupStore(store, tempPath);
         }
     }
+
+    // --- List caching ---
+
+    /// <summary>
+    /// Tests that consecutive <see cref="ConfigPresetStore{TConfig}.List"/> calls without
+    /// mutations return the same list instance (cache hit).
+    /// </summary>
+    [TestMethod]
+    public void List_ConsecutiveCallsWithoutMutation_ReturnsSameInstance()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+            var first = presets.List();
+            var second = presets.List();
+
+            Assert.AreSame(first, second, "Expected the same list reference on consecutive calls (cache hit).");
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.List"/> includes a newly saved preset
+    /// after <see cref="ConfigPresetStore{TConfig}.Save"/> invalidates the cache.
+    /// </summary>
+    [TestMethod]
+    public void List_AfterSave_ReflectsNewPreset()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+
+            // Populate cache
+            var before = presets.List();
+
+            // Save a new preset (invalidates cache)
+            config.IntValue.Value = 99;
+            presets.Save("cachetest");
+
+            var after = presets.List();
+
+            Assert.AreNotSame(before, after, "Expected a new list instance after save (cache invalidated).");
+
+            var found = false;
+            for (var i = 0; i < after.Count; i++)
+            {
+                if (after[i] == "cachetest") { found = true; break; }
+            }
+            Assert.IsTrue(found, "Expected 'cachetest' in preset list after save.");
+        }
+        finally
+        {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(tempPath))!;
+            var pf = Path.Combine(dir, "config-preset-cachetest.json");
+            if (File.Exists(pf)) File.Delete(pf);
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.List"/> no longer includes a deleted
+    /// preset after <see cref="ConfigPresetStore{TConfig}.Delete"/> invalidates the cache.
+    /// </summary>
+    [TestMethod]
+    public void List_AfterDelete_ReflectsRemovedPreset()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            presets.Save("delcache");
+
+            // Populate cache with the preset present
+            var before = presets.List();
+            var foundBefore = false;
+            for (var i = 0; i < before.Count; i++)
+            {
+                if (before[i] == "delcache") { foundBefore = true; break; }
+            }
+            Assert.IsTrue(foundBefore, "Expected 'delcache' in list before delete.");
+
+            // Delete (invalidates cache)
+            presets.Delete("delcache");
+
+            var after = presets.List();
+            var foundAfter = false;
+            for (var i = 0; i < after.Count; i++)
+            {
+                if (after[i] == "delcache") { foundAfter = true; break; }
+            }
+            Assert.IsFalse(foundAfter, "Expected 'delcache' to be absent from list after delete.");
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigPresetStore{TConfig}.List"/> includes an imported preset
+    /// after <see cref="ConfigPresetStore{TConfig}.ImportPreset"/> invalidates the cache.
+    /// </summary>
+    [TestMethod]
+    public void List_AfterImport_ReflectsImportedPreset()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<PresetTestConfig>();
+        var sourceDir = Path.Combine(Path.GetTempPath(), $"import_cache_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(sourceDir);
+        var sourceFile = Path.Combine(sourceDir, "imported-cache-preset.json");
+        File.WriteAllText(sourceFile, "{}");
+        try
+        {
+            var presets = new ConfigPresetStore<PresetTestConfig>(store);
+
+            // Populate cache
+            var before = presets.List();
+
+            // Import (invalidates cache)
+            var name = presets.ImportPreset(sourceFile);
+            Assert.IsNotNull(name);
+
+            var after = presets.List();
+            Assert.AreNotSame(before, after, "Expected a new list instance after import (cache invalidated).");
+
+            var found = false;
+            for (var i = 0; i < after.Count; i++)
+            {
+                if (after[i] == name) { found = true; break; }
+            }
+            Assert.IsTrue(found, $"Expected '{name}' in preset list after import.");
+        }
+        finally
+        {
+            if (Directory.Exists(sourceDir))
+                Directory.Delete(sourceDir, recursive: true);
+            CleanupStore(store, tempPath);
+        }
+    }
 }
