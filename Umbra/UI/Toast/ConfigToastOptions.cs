@@ -1,3 +1,5 @@
+using Umbra.Config;
+
 namespace Umbra.UI.Toast;
 
 /// <summary>
@@ -5,7 +7,7 @@ namespace Umbra.UI.Toast;
 /// </summary>
 /// <remarks>
 /// When supplied as a non-<see langword="null"/> value to a toast-capable options class
-/// (such as <see cref="Umbra.Config.ConfigUndoOptions.Toast"/> or
+/// (such as <see cref="ConfigUndoOptions.Toast"/> or
 /// <see cref="Umbra.Config.Presets.ConfigPresetOptions.Toast"/>),
 /// toast notifications are enabled with the configured settings.
 /// When <see langword="null"/>, toast notifications are disabled for that feature.

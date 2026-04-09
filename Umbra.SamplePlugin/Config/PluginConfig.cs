@@ -43,6 +43,7 @@ public record PluginConfig
     [UmbraParameter]
     [UmbraDisplayName("Reset All Samples")]
     [UmbraDescription("Resets every sample group to its default values.")]
+    [UmbraBatchUndo("Reset All Samples")]
     [UmbraButtonStyle(ButtonStyle.Danger)]
     [UmbraControlWidth(-1f)]
     [UmbraParameterOrder(1)]
@@ -198,6 +199,7 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraDisplayName("Reset General")]
         [UmbraDescription("Resets the sample plugin enable toggle, hotkeys, and verbose logging flag.")]
+        [UmbraBatchUndo("Reset General")]
         [UmbraButtonStyle(ButtonStyle.Danger)]
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetGeneral { get; init; }
@@ -255,6 +257,7 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraDisplayName("Reset Booleans")]
         [UmbraDescription("Resets the boolean checkbox samples to their defaults.")]
+        [UmbraBatchUndo("Reset Booleans")]
         [UmbraButtonStyle(ButtonStyle.Danger)]
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetBooleans { get; init; }

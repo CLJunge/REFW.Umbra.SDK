@@ -198,17 +198,18 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 
     /// <summary>
-    /// Creates the runtime panel for the loaded sample config and binds batch-undo to reset actions.
+    /// Creates the runtime panel for the loaded sample config.
     /// </summary>
+    /// <remarks>
+    /// Batch-undo wrapping for reset actions is handled automatically by the undo stack via
+    /// <see cref="Config.Attributes.UmbraBatchUndoAttribute"/> on the reset properties.
+    /// </remarks>
     /// <param name="config">The loaded config instance.</param>
     /// <param name="store">The loaded config store.</param>
     private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
     {
         var section = CreateRuntimeSection(config, store);
         _panel = new PluginPanel(_runtimePanelScope).Add(section);
-
-        if (section.UndoStack is { } undoStack)
-            PluginConfigActionBinder.BindBatchUndo(config, undoStack);
     }
 
     /// <summary>

@@ -121,6 +121,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
         _parameters = target.Parameters;
 
         SubscribeToParameters();
+        ApplyAutoBatchWrapping();
     }
 
     /// <summary>
@@ -449,6 +450,32 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
             void handler() => OnParameterChanged(key, param);
             param.ValueChanged += handler;
             _cleanupActions.Add(() => param.ValueChanged -= handler);
+        }
+    }
+
+    /// <summary>
+    /// Discovers delegate parameters marked with <see cref="Attributes.UmbraBatchUndoAttribute"/> and
+    /// replaces their current <see cref="Action"/> value with a batch-wrapped version via
+    /// <see cref="WrapWithBatch"/>. Uses <see cref="IParameter.SetValueWithoutNotify"/> so no
+    /// <see cref="IParameter.ValueChanged"/> event is raised.
+    /// </summary>
+    private void ApplyAutoBatchWrapping()
+    {
+        foreach (var kvp in _parameters)
+        {
+            var param = kvp.Value;
+
+            if (!typeof(Delegate).IsAssignableFrom(param.ValueType))
+                continue;
+
+            var label = param.Metadata.BatchUndoLabel;
+            if (label is null)
+                continue;
+
+            if (param.GetValue() is not Action action)
+                continue;
+
+            param.SetValueWithoutNotify(WrapWithBatch(label, action));
         }
     }
 

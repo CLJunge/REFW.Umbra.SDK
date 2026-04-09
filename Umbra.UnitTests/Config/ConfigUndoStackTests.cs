@@ -1466,7 +1466,7 @@ public sealed class ConfigUndoStackTests
 
             reset();
 
-            Assert.AreEqual(1, undo.Count);
+            Assert.AreEqual(1, undo.Count, "Expected exactly one undo entry for the wrapped action.");
         }
         finally
         {
@@ -1567,6 +1567,171 @@ public sealed class ConfigUndoStackTests
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store);
             Assert.ThrowsExactly<ArgumentException>(() => undo.WrapWithBatch(label!, () => { }));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    // --- Auto batch wrapping via [UmbraBatchUndo] ---
+
+    /// <summary>
+    /// Test configuration class with a <see cref="UmbraBatchUndoAttribute"/>-decorated reset action
+    /// that resets two value parameters.
+    /// </summary>
+    [UmbraAutoRegister]
+    private sealed class AutoBatchConfig
+    {
+        [UmbraParameter]
+        public Parameter<int> ValueA { get; set; } = new(10);
+
+        [UmbraParameter]
+        public Parameter<string> ValueB { get; set; } = new("hello");
+
+        [UmbraParameter]
+        [UmbraBatchUndo("Reset All")]
+        public Parameter<Action> ResetAll { get; init; }
+
+        [UmbraParameter]
+        public Parameter<Action> PlainAction { get; init; } = new(static () => { });
+
+        public AutoBatchConfig()
+        {
+            ResetAll = new(() =>
+            {
+                ValueA.Reset();
+                ValueB.Reset();
+            });
+        }
+    }
+
+    /// <summary>
+    /// Test configuration class with a <see cref="UmbraBatchUndoAttribute"/>-decorated action whose
+    /// initial value is <see langword="null"/> to verify silent skip behavior.
+    /// </summary>
+    [UmbraAutoRegister]
+    private sealed class AutoBatchNullActionConfig
+    {
+        [UmbraParameter]
+        public Parameter<int> Value { get; set; } = new(1);
+
+        [UmbraParameter]
+        [UmbraBatchUndo("Should Skip")]
+        public Parameter<Action> NullAction { get; set; } = new(null!);
+    }
+
+    /// <summary>
+    /// Verifies that invoking an auto-wrapped action produces a single batch entry on the undo stack.
+    /// </summary>
+    [TestMethod]
+    public void AutoBatchWrapping_InvokingMarkedAction_ProducesSingleBatchEntry()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<AutoBatchConfig>();
+        try
+        {
+            config.ValueA.Value = 42;
+            config.ValueB.Value = "changed";
+
+            using var undo = new ConfigUndoStack<AutoBatchConfig>(store);
+            config.ResetAll.Value!();
+
+            Assert.AreEqual(1, undo.Count, "Auto-wrapped reset should produce exactly one undo entry.");
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that the batch entry label matches the <see cref="UmbraBatchUndoAttribute.Label"/> value.
+    /// </summary>
+    [TestMethod]
+    public void AutoBatchWrapping_BatchEntryLabel_MatchesAttributeLabel()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<AutoBatchConfig>();
+        try
+        {
+            config.ValueA.Value = 42;
+
+            using var undo = new ConfigUndoStack<AutoBatchConfig>(store);
+            config.ResetAll.Value!();
+
+            var entry = undo.PeekEntry();
+            Assert.IsInstanceOfType<ConfigBatchChangeRecord>(entry);
+            Assert.AreEqual("Reset All", ((ConfigBatchChangeRecord)entry).BatchLabel);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that undoing an auto-wrapped batch restores all parameter values.
+    /// </summary>
+    [TestMethod]
+    public void AutoBatchWrapping_UndoRestoresAllValues()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<AutoBatchConfig>();
+        try
+        {
+            config.ValueA.Value = 42;
+            config.ValueB.Value = "changed";
+
+            using var undo = new ConfigUndoStack<AutoBatchConfig>(store);
+            config.ResetAll.Value!();
+
+            Assert.AreEqual(10, config.ValueA.Value, "ValueA should be reset.");
+            Assert.AreEqual("hello", config.ValueB.Value, "ValueB should be reset.");
+
+            undo.TryUndo();
+
+            Assert.AreEqual(42, config.ValueA.Value, "ValueA should be restored after undo.");
+            Assert.AreEqual("changed", config.ValueB.Value, "ValueB should be restored after undo.");
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that a <see cref="UmbraBatchUndoAttribute"/>-decorated parameter with a null action
+    /// is silently skipped during auto-wrapping.
+    /// </summary>
+    [TestMethod]
+    public void AutoBatchWrapping_NullActionValue_SilentlySkipped()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<AutoBatchNullActionConfig>();
+        try
+        {
+            // Construction should not throw even though the action is null.
+            using var undo = new ConfigUndoStack<AutoBatchNullActionConfig>(store);
+            Assert.IsFalse(undo.CanUndo, "Stack should be empty after construction.");
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that an action parameter without <see cref="UmbraBatchUndoAttribute"/> is not
+    /// auto-wrapped — invoking it does not produce a batch entry.
+    /// </summary>
+    [TestMethod]
+    public void AutoBatchWrapping_ActionWithoutAttribute_NotWrapped()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<AutoBatchConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<AutoBatchConfig>(store);
+
+            config.PlainAction.Value!();
+
+            Assert.AreEqual(0, undo.Count, "Plain action without [UmbraBatchUndo] should not produce undo entries.");
         }
         finally
         {
