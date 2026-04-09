@@ -22,9 +22,11 @@ public sealed class PluginHostTests
     {
         _sink = new TestLogSink();
 
+        KeyboardInput.SetKeyStateProvider(new NullKeyStateProvider());
         Logger.EnableAll();
         Logger.SetLogSink(_sink);
         ToastQueue.Clear();
+        ToastOverlay.ResetDrawTick();
         ToastOverlay.SetRenderer(null);
         PluginInstanceGuard.Reset();
         LifecyclePlugin.Reset();
@@ -39,7 +41,9 @@ public sealed class PluginHostTests
     {
         PluginInstanceGuard.Reset();
         ToastQueue.Clear();
+        ToastOverlay.ResetDrawTick();
         ToastOverlay.SetRenderer(null);
+        KeyboardInput.ResetKeyStateProvider();
         Logger.ResetLogSink();
         Logger.EnableAll();
         LifecyclePlugin.Reset();
@@ -94,6 +98,31 @@ public sealed class PluginHostTests
         Assert.HasCount(1, renderer.LastEntries);
         Assert.AreEqual("Undo: Value", renderer.LastEntries[0].Message);
         Assert.AreEqual(1, renderer.PreRendererCountAtRender);
+    }
+
+    /// <summary>
+    /// Verifies that multiple hosts sharing the same tick only render the toast overlay once.
+    /// </summary>
+    [TestMethod]
+    public void OnPreImGuiRenderer_WhenMultipleHostsDrawSameTick_RendersToastOverlayOnce()
+    {
+        var renderer = new TestToastRenderer();
+        ToastOverlay.SetRenderer(renderer);
+        var hostA = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+        var hostB = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        hostA.Load();
+        ToastQueue.Push("Shared toast");
+
+        // Both hosts render in the same tick; the overlay should draw only once.
+        hostA.OnPreImGuiRenderer();
+        hostA.Unload();
+
+        hostB.Load();
+        hostB.OnPreImGuiRenderer();
+        hostB.Unload();
+
+        Assert.AreEqual(1, renderer.DrawCallCount);
     }
 
     /// <summary>
