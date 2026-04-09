@@ -28,13 +28,36 @@ public static class KeyboardInput
     private static readonly HashSet<int> _modifierKeyValues = BuildModifierKeyValueSet();
     private static readonly IReadOnlyList<UmbraKey> _keyboardKeys = BuildKeyboardKeyList();
     private static readonly HashSet<int> _keyboardKeyValues = BuildKeyboardKeyValueSet();
-    private static readonly KeyStateTracker _tracker = new(new NativeKeyStateProvider(), VirtualKeyMap.GetTrackedVirtualKeys());
+    private static KeyStateTracker _tracker = CreateDefaultTracker();
 
     /// <summary>
     /// Tracks the last <see cref="Environment.TickCount64"/> value at which <see cref="Update"/> ran,
     /// used to deduplicate calls within the same millisecond (same frame from multiple plugin hosts).
     /// </summary>
     private static long _lastUpdateTick;
+
+    /// <summary>
+    /// Replaces the key state provider used by the shared tracker.
+    /// </summary>
+    /// <param name="provider">The replacement provider.</param>
+    /// <remarks>
+    /// This is an internal test seam. Production code should never call this method.
+    /// </remarks>
+    internal static void SetKeyStateProvider(INativeKeyStateProvider provider)
+    {
+        ArgumentNullException.ThrowIfNull(provider);
+        _tracker = new KeyStateTracker(provider, VirtualKeyMap.GetTrackedVirtualKeys());
+        _lastUpdateTick = 0;
+    }
+
+    /// <summary>
+    /// Restores the default <see cref="NativeKeyStateProvider"/>-backed tracker.
+    /// </summary>
+    internal static void ResetKeyStateProvider()
+    {
+        _tracker = CreateDefaultTracker();
+        _lastUpdateTick = 0;
+    }
 
     /// <summary>
     /// Updates the internal key state tracker by reading current hardware key state.
@@ -256,4 +279,7 @@ public static class KeyboardInput
         (int)UmbraKey.LeftSuper,
         (int)UmbraKey.RightSuper,
     };
+
+    private static KeyStateTracker CreateDefaultTracker()
+        => new(new NativeKeyStateProvider(), VirtualKeyMap.GetTrackedVirtualKeys());
 }
