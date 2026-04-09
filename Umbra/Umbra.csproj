@@ -80,4 +80,8 @@
       <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Config\Presets\" />
+    </ItemGroup>
+
 </Project>

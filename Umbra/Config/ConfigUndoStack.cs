@@ -23,7 +23,7 @@ namespace Umbra.Config;
 /// semantics where branching from a previous state discards the forward history.
 /// </para>
 /// <para>
-/// Multi-parameter operations (e.g. reset-all, preset load) can be bracketed with
+/// Multi-parameter operations (e.g. reset-all) can be bracketed with
 /// <see cref="BeginBatch"/> / <see cref="EndBatch"/> so that all changes within the batch
 /// are recorded as a single composite entry and undone/redone atomically.
 /// </para>
@@ -207,7 +207,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
     /// composite undo entry instead of being pushed individually.
     /// </summary>
     /// <param name="label">
-    /// A human-readable label for the batch (e.g. <c>"Reset All"</c>, <c>"Preset: MyPreset"</c>).
+    /// A human-readable label for the batch (e.g. <c>"Reset All"</c>).
     /// Used in toast notifications when the batch is undone.
     /// </param>
     /// <remarks>

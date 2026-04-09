@@ -1,5 +1,4 @@
 using Umbra.Config;
-using Umbra.Config.Presets;
 using Umbra.UI.Config.Search;
 using Umbra.UI.Config.Transfer;
 
@@ -23,8 +22,7 @@ public sealed class ConfigDrawerOptions
         Undo = null,
         UndoInputSource = null,
         NumericEditSink = null,
-        TextEditSink = null,
-        Presets = null
+        TextEditSink = null
     };
 
     /// <summary>
@@ -62,15 +60,6 @@ public sealed class ConfigDrawerOptions
     /// When non-<see langword="null"/>, an undo stack is created with the configured settings.
     /// </remarks>
     public ConfigUndoOptions? Undo { get; init; }
-
-    /// <summary>
-    /// Gets or sets the optional preset-store settings.
-    /// </summary>
-    /// <remarks>
-    /// When <see langword="null"/>, the preset feature is disabled.
-    /// When non-<see langword="null"/>, a preset store is created with the configured settings.
-    /// </remarks>
-    public ConfigPresetOptions? Presets { get; init; }
 
     /// <summary>
     /// Gets or sets the internal undo-shortcut input source used by store-backed config sections.
@@ -115,7 +104,6 @@ public sealed class ConfigDrawerOptions
         UndoInputSource = source.UndoInputSource;
         NumericEditSink = source.NumericEditSink;
         TextEditSink = source.TextEditSink;
-        Presets = source.Presets;
     }
 
     internal ConfigDrawerOptions WithSearch(ConfigSearchOptions? search) => new(this) { Search = search };
@@ -131,6 +119,4 @@ public sealed class ConfigDrawerOptions
     internal ConfigDrawerOptions WithNumericEditSink(INumericEditSink? numericEditSink) => new(this) { NumericEditSink = numericEditSink };
 
     internal ConfigDrawerOptions WithTextEditSink(ITextEditSink? textEditSink) => new(this) { TextEditSink = textEditSink };
-
-    internal ConfigDrawerOptions WithPresets(ConfigPresetOptions? presets) => new(this) { Presets = presets };
 }

@@ -17,13 +17,13 @@ internal static class ConfigSectionDebugOverlay
 {
     private static readonly Vector4 _enabledColor = new(0.4f, 1f, 0.4f, 1f);
     private static readonly Vector4 _disabledColor = new(1f, 0.4f, 0.4f, 1f);
-    private static readonly string[] _featureLabels = ["Search", "Transfer", "Undo", "Presets", "Save Controller"];
+    private static readonly string[] _featureLabels = ["Search", "Transfer", "Undo", "Save Controller"];
     private static float _labelColumnWidth = 0f;
 
     /// <summary>
     /// Draws the optional-feature status block and a trailing separator.
     /// </summary>
-    internal static void Draw(bool search, bool transfer, bool undo, bool presets, bool saveController)
+    internal static void Draw(bool search, bool transfer, bool undo, bool saveController)
     {
         // Calculate label width on first draw (ImGui must be initialized)
         if (_labelColumnWidth == 0f)
@@ -40,7 +40,6 @@ internal static class ConfigSectionDebugOverlay
                     DrawStatus("Search", search);
                     DrawStatus("Transfer", transfer);
                     DrawStatus("Undo", undo);
-                    DrawStatus("Presets", presets);
                     DrawStatus("Save Controller", saveController);
                 }
                 finally { ImGui.TreePop(); }

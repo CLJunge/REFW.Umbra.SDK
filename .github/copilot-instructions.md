@@ -85,12 +85,10 @@ The following optional features are toggled through `ConfigDrawerOptions` when c
 | **Search** | `ConfigSearchOptions` | `ConfigDrawerOptions.Search` is non-null |
 | **Transfer** | `ConfigTransferOptions` | `ConfigDrawerOptions.Transfer` is non-null **and** `Enabled` is `true` |
 | **Undo** | `ConfigUndoOptions` | `ConfigDrawerOptions.Undo` is non-null (store must be `ConfigStore<TConfig>`) |
-| **Presets** | `ConfigPresetOptions` | `ConfigDrawerOptions.Presets` is non-null (store must be `ConfigStore<TConfig>`) |
 | **Save Controller** | *(auto-created)* | Section is created via `ConfigSection<TConfig>.CreateWithStore` and the store is `IConfigStore<TConfig>` |
 | **Toast (Undo)** | `ConfigToastOptions` | `ConfigUndoOptions.Toast` is non-null |
-| **Toast (Presets)** | `ConfigToastOptions` | `ConfigPresetOptions.Toast` is non-null |
 
-In `DEBUG` builds, `ConfigSectionDebugOverlay` renders a compact status block at the top of every `ConfigSection<TConfig>.Draw()` call listing which of the five primary features (Search, Transfer, Undo, Presets, Save Controller) are enabled or disabled. This overlay can be suppressed by passing `enableDebugOverlay: false` to any `ConfigSection<TConfig>` constructor or `CreateWithStore` factory method.
+In `DEBUG` builds, `ConfigSectionDebugOverlay` renders a compact status block at the top of every `ConfigSection<TConfig>.Draw()` call listing which of the four primary features (Search, Transfer, Undo, Save Controller) are enabled or disabled. This overlay can be suppressed by passing `enableDebugOverlay: false` to any `ConfigSection<TConfig>` constructor or `CreateWithStore` factory method.
 
 ## Key resources
 - `README.md` - architecture, runtime model, setup, and usage

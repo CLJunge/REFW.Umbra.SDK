@@ -42,7 +42,7 @@ internal static class ConfigPersistence
     }
 
     /// <summary>
-    /// Shared JSON serializer options used for config persistence and preset files.
+    /// Shared JSON serializer options used for config persistence.
     /// </summary>
     internal static readonly JsonSerializerOptions JsonOptions = new()
     {

@@ -18,14 +18,13 @@
 - Event-driven auto-save via `ConfigSaveController` — instant saves for discrete changes, deferred saves during slider/drag interactions
 - Validation attributes: `[UmbraRequired]`, `[UmbraMinLength]`, `[UmbraMaxLength]`, `[UmbraRegex]`, `[UmbraValidateWith<T>]` with inline UI feedback
 - Versioned config import/export with schema validation
-- Named presets — save, load, and delete named configuration snapshots
 
 **UI**
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
 - Automatic config rendering from metadata via `ConfigDrawer<TConfig>` — one-time reflection, per-frame draw
 - Built-in search, filter, and match navigation
 - Per-section undo/redo stack with slider-aware coalescing, batch undo, and Ctrl+Z/Y keyboard shortcuts
-- Toast notifications for undo and preset operations
+- Toast notifications for undo operations
 - Built-in transfer UI for import/export
 - Conditional visibility and disable with `[UmbraHideIf]` and `[UmbraDisableIf]`
 - Custom drawers: `IParameterDrawer`, `ITwoColumnParameterDrawer`, `INestedDrawer<T>`
@@ -101,7 +100,7 @@ public sealed class MyPlugin : UmbraPlugin
         _store = new ConfigStore<MyConfig>(configPath);
         var config = _store.Load();
 
-        // CreateWithStore wires auto-save, search, undo, and presets in one call.
+        // CreateWithStore wires auto-save, search, and undo in one call.
         _panel = new PluginPanel("MyPlugin.Panel")
             .Add(ConfigSection<MyConfig>.CreateWithStore(
                 config, _store,
@@ -109,7 +108,6 @@ public sealed class MyPlugin : UmbraPlugin
                 {
                     Search  = new ConfigSearchOptions(),
                     Undo    = new ConfigUndoOptions(),
-                    Presets = new ConfigPresetOptions(),
                 },
                 "MyPlugin.Section"));
 

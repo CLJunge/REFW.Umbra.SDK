@@ -1,6 +1,5 @@
 using REFrameworkNET;
 using Umbra.Config;
-using Umbra.Config.Presets;
 using Umbra.Logging;
 using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
@@ -207,8 +206,8 @@ public sealed class SamplePlugin : UmbraPlugin
     /// Builds the config section for the runtime panel.
     /// </summary>
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
-    /// <param name="store">The loaded config store used for event-driven persistence, transfer UI, undo, and preset support.</param>
-    /// <returns>The config section with undo, search, transfer, and preset support.</returns>
+    /// <param name="store">The loaded config store used for event-driven persistence, transfer UI, and undo support.</param>
+    /// <returns>The config section with undo, search, and transfer support.</returns>
     private static ConfigSection<PluginConfig> CreateRuntimeSection(PluginConfig config, ConfigStore<PluginConfig> store)
     {
         var toast = new ConfigToastOptions("Sample Plugin") { Duration = TimeSpan.FromSeconds(2) };
@@ -219,13 +218,7 @@ public sealed class SamplePlugin : UmbraPlugin
             {
                 Search = new UI.Config.Search.ConfigSearchOptions(),
                 Transfer = new ConfigTransferOptions { Enabled = true },
-                Undo = new ConfigUndoOptions() { Toast = toast },
-                Presets = new ConfigPresetOptions
-                {
-                    SectionLabel = "Presets",
-                    ExpandedByDefault = true,
-                    Toast = toast
-                }
+                Undo = new ConfigUndoOptions() { Toast = toast }
             },
             _runtimeSectionScope);
     }

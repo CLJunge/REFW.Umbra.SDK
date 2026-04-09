@@ -39,7 +39,7 @@ internal sealed class ConfigBatchChangeRecord : IUndoEntry
     }
 
     /// <summary>
-    /// Gets the human-readable label describing the batch operation (e.g. "Reset All", "Preset: MyPreset").
+    /// Gets the human-readable label describing the batch operation (e.g. "Reset All").
     /// </summary>
     internal string BatchLabel { get; }
 

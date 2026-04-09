@@ -3,12 +3,11 @@ using Umbra.Config;
 namespace Umbra.UI.Toast;
 
 /// <summary>
-/// Stores optional toast-notification settings for config operations such as undo and preset save/load/delete.
+/// Stores optional toast-notification settings for config operations such as undo.
 /// </summary>
 /// <remarks>
 /// When supplied as a non-<see langword="null"/> value to a toast-capable options class
-/// (such as <see cref="ConfigUndoOptions.Toast"/> or
-/// <see cref="Umbra.Config.Presets.ConfigPresetOptions.Toast"/>),
+/// (such as <see cref="ConfigUndoOptions.Toast"/>),
 /// toast notifications are enabled with the configured settings.
 /// When <see langword="null"/>, toast notifications are disabled for that feature.
 /// </remarks>

@@ -1,7 +1,5 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.Config.Presets;
-using Umbra.UI.Config.Presets;
 using Umbra.UI.Config.Rendering;
 using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
@@ -24,10 +22,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private readonly string? _sectionLabel;
     private readonly bool _expandedByDefault;
     private ConfigTransferFeature? _transferFeature;
-    private ConfigPresetFeature<TConfig>? _presetFeature;
     private ConfigUndoStack<TConfig>? _undoStack;
     private readonly IUndoShortcutInputSource? _undoInputSource;
-    private ConfigPresetStore<TConfig>? _presetStore;
     private ConfigSaveController<TConfig>? _saveController;
     private bool _disposed;
 #if DEBUG
@@ -40,12 +36,6 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// enabled through <see cref="ConfigDrawerOptions.Undo"/>.
     /// </summary>
     public ConfigUndoStack<TConfig>? UndoStack => _undoStack;
-
-    /// <summary>
-    /// Gets the preset store owned by this section, or <see langword="null"/> when presets were not
-    /// enabled through <see cref="ConfigDrawerOptions.Presets"/>.
-    /// </summary>
-    public ConfigPresetStore<TConfig>? PresetStore => _presetStore;
 
     /// <summary>
     /// Initialises a new config section wrapping a <see cref="ConfigDrawer{TConfig}"/>.
@@ -166,7 +156,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 
     /// <summary>
     /// Creates a config section backed by the loaded config store, with automatic event-driven
-    /// persistence and optional transfer UI, undo stack, and preset store.
+    /// persistence and optional transfer UI and undo stack.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -176,9 +166,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// </para>
     /// <para>
     /// Optional features are created based on the default <see cref="ConfigDrawerOptions"/>:
-    /// transfer UI when <see cref="ConfigDrawerOptions.Transfer"/> is non-null and enabled,
-    /// undo stack when <see cref="ConfigDrawerOptions.Undo"/> is non-null,
-    /// and preset store when <see cref="ConfigDrawerOptions.Presets"/> is non-null.
+    /// transfer UI when <see cref="ConfigDrawerOptions.Transfer"/> is non-null and enabled
+    /// and undo stack when <see cref="ConfigDrawerOptions.Undo"/> is non-null.
     /// When both the undo stack and save controller implement <see cref="INumericEditSink"/>,
     /// they are composed so slider/drag interactions are tracked by both systems.
     /// </para>
@@ -208,7 +197,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 
     /// <summary>
     /// Creates a config section backed by the loaded config store, with automatic event-driven
-    /// persistence and optional transfer UI, undo stack, and preset store using the supplied
+    /// persistence and optional transfer UI and undo stack using the supplied
     /// drawer options.
     /// </summary>
     /// <remarks>
@@ -219,9 +208,8 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     /// </para>
     /// <para>
     /// Optional features are created based on <paramref name="options"/>:
-    /// transfer UI when <see cref="ConfigDrawerOptions.Transfer"/> is non-null and enabled,
-    /// undo stack when <see cref="ConfigDrawerOptions.Undo"/> is non-null,
-    /// and preset store when <see cref="ConfigDrawerOptions.Presets"/> is non-null.
+    /// transfer UI when <see cref="ConfigDrawerOptions.Transfer"/> is non-null and enabled
+    /// and undo stack when <see cref="ConfigDrawerOptions.Undo"/> is non-null.
     /// When both the undo stack and save controller implement <see cref="INumericEditSink"/>,
     /// they are composed so slider/drag interactions are tracked by both systems.
     /// </para>
@@ -251,7 +239,6 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         bool enableDebugOverlay = true)
     {
         ArgumentNullException.ThrowIfNull(store);
-        var presetStore = CreatePresetStore(store, options);
         var undoStack = CreateUndoStack(store, options);
         var saveController = store is IConfigStore<TConfig> configStore
             ? new ConfigSaveController<TConfig>(configStore)
@@ -288,8 +275,6 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         {
             _transferFeature = CreateTransferFeature(store, options),
             _undoStack = undoStack,
-            _presetStore = presetStore,
-            _presetFeature = CreatePresetFeature(presetStore, store, options),
             _saveController = saveController
         };
 
@@ -322,17 +307,12 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
                 _hasSearch,
                 _transferFeature is not null,
                 _undoStack is not null,
-                _presetFeature is not null,
                 _saveController is not null);
 #endif
 
         TryHandleBuiltInUndo();
 
         var hasActiveSearch = _drawer.HasActiveSearchQuery;
-
-        // Presets always draw at the top, but controls are disabled during active search
-        if (_presetFeature is not null)
-            DrawPresetFeature(hasActiveSearch);
 
         if (ShouldDrawFeatureSection(_transferFeature is not null, hasActiveSearch)
             && _transferFeature!.Placement == ConfigTransferPlacement.BeforeConfig)
@@ -357,9 +337,6 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         _saveController = null;
         _undoStack?.Dispose();
         _undoStack = null;
-        _presetFeature?.Dispose();
-        _presetFeature = null;
-        _presetStore = null;
         _transferFeature?.Dispose();
         _transferFeature = null;
         _drawer.Dispose();
@@ -391,14 +368,6 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
         return new ConfigUndoStack<TConfig>(configStore, undoOptions);
     }
 
-    private static ConfigPresetStore<TConfig>? CreatePresetStore(IConfigTransferStore store, ConfigDrawerOptions options)
-    {
-        if (options.Presets is not { } presetOptions || store is not ConfigStore<TConfig> configStore)
-            return null;
-
-        return new ConfigPresetStore<TConfig>(configStore, presetOptions);
-    }
-
     private void DrawTransferFeature()
     {
         var transferFeature = _transferFeature;
@@ -422,38 +391,6 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 
     internal static bool ShouldDrawFeatureSection(bool hasFeature, bool hasActiveSearchQuery)
         => hasFeature && !hasActiveSearchQuery;
-
-    private static ConfigPresetFeature<TConfig>? CreatePresetFeature(
-        ConfigPresetStore<TConfig>? presetStore,
-        IConfigTransferStore store,
-        ConfigDrawerOptions options)
-    {
-        if (presetStore is null || options.Presets is not { } presetOptions || store is not ConfigStore<TConfig> configStore)
-            return null;
-
-        return new ConfigPresetFeature<TConfig>(presetStore, configStore.Save, presetOptions);
-    }
-
-    private void DrawPresetFeature(bool disableControls = false)
-    {
-        var presetFeature = _presetFeature;
-        if (presetFeature is null)
-            return;
-
-        PluginPanelTreeNodeLabels.WarnIfInvalid($"{_sectionId}.Presets", presetFeature.SectionLabel, $"config-preset section for '{_sectionId}'");
-        var presetSectionLabel = $"{PluginPanelTreeNodeLabels.Sanitize(presetFeature.SectionLabel)}##{_sectionId}.Presets";
-        if (!_renderContext.TreeNode(presetSectionLabel, presetFeature.ExpandedByDefault))
-            return;
-
-        try
-        {
-            presetFeature.Draw(disableControls);
-        }
-        finally
-        {
-            _renderContext.TreePop();
-        }
-    }
 
     private static (string? Label, bool ExpandedByDefault)? GetRootNodeMetadata(Type type)
     {

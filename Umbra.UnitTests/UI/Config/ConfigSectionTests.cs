@@ -1,6 +1,5 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.Config.Presets;
 using Umbra.UI.Config.Nodes;
 using Umbra.UI.Config.Search;
 using Umbra.UI.Config.Transfer;
@@ -663,81 +662,6 @@ public sealed class ConfigSectionTests
         store.Dispose();
     }
 
-    // --- Preset store wiring ---
-
-    /// <summary>
-    /// Tests that the factory creates a preset store when <see cref="ConfigDrawerOptions.Presets"/> is non-null
-    /// and the store is a <see cref="ConfigStore{TConfig}"/>.
-    /// </summary>
-    [TestMethod]
-    public void CreateWithStore_WithPresetOptionsAndConfigStore_CreatesPresetStore()
-    {
-        using var tempDirectory = new TempDirectory();
-        var storePath = Path.Combine(tempDirectory.Path, "preset-config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
-        var config = store.Load();
-        var options = new ConfigDrawerOptions { Presets = new ConfigPresetOptions() };
-
-        using var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "preset-test");
-
-        Assert.IsNotNull(GetPresetStore(section));
-        Assert.IsNotNull(section.PresetStore);
-        store.Dispose();
-    }
-
-    /// <summary>
-    /// Tests that the factory does not create a preset store when <see cref="ConfigDrawerOptions.Presets"/> is null.
-    /// </summary>
-    [TestMethod]
-    public void CreateWithStore_WithoutPresetOptions_PresetStoreIsNull()
-    {
-        using var tempDirectory = new TempDirectory();
-        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
-
-        using var section = ConfigSection<TestConfig>.CreateWithStore(
-            new TestConfig(), store, new ConfigDrawerOptions());
-
-        Assert.IsNull(section.PresetStore);
-    }
-
-    /// <summary>
-    /// Tests that the factory does not create a preset store when the store is not a
-    /// <see cref="ConfigStore{TConfig}"/>, even when preset options are provided.
-    /// </summary>
-    [TestMethod]
-    public void CreateWithStore_WithPresetOptionsButNonConfigStore_PresetStoreIsNull()
-    {
-        using var tempDirectory = new TempDirectory();
-        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
-        var options = new ConfigDrawerOptions { Presets = new ConfigPresetOptions() };
-
-        using var section = ConfigSection<TestConfig>.CreateWithStore(
-            new TestConfig(), store, options, idScope: "no-preset");
-
-        Assert.IsNull(section.PresetStore);
-    }
-
-    /// <summary>
-    /// Tests that disposing the section nulls the preset store field.
-    /// </summary>
-    [TestMethod]
-    public void Dispose_WithPresetStore_NullsPresetStore()
-    {
-        using var tempDirectory = new TempDirectory();
-        var storePath = Path.Combine(tempDirectory.Path, "preset-config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
-        var config = store.Load();
-        var options = new ConfigDrawerOptions { Presets = new ConfigPresetOptions() };
-
-        var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "dispose-preset");
-        Assert.IsNotNull(section.PresetStore);
-
-        section.Dispose();
-
-        Assert.IsNull(section.PresetStore);
-        store.Dispose();
-    }
-
     /// <summary>
     /// Tests that the section preserves caller-enabled search while suppressing the wrapped drawer root node.
     /// </summary>
@@ -867,12 +791,6 @@ public sealed class ConfigSectionTests
         where T : class, new()
         => (ConfigUndoStack<T>?)typeof(ConfigSection<T>)
             .GetField("_undoStack", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-            ?.GetValue(section);
-
-    private static ConfigPresetStore<T>? GetPresetStore<T>(ConfigSection<T> section)
-        where T : class, new()
-        => (ConfigPresetStore<T>?)typeof(ConfigSection<T>)
-            .GetField("_presetStore", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
             ?.GetValue(section);
 
     private sealed class TempDirectory : IDisposable
