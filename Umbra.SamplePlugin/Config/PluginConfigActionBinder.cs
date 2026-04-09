@@ -54,8 +54,8 @@ internal static class PluginConfigActionBinder
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(undoStack);
 
-        config.ResetAllSamples.Value = undoStack.WrapWithBatch("Reset All Samples", config.ResetAllSamples.Value);
-        config.General.ResetGeneral.Value = undoStack.WrapWithBatch("Reset General", config.General.ResetGeneral.Value);
-        config.Booleans.ResetBooleans.Value = undoStack.WrapWithBatch("Reset Booleans", config.Booleans.ResetBooleans.Value);
+        config.ResetAllSamples.Value = undoStack.WrapWithBatch("Reset All Samples", config.ResetAllSamples.Value!);
+        config.General.ResetGeneral.Value = undoStack.WrapWithBatch("Reset General", config.General.ResetGeneral.Value!);
+        config.Booleans.ResetBooleans.Value = undoStack.WrapWithBatch("Reset Booleans", config.Booleans.ResetBooleans.Value!);
     }
 }

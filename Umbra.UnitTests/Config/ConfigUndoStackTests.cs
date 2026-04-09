@@ -947,7 +947,7 @@ public sealed class ConfigUndoStackTests
             Assert.IsTrue(result);
             Assert.AreEqual(10, config.IntValue.Value);
             Assert.AreEqual("default", config.StringValue.Value);
-            Assert.AreEqual(false, config.BoolValue.Value);
+            Assert.IsFalse(config.BoolValue.Value);
             Assert.AreEqual(0, undo.Count);
         }
         finally
@@ -1077,7 +1077,7 @@ public sealed class ConfigUndoStackTests
             // Undo entry 2 (batch)
             undo.TryUndo();
             Assert.AreEqual("default", config.StringValue.Value);
-            Assert.AreEqual(false, config.BoolValue.Value);
+            Assert.IsFalse(config.BoolValue.Value);
 
             Assert.AreEqual(0, undo.Count);
         }
@@ -1190,7 +1190,7 @@ public sealed class ConfigUndoStackTests
             // Undo entry 2 (batch)
             undo.TryUndo();
             Assert.AreEqual("default", config.StringValue.Value);
-            Assert.AreEqual(false, config.BoolValue.Value);
+            Assert.IsFalse(config.BoolValue.Value);
 
             // Undo entry 1
             undo.TryUndo();
