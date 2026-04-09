@@ -211,7 +211,7 @@ public sealed class SamplePlugin : UmbraPlugin
     /// <returns>The config section with undo, search, transfer, and preset support.</returns>
     private static ConfigSection<PluginConfig> CreateRuntimeSection(PluginConfig config, ConfigStore<PluginConfig> store)
     {
-        var toast = new ConfigToastOptions { Duration = TimeSpan.FromSeconds(2) };
+        var toast = new ConfigToastOptions("Sample Plugin") { Duration = TimeSpan.FromSeconds(2) };
         return ConfigSection<PluginConfig>.CreateWithStore(
             config,
             store,

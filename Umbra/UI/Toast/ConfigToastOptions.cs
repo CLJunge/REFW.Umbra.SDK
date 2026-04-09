@@ -13,7 +13,19 @@ namespace Umbra.UI.Toast;
 /// When <see langword="null"/>, toast notifications are disabled for that feature.
 /// </remarks>
 public sealed class ConfigToastOptions
+    (string pluginName)
 {
+    /// <summary>
+    /// Gets the plugin name prepended to every toast message produced by this feature as <c>[PluginName]</c>.
+    /// </summary>
+    /// <remarks>
+    /// Identifies the originating plugin in AppDomain-wide toast systems where multiple plugins
+    /// share the same <see cref="ToastQueue"/>.
+    /// </remarks>
+    public string PluginName { get; } = !string.IsNullOrWhiteSpace(pluginName)
+        ? pluginName
+        : throw new ArgumentException("Plugin name cannot be null, empty, or whitespace.", nameof(pluginName));
+
     /// <summary>
     /// Gets an optional override for the toast display duration.
     /// </summary>

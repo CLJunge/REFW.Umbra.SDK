@@ -41,15 +41,4 @@ public sealed class ConfigUndoOptions
     /// When non-<see langword="null"/>, a toast is displayed using the configured settings.
     /// </remarks>
     public ConfigToastOptions? Toast { get; init; }
-
-    /// <summary>
-    /// Gets the optional plugin name shown in undo toast notifications.
-    /// </summary>
-    /// <remarks>
-    /// When non-<see langword="null"/>, the toast message is prefixed with
-    /// <c>[PluginName]</c> so the user can identify which plugin's change was undone.
-    /// When <see langword="null"/>, no prefix is added and <see cref="Toast"/> must also
-    /// be non-<see langword="null"/> for any notification to appear.
-    /// </remarks>
-    public string? PluginName { get; init; }
 }

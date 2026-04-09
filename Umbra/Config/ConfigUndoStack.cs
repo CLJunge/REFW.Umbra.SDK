@@ -48,7 +48,6 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
     private readonly int _capacity;
     private readonly ConfigToastOptions? _toast;
     private readonly Dictionary<string, NumericEditSession> _activeNumericEdits;
-    private readonly string? _pluginName;
     private List<ConfigChangeRecord>? _pendingBatch;
     private string? _batchLabel;
     private bool _suppressRecording;
@@ -92,12 +91,11 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
     public ConfigUndoStack(ConfigStore<TConfig> store, ConfigUndoOptions options)
         : this(store,
               options is not null ? options.Capacity : throw new ArgumentNullException(nameof(options)),
-              options.Toast,
-              options.PluginName)
+              options.Toast)
     {
     }
 
-    private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, ConfigToastOptions? toast, string? pluginName = null)
+    private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, ConfigToastOptions? toast)
     {
         ArgumentNullException.ThrowIfNull(store);
 
@@ -112,7 +110,6 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
 
         _capacity = capacity;
         _toast = toast;
-        _pluginName = string.IsNullOrWhiteSpace(pluginName) ? null : pluginName;
 #pragma warning disable IDE0028
         _stack = new(capacity);
 #pragma warning restore IDE0028
@@ -446,7 +443,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
     }
 
     private string BuildToastMessage(string message) =>
-        _pluginName is not null ? $"[{_pluginName}] {message}" : message;
+        _toast is not null ? $"[{_toast.PluginName}] {message}" : message;
 
     private void SubscribeToParameters()
     {

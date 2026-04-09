@@ -203,7 +203,7 @@ public sealed class ConfigPresetStoreTests
         try
         {
             ToastQueue.Clear();
-            var presets = new ConfigPresetStore<PresetTestConfig>(store, new ConfigPresetOptions { Toast = new ConfigToastOptions() });
+            var presets = new ConfigPresetStore<PresetTestConfig>(store, new ConfigPresetOptions { Toast = new ConfigToastOptions("Test Plugin") });
             presets.Save("toasttest");
 
             var entries = ToastQueue.GetActiveEntries();
@@ -450,7 +450,7 @@ public sealed class ConfigPresetStoreTests
         try
         {
             ToastQueue.Clear();
-            var presets = new ConfigPresetStore<PresetTestConfig>(store, new ConfigPresetOptions { Toast = new ConfigToastOptions() });
+            var presets = new ConfigPresetStore<PresetTestConfig>(store, new ConfigPresetOptions { Toast = new ConfigToastOptions("Test Plugin") });
             presets.Save("deltoast");
 
             ToastQueue.Clear();

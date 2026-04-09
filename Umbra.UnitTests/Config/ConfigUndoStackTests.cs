@@ -432,7 +432,7 @@ public sealed class ConfigUndoStackTests
         var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
-            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new ConfigToastOptions() });
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") });
 
             // Clear any existing toasts from other tests
             ToastQueue.Clear();
@@ -446,14 +446,14 @@ public sealed class ConfigUndoStackTests
             var foundUndo = false;
             for (var i = 0; i < entries.Count; i++)
             {
-                if (entries[i].Message.StartsWith("Undo:", StringComparison.Ordinal))
+                if (entries[i].Message.StartsWith("[Test Plugin] Undo:", StringComparison.Ordinal))
                 {
                     foundUndo = true;
                     break;
                 }
             }
 
-            Assert.IsTrue(foundUndo, "Expected a toast message starting with 'Undo:'.");
+            Assert.IsTrue(foundUndo, "Expected a toast message starting with '[Test Plugin] Undo:'.");
         }
         finally
         {
@@ -463,7 +463,6 @@ public sealed class ConfigUndoStackTests
     }
 
     /// <summary>
-    /// Tests that a toast pushed when PluginName is set is prefixed with [PluginName].
     /// </summary>
     [TestMethod]
     public void TryUndo_WithPluginName_ToastIncludesPluginNamePrefix()
@@ -472,7 +471,7 @@ public sealed class ConfigUndoStackTests
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store,
-                new ConfigUndoOptions { Toast = new ConfigToastOptions(), PluginName = "My Plugin" });
+                new ConfigUndoOptions { Toast = new ConfigToastOptions("My Plugin") });
 
             ToastQueue.Clear();
 
@@ -511,7 +510,7 @@ public sealed class ConfigUndoStackTests
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store,
-                new ConfigUndoOptions { Toast = new ConfigToastOptions(), PluginName = "My Plugin" });
+                new ConfigUndoOptions { Toast = new ConfigToastOptions("My Plugin") });
 
             ToastQueue.Clear();
 
@@ -952,7 +951,7 @@ public sealed class ConfigUndoStackTests
         var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
-            var options = new ConfigUndoOptions { Toast = new ConfigToastOptions() };
+            var options = new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") };
             using var undo = new ConfigUndoStack<UndoTestConfig>(store, options);
 
             ToastQueue.Clear();
@@ -964,14 +963,14 @@ public sealed class ConfigUndoStackTests
             var foundUndo = false;
             for (var i = 0; i < entries.Count; i++)
             {
-                if (entries[i].Message.StartsWith("Undo:", StringComparison.Ordinal))
+                if (entries[i].Message.StartsWith("[Test Plugin] Undo:", StringComparison.Ordinal))
                 {
                     foundUndo = true;
                     break;
                 }
             }
 
-            Assert.IsTrue(foundUndo, "Expected a toast message starting with 'Undo:'.");
+            Assert.IsTrue(foundUndo, "Expected a toast message starting with '[Test Plugin] Undo:'.");
         }
         finally
         {
@@ -1178,7 +1177,7 @@ public sealed class ConfigUndoStackTests
         var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
-            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new ConfigToastOptions() });
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") });
 
             ToastQueue.Clear();
 
