@@ -1,5 +1,4 @@
 using REFrameworkNET;
-using REFrameworkNET.Attributes;
 using Umbra.Config;
 using Umbra.Config.Presets;
 using Umbra.Logging;
@@ -122,12 +121,6 @@ public sealed class SamplePlugin : UmbraPlugin
         }
 #endif
     }
-
-    [Callback(typeof(REFrameworkNET.Callbacks.UpdateBehavior), CallbackType.Pre)]
-    private static void OnUpdateBehavior() => Logger.Info("SamplePlugin OnUpdateBehavior callback invoked.");
-
-    [Callback(typeof(REFrameworkNET.Callbacks.BeginRendering), CallbackType.Pre)]
-    private static void OnBeginRendering() => Logger.Info("SamplePlugin OnBeginRendering callback invoked.");
 
     /// <summary>
     /// Renders the sample plugin UI when the REFramework UI pass is active.
