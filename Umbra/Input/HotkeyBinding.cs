@@ -7,7 +7,7 @@ namespace Umbra.Input;
 /// <param name="Ctrl">Whether the Ctrl modifier must be held.</param>
 /// <param name="Shift">Whether the Shift modifier must be held.</param>
 /// <param name="Alt">Whether the Alt modifier must be held.</param>
-public readonly record struct HotkeyBinding(int Key, bool Ctrl, bool Shift, bool Alt)
+public readonly record struct HotkeyBinding(int Key, bool Ctrl = false, bool Shift = false, bool Alt = false)
 {
     /// <summary>
     /// A hotkey binding with no key assigned and no modifiers.
