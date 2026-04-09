@@ -9,11 +9,12 @@ namespace Umbra.Config;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Non-numeric parameter changes trigger an immediate <see cref="IConfigStore{TConfig}.Save"/>
+/// Non-numeric, non-text parameter changes trigger an immediate <see cref="IConfigStore{TConfig}.Save"/>
 /// call from within the change handler. Numeric parameter changes during an active slider or
 /// drag interaction are deferred until <see cref="INumericEditSink.EndNumericEdit"/> fires,
-/// then saved instantly. Numeric changes that occur outside any active interaction (e.g.
-/// programmatic value assignments) are saved immediately like any other change.
+/// then saved instantly. Text parameter changes during an active text input are deferred until
+/// <see cref="ITextEditSink.EndTextEdit"/> fires, then saved instantly. Changes that occur
+/// outside any active interaction (e.g. programmatic value assignments) are saved immediately.
 /// </para>
 /// <para>
 /// Construct this controller only after <see cref="IConfigStore{TConfig}.Load"/> has completed.
@@ -22,7 +23,7 @@ namespace Umbra.Config;
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">The configuration type managed by the wrapped store.</typeparam>
-public sealed class ConfigSaveController<TConfig> : IDisposable, INumericEditSink
+public sealed class ConfigSaveController<TConfig> : IDisposable, INumericEditSink, ITextEditSink
     where TConfig : class, new()
 {
     private readonly IConfigStore<TConfig> _store;
@@ -31,6 +32,7 @@ public sealed class ConfigSaveController<TConfig> : IDisposable, INumericEditSin
     private readonly Action _onParameterChanged;
 
     private bool _numericEditActive;
+    private bool _textEditActive;
     private bool _pendingSave;
     private bool _disposed;
 
@@ -108,7 +110,23 @@ public sealed class ConfigSaveController<TConfig> : IDisposable, INumericEditSin
     {
         if (_disposed) return;
         _numericEditActive = false;
-        if (_pendingSave)
+        if (_pendingSave && !_textEditActive)
+            Save();
+    }
+
+    /// <inheritdoc/>
+    void ITextEditSink.BeginTextEdit(IParameter parameter)
+    {
+        if (_disposed) return;
+        _textEditActive = true;
+    }
+
+    /// <inheritdoc/>
+    void ITextEditSink.EndTextEdit(IParameter parameter)
+    {
+        if (_disposed) return;
+        _textEditActive = false;
+        if (_pendingSave && !_numericEditActive)
             Save();
     }
 
@@ -118,7 +136,7 @@ public sealed class ConfigSaveController<TConfig> : IDisposable, INumericEditSin
     private void OnParameterChanged()
     {
         _pendingSave = true;
-        if (!_numericEditActive)
+        if (!_numericEditActive && !_textEditActive)
             Save();
     }
 
@@ -137,7 +155,7 @@ public sealed class ConfigSaveController<TConfig> : IDisposable, INumericEditSin
             return;
         }
 
-        Logger.Info($"ConfigSaveController<{typeof(TConfig).Name}>: saving changes to disk.");
+        Logger.Debug($"ConfigSaveController<{typeof(TConfig).Name}>: saving changes to disk.");
         _store.Save();
         _pendingSave = false;
     }

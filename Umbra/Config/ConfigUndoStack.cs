@@ -33,10 +33,15 @@ namespace Umbra.Config;
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">The configuration class managed by the store.</typeparam>
-public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IUndoStackHandle
+public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, ITextEditSink, IUndoStackHandle
     where TConfig : class, new()
 {
     private sealed class NumericEditSession(object? initialValue)
+    {
+        internal object? InitialValue { get; } = initialValue;
+    }
+
+    private sealed class TextEditSession(object? initialValue)
     {
         internal object? InitialValue { get; } = initialValue;
     }
@@ -54,6 +59,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
     private readonly int _capacity;
     private readonly ConfigToastOptions? _toast;
     private readonly Dictionary<string, NumericEditSession> _activeNumericEdits;
+    private readonly Dictionary<string, TextEditSession> _activeTextEdits;
     private List<ConfigChangeRecord>? _pendingBatch;
     private string? _batchLabel;
     private bool _suppressRecording;
@@ -122,6 +128,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
         _redoStack = [];
         _snapshots = [];
         _activeNumericEdits = [];
+        _activeTextEdits = [];
         _cleanupActions = [];
 
         var target = (IConfigStoreCopyTarget<TConfig>)store;
@@ -436,6 +443,41 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
         AddRecord(key, parameter, session.InitialValue, currentValue);
     }
 
+    void ITextEditSink.BeginTextEdit(IParameter parameter)
+    {
+        if (_disposed)
+            return;
+
+        ArgumentNullException.ThrowIfNull(parameter);
+        var key = parameter.Key;
+        if (_activeTextEdits.ContainsKey(key))
+            return;
+
+        if (!_snapshots.TryGetValue(key, out var initialValue))
+            initialValue = parameter.GetValue();
+
+        _activeTextEdits[key] = new TextEditSession(initialValue);
+    }
+
+    void ITextEditSink.EndTextEdit(IParameter parameter)
+    {
+        if (_disposed)
+            return;
+
+        ArgumentNullException.ThrowIfNull(parameter);
+        var key = parameter.Key;
+        if (!_activeTextEdits.TryGetValue(key, out var session))
+            return;
+
+        _activeTextEdits.Remove(key);
+        var currentValue = parameter.GetValue();
+        _snapshots[key] = currentValue;
+        if (Equals(session.InitialValue, currentValue))
+            return;
+
+        AddRecord(key, parameter, session.InitialValue, currentValue);
+    }
+
     /// <summary>
     /// Detaches all parameter event subscriptions and clears internal state.
     /// </summary>
@@ -451,6 +493,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
 
         _cleanupActions.Clear();
         _activeNumericEdits.Clear();
+        _activeTextEdits.Clear();
         _stack.Clear();
         _redoStack.Clear();
         _snapshots.Clear();
@@ -630,6 +673,9 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
         _snapshots[key] = current;
 
         if (_activeNumericEdits.ContainsKey(key))
+            return;
+
+        if (_activeTextEdits.ContainsKey(key))
             return;
 
         AddRecord(key, param, old, current);

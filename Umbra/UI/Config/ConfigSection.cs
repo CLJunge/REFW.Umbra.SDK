@@ -267,11 +267,22 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
             numericSink = NumericEditSinkComposer.Compose(undoStack, saveController);
         }
 
+        ITextEditSink? textSink;
+        if (undoStack is null)
+        {
+            textSink = saveController;
+        }
+        else
+        {
+            textSink = TextEditSinkComposer.Compose(undoStack, saveController);
+        }
+
         var effectiveOptions = undoStack is null
-            ? options.WithUndoInputSource(null).WithNumericEditSink(numericSink)
+            ? options.WithUndoInputSource(null).WithNumericEditSink(numericSink).WithTextEditSink(textSink)
             : options
                 .WithUndoInputSource(options.UndoInputSource ?? new KeyboardUndoShortcutInputSource())
-                .WithNumericEditSink(numericSink);
+                .WithNumericEditSink(numericSink)
+                .WithTextEditSink(textSink);
 
         var section = new ConfigSection<TConfig>(config, effectiveOptions, idScope, sectionLabel, expandedByDefault, suppressTreeNode, enableDebugOverlay)
         {

@@ -299,6 +299,196 @@ public sealed class ConfigSaveControllerTests
         storeMock.Verify(s => s.Save(), Times.Exactly(2));
     }
 
+    // ──────────────── Deferred save during text edit ────────────────────────────
+
+    /// <summary>
+    /// Verifies that a parameter change during an active text edit does not trigger a save.
+    /// </summary>
+    [TestMethod]
+    public void ParameterChanged_WhenInTextEdit_DefersSave()
+    {
+        // Arrange
+        var (storeMock, listener) = CreateMockStoreCapturingListener();
+        var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
+        var sink = (ITextEditSink)controller;
+        var parameter = CreateMockParameter();
+
+        // Act
+        sink.BeginTextEdit(parameter);
+        listener();
+
+        // Assert
+        storeMock.Verify(s => s.Save(), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that ending a text edit flushes the deferred save when changes are pending.
+    /// </summary>
+    [TestMethod]
+    public void EndTextEdit_WhenPendingSave_SavesImmediately()
+    {
+        // Arrange
+        var (storeMock, listener) = CreateMockStoreCapturingListener();
+        var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
+        var sink = (ITextEditSink)controller;
+        var parameter = CreateMockParameter();
+
+        sink.BeginTextEdit(parameter);
+        listener(); // deferred
+
+        // Act
+        sink.EndTextEdit(parameter);
+
+        // Assert
+        storeMock.Verify(s => s.Save(), Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that ending a text edit with no pending changes does not trigger a save.
+    /// </summary>
+    [TestMethod]
+    public void EndTextEdit_WhenNoPendingSave_DoesNotSave()
+    {
+        // Arrange
+        var (storeMock, _) = CreateMockStoreCapturingListener();
+        var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
+        var sink = (ITextEditSink)controller;
+        var parameter = CreateMockParameter();
+
+        sink.BeginTextEdit(parameter);
+
+        // Act
+        sink.EndTextEdit(parameter);
+
+        // Assert
+        storeMock.Verify(s => s.Save(), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that multiple deferred changes during a single text edit result in one save.
+    /// </summary>
+    [TestMethod]
+    public void EndTextEdit_WithMultipleDeferredChanges_SavesOnce()
+    {
+        // Arrange
+        var (storeMock, listener) = CreateMockStoreCapturingListener();
+        var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
+        var sink = (ITextEditSink)controller;
+        var parameter = CreateMockParameter();
+
+        sink.BeginTextEdit(parameter);
+        listener();
+        listener();
+        listener();
+
+        // Act
+        sink.EndTextEdit(parameter);
+
+        // Assert
+        storeMock.Verify(s => s.Save(), Times.Once);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="ITextEditSink.BeginTextEdit"/> is a no-op after disposal.
+    /// </summary>
+    [TestMethod]
+    public void BeginTextEdit_WhenDisposed_IsNoOp()
+    {
+        // Arrange
+        var (storeMock, listener) = CreateMockStoreCapturingListener();
+        var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
+        var sink = (ITextEditSink)controller;
+        controller.Dispose();
+        storeMock.Invocations.Clear();
+
+        // Act
+        sink.BeginTextEdit(CreateMockParameter());
+        listener();
+
+        // Assert — if BeginTextEdit took effect, listener would defer; instead it's a no-op
+        // and the change handler itself is guarded by _disposed, so no save either
+        storeMock.Verify(s => s.Save(), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="ITextEditSink.EndTextEdit"/> is a no-op after disposal.
+    /// </summary>
+    [TestMethod]
+    public void EndTextEdit_WhenDisposed_IsNoOp()
+    {
+        // Arrange
+        var (storeMock, listener) = CreateMockStoreCapturingListener();
+        var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
+        var sink = (ITextEditSink)controller;
+        sink.BeginTextEdit(CreateMockParameter());
+        listener(); // deferred
+        controller.Dispose();
+        storeMock.Invocations.Clear();
+
+        // Act
+        sink.EndTextEdit(CreateMockParameter());
+
+        // Assert
+        storeMock.Verify(s => s.Save(), Times.Never);
+    }
+
+    // ──────────────── Full lifecycle: text edit ─────────────────────────────────
+
+    /// <summary>
+    /// Verifies a complete cycle: begin text edit, change, end, then a non-text change.
+    /// </summary>
+    [TestMethod]
+    public void FullLifecycle_TextEditThenNonTextChange_SavesTwice()
+    {
+        // Arrange
+        var (storeMock, listener) = CreateMockStoreCapturingListener();
+        var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
+        var sink = (ITextEditSink)controller;
+        var parameter = CreateMockParameter();
+
+        // Act — text edit cycle
+        sink.BeginTextEdit(parameter);
+        listener(); // deferred
+        listener(); // deferred
+        sink.EndTextEdit(parameter); // save #1
+
+        // Act — non-text change
+        listener(); // save #2
+
+        // Assert
+        storeMock.Verify(s => s.Save(), Times.Exactly(2));
+    }
+
+    /// <summary>
+    /// Verifies that overlapping numeric and text edits defer the save until both resolve.
+    /// </summary>
+    [TestMethod]
+    public void FullLifecycle_NumericAndTextEditOverlap_DefersUntilBothEnd()
+    {
+        // Arrange
+        var (storeMock, listener) = CreateMockStoreCapturingListener();
+        var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
+        var numSink = (INumericEditSink)controller;
+        var textSink = (ITextEditSink)controller;
+        var numParam = CreateMockParameter();
+        var textParam = CreateMockParameter();
+
+        // Act — start both
+        numSink.BeginNumericEdit(numParam);
+        textSink.BeginTextEdit(textParam);
+        listener(); // deferred
+
+        // End numeric — text is still active, so still deferred
+        numSink.EndNumericEdit(numParam);
+        storeMock.Verify(s => s.Save(), Times.Never, "Save should still be deferred while text edit is active");
+
+        // End text — both resolved, now save
+        textSink.EndTextEdit(textParam);
+
+        // Assert
+        storeMock.Verify(s => s.Save(), Times.Once);
+    }
+
     // ──────────────────────────────── Flush ─────────────────────────────────────
 
     /// <summary>

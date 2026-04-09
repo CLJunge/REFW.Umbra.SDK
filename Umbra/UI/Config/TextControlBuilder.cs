@@ -17,8 +17,9 @@ internal static class TextControlBuilder
     /// </summary>
     /// <remarks>
     /// When <see cref="ParameterMetadata.MultilineLines"/> is present, the returned action renders a multi-line text input; otherwise, it renders the standard single-line text input.
+    /// When <paramref name="textEditSink"/> is non-null, the returned action notifies the sink of interaction boundaries via <see cref="ITextEditSink.BeginTextEdit"/> and <see cref="ITextEditSink.EndTextEdit"/>.
     /// </remarks>
-    internal static Action BuildString(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
+    internal static Action BuildString(string label, IParameter parameter, LabelAlignmentGroup alignGroup, ITextEditSink? textEditSink = null)
     {
         var p = (Parameter<string>)parameter;
         var meta = p.Metadata;
@@ -35,6 +36,12 @@ internal static class TextControlBuilder
                 if (ImGui.InputTextMultiline(layout.HiddenLabel, ref v, maxLen, new Vector2(0f, height)))
                     p.Value = v;
 
+                if (textEditSink is not null)
+                {
+                    if (ImGui.IsItemActivated()) textEditSink.BeginTextEdit(parameter);
+                    if (ImGui.IsItemDeactivated()) textEditSink.EndTextEdit(parameter);
+                }
+
                 ValidationMessageRenderer.Draw(parameter, _textOps);
             };
         }
@@ -44,6 +51,13 @@ internal static class TextControlBuilder
             var v = p.Value ?? string.Empty;
             layout.Pre();
             if (ImGui.InputText(layout.HiddenLabel, ref v, maxLen)) p.Value = v;
+
+            if (textEditSink is not null)
+            {
+                if (ImGui.IsItemActivated()) textEditSink.BeginTextEdit(parameter);
+                if (ImGui.IsItemDeactivated()) textEditSink.EndTextEdit(parameter);
+            }
+
             ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }

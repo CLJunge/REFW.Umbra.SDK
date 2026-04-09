@@ -95,7 +95,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
 
         _idScope = idScope;
         _renderer = renderer;
-        var builder = new ConfigDrawerBuilder(options.NumericEditSink);
+        var builder = new ConfigDrawerBuilder(options.NumericEditSink, options.TextEditSink);
         builder.Collect(config, typeof(TConfig));
         builder.SortAll();
         _searchIndex = builder.SearchIndex;

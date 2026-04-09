@@ -23,6 +23,7 @@ public sealed class ConfigDrawerOptions
         Undo = null,
         UndoInputSource = null,
         NumericEditSink = null,
+        TextEditSink = null,
         Presets = null
     };
 
@@ -92,6 +93,16 @@ public sealed class ConfigDrawerOptions
     /// </remarks>
     internal INumericEditSink? NumericEditSink { get; init; }
 
+    /// <summary>
+    /// Gets or sets the internal text-edit sink used to notify config subsystems of text input interaction boundaries.
+    /// </summary>
+    /// <remarks>
+    /// When <see langword="null"/>, built-in text controls render without interaction boundary tracking.
+    /// When non-<see langword="null"/>, built-in text controls notify this sink of interaction begin and end events.
+    /// This property remains internal because text edit lifecycle tracking is an Umbra-owned pipeline concern.
+    /// </remarks>
+    internal ITextEditSink? TextEditSink { get; init; }
+
     /// <summary>Initializes a new instance of <see cref="ConfigDrawerOptions"/> with all options set to their defaults.</summary>
     public ConfigDrawerOptions() { }
 
@@ -103,6 +114,7 @@ public sealed class ConfigDrawerOptions
         Undo = source.Undo;
         UndoInputSource = source.UndoInputSource;
         NumericEditSink = source.NumericEditSink;
+        TextEditSink = source.TextEditSink;
         Presets = source.Presets;
     }
 
@@ -117,6 +129,8 @@ public sealed class ConfigDrawerOptions
     internal ConfigDrawerOptions WithUndoInputSource(IUndoShortcutInputSource? undoInputSource) => new(this) { UndoInputSource = undoInputSource };
 
     internal ConfigDrawerOptions WithNumericEditSink(INumericEditSink? numericEditSink) => new(this) { NumericEditSink = numericEditSink };
+
+    internal ConfigDrawerOptions WithTextEditSink(ITextEditSink? textEditSink) => new(this) { TextEditSink = textEditSink };
 
     internal ConfigDrawerOptions WithPresets(ConfigPresetOptions? presets) => new(this) { Presets = presets };
 }
