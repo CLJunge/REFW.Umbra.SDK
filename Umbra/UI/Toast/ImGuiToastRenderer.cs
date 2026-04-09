@@ -48,7 +48,10 @@ internal sealed class ImGuiToastRenderer : IToastRenderer
             ImGui.SetNextWindowBgAlpha(_backgroundAlpha * alpha);
 
             if (!ImGui.Begin($"##UmbraToast_{i}", _windowFlags))
+            {
+                ImGui.End();
                 continue;
+            }
 
             DrawEntry(entry, alpha);
 
