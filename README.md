@@ -24,11 +24,10 @@
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
 - Automatic config rendering from metadata via `ConfigDrawer<TConfig>` — one-time reflection, per-frame draw
 - Built-in search, filter, and match navigation
-- Per-section undo stack with slider-aware coalescing (`INumericEditSink`)
+- Per-section undo/redo stack with slider-aware coalescing, batch undo, and Ctrl+Z/Y keyboard shortcuts
 - Toast notifications for undo and preset operations
 - Built-in transfer UI for import/export
 - Conditional visibility and disable with `[UmbraHideIf]` and `[UmbraDisableIf]`
-- Change monitor for live per-frame config diff display
 - Custom drawers: `IParameterDrawer`, `ITwoColumnParameterDrawer`, `INestedDrawer<T>`
 
 **Plugin System**
@@ -39,7 +38,7 @@
 **Supporting**
 - Per-plugin `PluginLogger` and global `Logger` with level filtering
 - `GameContext.CurrentGame` for RE Engine title detection
-- `KeyboardInput` and `HotkeyBinding` for ImGui-backed hotkey capture
+- `KeyboardInput` and `HotkeyBinding` for hardware-backed hotkey capture via `UmbraKey`
 - Optional panel draw benchmarking when `BENCHMARK` is defined
 
 ---
