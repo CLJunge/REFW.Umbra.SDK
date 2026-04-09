@@ -18,6 +18,11 @@ namespace Umbra.Config;
 /// pushes a toast notification via <see cref="ToastQueue"/>.
 /// </para>
 /// <para>
+/// Multi-parameter operations (e.g. reset-all, preset load) can be bracketed with
+/// <see cref="BeginBatch"/> / <see cref="EndBatch"/> so that all changes within the batch
+/// are recorded as a single composite entry and undone atomically by one <see cref="TryUndo"/> call.
+/// </para>
+/// <para>
 /// Delegate-typed parameters (buttons) are excluded from tracking because they do not
 /// represent persisted state.
 /// </para>
@@ -38,11 +43,13 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
 
     private readonly IReadOnlyDictionary<string, IParameter> _parameters;
     private readonly Dictionary<string, object?> _snapshots;
-    private readonly List<ConfigChangeRecord> _stack;
+    private readonly List<IUndoEntry> _stack;
     private readonly List<Action> _cleanupActions;
     private readonly int _capacity;
     private readonly ConfigToastOptions? _toast;
     private readonly Dictionary<string, NumericEditSession> _activeNumericEdits;
+    private List<ConfigChangeRecord>? _pendingBatch;
+    private string? _batchLabel;
     private bool _suppressRecording;
     private bool _disposed;
 
@@ -122,28 +129,124 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
     public bool CanUndo => !_disposed && _stack.Count > 0;
 
     /// <summary>
-    /// Gets the number of change records currently on the stack.
+    /// Gets the number of undo entries currently on the stack.
     /// </summary>
+    /// <remarks>
+    /// A batch entry counts as one regardless of how many individual parameter changes it contains.
+    /// </remarks>
     public int Count => _stack.Count;
 
     /// <summary>
-    /// Returns the most recent change record without removing it, or <see langword="null"/>
-    /// if the stack is empty.
+    /// Gets a value indicating whether a batch is currently active.
+    /// </summary>
+    /// <remarks>
+    /// Returns <see langword="true"/> between a <see cref="BeginBatch"/> and <see cref="EndBatch"/> call.
+    /// </remarks>
+    public bool IsBatchActive => _pendingBatch is not null;
+
+    /// <summary>
+    /// Returns the most recent single-parameter change record without removing it, or
+    /// <see langword="null"/> if the stack is empty or the top entry is a batch.
     /// </summary>
     /// <returns>The topmost <see cref="ConfigChangeRecord"/>, or <see langword="null"/>.</returns>
+    /// <remarks>
+    /// For batch-aware inspection, use <see cref="PeekEntry"/> instead.
+    /// </remarks>
     public ConfigChangeRecord? Peek()
+    {
+        if (_stack.Count == 0) return null;
+        return _stack[^1] as ConfigChangeRecord;
+    }
+
+    /// <summary>
+    /// Returns the most recent undo entry without removing it, or <see langword="null"/>
+    /// if the stack is empty. The entry may be a single <see cref="ConfigChangeRecord"/>
+    /// or a batch <see cref="ConfigBatchChangeRecord"/>.
+    /// </summary>
+    /// <returns>The topmost <see cref="IUndoEntry"/>, or <see langword="null"/>.</returns>
+    internal IUndoEntry? PeekEntry()
     {
         if (_stack.Count == 0) return null;
         return _stack[^1];
     }
 
     /// <summary>
-    /// Undoes the most recent parameter change by restoring its previous value.
+    /// Opens a batch scope so that subsequent parameter changes are collected into a single
+    /// composite undo entry instead of being pushed individually.
+    /// </summary>
+    /// <param name="label">
+    /// A human-readable label for the batch (e.g. <c>"Reset All"</c>, <c>"Preset: MyPreset"</c>).
+    /// Used in toast notifications when the batch is undone.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// While a batch is active, individual <see cref="IParameter.ValueChanged"/> events still
+    /// fire normally — other subsystems such as the save controller are not affected. Only the
+    /// undo stack's recording behavior changes.
+    /// </para>
+    /// <para>
+    /// Call <see cref="EndBatch"/> to finalize the batch. If no parameter values actually changed
+    /// during the batch, the batch is discarded silently.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">A batch is already active.</exception>
+    /// <exception cref="ArgumentException"><paramref name="label"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="ObjectDisposedException">This undo stack has been disposed.</exception>
+    public void BeginBatch(string label)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_pendingBatch is not null)
+            throw new InvalidOperationException("A batch is already active. Nested batches are not supported.");
+        if (string.IsNullOrWhiteSpace(label))
+            throw new ArgumentException("Batch label cannot be null, empty, or whitespace.", nameof(label));
+
+        _batchLabel = label;
+        _pendingBatch = [];
+    }
+
+    /// <summary>
+    /// Closes the current batch scope. If one or more parameter values changed during the
+    /// batch, they are pushed as a single composite entry onto the undo stack. If no values
+    /// changed, the batch is discarded silently.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">No batch is currently active.</exception>
+    /// <exception cref="ObjectDisposedException">This undo stack has been disposed.</exception>
+    public void EndBatch()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_pendingBatch is null)
+            throw new InvalidOperationException("No batch is currently active.");
+
+        var records = _pendingBatch;
+        var label = _batchLabel!;
+        _pendingBatch = null;
+        _batchLabel = null;
+
+        if (records.Count == 0)
+            return;
+
+        var batchEntry = new ConfigBatchChangeRecord(label, records);
+
+        if (_stack.Count >= _capacity)
+            _stack.RemoveAt(0);
+
+        _stack.Add(batchEntry);
+    }
+
+    /// <summary>
+    /// Undoes the most recent undo entry by restoring its parameter value(s).
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// When the top entry is a single <see cref="ConfigChangeRecord"/>, one parameter is restored.
+    /// When the top entry is a <see cref="ConfigBatchChangeRecord"/>, all parameters in the batch
+    /// are restored atomically.
+    /// </para>
+    /// <para>
     /// The undo operation suppresses change recording so the restoration itself does not
     /// push a new entry onto the stack. When toast notifications are enabled, a toast is
     /// displayed via <see cref="ToastQueue.Push(string, ToastLevel, TimeSpan?)"/>.
+    /// </para>
     /// </remarks>
     /// <returns>
     /// <see langword="true"/> if a change was successfully undone;
@@ -153,32 +256,27 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
     {
         if (_disposed || _stack.Count == 0) return false;
 
-        var record = _stack[^1];
+        var entry = _stack[^1];
         _stack.RemoveAt(_stack.Count - 1);
 
-        if (!_parameters.TryGetValue(record.ParameterKey, out var param))
-            return false;
+        if (entry is ConfigBatchChangeRecord batch)
+            return TryUndoBatch(batch);
 
-        _suppressRecording = true;
-        try
-        {
-            param.SetValue(record.OldValue);
-            _snapshots[record.ParameterKey] = record.OldValue;
-        }
-        finally
-        {
-            _suppressRecording = false;
-        }
+        if (entry is ConfigChangeRecord record)
+            return TryUndoSingle(record);
 
-        if (_toast is not null)
-            ToastQueue.Push($"Undo: {record.DisplayLabel}", ToastLevel.Info, _toast.Duration);
-        return true;
+        return false;
     }
 
     /// <summary>
-    /// Removes all change records from the stack.
+    /// Removes all entries from the stack and discards any pending batch.
     /// </summary>
-    public void Clear() => _stack.Clear();
+    public void Clear()
+    {
+        _stack.Clear();
+        _pendingBatch = null;
+        _batchLabel = null;
+    }
 
     void INumericEditSink.BeginNumericEdit(IParameter parameter)
     {
@@ -230,6 +328,61 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
         _activeNumericEdits.Clear();
         _stack.Clear();
         _snapshots.Clear();
+        _pendingBatch = null;
+        _batchLabel = null;
+    }
+
+    private bool TryUndoSingle(ConfigChangeRecord record)
+    {
+        if (!_parameters.TryGetValue(record.ParameterKey, out var param))
+            return false;
+
+        _suppressRecording = true;
+        try
+        {
+            param.SetValue(record.OldValue);
+            _snapshots[record.ParameterKey] = record.OldValue;
+        }
+        finally
+        {
+            _suppressRecording = false;
+        }
+
+        if (_toast is not null)
+            ToastQueue.Push($"Undo: {record.DisplayLabel}", ToastLevel.Info, _toast.Duration);
+        return true;
+    }
+
+    private bool TryUndoBatch(ConfigBatchChangeRecord batch)
+    {
+        _suppressRecording = true;
+        try
+        {
+            var restored = 0;
+            // Restore in reverse order so the earliest change is restored last,
+            // leaving snapshots in the correct pre-batch state.
+            for (var i = batch.Records.Count - 1; i >= 0; i--)
+            {
+                var record = batch.Records[i];
+                if (!_parameters.TryGetValue(record.ParameterKey, out var param))
+                    continue;
+
+                param.SetValue(record.OldValue);
+                _snapshots[record.ParameterKey] = record.OldValue;
+                restored++;
+            }
+
+            if (restored == 0)
+                return false;
+        }
+        finally
+        {
+            _suppressRecording = false;
+        }
+
+        if (_toast is not null)
+            ToastQueue.Push($"Undo: {batch.BatchLabel} ({batch.Records.Count} parameters)", ToastLevel.Info, _toast.Duration);
+        return true;
     }
 
     private void SubscribeToParameters()
@@ -271,6 +424,12 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
             label = key;
 
         var record = new ConfigChangeRecord(key, label, oldValue, newValue, Stopwatch.GetTimestamp());
+
+        if (_pendingBatch is not null)
+        {
+            _pendingBatch.Add(record);
+            return;
+        }
 
         if (_stack.Count >= _capacity)
             _stack.RemoveAt(0);

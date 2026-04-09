@@ -897,4 +897,546 @@ public sealed class ConfigUndoStackTests
             CleanupStore(store, tempPath);
         }
     }
+
+    // --- Batch undo ---
+
+    /// <summary>
+    /// Tests that changes within a batch produce a single undo entry.
+    /// </summary>
+    [TestMethod]
+    public void Batch_MultipleChanges_ProducesSingleEntry()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("Reset All");
+            config.IntValue.Value = 0;
+            config.StringValue.Value = "reset";
+            config.BoolValue.Value = true;
+            undo.EndBatch();
+
+            Assert.AreEqual(1, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that TryUndo on a batch entry restores all parameter values atomically.
+    /// </summary>
+    [TestMethod]
+    public void Batch_TryUndo_RestoresAllValues()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("Reset All");
+            config.IntValue.Value = 0;
+            config.StringValue.Value = "reset";
+            config.BoolValue.Value = true;
+            undo.EndBatch();
+
+            var result = undo.TryUndo();
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(10, config.IntValue.Value);
+            Assert.AreEqual("default", config.StringValue.Value);
+            Assert.AreEqual(false, config.BoolValue.Value);
+            Assert.AreEqual(0, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that an empty batch (no actual changes) is discarded silently.
+    /// </summary>
+    [TestMethod]
+    public void Batch_NoChanges_Discarded()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("Empty");
+            undo.EndBatch();
+
+            Assert.AreEqual(0, undo.Count);
+            Assert.IsFalse(undo.CanUndo);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that nested BeginBatch calls throw <see cref="InvalidOperationException"/>.
+    /// </summary>
+    [TestMethod]
+    public void BeginBatch_WhileActive_ThrowsInvalidOperationException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("First");
+            Assert.ThrowsExactly<InvalidOperationException>(() => undo.BeginBatch("Second"));
+
+            undo.EndBatch(); // cleanup
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that EndBatch without an active batch throws <see cref="InvalidOperationException"/>.
+    /// </summary>
+    [TestMethod]
+    public void EndBatch_WithoutBegin_ThrowsInvalidOperationException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            Assert.ThrowsExactly<InvalidOperationException>(() => undo.EndBatch());
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.IsBatchActive"/> reflects correct state.
+    /// </summary>
+    [TestMethod]
+    public void IsBatchActive_ReflectsState()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            Assert.IsFalse(undo.IsBatchActive);
+
+            undo.BeginBatch("Test");
+            Assert.IsTrue(undo.IsBatchActive);
+
+            undo.EndBatch();
+            Assert.IsFalse(undo.IsBatchActive);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a batch counts as one entry for capacity and the oldest entry is dropped correctly.
+    /// </summary>
+    [TestMethod]
+    public void Batch_CountsAsOneForCapacity()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, capacity: 2);
+
+            // Entry 1: single change
+            config.IntValue.Value = 20;
+
+            // Entry 2: batch
+            undo.BeginBatch("Batch");
+            config.StringValue.Value = "batched";
+            config.BoolValue.Value = true;
+            undo.EndBatch();
+
+            Assert.AreEqual(2, undo.Count);
+
+            // Entry 3: single change — should drop the oldest (entry 1)
+            config.IntValue.Value = 30;
+            Assert.AreEqual(2, undo.Count);
+
+            // Undo entry 3 (single 20→30)
+            undo.TryUndo();
+            Assert.AreEqual(20, config.IntValue.Value);
+
+            // Undo entry 2 (batch)
+            undo.TryUndo();
+            Assert.AreEqual("default", config.StringValue.Value);
+            Assert.AreEqual(false, config.BoolValue.Value);
+
+            Assert.AreEqual(0, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that the toast message for a batch undo includes the batch label.
+    /// </summary>
+    [TestMethod]
+    public void Batch_TryUndo_ToastContainsBatchLabel()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new ConfigToastOptions() });
+
+            ToastQueue.Clear();
+
+            undo.BeginBatch("Reset Category");
+            config.IntValue.Value = 0;
+            config.StringValue.Value = "";
+            undo.EndBatch();
+
+            undo.TryUndo();
+
+            var entries = ToastQueue.GetActiveEntries();
+            var found = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.Contains("Reset Category", StringComparison.Ordinal))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(found, "Expected a toast message containing the batch label 'Reset Category'.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that after a batch undo, subsequent single changes capture correct old values.
+    /// </summary>
+    [TestMethod]
+    public void Batch_AfterUndo_SubsequentChange_CapturesRestoredValues()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("Reset");
+            config.IntValue.Value = 0;
+            undo.EndBatch();
+
+            undo.TryUndo();
+            Assert.AreEqual(10, config.IntValue.Value);
+
+            // Now change again — the old value should be the restored 10
+            config.IntValue.Value = 50;
+            var record = undo.Peek();
+            Assert.IsNotNull(record);
+            Assert.AreEqual(10, record.OldValue);
+            Assert.AreEqual(50, record.NewValue);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that mixed single and batch entries undo in the correct order.
+    /// </summary>
+    [TestMethod]
+    public void MixedEntries_UndoInCorrectOrder()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            // Entry 1: single
+            config.IntValue.Value = 20;
+
+            // Entry 2: batch
+            undo.BeginBatch("Batch");
+            config.StringValue.Value = "batched";
+            config.BoolValue.Value = true;
+            undo.EndBatch();
+
+            // Entry 3: single
+            config.IntValue.Value = 30;
+
+            Assert.AreEqual(3, undo.Count);
+
+            // Undo entry 3
+            undo.TryUndo();
+            Assert.AreEqual(20, config.IntValue.Value);
+
+            // Undo entry 2 (batch)
+            undo.TryUndo();
+            Assert.AreEqual("default", config.StringValue.Value);
+            Assert.AreEqual(false, config.BoolValue.Value);
+
+            // Undo entry 1
+            undo.TryUndo();
+            Assert.AreEqual(10, config.IntValue.Value);
+
+            Assert.AreEqual(0, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that BeginBatch on a disposed stack throws <see cref="ObjectDisposedException"/>.
+    /// </summary>
+    [TestMethod]
+    public void BeginBatch_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            undo.Dispose();
+            Assert.ThrowsExactly<ObjectDisposedException>(() => undo.BeginBatch("Test"));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that EndBatch on a disposed stack throws <see cref="ObjectDisposedException"/>.
+    /// </summary>
+    [TestMethod]
+    public void EndBatch_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            undo.BeginBatch("Test");
+            undo.Dispose();
+            Assert.ThrowsExactly<ObjectDisposedException>(() => undo.EndBatch());
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a numeric edit session ending during an active batch routes its record into the batch.
+    /// </summary>
+    [TestMethod]
+    public void NumericEdit_EndDuringBatch_RoutesIntoBatch()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            var sink = (INumericEditSink)undo;
+
+            // Start numeric edit before batch
+            sink.BeginNumericEdit(config.IntValue);
+            config.IntValue.Value = 15;
+
+            // Now open batch and end the numeric edit inside it
+            undo.BeginBatch("Mixed Batch");
+            config.StringValue.Value = "batched";
+            sink.EndNumericEdit(config.IntValue);
+            undo.EndBatch();
+
+            // Should be a single batch entry containing both the numeric and string changes
+            Assert.AreEqual(1, undo.Count);
+
+            undo.TryUndo();
+            Assert.AreEqual(10, config.IntValue.Value);
+            Assert.AreEqual("default", config.StringValue.Value);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Peek returns null when the top entry is a batch.
+    /// </summary>
+    [TestMethod]
+    public void Peek_BatchOnTop_ReturnsNull()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("Batch");
+            config.IntValue.Value = 0;
+            undo.EndBatch();
+
+            Assert.IsNull(undo.Peek());
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that PeekEntry returns the batch entry when the top is a batch.
+    /// </summary>
+    [TestMethod]
+    public void PeekEntry_BatchOnTop_ReturnsBatchEntry()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("MyBatch");
+            config.IntValue.Value = 0;
+            config.StringValue.Value = "x";
+            undo.EndBatch();
+
+            var entry = undo.PeekEntry();
+            Assert.IsNotNull(entry);
+            Assert.IsInstanceOfType<ConfigBatchChangeRecord>(entry);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that PeekEntry returns a single ConfigChangeRecord when the top is a single entry.
+    /// </summary>
+    [TestMethod]
+    public void PeekEntry_SingleOnTop_ReturnsChangeRecord()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+
+            var entry = undo.PeekEntry();
+            Assert.IsNotNull(entry);
+            Assert.IsInstanceOfType<ConfigChangeRecord>(entry);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that PeekEntry returns null for an empty stack.
+    /// </summary>
+    [TestMethod]
+    public void PeekEntry_EmptyStack_ReturnsNull()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            Assert.IsNull(undo.PeekEntry());
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that BeginBatch with null/empty/whitespace label throws ArgumentException.
+    /// </summary>
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void BeginBatch_InvalidLabel_ThrowsArgumentException(string? label)
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => undo.BeginBatch(label!));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Clear also discards a pending batch.
+    /// </summary>
+    [TestMethod]
+    public void Clear_DiscardsPendingBatch()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("Pending");
+            config.IntValue.Value = 0;
+
+            undo.Clear();
+
+            Assert.IsFalse(undo.IsBatchActive);
+            Assert.AreEqual(0, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that the batch undo does not record itself when individual values are restored.
+    /// </summary>
+    [TestMethod]
+    public void Batch_TryUndo_DoesNotRecordSelf()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("Reset");
+            config.IntValue.Value = 0;
+            config.StringValue.Value = "x";
+            undo.EndBatch();
+
+            Assert.AreEqual(1, undo.Count);
+            undo.TryUndo();
+            Assert.AreEqual(0, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
 }

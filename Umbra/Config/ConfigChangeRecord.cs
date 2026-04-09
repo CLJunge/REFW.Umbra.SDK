@@ -18,4 +18,4 @@ public sealed record ConfigChangeRecord(
     string DisplayLabel,
     object? OldValue,
     object? NewValue,
-    long Timestamp);
+    long Timestamp) : IUndoEntry;
