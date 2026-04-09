@@ -96,8 +96,6 @@ public sealed class SamplePlugin : UmbraPlugin
     public override void OnPreUpdateBehavior()
     {
 #if DEBUG
-        Logger.Info("SamplePlugin OnPreUpdateBehavior invoked.");
-
         if (!System.Diagnostics.Debugger.IsAttached
             && Input.KeyboardInput.IsCtrlHeld && Input.KeyboardInput.IsShiftHeld
             && Input.KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
