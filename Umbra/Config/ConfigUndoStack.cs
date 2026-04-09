@@ -6,7 +6,7 @@ namespace Umbra.Config;
 
 /// <summary>
 /// Tracks parameter changes on a loaded <see cref="ConfigStore{TConfig}"/> and provides
-/// single-step undo capability backed by a fixed-capacity stack.
+/// undo and redo capability backed by fixed-capacity stacks.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -14,13 +14,18 @@ namespace Umbra.Config;
 /// the untyped <see cref="IParameter.ValueChanged"/> event. When a parameter changes, the
 /// old snapshot value and the new current value are recorded as a
 /// <see cref="ConfigChangeRecord"/>. Calling <see cref="TryUndo"/> restores the most recent
-/// change and, when <see cref="ConfigUndoOptions.Toast"/> is non-<see langword="null"/>,
-/// pushes a toast notification via <see cref="ToastQueue"/>.
+/// change and pushes it onto the redo stack. Calling <see cref="TryRedo"/> re-applies the
+/// most recently undone change. When <see cref="ConfigUndoOptions.Toast"/> is
+/// non-<see langword="null"/>, toast notifications are pushed via <see cref="ToastQueue"/>.
+/// </para>
+/// <para>
+/// New user-initiated parameter changes clear the redo stack, following standard undo/redo
+/// semantics where branching from a previous state discards the forward history.
 /// </para>
 /// <para>
 /// Multi-parameter operations (e.g. reset-all, preset load) can be bracketed with
 /// <see cref="BeginBatch"/> / <see cref="EndBatch"/> so that all changes within the batch
-/// are recorded as a single composite entry and undone atomically by one <see cref="TryUndo"/> call.
+/// are recorded as a single composite entry and undone/redone atomically.
 /// </para>
 /// <para>
 /// Delegate-typed parameters (buttons) are excluded from tracking because they do not
@@ -44,6 +49,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
     private readonly IReadOnlyDictionary<string, IParameter> _parameters;
     private readonly Dictionary<string, object?> _snapshots;
     private readonly List<IUndoEntry> _stack;
+    private readonly List<IUndoEntry> _redoStack;
     private readonly List<Action> _cleanupActions;
     private readonly int _capacity;
     private readonly ConfigToastOptions? _toast;
@@ -113,6 +119,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
 #pragma warning disable IDE0028
         _stack = new(capacity);
 #pragma warning restore IDE0028
+        _redoStack = [];
         _snapshots = [];
         _activeNumericEdits = [];
         _cleanupActions = [];
@@ -130,6 +137,11 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
     /// </summary>
     public bool CanUndo => !_disposed && _stack.Count > 0;
 
+    /// <summary>
+    /// Gets a value indicating whether the stack contains at least one record that can be redone.
+    /// </summary>
+    public bool CanRedo => !_disposed && _redoStack.Count > 0;
+
     /// <inheritdoc/>
     long IUndoStackHandle.TopEntryTimestamp => _stack.Count > 0 ? _stack[^1].Timestamp : 0;
 
@@ -140,6 +152,14 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
     /// A batch entry counts as one regardless of how many individual parameter changes it contains.
     /// </remarks>
     public int Count => _stack.Count;
+
+    /// <summary>
+    /// Gets the number of redo entries currently available.
+    /// </summary>
+    /// <remarks>
+    /// A batch entry counts as one regardless of how many individual parameter changes it contains.
+    /// </remarks>
+    public int RedoCount => _redoStack.Count;
 
     /// <summary>
     /// Gets a value indicating whether a batch is currently active.
@@ -232,6 +252,8 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
 
         var batchEntry = new ConfigBatchChangeRecord(label, records);
 
+        _redoStack.Clear();
+
         if (_stack.Count >= _capacity)
             _stack.RemoveAt(0);
 
@@ -315,20 +337,66 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
         _stack.RemoveAt(_stack.Count - 1);
 
         if (entry is ConfigBatchChangeRecord batch)
-            return TryUndoBatch(batch);
+        {
+            var result = TryUndoBatch(batch);
+            if (result) _redoStack.Add(batch);
+            return result;
+        }
 
         if (entry is ConfigChangeRecord record)
-            return TryUndoSingle(record);
+        {
+            var result = TryUndoSingle(record);
+            if (result) _redoStack.Add(record);
+            return result;
+        }
 
         return false;
     }
 
     /// <summary>
-    /// Removes all entries from the stack and discards any pending batch.
+    /// Redoes the most recently undone entry by re-applying its new parameter value(s).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// When the top redo entry is a single <see cref="ConfigChangeRecord"/>, one parameter is restored
+    /// to its <see cref="ConfigChangeRecord.NewValue"/>.
+    /// When the top redo entry is a <see cref="ConfigBatchChangeRecord"/>, all parameters in the batch
+    /// are restored atomically to their new values.
+    /// </para>
+    /// <para>
+    /// The redo operation suppresses change recording so the re-application itself does not
+    /// push a new entry onto the undo stack via the normal change-tracking path. Instead, the
+    /// entry is moved back onto the undo stack explicitly. When toast notifications are enabled,
+    /// a toast is displayed via <see cref="ToastQueue.Push(string, ToastLevel, TimeSpan?)"/>.
+    /// </para>
+    /// </remarks>
+    /// <returns>
+    /// <see langword="true"/> if a change was successfully redone;
+    /// <see langword="false"/> if the redo stack is empty, disposed, or the parameter is no longer registered.
+    /// </returns>
+    public bool TryRedo()
+    {
+        if (_disposed || _redoStack.Count == 0) return false;
+
+        var entry = _redoStack[^1];
+        _redoStack.RemoveAt(_redoStack.Count - 1);
+
+        if (entry is ConfigBatchChangeRecord batch)
+            return TryRedoBatch(batch);
+
+        if (entry is ConfigChangeRecord record)
+            return TryRedoSingle(record);
+
+        return false;
+    }
+
+    /// <summary>
+    /// Removes all entries from the undo and redo stacks and discards any pending batch.
     /// </summary>
     public void Clear()
     {
         _stack.Clear();
+        _redoStack.Clear();
         _pendingBatch = null;
         _batchLabel = null;
     }
@@ -384,6 +452,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
         _cleanupActions.Clear();
         _activeNumericEdits.Clear();
         _stack.Clear();
+        _redoStack.Clear();
         _snapshots.Clear();
         _pendingBatch = null;
         _batchLabel = null;
@@ -439,6 +508,69 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
 
         if (_toast is not null)
             ToastQueue.Push(BuildToastMessage($"Undo: {batch.BatchLabel} ({batch.Records.Count} parameters)"), ToastLevel.Info, _toast.Duration);
+        return true;
+    }
+
+    private bool TryRedoSingle(ConfigChangeRecord record)
+    {
+        if (!_parameters.TryGetValue(record.ParameterKey, out var param))
+            return false;
+
+        _suppressRecording = true;
+        try
+        {
+            param.SetValue(record.NewValue);
+            _snapshots[record.ParameterKey] = record.NewValue;
+        }
+        finally
+        {
+            _suppressRecording = false;
+        }
+
+        if (_stack.Count >= _capacity)
+            _stack.RemoveAt(0);
+
+        _stack.Add(record);
+        UndoShortcutCoordinator.SetActive(this);
+
+        if (_toast is not null)
+            ToastQueue.Push(BuildToastMessage($"Redo: {record.DisplayLabel}"), ToastLevel.Info, _toast.Duration);
+        return true;
+    }
+
+    private bool TryRedoBatch(ConfigBatchChangeRecord batch)
+    {
+        _suppressRecording = true;
+        try
+        {
+            var restored = 0;
+            for (var i = 0; i < batch.Records.Count; i++)
+            {
+                var record = batch.Records[i];
+                if (!_parameters.TryGetValue(record.ParameterKey, out var param))
+                    continue;
+
+                param.SetValue(record.NewValue);
+                _snapshots[record.ParameterKey] = record.NewValue;
+                restored++;
+            }
+
+            if (restored == 0)
+                return false;
+        }
+        finally
+        {
+            _suppressRecording = false;
+        }
+
+        if (_stack.Count >= _capacity)
+            _stack.RemoveAt(0);
+
+        _stack.Add(batch);
+        UndoShortcutCoordinator.SetActive(this);
+
+        if (_toast is not null)
+            ToastQueue.Push(BuildToastMessage($"Redo: {batch.BatchLabel} ({batch.Records.Count} parameters)"), ToastLevel.Info, _toast.Duration);
         return true;
     }
 
@@ -516,6 +648,8 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IU
             _pendingBatch.Add(record);
             return;
         }
+
+        _redoStack.Clear();
 
         if (_stack.Count >= _capacity)
             _stack.RemoveAt(0);

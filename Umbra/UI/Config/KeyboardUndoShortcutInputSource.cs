@@ -14,6 +14,10 @@ internal sealed class KeyboardUndoShortcutInputSource : IUndoShortcutInputSource
         => KeyboardInput.IsCtrlHeld && KeyboardInput.IsKeyJustPressed(UmbraKey.Z);
 
     /// <inheritdoc/>
+    public bool IsDefaultRedoShortcutPressed()
+        => KeyboardInput.IsCtrlHeld && KeyboardInput.IsKeyJustPressed(UmbraKey.Y);
+
+    /// <inheritdoc/>
     public bool WantsTextInput()
         => ImGui.GetIO().WantTextInput;
 }

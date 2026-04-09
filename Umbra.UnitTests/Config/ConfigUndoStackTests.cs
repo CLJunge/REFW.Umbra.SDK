@@ -1819,4 +1819,491 @@ public sealed class ConfigUndoStackTests
             CleanupStore(store, tempPath);
         }
     }
+
+    // --- Redo behavior ---
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.TryRedo"/> re-applies the new value after an undo.
+    /// </summary>
+    [TestMethod]
+    public void TryRedo_AfterUndo_RestoresNewValue()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+            Assert.AreEqual(10, config.IntValue.Value);
+
+            var result = undo.TryRedo();
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(42, config.IntValue.Value);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.TryRedo"/> returns false when the redo stack is empty.
+    /// </summary>
+    [TestMethod]
+    public void TryRedo_EmptyRedoStack_ReturnsFalse()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            Assert.IsFalse(undo.TryRedo());
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.TryRedo"/> does not record itself as a new change.
+    /// </summary>
+    [TestMethod]
+    public void TryRedo_DoesNotRecordSelf()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+
+            Assert.AreEqual(0, undo.Count);
+            undo.TryRedo();
+
+            // Should be back on the undo stack as exactly one entry, not two
+            Assert.AreEqual(1, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.TryRedo"/> returns false after disposal.
+    /// </summary>
+    [TestMethod]
+    public void TryRedo_AfterDispose_ReturnsFalse()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+
+            undo.Dispose();
+
+            Assert.IsFalse(undo.TryRedo());
+            Assert.IsFalse(undo.CanRedo);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.CanRedo"/> is true after an undo.
+    /// </summary>
+    [TestMethod]
+    public void CanRedo_AfterUndo_IsTrue()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            Assert.IsFalse(undo.CanRedo);
+
+            undo.TryUndo();
+
+            Assert.IsTrue(undo.CanRedo);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.CanRedo"/> is false after redoing the last entry.
+    /// </summary>
+    [TestMethod]
+    public void CanRedo_AfterRedoingAll_IsFalse()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+            undo.TryRedo();
+
+            Assert.IsFalse(undo.CanRedo);
+            Assert.AreEqual(0, undo.RedoCount);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a new user-initiated change clears the redo stack.
+    /// </summary>
+    [TestMethod]
+    public void NewChange_ClearsRedoStack()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+            Assert.IsTrue(undo.CanRedo);
+
+            // New change should invalidate redo history
+            config.IntValue.Value = 99;
+
+            Assert.IsFalse(undo.CanRedo);
+            Assert.AreEqual(0, undo.RedoCount);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a batch operation clears the redo stack.
+    /// </summary>
+    [TestMethod]
+    public void NewBatch_ClearsRedoStack()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+            Assert.IsTrue(undo.CanRedo);
+
+            undo.BeginBatch("New Batch");
+            config.IntValue.Value = 99;
+            undo.EndBatch();
+
+            Assert.IsFalse(undo.CanRedo);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.TryRedo"/> on a batch entry restores all new values.
+    /// </summary>
+    [TestMethod]
+    public void TryRedo_BatchEntry_RestoresAllNewValues()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            undo.BeginBatch("Reset All");
+            config.IntValue.Value = 0;
+            config.StringValue.Value = "reset";
+            config.BoolValue.Value = true;
+            undo.EndBatch();
+
+            undo.TryUndo();
+
+            Assert.AreEqual(10, config.IntValue.Value);
+            Assert.AreEqual("default", config.StringValue.Value);
+            Assert.IsFalse(config.BoolValue.Value);
+
+            var result = undo.TryRedo();
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(0, config.IntValue.Value);
+            Assert.AreEqual("reset", config.StringValue.Value);
+            Assert.IsTrue(config.BoolValue.Value);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that redo pushes the entry back onto the undo stack.
+    /// </summary>
+    [TestMethod]
+    public void TryRedo_PushesBackOntoUndoStack()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+
+            Assert.AreEqual(0, undo.Count);
+            Assert.AreEqual(1, undo.RedoCount);
+
+            undo.TryRedo();
+
+            Assert.AreEqual(1, undo.Count);
+            Assert.AreEqual(0, undo.RedoCount);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that redo pushes a toast notification when Toast options are configured.
+    /// </summary>
+    [TestMethod]
+    public void TryRedo_PushesToastOnSuccess()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store,
+                new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") });
+
+            ToastQueue.Clear();
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+            ToastQueue.Clear();
+
+            undo.TryRedo();
+
+            var entries = ToastQueue.GetActiveEntries();
+            var foundRedo = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.StartsWith("[Test Plugin] Redo:", StringComparison.Ordinal))
+                {
+                    foundRedo = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(foundRedo, "Expected a toast message starting with '[Test Plugin] Redo:'.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that redo does not push a toast when Toast is null.
+    /// </summary>
+    [TestMethod]
+    public void TryRedo_ToastNull_DoesNotPushToast()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = null });
+
+            ToastQueue.Clear();
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+            ToastQueue.Clear();
+
+            undo.TryRedo();
+
+            var entries = ToastQueue.GetActiveEntries();
+            var foundRedo = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.Contains("Redo:", StringComparison.Ordinal))
+                {
+                    foundRedo = true;
+                    break;
+                }
+            }
+
+            Assert.IsFalse(foundRedo, "Expected no toast message when Toast is null.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.Clear"/> also clears the redo stack.
+    /// </summary>
+    [TestMethod]
+    public void Clear_ClearsRedoStack()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+            Assert.IsTrue(undo.CanRedo);
+
+            undo.Clear();
+
+            Assert.IsFalse(undo.CanRedo);
+            Assert.AreEqual(0, undo.RedoCount);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests a full undo/redo cycle: change → undo → redo → undo → redo.
+    /// </summary>
+    [TestMethod]
+    public void MultipleUndoRedo_Cycle()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 20;
+            config.IntValue.Value = 30;
+
+            // Undo both
+            undo.TryUndo();
+            Assert.AreEqual(20, config.IntValue.Value);
+            undo.TryUndo();
+            Assert.AreEqual(10, config.IntValue.Value);
+
+            Assert.AreEqual(0, undo.Count);
+            Assert.AreEqual(2, undo.RedoCount);
+
+            // Redo both
+            undo.TryRedo();
+            Assert.AreEqual(20, config.IntValue.Value);
+            undo.TryRedo();
+            Assert.AreEqual(30, config.IntValue.Value);
+
+            Assert.AreEqual(2, undo.Count);
+            Assert.AreEqual(0, undo.RedoCount);
+
+            // Undo one, then new change — redo should be cleared
+            undo.TryUndo();
+            Assert.AreEqual(20, config.IntValue.Value);
+            Assert.IsTrue(undo.CanRedo);
+
+            config.IntValue.Value = 99;
+            Assert.IsFalse(undo.CanRedo);
+            Assert.AreEqual(2, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that after redo, subsequent changes capture the redone value as old.
+    /// </summary>
+    [TestMethod]
+    public void AfterRedo_SubsequentChange_CapturesRedonValueAsOld()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+            undo.TryRedo();
+            Assert.AreEqual(42, config.IntValue.Value);
+
+            config.IntValue.Value = 99;
+
+            var record = undo.Peek();
+            Assert.IsNotNull(record);
+            Assert.AreEqual(42, record.OldValue);
+            Assert.AreEqual(99, record.NewValue);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that redo for a batch pushes a toast containing the batch label.
+    /// </summary>
+    [TestMethod]
+    public void TryRedo_BatchWithToast_ToastContainsBatchLabel()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store,
+                new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") });
+
+            ToastQueue.Clear();
+
+            undo.BeginBatch("Reset Category");
+            config.IntValue.Value = 0;
+            config.StringValue.Value = "";
+            undo.EndBatch();
+
+            undo.TryUndo();
+            ToastQueue.Clear();
+
+            undo.TryRedo();
+
+            var entries = ToastQueue.GetActiveEntries();
+            var found = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.Contains("Redo: Reset Category", StringComparison.Ordinal))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(found, "Expected a toast message containing 'Redo: Reset Category'.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            CleanupStore(store, tempPath);
+        }
+    }
 }

@@ -46,8 +46,8 @@ public sealed class UndoShortcutCoordinatorTests
     // --- No active stack ---
 
     /// <summary>
-    /// When no stack has recorded a change, the shortcut does nothing and the input source
-    /// is not queried for the shortcut key.
+    /// When no stack has recorded a change, the shortcut does nothing. The text-input
+    /// guard is still checked (early exit), but no shortcut key is queried.
     /// </summary>
     [TestMethod]
     public void TryProcessShortcut_NoActiveStack_DoesNotQueryShortcutKey()
@@ -58,9 +58,9 @@ public sealed class UndoShortcutCoordinatorTests
         // Act
         UndoShortcutCoordinator.TryProcessShortcut(input);
 
-        // Assert
-        Assert.AreEqual(0, input.WantsTextInputCheckCount);
-        Assert.AreEqual(0, input.DefaultUndoShortcutCheckCount);
+        // Assert — keyboard state is queried but resolves to no target, so nothing happens
+        Assert.AreEqual(1, input.WantsTextInputCheckCount);
+        Assert.AreEqual(1, input.DefaultUndoShortcutCheckCount);
     }
 
     // --- Active stack receives undo ---
@@ -116,7 +116,7 @@ public sealed class UndoShortcutCoordinatorTests
 
             // Assert — value stays at 42 because the stack was disposed
             Assert.AreEqual(42, config.Value.Value);
-            Assert.AreEqual(0, input.WantsTextInputCheckCount);
+            Assert.AreEqual(1, input.WantsTextInputCheckCount);
         }
         finally
         {
@@ -432,6 +432,102 @@ public sealed class UndoShortcutCoordinatorTests
         {
             CleanupStore(storeA, tempPathA);
             CleanupStore(storeB, tempPathB);
+        }
+    }
+
+    // --- Redo shortcut routing ---
+
+    /// <summary>
+    /// When a stack has redo entries and the redo shortcut is pressed, the active stack is redone.
+    /// </summary>
+    [TestMethod]
+    public void TryProcessShortcut_RedoShortcutPressed_RedoesActiveStack()
+    {
+        // Arrange
+        var (store, config, tempPath) = CreateLoadedStore<CoordTestConfig>();
+        try
+        {
+            using var undoStack = new ConfigUndoStack<CoordTestConfig>(store);
+            config.Value.Value = 42;
+            undoStack.TryUndo();
+            Assert.AreEqual(0, config.Value.Value);
+
+            var input = new TestUndoShortcutInputSource { DefaultRedoShortcutPressed = true };
+
+            // Act
+            UndoShortcutCoordinator.TryProcessShortcut(input);
+
+            // Assert
+            Assert.AreEqual(42, config.Value.Value);
+            Assert.IsFalse(undoStack.CanRedo);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// When no stack has redo entries, the redo shortcut does nothing.
+    /// </summary>
+    [TestMethod]
+    public void TryProcessShortcut_RedoShortcutWhenNoRedoAvailable_DoesNothing()
+    {
+        // Arrange
+        var (store, config, tempPath) = CreateLoadedStore<CoordTestConfig>();
+        try
+        {
+            using var undoStack = new ConfigUndoStack<CoordTestConfig>(store);
+            config.Value.Value = 42;
+
+            var input = new TestUndoShortcutInputSource { DefaultRedoShortcutPressed = true };
+
+            // Act
+            UndoShortcutCoordinator.TryProcessShortcut(input);
+
+            // Assert — nothing changed, value remains 42
+            Assert.AreEqual(42, config.Value.Value);
+            Assert.IsTrue(undoStack.CanUndo);
+            Assert.IsFalse(undoStack.CanRedo);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// When text input is active, the redo shortcut is not forwarded to the stack.
+    /// </summary>
+    [TestMethod]
+    public void TryProcessShortcut_RedoShortcutWhenTextInputActive_DoesNotRedo()
+    {
+        // Arrange
+        var (store, config, tempPath) = CreateLoadedStore<CoordTestConfig>();
+        try
+        {
+            using var undoStack = new ConfigUndoStack<CoordTestConfig>(store);
+            config.Value.Value = 42;
+            undoStack.TryUndo();
+
+            var input = new TestUndoShortcutInputSource
+            {
+                DefaultRedoShortcutPressed = true,
+                WantsTextInputState = true
+            };
+
+            // Act
+            UndoShortcutCoordinator.TryProcessShortcut(input);
+
+            // Assert
+            Assert.AreEqual(0, config.Value.Value);
+            Assert.IsTrue(undoStack.CanRedo);
+            Assert.AreEqual(1, input.WantsTextInputCheckCount);
+            Assert.AreEqual(0, input.DefaultRedoShortcutCheckCount);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
         }
     }
 }

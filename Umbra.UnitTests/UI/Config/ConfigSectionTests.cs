@@ -584,8 +584,8 @@ public sealed class ConfigSectionTests
         section.TryHandleBuiltInUndo();
 
         Assert.IsTrue(config.TestParameter.Value);
-        Assert.AreEqual(0, inputSource.WantsTextInputCheckCount);
-        Assert.AreEqual(0, inputSource.DefaultUndoShortcutCheckCount);
+        Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
+        Assert.AreEqual(1, inputSource.DefaultUndoShortcutCheckCount);
         store.Dispose();
     }
 
@@ -621,6 +621,45 @@ public sealed class ConfigSectionTests
         Assert.IsFalse(config.TestParameter.Value);
         Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
         Assert.AreEqual(0, inputSource.DefaultUndoShortcutCheckCount);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that the built-in redo shortcut re-applies the previously undone value change.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_RedoShortcutAfterUndo_RestoresValue()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "redo-shortcut.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var inputSource = new TestUndoShortcutInputSource();
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Undo = new ConfigUndoOptions(), UndoInputSource = inputSource },
+            idScope: "redo-shortcut",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        config.TestParameter.Value = false;
+
+        // Undo via shortcut
+        inputSource.DefaultUndoShortcutPressed = true;
+        section.TryHandleBuiltInUndo();
+        Assert.IsTrue(config.TestParameter.Value);
+
+        // Redo via shortcut — need a new tick so coordinator doesn't deduplicate
+        UndoShortcutCoordinator.Reset();
+        UndoShortcutCoordinator.Register((IUndoStackHandle)section.UndoStack!);
+        inputSource.DefaultUndoShortcutPressed = false;
+        inputSource.DefaultRedoShortcutPressed = true;
+        section.TryHandleBuiltInUndo();
+        Assert.IsFalse(config.TestParameter.Value);
+
         store.Dispose();
     }
 

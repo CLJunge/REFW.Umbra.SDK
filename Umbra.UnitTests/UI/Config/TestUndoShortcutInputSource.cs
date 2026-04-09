@@ -7,9 +7,13 @@ internal sealed class TestUndoShortcutInputSource : IUndoShortcutInputSource
 {
     public bool DefaultUndoShortcutPressed { get; set; }
 
+    public bool DefaultRedoShortcutPressed { get; set; }
+
     public bool WantsTextInputState { get; set; }
 
     public int DefaultUndoShortcutCheckCount { get; private set; }
+
+    public int DefaultRedoShortcutCheckCount { get; private set; }
 
     public int WantsTextInputCheckCount { get; private set; }
 
@@ -17,6 +21,12 @@ internal sealed class TestUndoShortcutInputSource : IUndoShortcutInputSource
     {
         DefaultUndoShortcutCheckCount++;
         return DefaultUndoShortcutPressed;
+    }
+
+    public bool IsDefaultRedoShortcutPressed()
+    {
+        DefaultRedoShortcutCheckCount++;
+        return DefaultRedoShortcutPressed;
     }
 
     public bool WantsTextInput()

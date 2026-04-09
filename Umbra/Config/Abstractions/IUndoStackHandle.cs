@@ -17,6 +17,11 @@ internal interface IUndoStackHandle
     bool CanUndo { get; }
 
     /// <summary>
+    /// Gets a value indicating whether the stack contains at least one entry that can be redone.
+    /// </summary>
+    bool CanRedo { get; }
+
+    /// <summary>
     /// Gets the <see cref="System.Diagnostics.Stopwatch"/>-based timestamp of the top entry,
     /// or <c>0</c> when the stack is empty. Used by <see cref="UI.Config.UndoShortcutCoordinator"/>
     /// to compare recency across registered stacks for cross-plugin fallback.
@@ -31,4 +36,13 @@ internal interface IUndoStackHandle
     /// <see langword="false"/> if the stack is empty, disposed, or the parameter is no longer registered.
     /// </returns>
     bool TryUndo();
+
+    /// <summary>
+    /// Attempts to redo the most recently undone entry.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> if a change was successfully redone;
+    /// <see langword="false"/> if the redo stack is empty, disposed, or the parameter is no longer registered.
+    /// </returns>
+    bool TryRedo();
 }
