@@ -1439,4 +1439,138 @@ public sealed class ConfigUndoStackTests
             CleanupStore(store, tempPath);
         }
     }
+
+    // --- WrapWithBatch ---
+
+    /// <summary>
+    /// Tests that an action wrapped with <see cref="ConfigUndoStack{TConfig}.WrapWithBatch"/>
+    /// produces a single batch undo entry when invoked.
+    /// </summary>
+    [TestMethod]
+    public void WrapWithBatch_InvokedAction_ProducesSingleEntry()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            var reset = undo.WrapWithBatch("Reset", () =>
+            {
+                config.IntValue.Reset();
+                config.StringValue.Reset();
+            });
+
+            config.IntValue.Value = 42;
+            config.StringValue.Value = "changed";
+            undo.Clear();
+
+            reset();
+
+            Assert.AreEqual(1, undo.Count);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that undoing a wrapped action restores all values atomically.
+    /// </summary>
+    [TestMethod]
+    public void WrapWithBatch_UndoRestoresAllValues()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            config.IntValue.Value = 42;
+            config.StringValue.Value = "changed";
+            undo.Clear();
+
+            var reset = undo.WrapWithBatch("Reset", () =>
+            {
+                config.IntValue.Reset();
+                config.StringValue.Reset();
+            });
+
+            reset();
+            undo.TryUndo();
+
+            Assert.AreEqual(42, config.IntValue.Value);
+            Assert.AreEqual("changed", config.StringValue.Value);
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that the batch is still closed when the wrapped action throws.
+    /// </summary>
+    [TestMethod]
+    public void WrapWithBatch_ActionThrows_BatchStillClosed()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+
+            var wrapped = undo.WrapWithBatch("Failing", () =>
+            {
+                config.IntValue.Value = 99;
+                throw new InvalidOperationException("test");
+            });
+
+            try { wrapped(); } catch (InvalidOperationException) { }
+
+            Assert.IsFalse(undo.IsBatchActive, "Batch should be closed after exception.");
+            Assert.AreEqual(1, undo.Count, "The partial change should still be recorded as a batch.");
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.WrapWithBatch"/> throws on null action.
+    /// </summary>
+    [TestMethod]
+    public void WrapWithBatch_NullAction_ThrowsArgumentNullException()
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentNullException>(() => undo.WrapWithBatch("Label", null!));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.WrapWithBatch"/> throws on invalid label.
+    /// </summary>
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void WrapWithBatch_InvalidLabel_ThrowsArgumentException(string? label)
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => undo.WrapWithBatch(label!, () => { }));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
 }

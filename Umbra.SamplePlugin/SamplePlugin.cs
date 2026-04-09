@@ -198,38 +198,44 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 
     /// <summary>
-    /// Creates the runtime panel for the loaded sample config.
+    /// Creates the runtime panel for the loaded sample config and binds batch-undo to reset actions.
     /// </summary>
     /// <param name="config">The loaded config instance.</param>
     /// <param name="store">The loaded config store.</param>
-    private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store) => _panel = CreateRuntimePanel(config, store);
+    private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
+    {
+        var section = CreateRuntimeSection(config, store);
+        _panel = new PluginPanel(_runtimePanelScope).Add(section);
+
+        if (section.UndoStack is { } undoStack)
+            PluginConfigActionBinder.BindBatchUndo(config, undoStack);
+    }
 
     /// <summary>
-    /// Builds the plugin's normal runtime panel.
+    /// Builds the config section for the runtime panel.
     /// </summary>
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
     /// <param name="store">The loaded config store used for event-driven persistence, transfer UI, undo, and preset support.</param>
-    /// <returns>The runtime panel.</returns>
-    private static PluginPanel CreateRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
+    /// <returns>The config section with undo, search, transfer, and preset support.</returns>
+    private static ConfigSection<PluginConfig> CreateRuntimeSection(PluginConfig config, ConfigStore<PluginConfig> store)
     {
         var toast = new ConfigToastOptions { Duration = TimeSpan.FromSeconds(2) };
-        return new PluginPanel(_runtimePanelScope)
-                .Add(ConfigSection<PluginConfig>.CreateWithStore(
-                    config,
-                    store,
-                    new ConfigDrawerOptions
-                    {
-                        Search = new UI.Config.Search.ConfigSearchOptions(),
-                        Transfer = new ConfigTransferOptions { Enabled = true },
-                        Undo = new ConfigUndoOptions() { Toast = toast },
-                        Presets = new ConfigPresetOptions
-                        {
-                            SectionLabel = "Presets",
-                            ExpandedByDefault = true,
-                            Toast = toast
-                        }
-                    },
-                    _runtimeSectionScope));
+        return ConfigSection<PluginConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions
+            {
+                Search = new UI.Config.Search.ConfigSearchOptions(),
+                Transfer = new ConfigTransferOptions { Enabled = true },
+                Undo = new ConfigUndoOptions() { Toast = toast },
+                Presets = new ConfigPresetOptions
+                {
+                    SectionLabel = "Presets",
+                    ExpandedByDefault = true,
+                    Toast = toast
+                }
+            },
+            _runtimeSectionScope);
     }
 
     /// <summary>

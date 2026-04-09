@@ -234,6 +234,55 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
     }
 
     /// <summary>
+    /// Returns a new <see cref="Action"/> that wraps <paramref name="action"/> with
+    /// <see cref="BeginBatch"/> / <see cref="EndBatch"/> boundaries.
+    /// </summary>
+    /// <param name="label">
+    /// The batch label used when the wrapped action is undone (e.g. <c>"Reset General"</c>).
+    /// </param>
+    /// <param name="action">The action to wrap. Typically a per-category reset delegate.</param>
+    /// <returns>
+    /// A new delegate that, when invoked, opens a batch, executes <paramref name="action"/>,
+    /// and closes the batch so all parameter changes within the action are recorded as one
+    /// atomic undo entry.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This is the recommended pattern for adding batch-undo support to reset buttons and other
+    /// multi-parameter operations without coupling the config type to the undo stack:
+    /// </para>
+    /// <code>
+    /// // After the undo stack is available (e.g. from ConfigSection.UndoStack):
+    /// config.General.ResetGeneral.Value = undoStack.WrapWithBatch("Reset General", config.General.ResetGeneral.Value);
+    /// </code>
+    /// <para>
+    /// The <see cref="EndBatch"/> call is in a <see langword="finally"/> block so the batch
+    /// scope is always closed even if <paramref name="action"/> throws.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="label"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public Action WrapWithBatch(string label, Action action)
+    {
+        if (string.IsNullOrWhiteSpace(label))
+            throw new ArgumentException("Batch label cannot be null, empty, or whitespace.", nameof(label));
+        ArgumentNullException.ThrowIfNull(action);
+
+        return () =>
+        {
+            BeginBatch(label);
+            try
+            {
+                action();
+            }
+            finally
+            {
+                EndBatch();
+            }
+        };
+    }
+
+    /// <summary>
     /// Undoes the most recent undo entry by restoring its parameter value(s).
     /// </summary>
     /// <remarks>
