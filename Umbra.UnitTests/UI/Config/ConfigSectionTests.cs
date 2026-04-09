@@ -14,6 +14,9 @@ namespace Umbra.UI.Config.UnitTests;
 [TestClass]
 public sealed class ConfigSectionTests
 {
+    [TestInitialize]
+    public void TestInit() => UndoShortcutCoordinator.Reset();
+
     /// <summary>
     /// Test configuration class used for testing <see cref="ConfigSection{TConfig}"/>.
     /// </summary>

@@ -462,6 +462,88 @@ public sealed class ConfigUndoStackTests
         }
     }
 
+    /// <summary>
+    /// Tests that a toast pushed when PluginName is set is prefixed with [PluginName].
+    /// </summary>
+    [TestMethod]
+    public void TryUndo_WithPluginName_ToastIncludesPluginNamePrefix()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store,
+                new ConfigUndoOptions { Toast = new ConfigToastOptions(), PluginName = "My Plugin" });
+
+            ToastQueue.Clear();
+
+            config.IntValue.Value = 42;
+            undo.TryUndo();
+
+            var entries = ToastQueue.GetActiveEntries();
+            Assert.IsNotEmpty(entries);
+
+            var foundPrefixed = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.StartsWith("[My Plugin] Undo:", StringComparison.Ordinal))
+                {
+                    foundPrefixed = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(foundPrefixed, "Expected a toast message starting with '[My Plugin] Undo:'.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that a batch undo toast also includes the plugin name prefix when PluginName is set.
+    /// </summary>
+    [TestMethod]
+    public void TryUndo_BatchWithPluginName_ToastIncludesPluginNamePrefix()
+    {
+        var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store,
+                new ConfigUndoOptions { Toast = new ConfigToastOptions(), PluginName = "My Plugin" });
+
+            ToastQueue.Clear();
+
+            undo.BeginBatch("Reset All");
+            config.IntValue.Value = 42;
+            config.BoolValue.Value = true;
+            undo.EndBatch();
+
+            undo.TryUndo();
+
+            var entries = ToastQueue.GetActiveEntries();
+            Assert.IsNotEmpty(entries);
+
+            var foundPrefixed = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Message.StartsWith("[My Plugin] Undo: Reset All", StringComparison.Ordinal))
+                {
+                    foundPrefixed = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(foundPrefixed, "Expected a toast message starting with '[My Plugin] Undo: Reset All'.");
+        }
+        finally
+        {
+            ToastQueue.Clear();
+            CleanupStore(store, tempPath);
+        }
+    }
+
     // --- Capacity ---
 
     /// <summary>

@@ -358,16 +358,10 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 
     internal void TryHandleBuiltInUndo()
     {
-        var undoStack = _undoStack;
-        var undoInputSource = _undoInputSource;
-        if (undoStack is null || undoInputSource is null || !undoStack.CanUndo)
+        if (_undoStack is null || _undoInputSource is null)
             return;
 
-        if (undoInputSource.WantsTextInput())
-            return;
-
-        if (undoInputSource.IsDefaultUndoShortcutPressed())
-            undoStack.TryUndo();
+        UndoShortcutCoordinator.TryProcessShortcut(_undoInputSource);
     }
 
     private static ConfigTransferFeature? CreateTransferFeature(IConfigTransferStore store, ConfigDrawerOptions options)

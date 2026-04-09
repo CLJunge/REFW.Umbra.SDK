@@ -28,7 +28,7 @@ namespace Umbra.Config;
 /// </para>
 /// </remarks>
 /// <typeparam name="TConfig">The configuration class managed by the store.</typeparam>
-public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
+public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IUndoStackHandle
     where TConfig : class, new()
 {
     private sealed class NumericEditSession(object? initialValue)
@@ -48,6 +48,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
     private readonly int _capacity;
     private readonly ConfigToastOptions? _toast;
     private readonly Dictionary<string, NumericEditSession> _activeNumericEdits;
+    private readonly string? _pluginName;
     private List<ConfigChangeRecord>? _pendingBatch;
     private string? _batchLabel;
     private bool _suppressRecording;
@@ -91,11 +92,12 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
     public ConfigUndoStack(ConfigStore<TConfig> store, ConfigUndoOptions options)
         : this(store,
               options is not null ? options.Capacity : throw new ArgumentNullException(nameof(options)),
-              options.Toast)
+              options.Toast,
+              options.PluginName)
     {
     }
 
-    private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, ConfigToastOptions? toast)
+    private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, ConfigToastOptions? toast, string? pluginName = null)
     {
         ArgumentNullException.ThrowIfNull(store);
 
@@ -110,6 +112,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
 
         _capacity = capacity;
         _toast = toast;
+        _pluginName = string.IsNullOrWhiteSpace(pluginName) ? null : pluginName;
 #pragma warning disable IDE0028
         _stack = new(capacity);
 #pragma warning restore IDE0028
@@ -122,12 +125,16 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
 
         SubscribeToParameters();
         ApplyAutoBatchWrapping();
+        UndoShortcutCoordinator.Register(this);
     }
 
     /// <summary>
     /// Gets a value indicating whether the stack contains at least one record that can be undone.
     /// </summary>
     public bool CanUndo => !_disposed && _stack.Count > 0;
+
+    /// <inheritdoc/>
+    long IUndoStackHandle.TopEntryTimestamp => _stack.Count > 0 ? _stack[^1].Timestamp : 0;
 
     /// <summary>
     /// Gets the number of undo entries currently on the stack.
@@ -232,6 +239,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
             _stack.RemoveAt(0);
 
         _stack.Add(batchEntry);
+        UndoShortcutCoordinator.SetActive(this);
     }
 
     /// <summary>
@@ -371,6 +379,8 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
         if (_disposed) return;
         _disposed = true;
 
+        UndoShortcutCoordinator.Unregister(this);
+
         for (var i = 0; i < _cleanupActions.Count; i++)
             _cleanupActions[i]();
 
@@ -399,7 +409,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
         }
 
         if (_toast is not null)
-            ToastQueue.Push($"Undo: {record.DisplayLabel}", ToastLevel.Info, _toast.Duration);
+            ToastQueue.Push(BuildToastMessage($"Undo: {record.DisplayLabel}"), ToastLevel.Info, _toast.Duration);
         return true;
     }
 
@@ -431,9 +441,12 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
         }
 
         if (_toast is not null)
-            ToastQueue.Push($"Undo: {batch.BatchLabel} ({batch.Records.Count} parameters)", ToastLevel.Info, _toast.Duration);
+            ToastQueue.Push(BuildToastMessage($"Undo: {batch.BatchLabel} ({batch.Records.Count} parameters)"), ToastLevel.Info, _toast.Duration);
         return true;
     }
+
+    private string BuildToastMessage(string message) =>
+        _pluginName is not null ? $"[{_pluginName}] {message}" : message;
 
     private void SubscribeToParameters()
     {
@@ -511,5 +524,6 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink
             _stack.RemoveAt(0);
 
         _stack.Add(record);
+        UndoShortcutCoordinator.SetActive(this);
     }
 }
