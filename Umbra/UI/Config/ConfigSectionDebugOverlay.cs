@@ -23,7 +23,7 @@ internal static class ConfigSectionDebugOverlay
     /// <summary>
     /// Draws the optional-feature status block and a trailing separator.
     /// </summary>
-    internal static void Draw(string sectionId, bool search, bool transfer, bool undo, bool presets, bool saveController)
+    internal static void Draw(bool search, bool transfer, bool undo, bool presets, bool saveController)
     {
         // Calculate label width on first draw (ImGui must be initialized)
         if (_labelColumnWidth == 0f)

@@ -319,7 +319,6 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
 #if DEBUG
         if (_enableDebugOverlay)
             ConfigSectionDebugOverlay.Draw(
-                _sectionId,
                 _hasSearch,
                 _transferFeature is not null,
                 _undoStack is not null,
