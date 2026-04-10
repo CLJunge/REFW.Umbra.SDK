@@ -9,7 +9,7 @@ public sealed class ConfigImportIssue
     /// Gets or sets the issue category.
     /// </summary>
     /// <remarks>
-    /// Typical values are `Ignored` and `Rejected`.
+    /// Typical values are <c>Ignored</c> and <c>Rejected</c>.
     /// </remarks>
     public string Category { get; init; } = string.Empty;
 

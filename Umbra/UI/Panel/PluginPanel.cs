@@ -26,7 +26,7 @@ public sealed class PluginPanel : IDisposable
     private bool _disposed;
 
     /// <summary>
-    /// Initialises a new panel with the given top-level ImGui ID scope.
+    /// Initializes a new panel with the given top-level ImGui ID scope.
     /// </summary>
     /// <param name="idScope">
     /// A globally unique identifier string for this plugin (e.g. <c>nameof(MyPlugin)</c> or
@@ -61,7 +61,7 @@ public sealed class PluginPanel : IDisposable
     }
 
     /// <summary>
-    /// Initialises a new panel with the given top-level ImGui ID scope and low-level renderer.
+    /// Initializes a new panel with the given top-level ImGui ID scope and low-level renderer.
     /// </summary>
     /// <param name="idScope">
     /// A globally unique identifier string for this plugin (e.g. <c>nameof(MyPlugin)</c> or

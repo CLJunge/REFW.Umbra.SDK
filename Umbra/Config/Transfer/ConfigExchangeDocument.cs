@@ -4,12 +4,12 @@ namespace Umbra.Config;
 /// Represents the versioned document written by Umbra's config export pipeline.
 /// </summary>
 /// <remarks>
-/// This envelope is used only for explicit import/export scenarios. Umbra's normal runtime persistence continues to use the existing flat `key -> value` JSON format.
+/// This envelope is used only for explicit import/export scenarios. Umbra's normal runtime persistence continues to use the existing flat <c>key → value</c> JSON format.
 /// </remarks>
 public sealed class ConfigExchangeDocument
 {
     /// <summary>
-    /// Gets the current exchange-document format version supported by this Umbra build.
+    /// The current exchange-document format version supported by this Umbra build.
     /// </summary>
     public const int CurrentFormatVersion = 1;
 

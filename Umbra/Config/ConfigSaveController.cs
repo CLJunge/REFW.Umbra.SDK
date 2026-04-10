@@ -67,7 +67,7 @@ public sealed class ConfigSaveController<TConfig> : IDisposable, INumericEditSin
     }
 
     /// <summary>
-    /// Forces an immediate save when changes are pending, regardless of numeric edit state.
+    /// Forces an immediate save when changes are pending, regardless of active numeric or text edit state.
     /// </summary>
     /// <remarks>
     /// When no changes are pending, this method is a no-op. After <see cref="Dispose"/> it

@@ -38,7 +38,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     public ConfigUndoStack<TConfig>? UndoStack => _undoStack;
 
     /// <summary>
-    /// Initialises a new config section wrapping a <see cref="ConfigDrawer{TConfig}"/>.
+    /// Initializes a new config section wrapping a <see cref="ConfigDrawer{TConfig}"/>.
     /// </summary>
     /// <param name="config">The already loaded configuration instance to render.</param>
     /// <param name="idScope">
@@ -78,7 +78,7 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     }
 
     /// <summary>
-    /// Initialises a new config section wrapping a <see cref="ConfigDrawer{TConfig}"/>, using the supplied drawer options.
+    /// Initializes a new config section wrapping a <see cref="ConfigDrawer{TConfig}"/>, using the supplied drawer options.
     /// </summary>
     /// <param name="config">The already loaded configuration instance to render.</param>
     /// <param name="options">

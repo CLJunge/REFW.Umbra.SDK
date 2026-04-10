@@ -11,7 +11,7 @@ public sealed class ConfigImportReport
     public bool Success { get; init; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the imported document used Umbra's legacy flat `key -> value` JSON shape instead of the versioned exchange envelope.
+    /// Gets or sets a value indicating whether the imported document used Umbra's legacy flat <c>key → value</c> JSON shape instead of the versioned exchange envelope.
     /// </summary>
     public bool IsLegacyDocument { get; init; }
 
