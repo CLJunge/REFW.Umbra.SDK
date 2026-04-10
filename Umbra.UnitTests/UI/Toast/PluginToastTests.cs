@@ -12,22 +12,13 @@ public sealed class PluginToastTests
     public void Cleanup() => ToastQueue.Clear();
 
     [TestMethod]
-    public void Constructor_WithNullPluginName_Throws()
-    {
-        Assert.ThrowsExactly<ArgumentException>(() => new PluginToast(null!));
-    }
+    public void Constructor_WithNullPluginName_Throws() => Assert.ThrowsExactly<ArgumentException>(() => new PluginToast(null!));
 
     [TestMethod]
-    public void Constructor_WithEmptyPluginName_Throws()
-    {
-        Assert.ThrowsExactly<ArgumentException>(() => new PluginToast(""));
-    }
+    public void Constructor_WithEmptyPluginName_Throws() => Assert.ThrowsExactly<ArgumentException>(() => new PluginToast(""));
 
     [TestMethod]
-    public void Constructor_WithWhitespacePluginName_Throws()
-    {
-        Assert.ThrowsExactly<ArgumentException>(() => new PluginToast("   "));
-    }
+    public void Constructor_WithWhitespacePluginName_Throws() => Assert.ThrowsExactly<ArgumentException>(() => new PluginToast("   "));
 
     [TestMethod]
     public void Constructor_WithValidPluginName_SetsPluginName()
