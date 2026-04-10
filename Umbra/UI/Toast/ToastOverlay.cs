@@ -21,7 +21,7 @@ public static class ToastOverlay
     /// Tracks the last ImGui frame ID at which <see cref="Draw"/> rendered,
     /// used to deduplicate calls within the same frame from multiple plugin hosts.
     /// </summary>
-    private static long _lastDrawFrame;
+    private static long _lastDrawFrame = -1;
 
     /// <summary>
     /// Draws all currently active toasts using the configured renderer.
@@ -69,5 +69,5 @@ public static class ToastOverlay
     /// <remarks>
     /// This is an internal test seam. Production code should never call this method.
     /// </remarks>
-    internal static void ResetDrawFrame() => _lastDrawFrame = 0;
+    internal static void ResetDrawFrame() => _lastDrawFrame = -1;
 }
