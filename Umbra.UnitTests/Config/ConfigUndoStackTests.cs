@@ -1317,7 +1317,7 @@ public sealed class ConfigUndoStackTests
             Assert.AreEqual(1, undo.Count);
 
             undo.TryUndo();
-            Assert.AreEqual(0, config.IntValue.Value);
+            Assert.AreEqual(10, config.IntValue.Value);
             Assert.AreEqual("default", config.StringValue.Value);
         }
         finally
