@@ -17,7 +17,6 @@ internal static class ConfigSectionDebugOverlay
 {
     private static readonly Vector4 _enabledColor = new(0.4f, 1f, 0.4f, 1f);
     private static readonly Vector4 _disabledColor = new(1f, 0.4f, 0.4f, 1f);
-    private static readonly string[] _featureLabels = ["Search", "Transfer", "Undo", "Save Controller"];
     private static float _labelColumnWidth = 0f;
 
     /// <summary>
@@ -25,9 +24,17 @@ internal static class ConfigSectionDebugOverlay
     /// </summary>
     internal static void Draw(bool search, bool transfer, bool undo, bool saveController)
     {
+        // Single source of truth: pair each feature label with its enabled state
+        var features = new[] {
+            ("Search", search),
+            ("Transfer", transfer),
+            ("Undo", undo),
+            ("Save Controller", saveController),
+        };
+
         // Calculate label width on first draw (ImGui must be initialized)
         if (_labelColumnWidth == 0f)
-            CalculateLabelColumnWidth();
+            CalculateLabelColumnWidth(features);
 
         ImGui.PushID("DebugOverlay");
 
@@ -37,10 +44,8 @@ internal static class ConfigSectionDebugOverlay
             {
                 try
                 {
-                    DrawStatus("Search", search);
-                    DrawStatus("Transfer", transfer);
-                    DrawStatus("Undo", undo);
-                    DrawStatus("Save Controller", saveController);
+                    foreach (var (label, enabled) in features)
+                        DrawStatus(label, enabled);
                 }
                 finally { ImGui.TreePop(); }
             }
@@ -51,13 +56,13 @@ internal static class ConfigSectionDebugOverlay
         finally { ImGui.PopID(); }
     }
 
-    private static void CalculateLabelColumnWidth()
+    private static void CalculateLabelColumnWidth((string, bool)[] features)
     {
         // Find the longest label and calculate its width with padding
         const float extraPadding = 75f;
         var maxWidth = 0f;
 
-        foreach (var label in _featureLabels)
+        foreach (var (label, _) in features)
         {
             var size = ImGui.CalcTextSize($"{label}:");
             maxWidth = Math.Max(maxWidth, size.X);
