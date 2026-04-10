@@ -28,6 +28,7 @@ public sealed class PluginHostTests
         ToastQueue.Clear();
         ToastOverlay.ResetDrawTick();
         ToastOverlay.SetRenderer(null);
+        ToastOverlay.SetTickProvider(static () => 42L);
         PluginInstanceGuard.Reset();
         LifecyclePlugin.Reset();
         InitializeFailurePlugin.Reset();
@@ -43,6 +44,7 @@ public sealed class PluginHostTests
         ToastQueue.Clear();
         ToastOverlay.ResetDrawTick();
         ToastOverlay.SetRenderer(null);
+        ToastOverlay.SetTickProvider(null);
         KeyboardInput.ResetKeyStateProvider();
         Logger.ResetLogSink();
         Logger.EnableAll();
@@ -114,7 +116,7 @@ public sealed class PluginHostTests
         hostA.Load();
         ToastQueue.Push("Shared toast");
 
-        // Both hosts render in the same tick; the overlay should draw only once.
+        // Both hosts render with the same pinned tick; the overlay should draw only once.
         hostA.OnPreImGuiRenderer();
         hostA.Unload();
 
