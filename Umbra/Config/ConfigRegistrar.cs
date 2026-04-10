@@ -25,7 +25,6 @@ internal static class ConfigRegistrar
     {
         var parameters = new Dictionary<string, IParameter>();
         var parameterOrigins = new Dictionary<string, string>();
-#pragma warning disable IDE0028
         var rootType = config.GetType();
         RegisterRecursive(
             config,
@@ -33,6 +32,7 @@ internal static class ConfigRegistrar
             GetCategory(rootType),
             parameters,
             parameterOrigins,
+#pragma warning disable IDE0028
             new HashSet<object>(ReferenceEqualityComparer.Instance));
 #pragma warning restore IDE0028
         return parameters;

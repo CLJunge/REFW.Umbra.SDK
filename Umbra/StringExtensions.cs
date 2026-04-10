@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Umbra;
 
 /// <summary>
@@ -33,21 +31,31 @@ internal static class StringExtensions
     /// </remarks>
     /// <param name="name">The identifier to convert.</param>
     /// <returns>A display label built from <paramref name="name"/>.</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "<Pending>")]
     internal static string ToDisplayName(this string name)
     {
-        var sb = new StringBuilder(name.Length + 4);
-        for (var i = 0; i < name.Length; i++)
+        var insertedSpaces = 0;
+        for (var i = 1; i < name.Length; i++)
         {
-            var current = name[i];
-            if (i > 0 && char.IsUpper(current))
-            {
-                var prev = name[i - 1];
-                if (!char.IsUpper(prev) && !IsWordSeparator(prev))
-                    sb.Append(' ');
-            }
-            sb.Append(current);
+            if (char.IsUpper(name[i]) && !char.IsUpper(name[i - 1]) && !IsWordSeparator(name[i - 1]))
+                insertedSpaces++;
         }
-        return sb.ToString();
+
+        if (insertedSpaces == 0)
+            return name;
+
+        return string.Create(name.Length + insertedSpaces, name, static (span, source) =>
+        {
+            var writeIndex = 0;
+            span[writeIndex++] = source[0];
+            for (var i = 1; i < source.Length; i++)
+            {
+                var current = source[i];
+                if (char.IsUpper(current) && !char.IsUpper(source[i - 1]) && !IsWordSeparator(source[i - 1]))
+                    span[writeIndex++] = ' ';
+                span[writeIndex++] = current;
+            }
+        });
     }
 
     private static bool IsWordSeparator(char c) => c is '_' or '-' or '.' or '@';

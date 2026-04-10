@@ -122,9 +122,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
 
         _capacity = capacity;
         _toast = toast;
-#pragma warning disable IDE0028
-        _stack = new(capacity);
-#pragma warning restore IDE0028
+        _stack = new List<IUndoEntry>(capacity);
         _redoStack = [];
         _snapshots = [];
         _activeNumericEdits = [];
