@@ -24,7 +24,7 @@ internal static class ControlFactory
         [typeof(float)] = static (label, parameter, alignGroup, numSink, _) => NumericControlBuilder.BuildFloat(label, parameter, alignGroup, numSink),
         [typeof(double)] = static (label, parameter, alignGroup, numSink, _) => NumericControlBuilder.BuildDouble(label, parameter, alignGroup, numSink),
         [typeof(string)] = static (label, parameter, alignGroup, _, textSink) => TextControlBuilder.BuildString(label, parameter, alignGroup, textSink),
-        [typeof(Vector4)] = static (label, parameter, alignGroup, _, _) => ColorControlBuilder.BuildColor(label, parameter, alignGroup),
+        [typeof(Vector4)] = static (label, parameter, alignGroup, numSink, _) => ColorControlBuilder.BuildColor(label, parameter, alignGroup, numSink),
     };
 
     /// <summary>
