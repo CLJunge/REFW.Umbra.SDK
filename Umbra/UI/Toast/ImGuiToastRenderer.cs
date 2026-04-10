@@ -9,15 +9,41 @@ namespace Umbra.UI.Toast;
 /// independently, providing per-toast background alpha for smooth fade-in and fade-out
 /// effects. A small level-colored circle icon is drawn to the left of each message.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Layout uses two independent spacing layers, following the WPF Margin / Padding model:
+/// </para>
+/// <list type="bullet">
+///   <item>
+///     <term>Viewport margin</term>
+///     <description>
+///       Four-sided inset (<see cref="_viewportMargin"/>) from the display edges that
+///       defines the region available for toast windows. <c>Left</c> and <c>Right</c>
+///       constrain the maximum window width; <c>Top</c> sets where stacking begins;
+///       <c>Bottom</c> stops rendering toasts that would overflow.
+///     </description>
+///   </item>
+///   <item>
+///     <term>Content padding</term>
+///     <description>
+///       Inner spacing (<see cref="_contentPadding"/>) pushed as
+///       <see cref="ImGuiStyleVar.WindowPadding"/> so that text and icons are inset
+///       from each window's border.
+///     </description>
+///   </item>
+/// </list>
+/// </remarks>
 internal sealed class ImGuiToastRenderer : IToastRenderer
 {
-    private const float _windowWidth = 320f;
+    private const float _maxWindowWidth = 420f;
     private const float _backgroundAlpha = 0.85f;
     private const float _fadeInEndProgress = 0.08f;
     private const float _fadeOutStartProgress = 0.75f;
     private const float _iconGap = 6f;
-    private const float _windowPadding = 12f;
     private const float _itemSpacing = 4f;
+
+    private static readonly ToastPadding _viewportMargin = new(18f);
+    private static readonly Vector2 _contentPadding = new(12f, 8f);
 
     private static readonly ImGuiWindowFlags _windowFlags =
         ImGuiWindowFlags.NoDecoration
@@ -35,16 +61,26 @@ internal sealed class ImGuiToastRenderer : IToastRenderer
         if (entries.Count == 0) return;
 
         var displaySize = ImGui.GetIO().DisplaySize;
-        var xPos = displaySize.X - _windowWidth - _windowPadding;
-        var yOffset = _windowPadding;
+        var availableWidth = displaySize.X - _viewportMargin.Left - _viewportMargin.Right;
+        var windowWidth = availableWidth < _maxWindowWidth ? availableWidth : _maxWindowWidth;
+
+        if (windowWidth <= 0f) return;
+
+        var xPos = displaySize.X - windowWidth - _viewportMargin.Right;
+        var yOffset = _viewportMargin.Top;
+        var yLimit = displaySize.Y - _viewportMargin.Bottom;
+
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, _contentPadding);
 
         for (var i = 0; i < entries.Count; i++)
         {
+            if (yOffset >= yLimit) break;
+
             var entry = entries[i];
             var alpha = CalculateAlpha(entry.GetProgress());
 
             ImGui.SetNextWindowPos(new Vector2(xPos, yOffset));
-            ImGui.SetNextWindowSize(new Vector2(_windowWidth, 0));
+            ImGui.SetNextWindowSize(new Vector2(windowWidth, 0));
             ImGui.SetNextWindowBgAlpha(_backgroundAlpha * alpha);
 
             if (!ImGui.Begin($"##UmbraToast_{i}", _windowFlags))
@@ -58,6 +94,8 @@ internal sealed class ImGuiToastRenderer : IToastRenderer
             yOffset += ImGui.GetWindowSize().Y + _itemSpacing;
             ImGui.End();
         }
+
+        ImGui.PopStyleVar();
     }
 
     private static void DrawEntry(ToastEntry entry, float alpha)
