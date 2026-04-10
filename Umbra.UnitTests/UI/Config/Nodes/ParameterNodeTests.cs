@@ -504,6 +504,7 @@ public sealed class ParameterNodeTests
         Assert.AreEqual(0, wrapperRenderer.PushStyleColorCount);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "Code Cleanup tries to use collection initializer syntax preview features; production code avoids preview syntax")]
     private static ConfigSearchRenderState CreateRenderState(
         string[] matchIds,
         string? focusedResultId,
@@ -530,11 +531,10 @@ public sealed class ParameterNodeTests
 
         if (pendingFocusResultId is null && searchState.PendingFocusResultId is not null)
             searchState.ClearPendingFocusTarget(searchState.PendingFocusResultId);
-#pragma warning disable IDE0028
+
         return new ConfigSearchRenderState(
             searchState,
             new HashSet<string>(matchIds, StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal));
-#pragma warning restore IDE0028
     }
 }

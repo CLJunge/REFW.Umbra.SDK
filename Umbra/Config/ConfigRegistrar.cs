@@ -20,6 +20,7 @@ internal static class ConfigRegistrar
     /// <remarks>
     /// If two parameters resolve to the same fully qualified key, registration fails instead of allowing the later parameter to overwrite the earlier one.
     /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "Code Cleanup tries to use collection initializer syntax preview features; production code avoids preview syntax")]
     internal static Dictionary<string, IParameter> Register<TConfig>(TConfig config)
         where TConfig : class
     {
@@ -32,9 +33,7 @@ internal static class ConfigRegistrar
             GetCategory(rootType),
             parameters,
             parameterOrigins,
-#pragma warning disable IDE0028
             new HashSet<object>(ReferenceEqualityComparer.Instance));
-#pragma warning restore IDE0028
         return parameters;
     }
 

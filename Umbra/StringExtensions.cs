@@ -10,7 +10,7 @@ internal static class StringExtensions
     /// </summary>
     /// <param name="value">The identifier to convert.</param>
     /// <returns>The original value when it is <see langword="null"/>, empty, or already starts with a lowercase character; otherwise, a new string whose first character has been lowercased.</returns>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Guard clauses with early returns are more readable than a single chained conditional expression for multi-condition validation.")]
     internal static string? ToCamelCase(this string? value)
     {
         if (string.IsNullOrEmpty(value) || char.IsLower(value[0]))
@@ -31,7 +31,7 @@ internal static class StringExtensions
     /// </remarks>
     /// <param name="name">The identifier to convert.</param>
     /// <returns>A display label built from <paramref name="name"/>.</returns>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Guard clauses with early returns are more readable than a single chained conditional expression for multi-condition validation.")]
     internal static string ToDisplayName(this string name)
     {
         var insertedSpaces = 0;

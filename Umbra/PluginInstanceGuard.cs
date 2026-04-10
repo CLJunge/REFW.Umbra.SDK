@@ -13,9 +13,8 @@ namespace Umbra;
 internal static class PluginInstanceGuard
 {
     private static readonly Lock _sync = new();
-#pragma warning disable IDE0028 // Simplify collection initialization
+    [SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "Code Cleanup tries to use collection initializer syntax preview features; production code avoids preview syntax")]
     private static readonly Dictionary<string, PluginInstanceLease> _activeLeases = new(StringComparer.Ordinal);
-#pragma warning restore IDE0028 // Simplify collection initialization
 
     /// <summary>
     /// Attempts to acquire the single-instance mutex for the plugin type that owns the calling entry-point method.
@@ -135,7 +134,7 @@ internal static class PluginInstanceGuard
     /// </summary>
     /// <param name="pluginType">The plugin identity type.</param>
     /// <returns>The non-empty mutex key used for acquisition.</returns>
-    [SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "<Pending>")]
+    [SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Guard clauses with early returns are more readable than a single chained conditional expression for multi-condition validation.")]
     private static string ResolveMutexKey(Type pluginType)
     {
         if (!pluginType.IsClass)

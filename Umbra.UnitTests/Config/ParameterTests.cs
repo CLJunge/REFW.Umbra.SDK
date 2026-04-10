@@ -4944,7 +4944,7 @@ public class ParameterTests
     /// the value actually changes.
     /// </summary>
     [TestMethod]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Interface-based tests are necessary to verify behavior through the public interface surface.")]
     public void IParameterValueChanged_ResetWithRaiseEventTrue_EventRaised()
     {
         // Arrange
@@ -4968,7 +4968,7 @@ public class ParameterTests
     /// <see cref="IParameter.Reset"/> is called with <c>raiseEvent = false</c>.
     /// </summary>
     [TestMethod]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Interface-based tests are necessary to verify behavior through the public interface surface.")]
     public void IParameterValueChanged_ResetWithRaiseEventFalse_EventNotRaised()
     {
         // Arrange
@@ -4992,7 +4992,7 @@ public class ParameterTests
     /// <see cref="IParameter.Reset"/> is called but the value does not actually change.
     /// </summary>
     [TestMethod]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Interface-based tests are necessary to verify behavior through the public interface surface.")]
     public void IParameterValueChanged_ResetWithNoChange_EventNotRaised()
     {
         // Arrange

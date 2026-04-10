@@ -1303,7 +1303,7 @@ public partial class ConfigStoreTests
     /// rejects target implementations that do not participate in Umbra's internal copy-target contract.
     /// </summary>
     [TestMethod]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Interface-based tests are necessary to verify behavior through the public interface surface.")]
     public void CopyValuesTo_InterfaceTargetWithoutCopyContract_ThrowsInvalidOperationException()
     {
         var sourcePath = Path.Combine(Path.GetTempPath(), $"source_{Guid.NewGuid()}.json");
@@ -1368,7 +1368,7 @@ public partial class ConfigStoreTests
     /// through the public interface surface.
     /// </summary>
     [TestMethod]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Interface-based tests are necessary to verify behavior through the public interface surface.")]
     public void CopyValuesTo_ThroughInterface_CopiesValuesToTargetStore()
     {
         var sourcePath = Path.Combine(Path.GetTempPath(), $"source_{Guid.NewGuid()}.json");
