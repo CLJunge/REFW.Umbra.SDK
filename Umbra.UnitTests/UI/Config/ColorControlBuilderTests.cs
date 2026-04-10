@@ -204,18 +204,12 @@ public class ColorControlBuilderTests
             if (Results.Count == 0)
                 return false;
 
-            var next = Results.Dequeue();
-            value = next.Value;
-            return next.Changed;
+            var (Changed, Value) = Results.Dequeue();
+            value = Value;
+            return Changed;
         }
 
-        public bool IsMouseDown()
-        {
-            if (MouseDownResults.Count == 0)
-                return false;
-
-            return MouseDownResults.Dequeue();
-        }
+        public bool IsMouseDown() => MouseDownResults.Count != 0 && MouseDownResults.Dequeue();
     }
 
     private sealed class TestNumericEditSink : INumericEditSink
