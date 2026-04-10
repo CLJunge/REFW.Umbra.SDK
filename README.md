@@ -182,4 +182,4 @@ dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj -c Release
 
 Full guides, API walkthroughs, and architecture details are in the **[Umbra Wiki](https://docs.cljunge.com/refw-umbra/)**.
 
-it demonstrates nested config groups, game gating, action binding, custom drawers, import/export, toast notifications, and resilient shutdown.
+**`Umbra.SamplePlugin`** demonstrates nested config groups, game gating, action binding, custom drawers, import/export, toast notifications, and resilient shutdown.
