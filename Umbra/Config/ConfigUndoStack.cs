@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Umbra.UI.Config;
 using Umbra.UI.Toast;
 
@@ -107,6 +108,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
     {
     }
 
+    [SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "Code Cleanup tries to use collection initializer syntax preview features; production code avoids preview syntax")]
     private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, ConfigToastOptions? toast)
     {
         ArgumentNullException.ThrowIfNull(store);
