@@ -33,7 +33,6 @@ public sealed class SamplePlugin : UmbraPlugin
 #endif
 
     private static readonly PluginLogger _log = new("SamplePlugin");
-   private static readonly PluginToast _toast = new("Sample Plugin");
     private PluginPanel? _panel;
 #if BENCHMARK
     private PluginPanel? _benchmarkPanel;
