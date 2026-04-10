@@ -24,7 +24,6 @@ internal static class ConfigSectionDebugOverlay
     /// </summary>
     internal static void Draw(bool search, bool transfer, bool undo, bool saveController)
     {
-        // Single source of truth: pair each feature label with its enabled state
         var features = new[] {
             ("Search", search),
             ("Transfer", transfer),
@@ -32,7 +31,6 @@ internal static class ConfigSectionDebugOverlay
             ("Save Controller", saveController),
         };
 
-        // Calculate label width on first draw (ImGui must be initialized)
         if (_labelColumnWidth == 0f)
             CalculateLabelColumnWidth(features);
 
@@ -58,7 +56,6 @@ internal static class ConfigSectionDebugOverlay
 
     private static void CalculateLabelColumnWidth((string, bool)[] features)
     {
-        // Find the longest label and calculate its width with padding
         const float extraPadding = 75f;
         var maxWidth = 0f;
 

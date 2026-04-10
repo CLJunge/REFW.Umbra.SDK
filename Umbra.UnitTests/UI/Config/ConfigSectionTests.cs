@@ -175,7 +175,6 @@ public sealed class ConfigSectionTests
 
         // Assert
         Assert.IsNotNull(result);
-        // The result should be the display name derived from "ConfigWithNullLabelAttribute"
         Assert.AreEqual("Config With Null Label Attribute", result);
     }
 
@@ -414,7 +413,6 @@ public sealed class ConfigSectionTests
         Assert.IsFalse(feature.ShowSeparatorBelowButtons);
     }
 
-    // --- Undo stack wiring ---
 
     /// <summary>
     /// Tests that the factory creates an undo stack when <see cref="ConfigDrawerOptions.Undo"/> is non-null
@@ -646,12 +644,10 @@ public sealed class ConfigSectionTests
 
         config.TestParameter.Value = false;
 
-        // Undo via shortcut
         inputSource.DefaultUndoShortcutPressed = true;
         section.TryHandleBuiltInUndo();
         Assert.IsTrue(config.TestParameter.Value);
 
-        // Redo via shortcut — need a new tick so coordinator doesn't deduplicate
         UndoShortcutCoordinator.Reset();
         UndoShortcutCoordinator.Register(section.UndoStack!);
         inputSource.DefaultUndoShortcutPressed = false;
@@ -842,7 +838,6 @@ public sealed class ConfigSectionTests
         section.Dispose();
 
         // Assert
-        // No exception thrown - successful disposal
     }
 
     /// <summary>
@@ -867,7 +862,6 @@ public sealed class ConfigSectionTests
         section.Dispose();
 
         // Assert
-        // No exception thrown - idempotent disposal
     }
 
     /// <summary>
@@ -1163,7 +1157,7 @@ public sealed class ConfigSectionTests
         section.Dispose();
 
         // Act & Assert
-        section.Draw(); // Should return immediately without throwing
+        section.Draw();
     }
 
     /// <summary>
@@ -1181,7 +1175,7 @@ public sealed class ConfigSectionTests
         // Act & Assert
         section.Draw();
         section.Draw();
-        section.Draw(); // Multiple calls should all be safe no-ops
+        section.Draw();
     }
 
     /// <summary>
@@ -1492,7 +1486,6 @@ public sealed class ConfigSectionTests
         Assert.IsTrue(section.ExpandedByDefault);
     }
 
-    // Test config classes
 
     internal sealed class BasicConfig
     {

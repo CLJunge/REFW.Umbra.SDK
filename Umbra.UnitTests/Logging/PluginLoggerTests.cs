@@ -1033,7 +1033,7 @@ public sealed class PluginLoggerTests
             global::Umbra.Logging.Logger.Enabled = true;
             var logger = new PluginLogger("TestPlugin")
             {
-                PrefixFormat = "{0} {1} {2}", // Format expects 3 args but only 1 provided
+                PrefixFormat = "{0} {1} {2}",
                 MinLevel = LogLevel.Warning
             };
 
@@ -1379,7 +1379,7 @@ public sealed class PluginLoggerTests
             var logger = new PluginLogger("TestPlugin")
             {
                 Prefix = "MyPlugin",
-                PrefixFormat = "{1}", // Invalid: expects 2 arguments but only 1 (Prefix) is provided
+                PrefixFormat = "{1}",
                 MinLevel = LogLevel.Info
             };
 
@@ -1520,7 +1520,7 @@ public sealed class PluginLoggerTests
         // Arrange
         var logger = new PluginLogger("TestPlugin")
         {
-            MinLevel = LogLevel.None // Above Error
+            MinLevel = LogLevel.None
         };
         var ex = new InvalidOperationException("Test exception");
 
@@ -1689,7 +1689,7 @@ public sealed class PluginLoggerTests
         // Arrange
         var logger = new PluginLogger("TestPlugin")
         {
-            PrefixFormat = "{0} {1} {2}", // Expects 3 args but only 1 provided
+            PrefixFormat = "{0} {1} {2}",
             MinLevel = LogLevel.Error
         };
         var ex = new InvalidOperationException("Test exception");
@@ -1728,7 +1728,6 @@ public sealed class PluginLoggerTests
         {
             MinLevel = LogLevel.Error
         };
-        // A newly created exception that hasn't been thrown has null StackTrace
         var ex = new InvalidOperationException("Test exception");
 
         // Act & Assert - should not throw
@@ -3024,7 +3023,7 @@ public sealed class PluginLoggerTests
             logger.Warning("{0", "value");
             logger.Warning("{{0}}", "value");
             logger.Warning("{0:}", "value");
-            logger.Warning("{1}", "value"); // format expects arg at index 1, only provided index 0
+            logger.Warning("{1}", "value");
         }
         finally
         {

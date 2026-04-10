@@ -30,7 +30,6 @@ public sealed class ConfigExchangePersistenceTests
         }
         catch
         {
-            // Ignore cleanup errors.
         }
     }
 

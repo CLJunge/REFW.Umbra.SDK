@@ -50,7 +50,6 @@ public sealed class IParameterDrawerTests
     {
         public void Draw(string label, IParameter parameter)
         {
-            // No-op for testing
         }
     }
 }

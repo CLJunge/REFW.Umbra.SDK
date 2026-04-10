@@ -479,7 +479,6 @@ public class ParameterMetadataReaderTests
         Assert.AreEqual("%.3f", result.InferredFloatFormat);
     }
 
-    // Test helper classes with various attribute combinations
     private class TestClass
     {
         public int NoAttributes { get; set; }
@@ -584,7 +583,6 @@ public class ParameterMetadataReaderTests
         public double WithNegativeStepThreeDecimals { get; set; }
     }
 
-    // Helper attribute classes for testing interface-based detection
     [AttributeUsage(AttributeTargets.Property)]
     private class TestCustomDrawerAttribute : Attribute, IDrawerAttribute
     {
@@ -609,7 +607,6 @@ public class ParameterMetadataReaderTests
         }
     }
 
-    // Dummy drawer types for testing
     private class TestDrawer { }
     private class TestTwoColumnDrawer { }
 }

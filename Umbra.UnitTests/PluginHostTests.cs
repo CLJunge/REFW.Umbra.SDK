@@ -116,7 +116,6 @@ public sealed class PluginHostTests
         hostA.Load();
         ToastQueue.Push("Shared toast");
 
-        // Both hosts render with the same pinned tick; the overlay should draw only once.
         hostA.OnPreImGuiRenderer();
         hostA.Unload();
 

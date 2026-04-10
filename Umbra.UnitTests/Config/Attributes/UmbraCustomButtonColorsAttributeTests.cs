@@ -261,15 +261,15 @@ public sealed class UmbraCustomButtonColorsAttributeTests
         Assert.AreEqual(1.0f, attribute.NormalA);
 
         // Assert - Hovered: +0.10 with clamping
-        Assert.AreEqual(1f, attribute.HoveredR); // 0.95 + 0.10 = 1.05 -> clamped to 1
-        Assert.AreEqual(0.15f, attribute.HoveredG, 0.0001f); // 0.05 + 0.10 = 0.15
-        Assert.AreEqual(0f, attribute.HoveredB); // -0.5 + 0.10 = -0.4 -> clamped to 0
+        Assert.AreEqual(1f, attribute.HoveredR);
+        Assert.AreEqual(0.15f, attribute.HoveredG, 0.0001f);
+        Assert.AreEqual(0f, attribute.HoveredB);
         Assert.AreEqual(1.0f, attribute.HoveredA);
 
         // Assert - Active: -0.08 with clamping
-        Assert.AreEqual(0.87f, attribute.ActiveR, 0.0001f); // 0.95 - 0.08 = 0.87
-        Assert.AreEqual(0f, attribute.ActiveG); // 0.05 - 0.08 = -0.03 -> clamped to 0
-        Assert.AreEqual(0f, attribute.ActiveB); // -0.5 - 0.08 = -0.58 -> clamped to 0
+        Assert.AreEqual(0.87f, attribute.ActiveR, 0.0001f);
+        Assert.AreEqual(0f, attribute.ActiveG);
+        Assert.AreEqual(0f, attribute.ActiveB);
         Assert.AreEqual(1.0f, attribute.ActiveA);
     }
 

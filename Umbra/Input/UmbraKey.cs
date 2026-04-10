@@ -19,7 +19,7 @@ public enum UmbraKey
     /// <summary>No key.</summary>
     None = 0,
 
-    // ── Navigation ──────────────────────────────────────────
+    #region Navigation
 
     /// <summary>Tab key.</summary>
     Tab = 512,
@@ -66,7 +66,9 @@ public enum UmbraKey
     /// <summary>Escape key.</summary>
     Escape = 526,
 
-    // ── Modifiers (individual keys) ─────────────────────────
+    #endregion
+
+    #region Modifiers
 
     /// <summary>Left Ctrl key.</summary>
     LeftCtrl = 527,
@@ -95,7 +97,9 @@ public enum UmbraKey
     /// <summary>Menu / Apps key.</summary>
     Menu = 535,
 
-    // ── Digit keys ──────────────────────────────────────────
+    #endregion
+
+    #region Digit keys
 
     /// <summary>Digit 0 key (top row).</summary>
     Key0 = 536,
@@ -127,7 +131,9 @@ public enum UmbraKey
     /// <summary>Digit 9 key (top row).</summary>
     Key9 = 545,
 
-    // ── Letter keys ─────────────────────────────────────────
+    #endregion
+
+    #region Letter keys
 
     /// <summary>A key.</summary>
     A = 546,
@@ -207,7 +213,9 @@ public enum UmbraKey
     /// <summary>Z key.</summary>
     Z = 571,
 
-    // ── Function keys ───────────────────────────────────────
+    #endregion
+
+    #region Function keys
 
     /// <summary>F1 key.</summary>
     F1 = 572,
@@ -281,7 +289,9 @@ public enum UmbraKey
     /// <summary>F24 key.</summary>
     F24 = 595,
 
-    // ── Punctuation / symbols ───────────────────────────────
+    #endregion
+
+    #region Punctuation and symbols
 
     /// <summary>Apostrophe / single-quote key.</summary>
     Apostrophe = 596,
@@ -316,7 +326,9 @@ public enum UmbraKey
     /// <summary>Grave accent / tilde key.</summary>
     GraveAccent = 606,
 
-    // ── Lock / utility keys ─────────────────────────────────
+    #endregion
+
+    #region Lock and utility keys
 
     /// <summary>Caps Lock key.</summary>
     CapsLock = 607,
@@ -333,7 +345,9 @@ public enum UmbraKey
     /// <summary>Pause / Break key.</summary>
     Pause = 611,
 
-    // ── Numpad ──────────────────────────────────────────────
+    #endregion
+
+    #region Numpad
 
     /// <summary>Numpad 0 key.</summary>
     Keypad0 = 612,
@@ -382,4 +396,6 @@ public enum UmbraKey
 
     /// <summary>Numpad Enter key.</summary>
     KeypadEnter = 627,
+
+    #endregion
 }

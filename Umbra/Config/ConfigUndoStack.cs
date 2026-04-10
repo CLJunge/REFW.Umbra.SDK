@@ -184,11 +184,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
     /// <remarks>
     /// For batch-aware inspection, use <see cref="PeekEntry"/> instead.
     /// </remarks>
-    public ConfigChangeRecord? Peek()
-    {
-        if (_stack.Count == 0) return null;
-        return _stack[^1] as ConfigChangeRecord;
-    }
+    public ConfigChangeRecord? Peek() => _stack.Count == 0 ? null : _stack[^1] as ConfigChangeRecord;
 
     /// <summary>
     /// Returns the most recent undo entry without removing it, or <see langword="null"/>
@@ -196,11 +192,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
     /// or a batch <see cref="ConfigBatchChangeRecord"/>.
     /// </summary>
     /// <returns>The topmost <see cref="IUndoEntry"/>, or <see langword="null"/>.</returns>
-    internal IUndoEntry? PeekEntry()
-    {
-        if (_stack.Count == 0) return null;
-        return _stack[^1];
-    }
+    internal IUndoEntry? PeekEntry() => _stack.Count == 0 ? null : _stack[^1];
 
     /// <summary>
     /// Opens a batch scope so that subsequent parameter changes are collected into a single
@@ -388,13 +380,12 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
         var entry = _redoStack[^1];
         _redoStack.RemoveAt(_redoStack.Count - 1);
 
-        if (entry is ConfigBatchChangeRecord batch)
-            return TryRedoBatch(batch);
-
-        if (entry is ConfigChangeRecord record)
-            return TryRedoSingle(record);
-
-        return false;
+        return entry switch
+        {
+            ConfigBatchChangeRecord batch => TryRedoBatch(batch),
+            ConfigChangeRecord record => TryRedoSingle(record),
+            _ => false
+        };
     }
 
     /// <summary>
@@ -522,14 +513,16 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
         return true;
     }
 
+    /// <summary>
+    /// Restores all changes in <paramref name="batch"/> in reverse order so the earliest
+    /// change is restored last and snapshots end in the correct pre-batch state.
+    /// </summary>
     private bool TryUndoBatch(ConfigBatchChangeRecord batch)
     {
         _suppressRecording = true;
         try
         {
             var restored = 0;
-            // Restore in reverse order so the earliest change is restored last,
-            // leaving snapshots in the correct pre-batch state.
             for (var i = batch.Records.Count - 1; i >= 0; i--)
             {
                 var record = batch.Records[i];

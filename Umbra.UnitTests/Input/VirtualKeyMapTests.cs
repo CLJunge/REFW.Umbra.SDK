@@ -6,7 +6,7 @@ namespace Umbra.Input.UnitTests;
 [TestClass]
 public class VirtualKeyMapTests
 {
-    // --- VK constants matching VirtualKeyMap ---
+#pragma warning disable IDE1006 // Naming Styles
     private const int VK_TAB = 0x09;
     private const int VK_RETURN = 0x0D;
     private const int VK_ESCAPE = 0x1B;
@@ -20,6 +20,7 @@ public class VirtualKeyMapTests
     private const int VK_LCONTROL = 0xA2;
     private const int VK_LSHIFT = 0xA0;
     private const int VK_LMENU = 0xA4;
+#pragma warning restore IDE1006 // Naming Styles
 
     /// <summary>
     /// Tests that <see cref="VirtualKeyMap.UmbraKeyToVk"/> returns the correct VK code for known keys.
@@ -109,7 +110,7 @@ public class VirtualKeyMapTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsTrue(result.Length > 0, "Expected at least one tracked virtual key");
+        Assert.IsNotEmpty(result, "Expected at least one tracked virtual key");
     }
 
     /// <summary>

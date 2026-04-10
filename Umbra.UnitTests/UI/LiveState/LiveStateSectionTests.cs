@@ -92,7 +92,6 @@ public sealed class LiveStateSectionTests
         /// <inheritdoc/>
         public void Draw(TestState state)
         {
-            // No-op for testing
         }
 
         /// <inheritdoc/>
@@ -107,12 +106,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(TestState state)
         {
-            // Empty implementation for testing purposes
         }
 
         public void Dispose()
         {
-            // Empty implementation for testing purposes
         }
     }
 
@@ -346,12 +343,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(ValidTestState state)
         {
-            // Minimal implementation for testing
         }
 
         public void Dispose()
         {
-            // Minimal implementation for testing
         }
     }
 
@@ -362,12 +357,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(StateWithoutParameterlessConstructor state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -378,12 +371,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(ThrowingState state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -485,12 +476,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(StateWithoutOrderAttribute state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -501,12 +490,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(StateWithOrderZero state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -517,12 +504,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(StateWithOrderPositive state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 

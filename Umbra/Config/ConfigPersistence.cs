@@ -69,8 +69,6 @@ internal static class ConfigPersistence
             var dict = new Dictionary<string, object?>();
             foreach (var param in parameters.Values)
             {
-                // Action-backed button parameters are never persisted — delegates are not
-                // JSON-serializable and carry no meaningful state to save or restore.
                 if (typeof(Delegate).IsAssignableFrom(param.ValueType)) continue;
                 dict[param.Key] = param.GetValue();
             }
@@ -134,8 +132,6 @@ internal static class ConfigPersistence
     /// <returns><see langword="true"/> when the file was moved successfully; otherwise <see langword="false"/>.</returns>
     private static bool TryBackupUnreadableConfigFile(string filePath, out string backupPath)
     {
-        backupPath = string.Empty;
-
         try
         {
             backupPath = GetUnreadableConfigBackupPath(filePath);

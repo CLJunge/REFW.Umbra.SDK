@@ -51,7 +51,6 @@ public sealed class PluginBootstrapperTests
         Assert.IsTrue(result);
         Assert.IsTrue(initialized);
 
-        // The active mutex should block a second load until unload runs.
         var secondResult = PluginBootstrapper.Load(typeof(BootstrapPlugin), () => initialized = false);
         Assert.IsFalse(secondResult);
         Assert.IsTrue(initialized);

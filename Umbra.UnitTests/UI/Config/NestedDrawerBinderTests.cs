@@ -1,7 +1,3 @@
-// <copyright file="NestedGroupDrawerBinderTests.cs" company="Umbra">
-// Copyright (c) Umbra. All rights reserved.
-// </copyright>
-
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Drawers;
@@ -180,12 +176,10 @@ public sealed class NestedDrawerBinderTests
     {
         public void Draw(TestGroup group)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -203,7 +197,6 @@ public sealed class NestedDrawerBinderTests
     {
         public void Draw(OtherGroup group)
         {
-            // No-op for testing
         }
     }
 
@@ -250,7 +243,9 @@ public sealed class NestedDrawerBinderTests
     /// </summary>
     private sealed class CompatibleDrawerWithoutParameterlessConstructor : INestedDrawer<TestGroup>
     {
+#pragma warning disable IDE0290 // Use primary constructor
         public CompatibleDrawerWithoutParameterlessConstructor(int _) { }
+#pragma warning restore IDE0290 // Use primary constructor
 
         public void Draw(TestGroup group)
         {

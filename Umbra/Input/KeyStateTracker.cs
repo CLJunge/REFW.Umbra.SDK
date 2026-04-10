@@ -57,13 +57,11 @@ internal sealed class KeyStateTracker
         _justReleased.Clear();
         _previouslyDown.Clear();
 
-        // Swap: current → previous
         foreach (var key in _currentlyDown)
             _previouslyDown.Add(key);
 
         _currentlyDown.Clear();
 
-        // Sample current hardware state
         foreach (var vk in _trackedKeys)
         {
             if (!_provider.IsKeyDown(vk))
@@ -75,7 +73,6 @@ internal sealed class KeyStateTracker
                 _justPressed.Add(vk);
         }
 
-        // Detect releases: was down, now up
         foreach (var vk in _previouslyDown)
         {
             if (!_currentlyDown.Contains(vk))

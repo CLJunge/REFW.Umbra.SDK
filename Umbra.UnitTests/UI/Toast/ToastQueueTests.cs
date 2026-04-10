@@ -112,7 +112,6 @@ public sealed class ToastQueueTests
         ToastQueue.Push("Expired", duration: TimeSpan.Zero);
         ToastQueue.Push("Active", duration: TimeSpan.FromSeconds(60));
 
-        // Allow the zero-duration entry to be recognized as expired
         Thread.Sleep(1);
 
         // Act

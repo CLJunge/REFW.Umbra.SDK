@@ -43,7 +43,6 @@ public sealed class UndoShortcutCoordinatorTests
             File.Delete(tempPath);
     }
 
-    // --- No active stack ---
 
     /// <summary>
     /// When no stack has recorded a change, the shortcut does nothing. The text-input
@@ -63,7 +62,6 @@ public sealed class UndoShortcutCoordinatorTests
         Assert.AreEqual(1, input.DefaultUndoShortcutCheckCount);
     }
 
-    // --- Active stack receives undo ---
 
     /// <summary>
     /// When a stack records a change and the shortcut is pressed, the active stack is undone.
@@ -93,7 +91,6 @@ public sealed class UndoShortcutCoordinatorTests
         }
     }
 
-    // --- Disposed stack clears active ---
 
     /// <summary>
     /// When the active stack is disposed, a subsequent shortcut press does nothing.
@@ -124,7 +121,6 @@ public sealed class UndoShortcutCoordinatorTests
         }
     }
 
-    // --- Frame deduplication ---
 
     /// <summary>
     /// A second call within the same tick is a no-op, preventing multiple sections from
@@ -157,7 +153,6 @@ public sealed class UndoShortcutCoordinatorTests
         }
     }
 
-    // --- Text input suppression ---
 
     /// <summary>
     /// When text input is active, the shortcut is not forwarded to the undo stack.
@@ -193,7 +188,6 @@ public sealed class UndoShortcutCoordinatorTests
         }
     }
 
-    // --- Cross-section: only last-pushed stack undoes ---
 
     /// <summary>
     /// When two undo stacks exist, only the one that most recently recorded a change
@@ -210,7 +204,6 @@ public sealed class UndoShortcutCoordinatorTests
             using var undoStackA = new ConfigUndoStack<CoordTestConfig>(storeA);
             using var undoStackB = new ConfigUndoStack<CoordTestConfigB>(storeB);
 
-            // Change A then B — B becomes active
             configA.Value.Value = 10;
             configB.Value.Value = 20;
 
@@ -232,7 +225,6 @@ public sealed class UndoShortcutCoordinatorTests
         }
     }
 
-    // --- Reset clears state ---
 
     /// <summary>
     /// After <see cref="UndoShortcutCoordinator.Reset"/>, the coordinator has no active
@@ -263,7 +255,6 @@ public sealed class UndoShortcutCoordinatorTests
         }
     }
 
-    // --- Shortcut not pressed ---
 
     /// <summary>
     /// When the shortcut is not pressed, no undo occurs even when a stack is active.
@@ -309,8 +300,8 @@ public sealed class UndoShortcutCoordinatorTests
             var undoStackB = new ConfigUndoStack<CoordTestConfigB>(storeB);
 
             configA.Value.Value = 10;
-            configB.Value.Value = 20; // B becomes active
-            undoStackB.Dispose();     // unregisters B, clears active
+            configB.Value.Value = 20;
+            undoStackB.Dispose();
 
             var input = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
 
@@ -328,7 +319,6 @@ public sealed class UndoShortcutCoordinatorTests
         }
     }
 
-    // --- Cross-stack sequential undo ---
 
     /// <summary>
     /// Change A, then change B. First undo reverts B, second undo reverts A — a global
@@ -345,8 +335,8 @@ public sealed class UndoShortcutCoordinatorTests
             using var undoStackA = new ConfigUndoStack<CoordTestConfig>(storeA);
             using var undoStackB = new ConfigUndoStack<CoordTestConfigB>(storeB);
 
-            configA.Value.Value = 10; // A gets entry at T1
-            configB.Value.Value = 20; // B gets entry at T2 (> T1), becomes active
+            configA.Value.Value = 10;
+            configB.Value.Value = 20;
 
             var input = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
 
@@ -392,21 +382,17 @@ public sealed class UndoShortcutCoordinatorTests
             using var undoStackA = new ConfigUndoStack<CoordTestConfig>(storeA);
             using var undoStackB = new ConfigUndoStack<CoordTestConfigB>(storeB);
 
-            configA.Value.Value = 1;  // A entry: 0→1
-            configB.Value.Value = 10; // B entry: 0→10
-            configA.Value.Value = 2;  // A entry: 1→2, A becomes active
-            configB.Value.Value = 20; // B entry: 10→20, B becomes active
+            configA.Value.Value = 1;
+            configB.Value.Value = 10;
+            configA.Value.Value = 2;
+            configB.Value.Value = 20;
 
             var input = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
 
-            // Undo 1: B is active → reverts 20→10
             UndoShortcutCoordinator.TryProcessShortcut(input);
             Assert.AreEqual(2, configA.Value.Value);
             Assert.AreEqual(10, configB.Value.Value);
 
-            // Undo 2: B still has entries (10→0) but A's top entry (1→2) may be more recent.
-            // The exact ordering depends on Stopwatch resolution; the key guarantee is
-            // that both stacks are fully unwound after enough undos.
             UndoShortcutCoordinator.Reset();
             UndoShortcutCoordinator.Register(undoStackA);
             UndoShortcutCoordinator.Register(undoStackB);
@@ -435,7 +421,6 @@ public sealed class UndoShortcutCoordinatorTests
         }
     }
 
-    // --- Redo shortcut routing ---
 
     /// <summary>
     /// When a stack has redo entries and the redo shortcut is pressed, the active stack is redone.

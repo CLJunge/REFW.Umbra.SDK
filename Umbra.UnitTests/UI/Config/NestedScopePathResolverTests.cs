@@ -252,7 +252,6 @@ public class NestedScopePathResolverTests
     {
         PropertyInfo propertyInfo;
 
-        // Try to use a real property from TestPropertyHolder, otherwise use a mock
         var realProperty = typeof(TestPropertyHolder).GetProperty(propertyName);
         if (realProperty != null)
         {
@@ -260,7 +259,6 @@ public class NestedScopePathResolverTests
         }
         else
         {
-            // For property names not in TestPropertyHolder, create a mock
             propertyInfo = new MockPropertyInfo(propertyName);
         }
 
@@ -295,14 +293,14 @@ public class NestedScopePathResolverTests
             null,
             new object?[]
             {
-                null, // category
-                configPrefix, // configPrefix
-                null, // indentAttr
-                null, // collapseAttr
-                null, // labelMarginAttr
-                null, // nestedGroupDrawerAttr
-                false, // isAutoRegisterConfig
-                Array.Empty<TypeDrawMetadata.PropertyDrawMetadata>() // properties
+                null,
+                configPrefix,
+                null,
+                null,
+                null,
+                null,
+                false,
+                Array.Empty<TypeDrawMetadata.PropertyDrawMetadata>()
             },
             null)!;
     }

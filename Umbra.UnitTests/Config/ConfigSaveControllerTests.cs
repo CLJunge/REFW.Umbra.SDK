@@ -21,7 +21,6 @@ public sealed class ConfigSaveControllerTests
         public Parameter<int> TestValue { get; set; } = new(42);
     }
 
-    // ──────────────────────────── Constructor guards ────────────────────────────
 
     /// <summary>
     /// Verifies that the constructor rejects a null config store.
@@ -75,7 +74,6 @@ public sealed class ConfigSaveControllerTests
         storeMock.Verify(s => s.AddListenerToAll(It.IsAny<Action>()), Times.Once);
     }
 
-    // ──────────────── Instant save on non-numeric parameter change ──────────────
 
     /// <summary>
     /// Verifies that a parameter change outside a numeric edit triggers an immediate save.
@@ -113,7 +111,6 @@ public sealed class ConfigSaveControllerTests
         storeMock.Verify(s => s.Save(), Times.Exactly(3));
     }
 
-    // ──────────────── Deferred save during numeric edit ─────────────────────────
 
     /// <summary>
     /// Verifies that a parameter change during an active numeric edit does not trigger a save.
@@ -148,7 +145,7 @@ public sealed class ConfigSaveControllerTests
         var parameter = CreateMockParameter();
 
         sink.BeginNumericEdit(parameter);
-        listener(); // deferred
+        listener();
 
         // Act
         sink.EndNumericEdit(parameter);
@@ -220,7 +217,6 @@ public sealed class ConfigSaveControllerTests
         listener();
 
         // Assert — if BeginNumericEdit took effect, listener would defer; instead it's a no-op
-        // and the change handler itself is guarded by _disposed, so no save either
         storeMock.Verify(s => s.Save(), Times.Never);
     }
 
@@ -235,7 +231,7 @@ public sealed class ConfigSaveControllerTests
         var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
         var sink = (INumericEditSink)controller;
         sink.BeginNumericEdit(CreateMockParameter());
-        listener(); // deferred
+        listener();
         controller.Dispose();
         storeMock.Invocations.Clear();
 
@@ -246,7 +242,6 @@ public sealed class ConfigSaveControllerTests
         storeMock.Verify(s => s.Save(), Times.Never);
     }
 
-    // ────────────────────── Full interaction lifecycle ──────────────────────────
 
     /// <summary>
     /// Verifies a complete cycle: begin numeric edit, change, end, then a non-numeric change.
@@ -262,12 +257,12 @@ public sealed class ConfigSaveControllerTests
 
         // Act — numeric edit cycle
         sink.BeginNumericEdit(parameter);
-        listener(); // deferred
-        listener(); // deferred
-        sink.EndNumericEdit(parameter); // save #1
+        listener();
+        listener();
+        sink.EndNumericEdit(parameter);
 
         // Act — non-numeric change
-        listener(); // save #2
+        listener();
 
         // Assert
         storeMock.Verify(s => s.Save(), Times.Exactly(2));
@@ -288,18 +283,17 @@ public sealed class ConfigSaveControllerTests
         // Act — first edit
         sink.BeginNumericEdit(parameter);
         listener();
-        sink.EndNumericEdit(parameter); // save #1
+        sink.EndNumericEdit(parameter);
 
         // Act — second edit
         sink.BeginNumericEdit(parameter);
         listener();
-        sink.EndNumericEdit(parameter); // save #2
+        sink.EndNumericEdit(parameter);
 
         // Assert
         storeMock.Verify(s => s.Save(), Times.Exactly(2));
     }
 
-    // ──────────────── Deferred save during text edit ────────────────────────────
 
     /// <summary>
     /// Verifies that a parameter change during an active text edit does not trigger a save.
@@ -334,7 +328,7 @@ public sealed class ConfigSaveControllerTests
         var parameter = CreateMockParameter();
 
         sink.BeginTextEdit(parameter);
-        listener(); // deferred
+        listener();
 
         // Act
         sink.EndTextEdit(parameter);
@@ -406,7 +400,6 @@ public sealed class ConfigSaveControllerTests
         listener();
 
         // Assert — if BeginTextEdit took effect, listener would defer; instead it's a no-op
-        // and the change handler itself is guarded by _disposed, so no save either
         storeMock.Verify(s => s.Save(), Times.Never);
     }
 
@@ -421,7 +414,7 @@ public sealed class ConfigSaveControllerTests
         var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
         var sink = (ITextEditSink)controller;
         sink.BeginTextEdit(CreateMockParameter());
-        listener(); // deferred
+        listener();
         controller.Dispose();
         storeMock.Invocations.Clear();
 
@@ -432,7 +425,6 @@ public sealed class ConfigSaveControllerTests
         storeMock.Verify(s => s.Save(), Times.Never);
     }
 
-    // ──────────────── Full lifecycle: text edit ─────────────────────────────────
 
     /// <summary>
     /// Verifies a complete cycle: begin text edit, change, end, then a non-text change.
@@ -448,12 +440,12 @@ public sealed class ConfigSaveControllerTests
 
         // Act — text edit cycle
         sink.BeginTextEdit(parameter);
-        listener(); // deferred
-        listener(); // deferred
-        sink.EndTextEdit(parameter); // save #1
+        listener();
+        listener();
+        sink.EndTextEdit(parameter);
 
         // Act — non-text change
-        listener(); // save #2
+        listener();
 
         // Assert
         storeMock.Verify(s => s.Save(), Times.Exactly(2));
@@ -476,20 +468,17 @@ public sealed class ConfigSaveControllerTests
         // Act — start both
         numSink.BeginNumericEdit(numParam);
         textSink.BeginTextEdit(textParam);
-        listener(); // deferred
+        listener();
 
-        // End numeric — text is still active, so still deferred
         numSink.EndNumericEdit(numParam);
         storeMock.Verify(s => s.Save(), Times.Never, "Save should still be deferred while text edit is active");
 
-        // End text — both resolved, now save
         textSink.EndTextEdit(textParam);
 
         // Assert
         storeMock.Verify(s => s.Save(), Times.Once);
     }
 
-    // ──────────────────────────────── Flush ─────────────────────────────────────
 
     /// <summary>
     /// Verifies that <see cref="ConfigSaveController{TConfig}.Flush"/> saves when changes are pending.
@@ -502,7 +491,7 @@ public sealed class ConfigSaveControllerTests
         var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
         var sink = (INumericEditSink)controller;
         sink.BeginNumericEdit(CreateMockParameter());
-        listener(); // deferred, not saved yet
+        listener();
 
         // Act
         controller.Flush();
@@ -522,7 +511,6 @@ public sealed class ConfigSaveControllerTests
         _ = new ConfigSaveController<TestConfig>(storeMock.Object);
 
         // Act
-        // No parameter changes fired, so nothing pending
 
         // Assert
         storeMock.Verify(s => s.Save(), Times.Never);
@@ -547,7 +535,6 @@ public sealed class ConfigSaveControllerTests
         storeMock.Verify(s => s.Save(), Times.Never);
     }
 
-    // ──────────────────────────────── Dispose ───────────────────────────────────
 
     /// <summary>
     /// Verifies that Dispose flushes pending changes and removes the listener.
@@ -560,7 +547,7 @@ public sealed class ConfigSaveControllerTests
         var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
         var sink = (INumericEditSink)controller;
         sink.BeginNumericEdit(CreateMockParameter());
-        listener(); // deferred
+        listener();
 
         // Act
         controller.Dispose();
@@ -597,7 +584,7 @@ public sealed class ConfigSaveControllerTests
         // Arrange
         var (storeMock, listener) = CreateMockStoreCapturingListener();
         var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
-        listener(); // instant save
+        listener();
 
         // Act
         controller.Dispose();
@@ -618,10 +605,9 @@ public sealed class ConfigSaveControllerTests
         // Arrange
         var (storeMock, listener) = CreateMockStoreCapturingListener();
         var controller = new ConfigSaveController<TestConfig>(storeMock.Object);
-        listener(); // deferred pending via numeric edit
+        listener();
         SetPrivateField(controller, "_pendingSave", true);
 
-        // Simulate store disposal before controller disposal
         storeMock.SetupGet(s => s.IsDisposed).Returns(true);
 
         // Act
@@ -636,7 +622,6 @@ public sealed class ConfigSaveControllerTests
         Assert.IsTrue(isDisposed, "Controller should be marked as disposed");
     }
 
-    // ──────────────────────────── Test infrastructure ───────────────────────────
 
     /// <summary>
     /// Creates a mock config store that captures the <see cref="Action"/> listener passed to
@@ -666,9 +651,7 @@ public sealed class ConfigSaveControllerTests
     /// </summary>
     private static void SetPrivateField<T>(object target, string fieldName, T value)
     {
-        var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-        if (field == null)
-            throw new InvalidOperationException($"Field '{fieldName}' not found on type '{target.GetType().Name}'.");
+        var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException($"Field '{fieldName}' not found on type '{target.GetType().Name}'.");
         field.SetValue(target, value);
     }
 
@@ -677,9 +660,7 @@ public sealed class ConfigSaveControllerTests
     /// </summary>
     private static T GetPrivateField<T>(object target, string fieldName)
     {
-        var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-        if (field == null)
-            throw new InvalidOperationException($"Field '{fieldName}' not found on type '{target.GetType().Name}'.");
+        var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException($"Field '{fieldName}' not found on type '{target.GetType().Name}'.");
         var value = field.GetValue(target);
         return value == null ? default! : (T)value;
     }

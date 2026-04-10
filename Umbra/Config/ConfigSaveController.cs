@@ -28,7 +28,9 @@ public sealed class ConfigSaveController<TConfig> : IDisposable, INumericEditSin
 {
     private readonly IConfigStore<TConfig> _store;
 
-    // Stored as a field so the exact delegate instance can be passed to RemoveListenerFromAll.
+    /// <summary>
+    /// Cached delegate instance used for both <c>AddListenerToAll</c> and <c>RemoveListenerFromAll</c> to ensure reference equality.
+    /// </summary>
     private readonly Action _onParameterChanged;
 
     private bool _numericEditActive;

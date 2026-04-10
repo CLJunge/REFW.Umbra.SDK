@@ -105,7 +105,6 @@ public class EnumControlBuilderTests
         // Arrange
         var mockParameter = new Mock<IParameter>();
         mockParameter.Setup(p => p.ValueType).Returns(typeof(TestEnum));
-        // Return an invalid cast enum value that's not in the defined enum
         mockParameter.Setup(p => p.GetValue()).Returns((TestEnum)999);
         mockParameter.Setup(p => p.Key).Returns("testKey");
         mockParameter.Setup(p => p.Metadata).Returns(new ParameterMetadata());
@@ -118,8 +117,6 @@ public class EnumControlBuilderTests
         // Assert
         Assert.IsNotNull(action, "Build should return a non-null Action even with invalid enum value.");
 
-        // Note: When the action executes, idx would be -1 and gets set to 0.
-        // Full execution test requires ImGui context and is not feasible here.
     }
 
     /// <summary>

@@ -10,7 +10,6 @@ public sealed class ConfigChangeLogTests
 {
     private static ConfigChangeRecord MakeRecord(string key, object? oldVal, object? newVal) => new(key, key, oldVal, newVal, Stopwatch.GetTimestamp());
 
-    // --- Constructor ---
 
     /// <summary>
     /// Tests that the default constructor creates a log with default capacity.
@@ -45,7 +44,6 @@ public sealed class ConfigChangeLogTests
     [TestMethod]
     public void Constructor_NegativeCapacity_ThrowsArgumentOutOfRangeException() => Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new ConfigChangeLog(-1));
 
-    // --- Push and Count ---
 
     /// <summary>
     /// Tests that Push increments the count.
@@ -71,7 +69,6 @@ public sealed class ConfigChangeLogTests
         Assert.ThrowsExactly<ArgumentNullException>(() => log.Push(null!));
     }
 
-    // --- GetEntries ---
 
     /// <summary>
     /// Tests that GetEntries returns entries in oldest-to-newest order.
@@ -117,7 +114,6 @@ public sealed class ConfigChangeLogTests
         Assert.AreEqual(1, log.Count);
     }
 
-    // --- Circular wrapping ---
 
     /// <summary>
     /// Tests that the buffer wraps correctly when capacity is exceeded.
@@ -176,7 +172,6 @@ public sealed class ConfigChangeLogTests
         Assert.AreEqual("b", entries[0].ParameterKey);
     }
 
-    // --- Clear ---
 
     /// <summary>
     /// Tests that Clear resets the log to empty.
@@ -224,7 +219,6 @@ public sealed class ConfigChangeLogTests
         Assert.AreEqual("x", entries[0].ParameterKey);
     }
 
-    // --- Full capacity without wrap ---
 
     /// <summary>
     /// Tests filling exactly to capacity without exceeding.
@@ -245,7 +239,6 @@ public sealed class ConfigChangeLogTests
         Assert.AreEqual("c", entries[2].ParameterKey);
     }
 
-    // --- Record values ---
 
     /// <summary>
     /// Tests that pushed records retain their values.

@@ -70,20 +70,25 @@ internal sealed class ImGuiToastRenderer : IToastRenderer
         ImGui.PopStyleColor();
     }
 
+    /// <summary>
+    /// Draws a filled circle indicating the toast severity level.
+    /// </summary>
+    /// <remarks>
+    /// Captures the cursor position before emitting an <see cref="ImGui.Dummy"/> spacer, which reserves
+    /// horizontal room for the icon so that subsequent wrapped text starts to the right of it.
+    /// The circle is rendered directly on the window draw list to remain font-independent.
+    /// </remarks>
     private static void DrawLevelIcon(ToastLevel level, float alpha)
     {
         var fontHeight = ImGui.GetFontSize();
         var radius = fontHeight * 0.35f;
         var diameter = radius * 2f;
 
-        // Capture position before Dummy moves the cursor
         var iconScreenPos = ImGui.GetCursorScreenPos();
 
-        // Reserve horizontal space so TextWrapped starts after the icon
         ImGui.Dummy(new Vector2(diameter + _iconGap, fontHeight));
         ImGui.SameLine(0, 0);
 
-        // Draw the filled circle on the window draw list (font-independent)
         var center = new Vector2(
             iconScreenPos.X + radius,
             iconScreenPos.Y + fontHeight / 2f);
@@ -94,13 +99,12 @@ internal sealed class ImGuiToastRenderer : IToastRenderer
 
     private static float CalculateAlpha(float progress)
     {
-        if (progress < _fadeInEndProgress)
-            return progress / _fadeInEndProgress;
-
-        if (progress >= _fadeOutStartProgress)
-            return 1f - ((progress - _fadeOutStartProgress) / (1f - _fadeOutStartProgress));
-
-        return 1f;
+        return progress switch
+        {
+            < _fadeInEndProgress => progress / _fadeInEndProgress,
+            >= _fadeOutStartProgress => 1f - (progress - _fadeOutStartProgress) / (1f - _fadeOutStartProgress),
+            _ => 1f
+        };
     }
 
     private static Vector4 GetColor(ToastLevel level, float alpha)

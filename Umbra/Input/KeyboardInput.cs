@@ -17,13 +17,18 @@ namespace Umbra.Input;
 /// </remarks>
 public static class KeyboardInput
 {
-    // --- VK constants for modifier queries ---
+    #region VK constants for modifier queries
+
+#pragma warning disable IDE1006 // Naming Styles
     private const int VK_LCONTROL = 0xA2;
     private const int VK_RCONTROL = 0xA3;
     private const int VK_LSHIFT = 0xA0;
     private const int VK_RSHIFT = 0xA1;
     private const int VK_LMENU = 0xA4;
     private const int VK_RMENU = 0xA5;
+#pragma warning restore IDE1006 // Naming Styles
+
+    #endregion
 
     private static readonly HashSet<int> _modifierKeyValues = BuildModifierKeyValueSet();
     private static readonly IReadOnlyList<UmbraKey> _keyboardKeys = BuildKeyboardKeyList();
@@ -112,13 +117,7 @@ public static class KeyboardInput
     /// </summary>
     /// <param name="key">An <see cref="UmbraKey"/> value cast to <see cref="int"/>.</param>
     /// <returns><c>None</c> when <paramref name="key"/> equals <see cref="UmbraKey.None"/>; otherwise, the enum member name when defined, or <c>Key(n)</c> for unknown raw values.</returns>
-    public static string GetKeyName(int key)
-    {
-        if (key == (int)UmbraKey.None)
-            return nameof(UmbraKey.None);
-
-        return Enum.GetName((UmbraKey)key) ?? $"Key({key})";
-    }
+    public static string GetKeyName(int key) => key == (int)UmbraKey.None ? nameof(UmbraKey.None) : Enum.GetName((UmbraKey)key) ?? $"Key({key})";
 
     /// <summary>
     /// Determines whether <paramref name="key"/> is one of the supported keyboard keys recognized by Umbra hotkey capture.
@@ -170,6 +169,7 @@ public static class KeyboardInput
     /// </summary>
     /// <param name="binding">The hotkey binding to test.</param>
     /// <returns><see langword="true"/> if the binding's key just transitioned to pressed and all required modifiers are held; otherwise, <see langword="false"/>.</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "<Pending>")]
     public static bool IsHotkeyPressed(HotkeyBinding binding)
     {
         if (binding.IsEmpty) return false;

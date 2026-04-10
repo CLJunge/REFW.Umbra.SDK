@@ -784,7 +784,7 @@ public partial class ParameterJsonReaderTests
     {
         // Arrange
         var mockParam = new Mock<IParameter>();
-        mockParam.Setup(p => p.ValueType).Returns(typeof(decimal)); // Unsupported numeric type
+        mockParam.Setup(p => p.ValueType).Returns(typeof(decimal));
         using var doc = JsonDocument.Parse("3.14");
         var element = doc.RootElement;
 

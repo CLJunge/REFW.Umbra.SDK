@@ -33,7 +33,6 @@ public sealed class LoggerTests
         // Act & Assert - should not throw
         Logger.Error(format, args);
 
-        // Cleanup
         Logger.Enabled = true;
     }
 
@@ -317,7 +316,6 @@ public sealed class LoggerTests
 
         using (Logger.Suppress())
         {
-            // Suppressed here
         }
 
         // Act & Assert - should not throw (suppression disposed, logging re-enabled)
@@ -447,7 +445,6 @@ public sealed class LoggerTests
         Logger.Enabled = true;
         Logger.Error(format, args);
 
-        // Cleanup
         Logger.Enabled = true;
     }
 
@@ -468,7 +465,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -489,7 +485,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -509,7 +504,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format!, args);
-        // No exception should be thrown; the method should catch and return silently
     }
 
     /// <summary>
@@ -542,7 +536,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -571,7 +564,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown; FormatException should be caught
     }
 
     /// <summary>
@@ -592,7 +584,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args!);
-        // No exception should be thrown; the method should catch and return silently
     }
 
     /// <summary>
@@ -613,7 +604,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown; FormatException should be caught
     }
 
     /// <summary>
@@ -633,7 +623,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args!);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -653,7 +642,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -678,7 +666,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -707,7 +694,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -736,7 +722,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown; invalid indices should be caught
     }
 
     /// <summary>
@@ -757,7 +742,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -778,7 +762,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -800,7 +783,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Info(format, args);
-        // No exception should be thrown
     }
 
     /// <summary>
@@ -1040,7 +1022,6 @@ public sealed class LoggerTests
         // Assert
         Assert.IsFalse(result);
 
-        // Cleanup
         Logger.EnableAll();
     }
 
@@ -1074,8 +1055,6 @@ public sealed class LoggerTests
 
         try
         {
-            // Temporarily enable logging so IsEnabled reflects only suppression state while we
-            // verify that prior tests did not leak suppression scopes.
             Logger.Enabled = true;
 
             var maxAttempts = 100;
@@ -1083,9 +1062,6 @@ public sealed class LoggerTests
 
             while (!Logger.IsEnabled && attempts < maxAttempts)
             {
-                // If IsEnabled is false with Enabled=true, there must be active suppressions.
-                // We cannot decrement directly, so we wait briefly and fail if a prior test
-                // leaked a suppression scope.
                 attempts++;
                 Thread.Sleep(1);
             }
@@ -1841,7 +1817,6 @@ public sealed class LoggerTests
         Assert.IsTrue(Logger.Enabled, "Enabled should be true after calling EnableAll");
         Assert.IsFalse(Logger.IsEnabled, "IsEnabled should remain false due to active suppression");
 
-        // Cleanup
         suppression.Dispose();
     }
 
@@ -1959,7 +1934,6 @@ public sealed class LoggerTests
         // Act & Assert - Should not throw
         scope.Dispose();
 
-        // Re-enable and verify depth was decremented
         Logger.EnableAll();
         Assert.IsTrue(Logger.IsEnabled, "IsEnabled should be true after enabling logging and disposing the suppression scope.");
     }
@@ -2110,7 +2084,6 @@ public sealed class LoggerTests
         // Assert
         Assert.IsNotNull(scope);
 
-        // Cleanup
         scope.Dispose();
     }
 
@@ -2322,7 +2295,6 @@ public sealed class LoggerTests
         Assert.IsFalse(isEnabledDuringSuppression, "IsEnabled should remain false during suppression.");
         Assert.IsFalse(isEnabledAfterDisposal, "IsEnabled should remain false after disposal when Enabled is false.");
 
-        // Cleanup
         Logger.EnableAll();
     }
 
@@ -2433,7 +2405,7 @@ public sealed class LoggerTests
                 using (Logger.Suppress())
                 {
                     Assert.IsFalse(Logger.IsEnabled, $"IsEnabled should be false during suppression in thread {threadIndex}, iteration {i}.");
-                    Thread.Sleep(0); // Yield to increase interleaving
+                    Thread.Sleep(0);
                 }
             }
 
@@ -2446,7 +2418,6 @@ public sealed class LoggerTests
         Assert.AreEqual(threadCount, completedThreads, "All threads should complete.");
         Assert.IsTrue(isEnabledAfterAllThreads, "IsEnabled should be true after all concurrent suppressions are disposed.");
 
-        // Cleanup
         startGate.Dispose();
     }
 
@@ -2813,17 +2784,16 @@ public sealed class LoggerTests
         // Act & Assert - nested suppressions
         using (var outer = Logger.Suppress())
         {
-            Logger.Warning(message); // Should be suppressed
+            Logger.Warning(message);
 
             using (var inner = Logger.Suppress())
             {
-                Logger.Warning(message); // Should still be suppressed
+                Logger.Warning(message);
             }
 
-            Logger.Warning(message); // Should still be suppressed (outer scope active)
+            Logger.Warning(message);
         }
 
-        // After all scopes disposed, logging should work
         Logger.Warning(message);
     }
 
@@ -3167,7 +3137,6 @@ public sealed class LoggerTests
 
         using (Logger.Suppress())
         {
-            // Suppressed scope
         }
 
         // Act & Assert (after suppression is removed)
@@ -3187,7 +3156,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Error(message);
-        // No exception expected - test passes if no exception is thrown
     }
 
     /// <summary>
@@ -3203,7 +3171,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Error(message);
-        // No exception expected - test passes if no exception is thrown
     }
 
     /// <summary>
@@ -3222,7 +3189,6 @@ public sealed class LoggerTests
         {
             Logger.Error(message);
         }
-        // No exception expected - test passes if no exception is thrown
     }
 
     /// <summary>
@@ -3242,7 +3208,6 @@ public sealed class LoggerTests
         {
             Logger.Error(message);
         }
-        // No exception expected - test passes if no exception is thrown
     }
 
     /// <summary>
@@ -3258,7 +3223,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Error(message!);
-        // No exception expected - LogBridge.Error swallows all exceptions
     }
 
     /// <summary>
@@ -3282,7 +3246,6 @@ public sealed class LoggerTests
 
         // Act & Assert
         Logger.Error(message!);
-        // No exception expected regardless of message content
     }
 
     /// <summary>
@@ -3294,11 +3257,10 @@ public sealed class LoggerTests
     {
         // Arrange
         Logger.EnableAll();
-        var longMessage = new string('X', 100000); // 100K characters
+        var longMessage = new string('X', 100000);
 
         // Act & Assert
         Logger.Error(longMessage);
-        // No exception expected even with very long messages
     }
 
     /// <summary>
@@ -3319,7 +3281,6 @@ public sealed class LoggerTests
         Logger.Enabled = true;
         Logger.Error(message);
 
-        // No exception expected in either state
     }
 
     /// <summary>
@@ -3345,7 +3306,6 @@ public sealed class LoggerTests
         Logger.DisableAll();
         Logger.Error(message);
 
-        // No exception expected through multiple state changes
     }
 
     /// <summary>
@@ -3362,12 +3322,11 @@ public sealed class LoggerTests
         // Act
         using (Logger.Suppress())
         {
-            Logger.Error(message); // Should not log (suppressed)
+            Logger.Error(message);
         }
 
         // Assert
-        Logger.Error(message); // Should log again (suppression removed)
-        // No exception expected
+        Logger.Error(message);
     }
 
     /// <summary>
@@ -3483,13 +3442,11 @@ public sealed class LoggerTests
         Logger.SuppressedFailureObserver = (op, ex) =>
         {
             callCount++;
-            // This call re-enters ReportSuppressedFailure; the guard must drop it.
             Logger.Info("recursive trigger");
         };
 
         Logger.Info("initial");
 
-        // Only the outermost call must be delivered; the nested one is dropped.
         Assert.AreEqual(1, callCount);
     }
 

@@ -39,7 +39,7 @@ public class KeyStateTrackerTests
         var provider = new TestNativeKeyStateProvider();
         var tracker = new KeyStateTracker(provider, TrackedKeys);
 
-        tracker.Update(); // baseline: no keys
+        tracker.Update();
 
         // Act
         provider.SetKeyDown(VK_A);
@@ -60,11 +60,11 @@ public class KeyStateTrackerTests
         var tracker = new KeyStateTracker(provider, TrackedKeys);
 
         provider.SetKeyDown(VK_A);
-        tracker.Update(); // A is down
+        tracker.Update();
 
         // Act
         provider.SetKeyUp(VK_A);
-        tracker.Update(); // A is now up
+        tracker.Update();
 
         // Assert
         Assert.IsTrue(tracker.JustReleased(VK_A));
@@ -81,10 +81,10 @@ public class KeyStateTrackerTests
         var tracker = new KeyStateTracker(provider, TrackedKeys);
 
         provider.SetKeyDown(VK_A);
-        tracker.Update(); // first tick: A pressed
+        tracker.Update();
 
         // Act
-        tracker.Update(); // second tick: A still held
+        tracker.Update();
 
         // Assert
         Assert.IsTrue(tracker.IsDown(VK_A));
@@ -162,10 +162,10 @@ public class KeyStateTrackerTests
         var tracker = new KeyStateTracker(provider, TrackedKeys);
 
         provider.SetKeyDown(VK_A);
-        tracker.Update(); // first: A just pressed
+        tracker.Update();
 
         // Act
-        tracker.Update(); // second: A still held, no edge
+        tracker.Update();
 
         // Assert
         Assert.IsFalse(tracker.JustPressed(VK_A));
@@ -181,7 +181,7 @@ public class KeyStateTrackerTests
         // Arrange
         var provider = new TestNativeKeyStateProvider();
         var tracker = new KeyStateTracker(provider, TrackedKeys);
-        tracker.Update(); // baseline
+        tracker.Update();
 
         provider.SetKeyDown(VK_A);
         provider.SetKeyDown(VK_B);
@@ -204,29 +204,25 @@ public class KeyStateTrackerTests
         // Arrange
         var provider = new TestNativeKeyStateProvider();
         var tracker = new KeyStateTracker(provider, TrackedKeys);
-        tracker.Update(); // baseline
+        tracker.Update();
 
-        // Press
         provider.SetKeyDown(VK_A);
         tracker.Update();
         Assert.IsTrue(tracker.JustPressed(VK_A), "Expected JustPressed on press tick");
         Assert.IsTrue(tracker.IsDown(VK_A), "Expected IsDown on press tick");
         Assert.IsFalse(tracker.JustReleased(VK_A), "Expected no JustReleased on press tick");
 
-        // Hold
         tracker.Update();
         Assert.IsFalse(tracker.JustPressed(VK_A), "Expected no JustPressed on hold tick");
         Assert.IsTrue(tracker.IsDown(VK_A), "Expected IsDown on hold tick");
         Assert.IsFalse(tracker.JustReleased(VK_A), "Expected no JustReleased on hold tick");
 
-        // Release
         provider.SetKeyUp(VK_A);
         tracker.Update();
         Assert.IsFalse(tracker.JustPressed(VK_A), "Expected no JustPressed on release tick");
         Assert.IsFalse(tracker.IsDown(VK_A), "Expected not IsDown on release tick");
         Assert.IsTrue(tracker.JustReleased(VK_A), "Expected JustReleased on release tick");
 
-        // After release
         tracker.Update();
         Assert.IsFalse(tracker.JustPressed(VK_A), "Expected no JustPressed after release");
         Assert.IsFalse(tracker.IsDown(VK_A), "Expected not IsDown after release");
@@ -257,11 +253,11 @@ public class KeyStateTrackerTests
     {
         // Arrange
         var provider = new TestNativeKeyStateProvider();
-        var tracker = new KeyStateTracker(provider, [VK_A]); // only tracks A
+        var tracker = new KeyStateTracker(provider, [VK_A]);
         tracker.Update();
 
         // Act
-        provider.SetKeyDown(VK_B); // B is not tracked
+        provider.SetKeyDown(VK_B);
         tracker.Update();
 
         // Assert
@@ -295,7 +291,7 @@ public class KeyStateTrackerTests
         // Arrange
         var provider = new TestNativeKeyStateProvider();
         var tracker = new KeyStateTracker(provider, TrackedKeys);
-        tracker.Update(); // baseline
+        tracker.Update();
 
         provider.SetKeyDown(VK_A);
         provider.SetKeyDown(VK_B);
@@ -316,7 +312,7 @@ public class KeyStateTrackerTests
         // Arrange
         var provider = new TestNativeKeyStateProvider();
         var tracker = new KeyStateTracker(provider, TrackedKeys);
-        tracker.Update(); // baseline
+        tracker.Update();
 
         provider.SetKeyDown(VK_A);
         provider.SetKeyDown(VK_B);
@@ -345,10 +341,10 @@ public class KeyStateTrackerTests
         tracker.Update();
 
         provider.SetKeyDown(VK_A);
-        tracker.Update(); // A just pressed
+        tracker.Update();
 
         // Act
-        tracker.Update(); // A still held, no edge
+        tracker.Update();
 
         // Assert
         Assert.AreEqual(0, tracker.JustPressedCount);

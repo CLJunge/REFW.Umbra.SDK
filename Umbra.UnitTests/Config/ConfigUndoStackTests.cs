@@ -56,7 +56,6 @@ public sealed class ConfigUndoStackTests
             File.Delete(tempPath);
     }
 
-    // --- Constructor validation ---
 
     /// <summary>
     /// Tests that the constructor throws <see cref="ArgumentNullException"/> when store is null.
@@ -142,7 +141,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Change tracking ---
 
     /// <summary>
     /// Tests that changing a parameter value pushes a record onto the undo stack.
@@ -330,7 +328,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Undo behavior ---
 
     /// <summary>
     /// Tests that TryUndo restores the parameter to its previous value.
@@ -434,7 +431,6 @@ public sealed class ConfigUndoStackTests
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") });
 
-            // Clear any existing toasts from other tests
             ToastQueue.Clear();
 
             config.IntValue.Value = 42;
@@ -543,7 +539,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Capacity ---
 
     /// <summary>
     /// Tests that the stack drops the oldest record when capacity is exceeded.
@@ -562,7 +557,6 @@ public sealed class ConfigUndoStackTests
 
             Assert.AreEqual(2, undo.Count);
 
-            // Oldest (10→20) was dropped. Top is 30→40, then 20→30.
             undo.TryUndo();
             Assert.AreEqual(30, config.IntValue.Value);
 
@@ -603,7 +597,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Clear ---
 
     /// <summary>
     /// Tests that Clear removes all records from the stack.
@@ -632,7 +625,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Delegate skip ---
 
     /// <summary>
     /// Tests that delegate-typed parameters are not tracked by the undo stack.
@@ -645,13 +637,9 @@ public sealed class ConfigUndoStackTests
         {
             using var undo = new ConfigUndoStack<DelegateTestConfig>(store);
 
-            // Changing the int parameter should be tracked.
             config.IntValue.Value = 99;
             Assert.AreEqual(1, undo.Count);
 
-            // The delegate parameter's ValueChanged event shouldn't be subscribed.
-            // We can't easily trigger the delegate param change in a way that tests skipping,
-            // but verifying that only the int change was recorded is sufficient.
         }
         finally
         {
@@ -659,7 +647,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Dispose ---
 
     /// <summary>
     /// Tests that Dispose detaches listeners so subsequent changes are not recorded.
@@ -677,7 +664,7 @@ public sealed class ConfigUndoStackTests
             undo.Dispose();
 
             config.IntValue.Value = 99;
-            Assert.AreEqual(0, undo.Count); // Stack was cleared on dispose
+            Assert.AreEqual(0, undo.Count);
         }
         finally
         {
@@ -719,7 +706,7 @@ public sealed class ConfigUndoStackTests
         {
             var undo = new ConfigUndoStack<UndoTestConfig>(store);
             undo.Dispose();
-            undo.Dispose(); // Should not throw
+            undo.Dispose();
         }
         finally
         {
@@ -727,7 +714,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Snapshot correctness after undo ---
 
     /// <summary>
     /// Tests that after undo, subsequent changes correctly capture the restored value as old.
@@ -757,7 +743,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Options-based constructor ---
 
     /// <summary>
     /// Tests that the options-based constructor throws <see cref="ArgumentNullException"/> when store is null.
@@ -891,7 +876,6 @@ public sealed class ConfigUndoStackTests
             var options = new ConfigUndoOptions { Capacity = 0 };
             using var undo = new ConfigUndoStack<UndoTestConfig>(store, options);
 
-            // Default capacity is 32; push more than 1 to verify fallback didn't produce capacity < 1
             config.IntValue.Value = 20;
             config.IntValue.Value = 30;
 
@@ -903,7 +887,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Toast suppression ---
 
     /// <summary>
     /// Tests that undo does not push a toast when <see cref="ConfigUndoOptions.Toast"/> is <see langword="null"/>.
@@ -979,7 +962,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Batch undo ---
 
     /// <summary>
     /// Tests that changes within a batch produce a single undo entry.
@@ -1074,7 +1056,7 @@ public sealed class ConfigUndoStackTests
             undo.BeginBatch("First");
             Assert.ThrowsExactly<InvalidOperationException>(() => undo.BeginBatch("Second"));
 
-            undo.EndBatch(); // cleanup
+            undo.EndBatch();
         }
         finally
         {
@@ -1136,10 +1118,8 @@ public sealed class ConfigUndoStackTests
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store, capacity: 2);
 
-            // Entry 1: single change
             config.IntValue.Value = 20;
 
-            // Entry 2: batch
             undo.BeginBatch("Batch");
             config.StringValue.Value = "batched";
             config.BoolValue.Value = true;
@@ -1147,15 +1127,12 @@ public sealed class ConfigUndoStackTests
 
             Assert.AreEqual(2, undo.Count);
 
-            // Entry 3: single change — should drop the oldest (entry 1)
             config.IntValue.Value = 30;
             Assert.AreEqual(2, undo.Count);
 
-            // Undo entry 3 (single 20→30)
             undo.TryUndo();
             Assert.AreEqual(20, config.IntValue.Value);
 
-            // Undo entry 2 (batch)
             undo.TryUndo();
             Assert.AreEqual("default", config.StringValue.Value);
             Assert.IsFalse(config.BoolValue.Value);
@@ -1226,7 +1203,6 @@ public sealed class ConfigUndoStackTests
             undo.TryUndo();
             Assert.AreEqual(10, config.IntValue.Value);
 
-            // Now change again — the old value should be the restored 10
             config.IntValue.Value = 50;
             var record = undo.Peek();
             Assert.IsNotNull(record);
@@ -1250,30 +1226,24 @@ public sealed class ConfigUndoStackTests
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store);
 
-            // Entry 1: single
             config.IntValue.Value = 20;
 
-            // Entry 2: batch
             undo.BeginBatch("Batch");
             config.StringValue.Value = "batched";
             config.BoolValue.Value = true;
             undo.EndBatch();
 
-            // Entry 3: single
             config.IntValue.Value = 30;
 
             Assert.AreEqual(3, undo.Count);
 
-            // Undo entry 3
             undo.TryUndo();
             Assert.AreEqual(20, config.IntValue.Value);
 
-            // Undo entry 2 (batch)
             undo.TryUndo();
             Assert.AreEqual("default", config.StringValue.Value);
             Assert.IsFalse(config.BoolValue.Value);
 
-            // Undo entry 1
             undo.TryUndo();
             Assert.AreEqual(10, config.IntValue.Value);
 
@@ -1336,17 +1306,14 @@ public sealed class ConfigUndoStackTests
             using var undo = new ConfigUndoStack<UndoTestConfig>(store);
             var sink = (INumericEditSink)undo;
 
-            // Start numeric edit before batch
             sink.BeginNumericEdit(config.IntValue);
             config.IntValue.Value = 15;
 
-            // Now open batch and end the numeric edit inside it
             undo.BeginBatch("Mixed Batch");
             config.StringValue.Value = "batched";
             sink.EndNumericEdit(config.IntValue);
             undo.EndBatch();
 
-            // Should be a single batch entry containing both the numeric and string changes
             Assert.AreEqual(1, undo.Count);
 
             undo.TryUndo();
@@ -1521,7 +1488,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- WrapWithBatch ---
 
     /// <summary>
     /// Tests that an action wrapped with <see cref="ConfigUndoStack{TConfig}.WrapWithBatch"/>
@@ -1655,7 +1621,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Auto batch wrapping via [UmbraBatchUndo] ---
 
     /// <summary>
     /// Test configuration class with a <see cref="UmbraBatchUndoAttribute"/>-decorated reset action
@@ -1788,7 +1753,6 @@ public sealed class ConfigUndoStackTests
         var (store, _, tempPath) = CreateLoadedStore<AutoBatchNullActionConfig>();
         try
         {
-            // Construction should not throw even though the action is null.
             using var undo = new ConfigUndoStack<AutoBatchNullActionConfig>(store);
             Assert.IsFalse(undo.CanUndo, "Stack should be empty after construction.");
         }
@@ -1820,7 +1784,6 @@ public sealed class ConfigUndoStackTests
         }
     }
 
-    // --- Redo behavior ---
 
     /// <summary>
     /// Tests that <see cref="ConfigUndoStack{TConfig}.TryRedo"/> re-applies the new value after an undo.
@@ -1883,7 +1846,6 @@ public sealed class ConfigUndoStackTests
             Assert.AreEqual(0, undo.Count);
             undo.TryRedo();
 
-            // Should be back on the undo stack as exactly one entry, not two
             Assert.AreEqual(1, undo.Count);
         }
         finally
@@ -1979,7 +1941,6 @@ public sealed class ConfigUndoStackTests
             undo.TryUndo();
             Assert.IsTrue(undo.CanRedo);
 
-            // New change should invalidate redo history
             config.IntValue.Value = 99;
 
             Assert.IsFalse(undo.CanRedo);
@@ -2201,7 +2162,6 @@ public sealed class ConfigUndoStackTests
             config.IntValue.Value = 20;
             config.IntValue.Value = 30;
 
-            // Undo both
             undo.TryUndo();
             Assert.AreEqual(20, config.IntValue.Value);
             undo.TryUndo();
@@ -2210,7 +2170,6 @@ public sealed class ConfigUndoStackTests
             Assert.AreEqual(0, undo.Count);
             Assert.AreEqual(2, undo.RedoCount);
 
-            // Redo both
             undo.TryRedo();
             Assert.AreEqual(20, config.IntValue.Value);
             undo.TryRedo();
@@ -2219,7 +2178,6 @@ public sealed class ConfigUndoStackTests
             Assert.AreEqual(2, undo.Count);
             Assert.AreEqual(0, undo.RedoCount);
 
-            // Undo one, then new change — redo should be cleared
             undo.TryUndo();
             Assert.AreEqual(20, config.IntValue.Value);
             Assert.IsTrue(undo.CanRedo);

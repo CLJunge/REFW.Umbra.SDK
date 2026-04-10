@@ -10,7 +10,9 @@ namespace Umbra.Input;
 /// </remarks>
 internal static class VirtualKeyMap
 {
-    // --- Windows virtual-key constants ---
+    #region Windows virtual-key constants
+
+#pragma warning disable IDE1006 // Naming Styles
     private const int VK_BACK = 0x08;
     private const int VK_TAB = 0x09;
     private const int VK_RETURN = 0x0D;
@@ -60,6 +62,9 @@ internal static class VirtualKeyMap
     private const int VK_LWIN = 0x5B;
     private const int VK_RWIN = 0x5C;
     private const int VK_APPS = 0x5D;
+#pragma warning restore IDE1006 // Naming Styles
+
+    #endregion
 
     /// <summary>
     /// Lookup from <see cref="UmbraKey"/> int value to Windows VK code.
@@ -83,24 +88,14 @@ internal static class VirtualKeyMap
     /// </summary>
     /// <param name="key">The Umbra key to map.</param>
     /// <returns>The Windows VK code, or <c>-1</c> if the key has no mapping.</returns>
-    public static int UmbraKeyToVk(UmbraKey key)
-    {
-        if (_umbraToVk.TryGetValue((int)key, out var vk))
-            return vk;
-        return -1;
-    }
+    public static int UmbraKeyToVk(UmbraKey key) => _umbraToVk.TryGetValue((int)key, out var vk) ? vk : -1;
 
     /// <summary>
     /// Converts a Windows virtual-key code to the corresponding <see cref="UmbraKey"/>.
     /// </summary>
     /// <param name="vk">The Windows virtual-key code to map.</param>
     /// <returns>The corresponding <see cref="UmbraKey"/>, or <see cref="UmbraKey.None"/> if unmapped.</returns>
-    public static UmbraKey VkToUmbraKey(int vk)
-    {
-        if (_vkToUmbra.TryGetValue(vk, out var umbraKey))
-            return (UmbraKey)umbraKey;
-        return UmbraKey.None;
-    }
+    public static UmbraKey VkToUmbraKey(int vk) => _vkToUmbra.TryGetValue(vk, out var umbraKey) ? (UmbraKey)umbraKey : UmbraKey.None;
 
     /// <summary>
     /// Returns the array of all Windows virtual-key codes that correspond to tracked keyboard-only Umbra keys.
@@ -112,7 +107,6 @@ internal static class VirtualKeyMap
     {
         var map = new Dictionary<int, int>(128)
         {
-            // Navigation
             [(int)UmbraKey.Tab] = VK_TAB,
             [(int)UmbraKey.LeftArrow] = VK_LEFT,
             [(int)UmbraKey.RightArrow] = VK_RIGHT,
@@ -129,7 +123,6 @@ internal static class VirtualKeyMap
             [(int)UmbraKey.Enter] = VK_RETURN,
             [(int)UmbraKey.Escape] = VK_ESCAPE,
 
-            // Punctuation / symbols
             [(int)UmbraKey.Apostrophe] = VK_OEM_7,
             [(int)UmbraKey.Comma] = VK_OEM_COMMA,
             [(int)UmbraKey.Minus] = VK_OEM_MINUS,
@@ -142,7 +135,6 @@ internal static class VirtualKeyMap
             [(int)UmbraKey.RightBracket] = VK_OEM_6,
             [(int)UmbraKey.GraveAccent] = VK_OEM_3,
 
-            // Lock keys
             [(int)UmbraKey.CapsLock] = VK_CAPITAL,
             [(int)UmbraKey.ScrollLock] = VK_SCROLL,
             [(int)UmbraKey.NumLock] = VK_NUMLOCK,
@@ -150,7 +142,6 @@ internal static class VirtualKeyMap
             [(int)UmbraKey.Pause] = VK_PAUSE
         };
 
-        // Numpad
         for (var i = 0; i < 10; i++)
             map[(int)UmbraKey.Keypad0 + i] = VK_NUMPAD0 + i;
 
@@ -159,21 +150,17 @@ internal static class VirtualKeyMap
         map[(int)UmbraKey.KeypadMultiply] = VK_MULTIPLY;
         map[(int)UmbraKey.KeypadSubtract] = VK_SUBTRACT;
         map[(int)UmbraKey.KeypadAdd] = VK_ADD;
-        map[(int)UmbraKey.KeypadEnter] = VK_RETURN; // Same VK as Enter — known limitation
+        map[(int)UmbraKey.KeypadEnter] = VK_RETURN;
 
-        // 0-9
         for (var i = 0; i < 10; i++)
             map[(int)UmbraKey.Key0 + i] = VK_0 + i;
 
-        // A-Z
         for (var i = 0; i < 26; i++)
             map[(int)UmbraKey.A + i] = VK_A + i;
 
-        // F1-F24
         for (var i = 0; i < 24; i++)
             map[(int)UmbraKey.F1 + i] = VK_F1 + i;
 
-        // Modifiers (individual keys, not aliases)
         map[(int)UmbraKey.LeftCtrl] = VK_LCONTROL;
         map[(int)UmbraKey.LeftShift] = VK_LSHIFT;
         map[(int)UmbraKey.LeftAlt] = VK_LMENU;
@@ -192,9 +179,6 @@ internal static class VirtualKeyMap
         var reverse = new Dictionary<int, int>(_umbraToVk.Count);
         foreach (var pair in _umbraToVk)
         {
-            // For duplicate VK mappings (Enter/KeypadEnter → VK_RETURN),
-            // the first one wins. Enter is added before KeypadEnter, so
-            // VK_RETURN maps back to UmbraKey.Enter.
             reverse.TryAdd(pair.Value, pair.Key);
         }
         return reverse;
@@ -202,7 +186,6 @@ internal static class VirtualKeyMap
 
     private static int[] BuildTrackedVirtualKeys()
     {
-        // Deduplicate VK codes (Enter and KeypadEnter share VK_RETURN).
         var unique = new HashSet<int>();
         foreach (var pair in _umbraToVk)
             unique.Add(pair.Value);

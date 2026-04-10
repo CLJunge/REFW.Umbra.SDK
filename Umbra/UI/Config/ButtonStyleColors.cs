@@ -12,7 +12,6 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal static class ButtonStyleColors
 {
-    // Three ImGui color slots (normal / hovered / active) for each non-default style variant.
     private static readonly Dictionary<ButtonStyle, (Vector4 Normal, Vector4 Hovered, Vector4 Active)> _colors =
         new()
         {

@@ -397,7 +397,6 @@ public partial class ConfigStoreTests
         // Assert
         Assert.IsNotNull(result, "Load should return a non-null instance");
         Assert.IsTrue(File.Exists(filePath), "Load should create a default config file when none exists");
-        // Cleanup
         store.Dispose();
         if (File.Exists(filePath))
         {
@@ -424,7 +423,6 @@ public partial class ConfigStoreTests
         Assert.IsTrue(store.IsLoaded, "Store should be in loaded state after Load completes");
         Assert.IsFalse(store.IsDisposed, "Store should still not be disposed");
         Assert.IsNotNull(result, "Load should return a valid config instance");
-        // Cleanup
         store.Dispose();
         if (File.Exists(filePath))
         {
@@ -731,7 +729,6 @@ public partial class ConfigStoreTests
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempFilePath))
                 File.Delete(tempFilePath);
@@ -761,7 +758,6 @@ public partial class ConfigStoreTests
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempFilePath))
                 File.Delete(tempFilePath);
@@ -791,7 +787,6 @@ public partial class ConfigStoreTests
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempFilePath))
                 File.Delete(tempFilePath);
@@ -821,7 +816,6 @@ public partial class ConfigStoreTests
         }
         finally
         {
-            // Cleanup
             if (File.Exists(tempFilePath))
                 File.Delete(tempFilePath);
         }
@@ -915,7 +909,6 @@ public partial class ConfigStoreTests
         var result = store.IsLoaded;
         // Assert
         Assert.IsFalse(result);
-        // Cleanup
         store.Dispose();
         if (File.Exists(tempPath))
             File.Delete(tempPath);
@@ -936,7 +929,6 @@ public partial class ConfigStoreTests
         var result = store.IsLoaded;
         // Assert
         Assert.IsTrue(result);
-        // Cleanup
         store.Dispose();
         if (File.Exists(tempPath))
             File.Delete(tempPath);
@@ -958,7 +950,6 @@ public partial class ConfigStoreTests
         var result = store.IsLoaded;
         // Assert
         Assert.IsTrue(result);
-        // Cleanup
         if (File.Exists(tempPath))
             File.Delete(tempPath);
     }
@@ -978,7 +969,6 @@ public partial class ConfigStoreTests
         var result = store.IsLoaded;
         // Assert
         Assert.IsFalse(result);
-        // Cleanup
         if (File.Exists(tempPath))
             File.Delete(tempPath);
     }
@@ -1002,7 +992,6 @@ public partial class ConfigStoreTests
         var result = store.IsLoaded;
         // Assert
         Assert.IsTrue(result);
-        // Cleanup
         store.Dispose();
         if (File.Exists(tempPath))
             File.Delete(tempPath);
@@ -1025,7 +1014,6 @@ public partial class ConfigStoreTests
             Assert.IsTrue(store.IsLoaded);
         }
 
-        // Cleanup
         store.Dispose();
         if (File.Exists(tempPath))
             File.Delete(tempPath);
@@ -1512,14 +1500,12 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
             store.AddListenerToAll(listener);
             // Act - Remove the listener
             store.RemoveListenerFromAll(listener);
-            // Change a parameter value to verify listener is not called
             config.TestValue.Set(100);
             // Assert - Listener should not have been called
             Assert.AreEqual(0, callCount, "Listener should not be invoked after removal.");
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
@@ -1545,14 +1531,12 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
             store.AddListenerToAll(listener);
             // Act - Remove listener once
             store.RemoveListenerFromAll(listener);
-            // Change a parameter value
             config.TestValue.Set(200);
             // Assert - Listener should still be invoked once (second registration remains)
             Assert.AreEqual(1, callCount, "Listener should be invoked once after removing one registration.");
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
@@ -1572,7 +1556,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
         store.Load();
         static void listener()
         {
-            // No-op for testing
         }
         try
         {
@@ -1581,7 +1564,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
@@ -1600,7 +1582,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
         store.Load();
         static void listener()
         {
-            // No-op for testing
         }
         try
         {
@@ -1610,7 +1591,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
@@ -1635,7 +1615,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
             store.AddListenerToAll(listener);
             // Act - Remove the listener
             store.RemoveListenerFromAll(listener);
-            // Change multiple parameter values
             config.Value1.Set(999);
             config.Value2.Set("changed");
             config.Value3.Set(false);
@@ -1644,7 +1623,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
@@ -1664,7 +1642,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
         var config = store.Load();
         static void listener()
         {
-            // No-op for testing
         }
         try
         {
@@ -1675,7 +1652,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
@@ -1703,7 +1679,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
             store.AddListenerToAll(listener2);
             // Act - Remove only listener1
             store.RemoveListenerFromAll(listener1);
-            // Change a parameter value
             config.TestValue.Set(300);
             // Assert - Only listener2 should be invoked
             Assert.AreEqual(0, callCount1, "Listener1 should not be invoked after removal.");
@@ -1711,7 +1686,6 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
         }
         finally
         {
-            // Cleanup
             store.Dispose();
             if (File.Exists(tempPath))
                 File.Delete(tempPath);
@@ -1730,11 +1704,9 @@ public partial class ConfigStoreTests_RemoveListenerFromAll
         var config = store.Load();
         static void listener(double oldVal, double newVal)
         {
-            // No-op for testing
         }
         // Act & Assert (should not throw)
         store.RemoveListenerFromAll((Action<double, double>)listener);
-        // Cleanup
         store.Dispose();
         if (System.IO.File.Exists(configPath))
             System.IO.File.Delete(configPath);

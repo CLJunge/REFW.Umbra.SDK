@@ -12,8 +12,9 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal static class ControlFactory
 {
-    // One entry per supported built-in value type. Enum and fallback are handled separately.
-    // Add or replace entries here to change the default control for any value type.
+    /// <summary>
+    /// One entry per supported built-in value type. Enum and fallback are handled separately.
+    /// </summary>
     private static readonly Dictionary<Type, Func<string, IParameter, LabelAlignmentGroup, INumericEditSink?, ITextEditSink?, Action>> _defaultBuilders = new()
     {
         [typeof(Action)] = BuildActionDraw,
