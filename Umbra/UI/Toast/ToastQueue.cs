@@ -18,7 +18,7 @@ public static class ToastQueue
     /// </summary>
     public static readonly TimeSpan DefaultDuration = TimeSpan.FromSeconds(3);
 
-    private static readonly object _lock = new();
+    private static readonly Lock _lock = new();
     private static readonly List<ToastEntry> _entries = [];
 
     /// <summary>
