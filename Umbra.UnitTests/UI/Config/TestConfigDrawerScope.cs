@@ -3,7 +3,7 @@ namespace Umbra.UI.Config.UnitTests;
 /// <summary>
 /// Records <see cref="ConfigDrawer{TConfig}"/> scope operations for unit tests.
 /// </summary>
-internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
+internal sealed class TestConfigDrawerRenderer : IConfigDrawerRenderer
 {
     public List<string> PushedIds { get; } = [];
     public List<string> RenderedTexts { get; } = [];
