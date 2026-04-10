@@ -4,26 +4,22 @@ using Umbra.Config.Attributes;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Builds uncached <see cref="TypeDrawMetadata"/> instances from reflected config types.
+/// Builds uncached <see cref="TypeDrawMetadata"/> snapshots from reflected configuration types.
 /// </summary>
 /// <remarks>
-/// This type isolates attribute scanning and property metadata assembly from
-/// <see cref="TypeDrawMetadata"/>, leaving that type responsible only for immutable metadata shape
-/// and cache access.
+/// This factory isolates attribute scanning and property metadata assembly from the cache owned by <see cref="TypeDrawMetadata"/>.
 /// </remarks>
 internal static class TypeDrawMetadataFactory
 {
     /// <summary>
     /// Builds the uncached metadata snapshot for <paramref name="type"/>.
     /// </summary>
-    /// <param name="type">The config type whose draw metadata should be scanned.</param>
-    /// <returns>The fully populated uncached metadata snapshot.</returns>
     internal static TypeDrawMetadata Build(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
 
         string? category = null;
-        string? settingsPrefix = null;
+        string? configPrefix = null;
         UmbraIndentAttribute? indentAttr = null;
         UmbraCollapseAsTreeAttribute? collapseAttr = null;
         UmbraLabelMarginAttribute? labelMarginAttr = null;
@@ -33,7 +29,7 @@ internal static class TypeDrawMetadataFactory
         foreach (var attribute in type.GetCustomAttributes(inherit: true))
         {
             if (attribute is UmbraCategoryAttribute categoryAttribute) { category = categoryAttribute.Name; continue; }
-            if (attribute is UmbraPrefixAttribute prefixAttribute) { settingsPrefix = prefixAttribute.Prefix; continue; }
+            if (attribute is UmbraPrefixAttribute prefixAttribute) { configPrefix = prefixAttribute.Prefix; continue; }
             if (attribute is UmbraIndentAttribute indentAttribute) { indentAttr = indentAttribute; continue; }
             if (attribute is UmbraCollapseAsTreeAttribute collapseAttribute) { collapseAttr = collapseAttribute; continue; }
             if (attribute is UmbraLabelMarginAttribute marginAttribute) { labelMarginAttr = marginAttribute; continue; }
@@ -48,7 +44,7 @@ internal static class TypeDrawMetadataFactory
 
         return new TypeDrawMetadata(
             category,
-            settingsPrefix,
+            configPrefix,
             indentAttr,
             collapseAttr,
             labelMarginAttr,
@@ -58,16 +54,8 @@ internal static class TypeDrawMetadataFactory
     }
 
     /// <summary>
-    /// Reads and assembles the property-level metadata consulted during config drawer construction.
+    /// Builds the cached property metadata consulted during configuration drawer construction.
     /// </summary>
-    /// <remarks>
-    /// The returned metadata also carries a cached boxed getter delegate so
-    /// <see cref="ConfigDrawTreeCollector.CollectInto(ConfigDrawScope, object, Type, Action{Nodes.CategoryNode}, List{IDisposable}, Action{List{Nodes.IDrawNode}})"/> can traverse the
-    /// live config object graph without paying <see cref="PropertyInfo.GetValue(object?)"/> reflection
-    /// overhead for each property on every draw-tree build.
-    /// </remarks>
-    /// <param name="property">The reflected property whose metadata should be scanned.</param>
-    /// <returns>The assembled metadata snapshot for one public instance property.</returns>
     private static TypeDrawMetadata.PropertyDrawMetadata BuildPropertyMetadata(PropertyInfo property)
     {
         var propertyType = property.PropertyType;
@@ -76,13 +64,14 @@ internal static class TypeDrawMetadataFactory
             && propertyType.GetGenericTypeDefinition() == typeof(Umbra.Config.Parameter<>);
 
         string? category = null;
-        string? settingsPrefix = null;
-        string? settingsParameterKeyOverride = null;
+        string? configPrefix = null;
+        string? configParameterKeyOverride = null;
         UmbraIndentAttribute? indentAttr = null;
         UmbraCollapseAsTreeAttribute? collapseAttr = null;
         UmbraLabelMarginAttribute? labelMarginAttr = null;
         INestedDrawerAttribute? nestedDrawerAttr = null;
         IHideIfAttribute? hideIf = null;
+        IDisableIfAttribute? disableIf = null;
         var order = int.MaxValue;
         var spacingBefore = 0;
         var spacingAfter = 0;
@@ -90,13 +79,14 @@ internal static class TypeDrawMetadataFactory
         foreach (var attribute in property.GetCustomAttributes(inherit: false))
         {
             if (attribute is UmbraCategoryAttribute categoryAttribute) { category = categoryAttribute.Name; continue; }
-            if (attribute is UmbraPrefixAttribute prefixAttribute) { settingsPrefix = prefixAttribute.Prefix; continue; }
-            if (attribute is UmbraParameterAttribute parameterAttribute) { settingsParameterKeyOverride = parameterAttribute.KeyOverride; continue; }
+            if (attribute is UmbraPrefixAttribute prefixAttribute) { configPrefix = prefixAttribute.Prefix; continue; }
+            if (attribute is UmbraParameterAttribute parameterAttribute) { configParameterKeyOverride = parameterAttribute.KeyOverride; continue; }
             if (attribute is UmbraIndentAttribute indentAttribute) { indentAttr = indentAttribute; continue; }
             if (attribute is UmbraCollapseAsTreeAttribute collapseAttribute) { collapseAttr = collapseAttribute; continue; }
             if (attribute is UmbraLabelMarginAttribute marginAttribute) { labelMarginAttr = marginAttribute; continue; }
             if (attribute is INestedDrawerAttribute nestedDrawerAttribute) { nestedDrawerAttr = nestedDrawerAttribute; continue; }
             if (attribute is IHideIfAttribute hideIfAttribute) { hideIf = hideIfAttribute; continue; }
+            if (attribute is IDisableIfAttribute disableIfAttribute) { disableIf = disableIfAttribute; continue; }
             if (attribute is UmbraParameterOrderAttribute orderAttribute) { order = orderAttribute.Order; continue; }
             if (attribute is UmbraSpacingBeforeAttribute beforeAttribute) { spacingBefore = beforeAttribute.Count; continue; }
             if (attribute is UmbraSpacingAfterAttribute afterAttribute) { spacingAfter = afterAttribute.Count; }
@@ -113,10 +103,11 @@ internal static class TypeDrawMetadataFactory
             labelMarginAttr,
             nestedDrawerAttr,
             hideIf,
+            disableIf,
             order,
             spacingBefore,
             spacingAfter,
-            settingsPrefix,
-            settingsParameterKeyOverride);
+            configPrefix,
+            configParameterKeyOverride);
     }
 }

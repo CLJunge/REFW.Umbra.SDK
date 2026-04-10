@@ -1,3 +1,5 @@
+using Umbra.UI.Config.Search;
+
 namespace Umbra.UI.Config.Nodes.UnitTests;
 
 /// <summary>
@@ -10,25 +12,6 @@ public sealed class RootTreeNodeTests
     private static readonly int[] _expectedThreeElements = [1, 2, 3];
 
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Tests that a closed root tree node does not draw children or pop the tree node.
     /// </summary>
     [TestMethod]
@@ -38,14 +21,14 @@ public sealed class RootTreeNodeTests
         var renderer = new TestRootTreeNodeRenderer();
         renderer.TreeNodeResults.Enqueue(false);
         var child = new CallbackNode(() => Assert.Fail("Child should not be drawn when tree is closed."));
-        var node = new RootTreeNode("Test Node", defaultOpen: true, [child], renderer);
+        var node = new RootTreeNode("Test Node", defaultOpen: true, [child], branchId: null, renderer);
 
         // Act
         node.Draw();
 
         // Assert
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Test Node", true), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Test Node", true, true, false), renderer.TreeNodes[0]);
         Assert.AreEqual(0, renderer.TreePopCount);
     }
 
@@ -66,7 +49,7 @@ public sealed class RootTreeNodeTests
             new CallbackNode(() => calls.Add(2)),
             new CallbackNode(() => calls.Add(3)),
         };
-        var node = new RootTreeNode("Parent Node", defaultOpen: false, children, renderer);
+        var node = new RootTreeNode("Parent Node", defaultOpen: false, children, branchId: null, renderer);
 
         // Act
         node.Draw();
@@ -74,7 +57,7 @@ public sealed class RootTreeNodeTests
         // Assert
         CollectionAssert.AreEqual(_expectedThreeElements, calls);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Parent Node", false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Parent Node", false, false, false), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
     }
 
@@ -87,7 +70,7 @@ public sealed class RootTreeNodeTests
         // Arrange
         var renderer = new TestRootTreeNodeRenderer();
         renderer.TreeNodeResults.Enqueue(true);
-        var node = new RootTreeNode("Parent Node", defaultOpen: false, [], renderer);
+        var node = new RootTreeNode("Parent Node", defaultOpen: false, [], branchId: null, renderer);
 
         // Act
         node.Draw();
@@ -114,6 +97,7 @@ public sealed class RootTreeNodeTests
                 new CallbackNode(() => calls.Add(1)),
                 new CallbackNode(() => throw new InvalidOperationException("boom")),
             ],
+            branchId: null,
             renderer);
 
         // Act
@@ -150,6 +134,7 @@ public sealed class RootTreeNodeTests
             "scope",
             defaultOpen: true,
             [new CallbackNode(() => drawCount++)],
+            branchId: null,
             renderer);
 
         // Act
@@ -171,7 +156,7 @@ public sealed class RootTreeNodeTests
     {
         var renderer = new TestRootTreeNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, null!, renderer));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, null!, branchId: null, renderer));
 
         Assert.AreEqual("children", exception.ParamName);
     }
@@ -182,9 +167,89 @@ public sealed class RootTreeNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, [], null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new RootTreeNode("Label", true, [], branchId: null, null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that a searchable root tree node force-opens while active search has visible descendants.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenDescendantMatches_ForceOpensRootTree()
+    {
+        // Arrange
+        var renderer = new TestRootTreeNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(true);
+        var node = new RootTreeNode("Root", defaultOpen: false, [new SearchableCallbackNode(visible: true)], branchId: "root:test", renderer);
+        var renderState = CreateRenderState("root:test");
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsTrue(visible);
+        Assert.AreEqual(("Root", false, false, true), renderer.TreeNodes[0]);
+    }
+
+    /// <summary>
+    /// Tests that clearing an active search restores the remembered root tree open state.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenQueryClears_RestoresRememberedRootTreeState()
+    {
+        // Arrange
+        var renderer = new TestRootTreeNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(false);
+        renderer.TreeNodeResults.Enqueue(true);
+        renderer.TreeNodeResults.Enqueue(false);
+        var node = new RootTreeNode("Root", defaultOpen: true, [new SearchableCallbackNode(visible: true)], branchId: "root:test", renderer);
+        var renderState = CreateRenderState("root:test");
+
+        // Act
+        node.Draw();
+        _ = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+        _ = ((IConfigSearchNode)node).ApplySearch(null);
+        node.Draw();
+
+        // Assert
+        Assert.HasCount(3, renderer.TreeNodes);
+        Assert.AreEqual(("Root", true, true, false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Root", true, false, true), renderer.TreeNodes[1]);
+        Assert.AreEqual(("Root", true, false, false), renderer.TreeNodes[2]);
+    }
+
+    /// <summary>
+    /// Tests that a searchable root tree node hides itself when no searchable descendants remain visible.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenNoDescendantsMatch_HidesRootTree()
+    {
+        // Arrange
+        var renderer = new TestRootTreeNodeRenderer();
+        var node = new RootTreeNode("Root", defaultOpen: false, [new SearchableCallbackNode(visible: false)], branchId: "root:test", renderer);
+        var renderState = CreateRenderState("root:test");
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsFalse(visible);
+        Assert.IsEmpty(renderer.TreeNodes);
+    }
+
+    private static ConfigSearchRenderState CreateRenderState(params string[] forcedOpenBranchIds)
+    {
+        var searchState = new ConfigDrawerSearchState();
+        searchState.SetQuery("match");
+        searchState.SetMatches(["result"]);
+        return new ConfigSearchRenderState(
+            searchState,
+            new HashSet<string>(["result"], StringComparer.Ordinal),
+            new HashSet<string>(forcedOpenBranchIds, StringComparer.Ordinal));
     }
 
     /// <summary>
@@ -193,5 +258,14 @@ public sealed class RootTreeNodeTests
     private sealed class CallbackNode(Action callback) : IDrawNode
     {
         public void Draw() => callback();
+    }
+
+    private sealed class SearchableCallbackNode(bool visible) : IDrawNode, IConfigSearchNode
+    {
+        public void Draw()
+        {
+        }
+
+        public bool ApplySearch(ConfigSearchRenderState? searchState) => visible;
     }
 }

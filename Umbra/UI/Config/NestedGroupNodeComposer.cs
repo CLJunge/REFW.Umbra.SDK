@@ -5,25 +5,16 @@ using Umbra.UI.Config.Nodes;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Creates draw nodes used to render nested configuration groups.
+/// Creates the draw nodes used to render nested configuration groups.
 /// </summary>
 /// <remarks>
-/// This type isolates wrapper-node composition and nested-group custom-drawer node creation from
-/// <see cref="ConfigDrawerBuilder"/> so the builder remains focused on traversing the config tree.
+/// This helper isolates wrapper-node composition, nested-drawer node creation, and ImGui subtree scoping from <see cref="ConfigDrawTreeCollector"/>.
 /// </remarks>
 internal static class NestedNodeComposer
 {
     /// <summary>
-    /// Creates a wrapper node that applies property-level visibility, spacing, and ordering to an
-    /// already-built nested-group subtree.
+    /// Wraps an already-built nested-group subtree in property-level visibility, spacing, and ordering behavior.
     /// </summary>
-    /// <param name="nodes">The already-built child nodes to render inside the wrapper.</param>
-    /// <param name="owner">The parent object that owns the nested-group property.</param>
-    /// <param name="propHideIf">Optional property-level visibility condition for the whole group.</param>
-    /// <param name="order">The property-level sort key for the wrapped section.</param>
-    /// <param name="spacingBefore">The property-level vertical spacing emitted above the wrapped section.</param>
-    /// <param name="spacingAfter">The property-level vertical spacing emitted below the wrapped section.</param>
-    /// <returns>A <see cref="ParameterNode"/> that renders the supplied subtree under the wrapper metadata.</returns>
     internal static ParameterNode CreateWrappedNode(
         List<IDrawNode> nodes,
         object owner,
@@ -45,29 +36,13 @@ internal static class NestedNodeComposer
             },
             order,
             spacingBefore,
-            spacingAfter);
+            spacingAfter,
+            children: nodes);
     }
 
     /// <summary>
-    /// Creates the draw node used for a nested-group custom drawer, including any required local
-    /// category scope and stable ImGui ID scoping.
+    /// Creates the node used for a nested-group custom drawer, including any required local category and subtree ID scope.
     /// </summary>
-    /// <param name="registerCategoryNode">Callback used to track any category nodes created during composition.</param>
-    /// <param name="inheritedLabelMargin">The label-margin setting inherited from the parent scope.</param>
-    /// <param name="groupScopePath">The stable structural path used for the nested group's ImGui ID scope.</param>
-    /// <param name="propMeta">The cached property metadata for the nested-group property.</param>
-    /// <param name="propType">The runtime type of the nested group.</param>
-    /// <param name="nestedDrawerAttr">The resolved nested-group drawer attribute.</param>
-    /// <param name="nested">The live nested group instance that will be passed to the drawer.</param>
-    /// <param name="owner">The parent config instance that owns the nested-group property.</param>
-    /// <param name="localCategory">The explicit category declared on the nested-group property or its type, if any.</param>
-    /// <param name="collapseAttr">The collapse behavior for a local category emitted specifically for this nested drawer.</param>
-    /// <param name="indentAttr">The property-level indent for a local category emitted specifically for this nested drawer.</param>
-    /// <param name="disposable">Receives the created drawer instance when it implements <see cref="IDisposable"/>.</param>
-    /// <returns>
-    /// A composed draw node ready to be routed into the parent scope, or <see langword="null"/> when
-    /// the drawer cannot be bound to <paramref name="propType"/>.
-    /// </returns>
     internal static IDrawNode? CreateNestedDrawerNode(
         Action<CategoryNode> registerCategoryNode,
         UmbraLabelMarginAttribute? inheritedLabelMargin,
@@ -80,6 +55,7 @@ internal static class NestedNodeComposer
         string? localCategory,
         UmbraCollapseAsTreeAttribute? collapseAttr,
         UmbraIndentAttribute? indentAttr,
+        Func<bool>? isDisabled,
         out IDisposable? disposable)
     {
         disposable = null;
@@ -106,7 +82,8 @@ internal static class NestedNodeComposer
                         drawAction,
                         order: propMeta.Order,
                         spacingBefore: propMeta.SpacingBefore,
-                        spacingAfter: propMeta.SpacingAfter));
+                        spacingAfter: propMeta.SpacingAfter,
+                        isDisabled: isDisabled));
 
                 return CreateIdScopedSubtree(groupScopePath, localScope.Nodes);
             }
@@ -116,7 +93,8 @@ internal static class NestedNodeComposer
                 drawAction,
                 order: propMeta.Order,
                 spacingBefore: propMeta.SpacingBefore,
-                spacingAfter: propMeta.SpacingAfter);
+                spacingAfter: propMeta.SpacingAfter,
+                isDisabled: isDisabled);
 
             return CreateIdScopedSubtree(groupScopePath, [drawerNode]);
         }
@@ -129,15 +107,8 @@ internal static class NestedNodeComposer
     }
 
     /// <summary>
-    /// Wraps a nested-group subtree in a stable ImGui ID scope derived from the group's structural
-    /// settings path.
+    /// Wraps a nested-group subtree in a stable ImGui ID scope derived from its structural config path.
     /// </summary>
-    /// <param name="scopePath">The stable dot-separated group path used for the ImGui ID scope.</param>
-    /// <param name="nodes">The already-built nodes belonging to the nested-group subtree.</param>
-    /// <returns>
-    /// An <see cref="IdScopeNode"/> that pushes <paramref name="scopePath"/> before drawing the
-    /// subtree and pops it afterward.
-    /// </returns>
     internal static IdScopeNode CreateIdScopedSubtree(string scopePath, List<IDrawNode> nodes)
         => new(scopePath, nodes);
 }

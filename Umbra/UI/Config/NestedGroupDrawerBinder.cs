@@ -7,12 +7,10 @@ using Umbra.UI.Config.Drawers;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Creates cached draw delegates for nested-group custom drawers.
+/// Resolves and caches the delegates used to invoke custom nested-group drawers.
 /// </summary>
 /// <remarks>
-/// This type isolates nested-group drawer compatibility checks, expression compilation, instance
-/// activation, and disposable tracking from <see cref="ConfigDrawerBuilder"/> so the builder can
-/// remain focused on config-tree traversal and draw-node composition.
+/// This binder isolates nested-drawer compatibility checks, instance activation, expression compilation, and disposable tracking from the higher-level configuration drawer builder.
 /// </remarks>
 internal static class NestedDrawerBinder
 {
@@ -22,7 +20,7 @@ internal static class NestedDrawerBinder
     /// Cache key for one nested-group drawer binding shape.
     /// </summary>
     /// <param name="DrawerType">The concrete nested-group drawer type being instantiated.</param>
-    /// <param name="GroupType">The runtime nested settings-group type exposed by the property.</param>
+    /// <param name="GroupType">The runtime nested config-group type exposed by the property.</param>
     private readonly record struct NestedGroupDrawerFactoryKey(Type DrawerType, Type GroupType);
 
     /// <summary>
@@ -51,8 +49,7 @@ internal static class NestedDrawerBinder
     }
 
     /// <summary>
-    /// Creates the one-time draw delegate for a nested-group custom drawer and returns any
-    /// disposable drawer instance that should be tracked by the caller.
+    /// Creates the one-time draw delegate for a custom nested-group drawer and returns any disposable drawer instance.
     /// </summary>
     /// <param name="nestedDrawerAttr">The resolved nested-group drawer attribute.</param>
     /// <param name="groupType">The runtime type of the nested group.</param>

@@ -8,29 +8,10 @@ namespace Umbra.UI.LiveState.UnitTests;
 public sealed class LiveStateSectionTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
-    /// Tests that TreeNodeLabel returns the value provided to the primary constructor
+    /// Tests that SectionLabel returns the value provided to the primary constructor
     /// when a non-null tree node label is supplied.
     /// </summary>
-    /// <param name="treeNodeLabel">The tree node label to test.</param>
+    /// <param name="sectionLabel">The tree node label to test.</param>
     [TestMethod]
     [DataRow("Test Label")]
     [DataRow("")]
@@ -38,24 +19,24 @@ public sealed class LiveStateSectionTests
     [DataRow("Very Long Label With Multiple Words And Special Characters !@#$%^&*()")]
     [DataRow("Label\nWith\nNewlines")]
     [DataRow("Label\tWith\tTabs")]
-    public void TreeNodeLabel_WhenProvidedInPrimaryConstructor_ReturnsProvidedValue(string treeNodeLabel)
+    public void SectionLabel_WhenProvidedInPrimaryConstructor_ReturnsProvidedValue(string sectionLabel)
     {
         // Arrange
         var context = new TestState();
 
         // Act
-        var section = new LiveStateSection<TestState>(context, treeNodeLabel: treeNodeLabel);
+        var section = new LiveStateSection<TestState>(context, sectionLabel: sectionLabel);
 
         // Assert
-        Assert.AreEqual(treeNodeLabel, section.TreeNodeLabel);
+        Assert.AreEqual(sectionLabel, section.SectionLabel);
     }
 
     /// <summary>
-    /// Tests that TreeNodeLabel returns null when the tree node label parameter
+    /// Tests that SectionLabel returns null when the tree node label parameter
     /// is omitted in the primary constructor (using default value).
     /// </summary>
     [TestMethod]
-    public void TreeNodeLabel_WhenOmittedInPrimaryConstructor_ReturnsNull()
+    public void SectionLabel_WhenOmittedInPrimaryConstructor_ReturnsNull()
     {
         // Arrange
         var context = new TestState();
@@ -64,21 +45,21 @@ public sealed class LiveStateSectionTests
         var section = new LiveStateSection<TestState>(context);
 
         // Assert
-        Assert.IsNull(section.TreeNodeLabel);
+        Assert.IsNull(section.SectionLabel);
     }
 
     /// <summary>
-    /// Tests that TreeNodeLabel returns null when the tree node label parameter
+    /// Tests that SectionLabel returns null when the tree node label parameter
     /// is omitted in the parameterless constructor (using default value).
     /// </summary>
     [TestMethod]
-    public void TreeNodeLabel_WhenOmittedInParameterlessConstructor_ReturnsNull()
+    public void SectionLabel_WhenOmittedInParameterlessConstructor_ReturnsNull()
     {
         // Arrange & Act
         var section = new LiveStateSection<TestState>();
 
         // Assert
-        Assert.IsNull(section.TreeNodeLabel);
+        Assert.IsNull(section.SectionLabel);
     }
 
     /// <summary>
@@ -111,7 +92,6 @@ public sealed class LiveStateSectionTests
         /// <inheritdoc/>
         public void Draw(TestState state)
         {
-            // No-op for testing
         }
 
         /// <inheritdoc/>
@@ -126,21 +106,19 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(TestState state)
         {
-            // Empty implementation for testing purposes
         }
 
         public void Dispose()
         {
-            // Empty implementation for testing purposes
         }
     }
 
     /// <summary>
-    /// Tests that <see cref="LiveStateSection{T}.TreeNodeDefaultOpen"/> returns true
-    /// when the primary constructor is called with treeNodeDefaultOpen set to true.
+    /// Tests that <see cref="LiveStateSection{T}.ExpandedByDefault"/> returns true
+    /// when the primary constructor is called with expandedByDefault set to true.
     /// </summary>
     [TestMethod]
-    public void TreeNodeDefaultOpen_PrimaryConstructorWithTrue_ReturnsTrue()
+    public void ExpandedByDefault_PrimaryConstructorWithTrue_ReturnsTrue()
     {
         // Arrange
         var context = new TestState();
@@ -149,20 +127,20 @@ public sealed class LiveStateSectionTests
         using var section = new LiveStateSection<TestState>(
             context,
             idScope: null,
-            treeNodeLabel: null,
-            treeNodeDefaultOpen: true);
+            sectionLabel: null,
+            expandedByDefault: true);
 
         // Assert
-        Assert.IsTrue(section.TreeNodeDefaultOpen);
+        Assert.IsTrue(section.ExpandedByDefault);
     }
 
     /// <summary>
-    /// Tests that <see cref="LiveStateSection{T}.TreeNodeDefaultOpen"/> returns false
-    /// when the primary constructor is called without specifying treeNodeDefaultOpen
+    /// Tests that <see cref="LiveStateSection{T}.ExpandedByDefault"/> returns false
+    /// when the primary constructor is called without specifying expandedByDefault
     /// (using default parameter value).
     /// </summary>
     [TestMethod]
-    public void TreeNodeDefaultOpen_PrimaryConstructorWithDefaultParameter_ReturnsFalse()
+    public void ExpandedByDefault_PrimaryConstructorWithDefaultParameter_ReturnsFalse()
     {
         // Arrange
         var context = new TestState();
@@ -171,22 +149,22 @@ public sealed class LiveStateSectionTests
         using var section = new LiveStateSection<TestState>(context);
 
         // Assert
-        Assert.IsFalse(section.TreeNodeDefaultOpen);
+        Assert.IsFalse(section.ExpandedByDefault);
     }
 
     /// <summary>
-    /// Tests that <see cref="LiveStateSection{T}.TreeNodeDefaultOpen"/> returns false
-    /// when the parameterless constructor is used without specifying treeNodeDefaultOpen
+    /// Tests that <see cref="LiveStateSection{T}.ExpandedByDefault"/> returns false
+    /// when the parameterless constructor is used without specifying expandedByDefault
     /// (using default parameter value).
     /// </summary>
     [TestMethod]
-    public void TreeNodeDefaultOpen_ParameterlessConstructorWithDefaultParameter_ReturnsFalse()
+    public void ExpandedByDefault_ParameterlessConstructorWithDefaultParameter_ReturnsFalse()
     {
         // Arrange & Act
         using var section = new LiveStateSection<TestState>();
 
         // Assert
-        Assert.IsFalse(section.TreeNodeDefaultOpen);
+        Assert.IsFalse(section.ExpandedByDefault);
     }
 
     /// <summary>
@@ -202,8 +180,8 @@ public sealed class LiveStateSectionTests
         // Assert
         Assert.IsNotNull(section);
         Assert.AreEqual(typeof(ValidTestState).FullName ?? typeof(ValidTestState).Name, section.SectionId);
-        Assert.IsNull(section.TreeNodeLabel);
-        Assert.IsFalse(section.TreeNodeDefaultOpen);
+        Assert.IsNull(section.SectionLabel);
+        Assert.IsFalse(section.ExpandedByDefault);
     }
 
     /// <summary>
@@ -238,13 +216,13 @@ public sealed class LiveStateSectionTests
         // Act
         var section = new LiveStateSection<ValidTestState>(
             idScope: customIdScope,
-            treeNodeLabel: customLabel,
-            treeNodeDefaultOpen: defaultOpen);
+            sectionLabel: customLabel,
+            expandedByDefault: defaultOpen);
 
         // Assert
         Assert.AreEqual(customIdScope, section.SectionId);
-        Assert.AreEqual(customLabel, section.TreeNodeLabel);
-        Assert.AreEqual(defaultOpen, section.TreeNodeDefaultOpen);
+        Assert.AreEqual(customLabel, section.SectionLabel);
+        Assert.AreEqual(defaultOpen, section.ExpandedByDefault);
     }
 
     /// <summary>
@@ -268,7 +246,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_NullContext_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new LiveStateSection<TestState>((TestState)null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new LiveStateSection<TestState>((TestState)null!));
 
         Assert.AreEqual("context", exception.ParamName);
     }
@@ -279,7 +257,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_WhitespaceIdScope_ThrowsArgumentException()
     {
-        var exception = AssertThrows<ArgumentException>(() => _ = new LiveStateSection<TestState>(new TestState(), idScope: "   "));
+        var exception = Assert.ThrowsExactly<ArgumentException>(() => _ = new LiveStateSection<TestState>(new TestState(), idScope: "   "));
 
         Assert.AreEqual("idScope", exception.ParamName);
     }
@@ -306,7 +284,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_ParameterlessSectionWithoutParameterlessStateConstructor_ThrowsInvalidOperationException()
     {
-        var exception = AssertThrows<InvalidOperationException>(() => _ = new LiveStateSection<StateWithoutParameterlessConstructor>());
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => _ = new LiveStateSection<StateWithoutParameterlessConstructor>());
 
         Assert.Contains(nameof(StateWithoutParameterlessConstructor), exception.Message);
         Assert.IsNotNull(exception.InnerException);
@@ -320,7 +298,7 @@ public sealed class LiveStateSectionTests
     [TestMethod]
     public void Constructor_ParameterlessSectionWhenStateConstructorThrows_ThrowsInvalidOperationExceptionWithOriginalInner()
     {
-        var exception = AssertThrows<InvalidOperationException>(() => _ = new LiveStateSection<ThrowingState>());
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => _ = new LiveStateSection<ThrowingState>());
 
         Assert.Contains(nameof(ThrowingState), exception.Message);
         Assert.IsNotNull(exception.InnerException);
@@ -352,7 +330,10 @@ public sealed class LiveStateSectionTests
     [LiveStateSectionDrawer<ThrowingStateDrawer>]
     private sealed class ThrowingState
     {
-        public ThrowingState() => throw new InvalidOperationException("ctor threw");
+        public ThrowingState()
+        {
+            throw new InvalidOperationException("ctor threw");
+        }
     }
 
     /// <summary>
@@ -362,12 +343,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(ValidTestState state)
         {
-            // Minimal implementation for testing
         }
 
         public void Dispose()
         {
-            // Minimal implementation for testing
         }
     }
 
@@ -378,12 +357,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(StateWithoutParameterlessConstructor state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -394,12 +371,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(ThrowingState state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -501,12 +476,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(StateWithoutOrderAttribute state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -517,12 +490,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(StateWithOrderZero state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -533,12 +504,10 @@ public sealed class LiveStateSectionTests
     {
         public void Draw(StateWithOrderPositive state)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 

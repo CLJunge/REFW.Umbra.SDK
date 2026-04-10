@@ -1,7 +1,9 @@
+using System.Numerics;
+
 namespace Umbra.UI.Config.Rendering;
 
 /// <summary>
-/// Defines text and inline layout operations shared by multiple config controls.
+/// Defines the text and inline-layout operations shared by multiple configuration controls.
 /// </summary>
 internal interface ITextOps
 {
@@ -16,6 +18,13 @@ internal interface ITextOps
     /// </summary>
     /// <param name="text">The text to display.</param>
     void TextDisabled(string text);
+
+    /// <summary>
+    /// Renders colored text.
+    /// </summary>
+    /// <param name="color">The text color.</param>
+    /// <param name="text">The text to display.</param>
+    void TextColored(Vector4 color, string text);
 
     /// <summary>
     /// Places the next widget on the current line.

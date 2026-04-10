@@ -5,95 +5,57 @@ using Umbra.UI.Panel;
 namespace Umbra.UI.LiveState;
 
 /// <summary>
-/// A <see cref="IPanelSection"/> that renders a live game state instance each frame via
-/// an <see cref="ILiveStateSectionDrawer{T}"/> declared on the state type.
+/// Renders a live-state instance each frame through the drawer declared on <typeparamref name="T"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The state type <typeparamref name="T"/> must be decorated with
-/// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>. <see cref="LiveStateSectionDrawerResolver"/>
-/// discovers and instantiates the drawer once at construction time and compiles a
-/// zero-overhead draw delegate; no reflection occurs during rendering.
+/// <typeparamref name="T"/> must be decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>. <see cref="LiveStateSectionDrawerResolver"/> resolves the drawer once at construction time and compiles the delegate used for per-frame drawing.
 /// </para>
 /// <para>
-/// The draw delegate captures the exact state instance passed to the constructor and calls
-/// the drawer with that same instance on every frame. For hook-driven data, keep a stable
-/// holder object bound to the section and either mutate that object's fields in place or
-/// publish an atomically swapped snapshot on a field or property inside the holder. Replacing
-/// the holder object itself in hook code will not update the instance rendered by this section.
+/// The section keeps using the exact state instance passed to the constructor. For hook-driven data, keep that instance stable for the section's lifetime and update its contents in place or through members that publish swapped snapshots.
 /// </para>
 /// <para>
-/// When no external writer needs access to the bound instance, the parameterless constructor
-/// can be used to let the section create and own the state object internally.
-/// </para>
-/// <para>
-/// When a tree node label is supplied, the owning <see cref="PluginPanel"/>
-/// wraps this section's output inside a collapsible <see cref="ImGui.TreeNode(string)"/> with
-/// that label.
+/// When a tree-node label is supplied, the owning <see cref="PluginPanel"/> wraps this section's output in a collapsible tree node.
 /// </para>
 /// </remarks>
-/// <typeparam name="T">
-/// The live state type. Must be a reference type decorated with
-/// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
-/// </typeparam>
+/// <typeparam name="T">The live-state type rendered by this section. It must be a reference type decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.</typeparam>
 public sealed class LiveStateSection<T> : IPanelSection where T : class
 {
     private readonly string? _idScope;
-    private readonly string? _treeNodeLabel;
-    private readonly bool _treeNodeDefaultOpen;
+    private readonly string? _sectionLabel;
+    private readonly bool _expandedByDefault;
     private readonly Action _drawAction;
     private readonly IDisposable _drawerDisposable;
     private readonly int _order;
     private bool _disposed;
 
     /// <summary>
-    /// Initialises a new live state section bound to the provided state instance.
+    /// Initializes a new instance of the <see cref="LiveStateSection{T}"/> class bound to the provided state instance.
     /// </summary>
-    /// <param name="context">
-    /// The live state instance bound to this section for its entire lifetime and read by the
-    /// drawer each frame. The plugin should retain its own reference to this instance so hooks
-    /// or callbacks can update it between frames.
-    /// </param>
-    /// <param name="idScope">
-    /// Optional stable ImGui widget ID sub-scope for this section. When supplied, this value is
-    /// used as both the <see cref="SectionId"/> and the string passed to
-    /// <see cref="ImGui.PushID(string)"/> around the drawer's output each frame. When omitted,
-    /// <c>typeof(<typeparamref name="T"/>).FullName</c> (falling back to <c>typeof(<typeparamref name="T"/>).Name</c>
-    /// when <see cref="Type.FullName"/> is <see langword="null"/>) is used instead — a stable,
-    /// namespace-qualified fallback that keeps sections of identically named types in different
-    /// namespaces distinct. Supply an explicit value only when two live state sections of the
-    /// same type exist in the same panel.
-    /// Must not be empty or whitespace when supplied.
-    /// </param>
-    /// <param name="treeNodeLabel">
-    /// Optional label for a collapsible <see cref="ImGui.TreeNode(string)"/> that wraps this
-    /// section's output within the owning <see cref="PluginPanel"/>. Pass
-    /// <see langword="null"/> (the default) to render the section flat with no tree node.
-    /// </param>
-    /// <param name="treeNodeDefaultOpen">
-    /// Whether the section tree node starts expanded. Ignored when
-    /// <paramref name="treeNodeLabel"/> is <see langword="null"/>.
-    /// Defaults to <see langword="false"/> (collapsed).
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="context"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="idScope"/> is supplied but is empty or whitespace.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <typeparamref name="T"/> is not decorated with
-    /// <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
-    /// </exception>
+    /// <param name="context">The live-state instance rendered by this section for its entire lifetime.</param>
+    /// <param name="idScope">The optional stable ImGui widget ID sub-scope for this section.</param>
+    /// <param name="sectionLabel">The optional label for a collapsible tree node that wraps this section in the owning <see cref="PluginPanel"/>.</param>
+    /// <param name="expandedByDefault"><see langword="true"/> to start the optional section tree node expanded; otherwise, <see langword="false"/>.</param>
+    /// <remarks>
+    /// <para>
+    /// When <paramref name="idScope"/> is omitted, <c>typeof(<typeparamref name="T"/>).FullName</c> is used, falling back to <c>typeof(<typeparamref name="T"/>).Name</c> when the full name is unavailable. Supply an explicit value only when multiple live-state sections of the same type appear in one panel.
+    /// </para>
+    /// <para>
+    /// The plugin should keep its own reference to <paramref name="context"/> when hooks or callbacks need to update it between frames.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="idScope"/> is supplied but is empty or whitespace.</exception>
+    /// <exception cref="InvalidOperationException"><typeparamref name="T"/> is not decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.</exception>
     public LiveStateSection(T context, string? idScope = null,
-        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
+        string? sectionLabel = null, bool expandedByDefault = false)
     {
         ArgumentNullException.ThrowIfNull(context);
         if (idScope is not null && string.IsNullOrWhiteSpace(idScope))
             throw new ArgumentException("idScope cannot be empty or whitespace when supplied.", nameof(idScope));
         _idScope = idScope;
-        _treeNodeLabel = treeNodeLabel;
-        _treeNodeDefaultOpen = treeNodeDefaultOpen;
+        _sectionLabel = sectionLabel;
+        _expandedByDefault = expandedByDefault;
         _order = typeof(T).GetDrawerAttribute<UmbraSectionOrderAttribute>()?.Order ?? int.MaxValue;
         _drawAction = LiveStateSectionDrawerResolver.Resolve(typeof(T), context, out _drawerDisposable);
     }
@@ -103,58 +65,34 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Returns the explicit constructor-supplied ID scope when one was provided, or
-    /// <c>typeof(<typeparamref name="T"/>).FullName</c> — falling back to
-    /// <c>typeof(<typeparamref name="T"/>).Name</c> when <see cref="Type.FullName"/> is
-    /// <see langword="null"/> — as the stable, namespace-qualified fallback. Using
-    /// <c>typeof(<typeparamref name="T"/>).FullName</c> ensures that two state types with the same
-    /// short name but in different namespaces produce distinct section IDs even without an
-    /// explicit custom scope. When <see cref="IPanelSection.TreeNodeLabel"/> is
-    /// set, the owning <see cref="PluginPanel"/> embeds this value as a <c>##</c> suffix on the
-    /// tree node label to keep its ImGui identity distinct from other sections with the same
-    /// display label.
+    /// Returns the explicit constructor-supplied scope when one was provided; otherwise, it returns the runtime-type fallback used for this section. The owning <see cref="PluginPanel"/> also uses this value to disambiguate tree-node identity when <see cref="IPanelSection.SectionLabel"/> is set.
     /// </remarks>
     public string SectionId => _idScope ?? typeof(T).FullName ?? typeof(T).Name;
 
     /// <inheritdoc/>
-    public string? TreeNodeLabel => _treeNodeLabel;
+    public string? SectionLabel => _sectionLabel;
 
     /// <inheritdoc/>
-    public bool TreeNodeDefaultOpen => _treeNodeDefaultOpen;
+    public bool ExpandedByDefault => _expandedByDefault;
 
     /// <summary>
-    /// Initialises a new live state section, constructing the bound state instance internally.
-    /// Use this overload when the section owns the state and no external writer needs a
-    /// reference to that instance — for example, when the drawer queries game state directly.
+    /// Initializes a new instance of the <see cref="LiveStateSection{T}"/> class and creates the bound state instance internally.
     /// </summary>
     /// <remarks>
-    /// This overload requires <typeparamref name="T"/> to expose a public parameterless
-    /// constructor. When that constructor is absent, use
-    /// <see cref="LiveStateSection{T}(T,string?,string?,bool)"/> and supply the state instance
-    /// explicitly.
+    /// Use this overload when the section owns the state instance and no external writer needs a reference to it. <typeparamref name="T"/> must expose a public parameterless constructor; otherwise, use <see cref="LiveStateSection{T}(T, string?, string?, bool)"/>.
     /// </remarks>
-    /// <param name="idScope">
-    /// Optional ImGui ID sub-scope. See the primary constructor for details.
-    /// When omitted, <c>typeof(<typeparamref name="T"/>).FullName</c> (falling back to
-    /// <c>typeof(<typeparamref name="T"/>).Name</c>) is used as a stable, namespace-qualified
-    /// fallback.
-    /// </param>
-    /// <param name="treeNodeLabel">
-    /// Optional tree node label. See the primary constructor for details.
-    /// </param>
-    /// <param name="treeNodeDefaultOpen">
-    /// Whether the tree node starts expanded. See the primary constructor for details.
-    /// </param>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <typeparamref name="T"/> does not expose a public parameterless constructor,
-    /// when that constructor throws during activation, or when activation fails for any other
-    /// reason — or when it is not decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.
-    /// </exception>
+    /// <param name="idScope">The optional stable ImGui widget ID sub-scope for this section.</param>
+    /// <param name="sectionLabel">The optional label for a collapsible tree node that wraps this section in the owning <see cref="PluginPanel"/>.</param>
+    /// <param name="expandedByDefault"><see langword="true"/> to start the optional section tree node expanded; otherwise, <see langword="false"/>.</param>
+    /// <exception cref="InvalidOperationException"><typeparamref name="T"/> does not expose a public parameterless constructor, activation fails, or <typeparamref name="T"/> is not decorated with <see cref="LiveStateSectionDrawerAttribute{TDrawer}"/>.</exception>
     public LiveStateSection(string? idScope = null,
-        string? treeNodeLabel = null, bool treeNodeDefaultOpen = false)
-        : this(CreateOwnedContext(), idScope, treeNodeLabel, treeNodeDefaultOpen) { }
+        string? sectionLabel = null, bool expandedByDefault = false)
+        : this(CreateOwnedContext(), idScope, sectionLabel, expandedByDefault) { }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// After <see cref="Dispose()"/> has been called, this method becomes a silent no-op.
+    /// </remarks>
     public void Draw()
     {
         if (_disposed) return;
@@ -171,6 +109,9 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Disposes the resolved drawer once. Repeated calls after the first one do nothing.
+    /// </remarks>
     public void Dispose()
     {
         if (_disposed) return;
@@ -180,14 +121,10 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
     }
 
     /// <summary>
-    /// Creates the internally owned state instance for the parameterless constructor.
+    /// Creates the internally owned state instance used by the constructor overload that does not accept a context.
     /// </summary>
     /// <returns>A new <typeparamref name="T"/> instance.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when <typeparamref name="T"/> does not expose a public parameterless constructor,
-    /// when the constructor throws during activation, or when activation fails for any other reason
-    /// (e.g., the type is abstract or the constructor is inaccessible).
-    /// </exception>
+    /// <exception cref="InvalidOperationException"><typeparamref name="T"/> does not expose a public parameterless constructor, the constructor throws during activation, or activation fails for any other reason.</exception>
     private static T CreateOwnedContext()
     {
         try

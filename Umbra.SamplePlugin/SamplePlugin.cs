@@ -1,10 +1,11 @@
 using REFrameworkNET;
 using Umbra.Config;
 using Umbra.Logging;
-using Umbra.Runtime;
 using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
+using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
+using Umbra.UI.Toast;
 #if BENCHMARK
 using Umbra.UI.Panel.Benchmark;
 #endif
@@ -12,8 +13,8 @@ using Umbra.UI.Panel.Benchmark;
 namespace Umbra.SamplePlugin;
 
 /// <summary>
-/// Sample REFramework.NET plugin instance that demonstrates Umbra settings registration,
-/// automatic deferred persistence, panel-based ImGui rendering, and optional reusable
+/// Sample REFramework.NET plugin instance that demonstrates Umbra config registration,
+/// automatic persistence, panel-based ImGui rendering, and optional reusable
 /// plugin-panel benchmarking in <c>BENCHMARK</c> builds.
 /// </summary>
 /// <remarks>
@@ -37,12 +38,11 @@ public sealed class SamplePlugin : UmbraPlugin
     private PluginPanel? _benchmarkPanel;
     private PluginPanelBenchmark? _panelBenchmark;
 #endif
-    private SettingsStore<PluginConfig>? _store;
-    private DeferredSaveController<PluginConfig>? _saveController;
+    private ConfigStore<PluginConfig>? _store;
     private PluginConfig? _config;
 
     /// <summary>
-    /// Initialises a new plugin instance with its dedicated plugin logger.
+    /// Initializes a new plugin instance with its dedicated plugin logger.
     /// </summary>
     public SamplePlugin() : base(_log) { }
 
@@ -54,21 +54,10 @@ public sealed class SamplePlugin : UmbraPlugin
     {
         Log.Info("Loading...");
 
-        var configPath = GetConfigPath();
-        Log.Info($"Config path: {configPath}");
-
-        _store = new SettingsStore<PluginConfig>(configPath);
-        _config = _store.Load();
-        _config.LogTestMessage.Value = () => Log.Info("Sample Plugin is active!");
-
-        _saveController = new DeferredSaveController<PluginConfig>(_store);
-        _panel = CreateRuntimePanel(_config);
+        (_config, _store) = LoadConfig();
+        InitializeRuntimePanel(_config, _store);
 #if BENCHMARK
-        _benchmarkPanel = CreateBenchmarkPanel(_config);
-        _panelBenchmark = new PluginPanelBenchmark(
-            "Sample Plugin Panel Benchmark",
-            _benchmarkPanel,
-            GetBenchmarkDirectoryPath());
+        InitializeBenchmarking(_config);
 #endif
 
         Log.Info("Loaded successfully.");
@@ -82,24 +71,14 @@ public sealed class SamplePlugin : UmbraPlugin
         Log.Info("Unloading...");
 
 #if BENCHMARK
-        _panelBenchmark?.CompleteActiveRun("PluginUnload");
-        _panelBenchmark?.Dispose();
-        _panelBenchmark = null;
-
-        _benchmarkPanel?.Dispose();
-        _benchmarkPanel = null;
+        RunShutdownStep("complete active benchmark run", CompleteActiveBenchmarkRun);
+        RunShutdownStep("dispose panel benchmark", DisposePanelBenchmark);
+        RunShutdownStep("dispose benchmark panel", DisposeBenchmarkPanel);
 #endif
 
-        _panel?.Dispose();
-        _panel = null;
-
-        _saveController?.Flush();
-        _saveController?.Dispose();
-        _saveController = null;
-
-        _store?.Save();
-        _store?.Dispose();
-        _store = null;
+        RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
+        RunShutdownStep("save config store", SaveConfigStore);
+        RunShutdownStep("dispose config store", DisposeConfigStore);
 
         _config = null;
 
@@ -119,23 +98,31 @@ public sealed class SamplePlugin : UmbraPlugin
         if (!System.Diagnostics.Debugger.IsAttached
             && Input.KeyboardInput.IsCtrlHeld && Input.KeyboardInput.IsShiftHeld
             && Input.KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
-            && capturedKey == (int)Hexa.NET.ImGui.ImGuiKey.F12)
+            && capturedKey == (int)Input.UmbraKey.F12)
         {
             Log.Info("Ctrl + Shift + F12 detected, attaching debugger...");
             System.Diagnostics.Debugger.Launch();
+        }
+
+        if (Input.KeyboardInput.IsCtrlHeld && Input.KeyboardInput.IsShiftHeld
+            && Input.KeyboardInput.TryCaptureKeyboardKey(out capturedKey)
+            && capturedKey == (int)Input.UmbraKey.F11)
+        {
+            Log.Info("Ctrl + Shift + F11 detected, posting test toast notifications...");
+            ToastQueue.Push("This is a test info toast.");
+            ToastQueue.Push("This is a test warning toast.", ToastLevel.Warning);
+            ToastQueue.Push("This is a test error toast.", ToastLevel.Error);
+            ToastQueue.Push("This is a test success toast.", ToastLevel.Success);
+            ToastQueue.Push("This is a test toast with a custom duration of 5 seconds.", ToastLevel.Info, TimeSpan.FromSeconds(5));
+            ToastQueue.Push("This is a test toast with a custom duration of 1 second.", ToastLevel.Info, TimeSpan.FromSeconds(1));
         }
 #endif
     }
 
     /// <summary>
-    /// Renders the sample plugin UI and advances deferred persistence when the REFramework UI pass
-    /// is active.
+    /// Renders the sample plugin UI when the REFramework UI pass is active.
     /// </summary>
-    public override void OnPreImGuiDrawUI()
-    {
-        DrawUiIfActive();
-        TickDeferredSaveController();
-    }
+    public override void OnPreImGuiDrawUI() => DrawUiIfActive();
 
     /// <summary>
     /// Resolves the absolute path to the plugin's JSON configuration file.
@@ -146,6 +133,22 @@ public sealed class SamplePlugin : UmbraPlugin
     /// </returns>
     private string GetConfigPath()
         => Path.Combine(GetConfigDirectoryPath(), "config.json");
+
+    /// <summary>
+    /// Creates and loads the sample plugin config store, then binds runtime-backed sample actions.
+    /// </summary>
+    /// <returns>The loaded config instance and its owning config store.</returns>
+    private (PluginConfig Config, ConfigStore<PluginConfig> Store) LoadConfig()
+    {
+        var configPath = GetConfigPath();
+        Log.Info($"Config path: {configPath}");
+
+        var store = new ConfigStore<PluginConfig>(configPath);
+        var config = store.Load();
+        PluginConfigActionBinder.Bind(config, store, Log);
+
+        return (config, store);
+    }
 
     /// <summary>
     /// Resolves the absolute path to the directory where panel benchmark artifacts are written.
@@ -185,13 +188,54 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 
     /// <summary>
-    /// Builds the plugin's normal runtime panel.
+    /// Creates the runtime panel for the loaded sample config.
+    /// </summary>
+    /// <remarks>
+    /// Batch-undo wrapping for reset actions is handled automatically by the undo stack via
+    /// <see cref="Config.Attributes.UmbraBatchUndoAttribute"/> on the reset properties.
+    /// </remarks>
+    /// <param name="config">The loaded config instance.</param>
+    /// <param name="store">The loaded config store.</param>
+    private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
+    {
+        var section = CreateRuntimeSection(config, store);
+        _panel = new PluginPanel(_runtimePanelScope).Add(section);
+    }
+
+    /// <summary>
+    /// Builds the config section for the runtime panel.
     /// </summary>
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
-    /// <returns>The runtime panel.</returns>
-    private static PluginPanel CreateRuntimePanel(PluginConfig config)
-        => new PluginPanel(_runtimePanelScope)
-            .Add(new ConfigSection<PluginConfig>(config, _runtimeSectionScope));
+    /// <param name="store">The loaded config store used for event-driven persistence, transfer UI, and undo support.</param>
+    /// <returns>The config section with undo, search, and transfer support.</returns>
+    private static ConfigSection<PluginConfig> CreateRuntimeSection(PluginConfig config, ConfigStore<PluginConfig> store)
+    {
+        var toast = new ConfigToastOptions("Sample Plugin") { Duration = TimeSpan.FromSeconds(2) };
+        return ConfigSection<PluginConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions
+            {
+                Search = new UI.Config.Search.ConfigSearchOptions(),
+                Transfer = new ConfigTransferOptions { Enabled = true },
+                Undo = new ConfigUndoOptions() { Toast = toast }
+            },
+            _runtimeSectionScope);
+    }
+
+    /// <summary>
+    /// Creates the benchmark panel and benchmark host for isolated panel-draw measurement.
+    /// </summary>
+    /// <param name="config">The loaded config instance shared by the benchmark section.</param>
+#if BENCHMARK
+    private void InitializeBenchmarking(PluginConfig config)
+    {
+        _benchmarkPanel = CreateBenchmarkPanel(config);
+        _panelBenchmark = new PluginPanelBenchmark(
+            "Sample Plugin Panel Benchmark",
+            _benchmarkPanel,
+            GetBenchmarkDirectoryPath());
+    }
 
     /// <summary>
     /// Builds a duplicate panel for isolated benchmark measurement.
@@ -203,7 +247,6 @@ public sealed class SamplePlugin : UmbraPlugin
     /// </remarks>
     /// <param name="config">The loaded config instance shared by the benchmark section.</param>
     /// <returns>The benchmark panel.</returns>
-#if BENCHMARK
     private static PluginPanel CreateBenchmarkPanel(PluginConfig config)
         => new PluginPanel(_benchmarkPanelScope)
             .Add(new ConfigSection<PluginConfig>(config, _benchmarkSectionScope));
@@ -228,9 +271,39 @@ public sealed class SamplePlugin : UmbraPlugin
 #endif
     }
 
-    /// <summary>
-    /// Advances deferred-save timing so pending configuration changes can flush to disk.
-    /// </summary>
-    private void TickDeferredSaveController()
-        => _saveController?.Tick();
+#if BENCHMARK
+    private void CompleteActiveBenchmarkRun()
+        => _panelBenchmark?.CompleteActiveRun("PluginUnload");
+
+    private void DisposePanelBenchmark()
+    {
+        var panelBenchmark = _panelBenchmark;
+        _panelBenchmark = null;
+        panelBenchmark?.Dispose();
+    }
+
+    private void DisposeBenchmarkPanel()
+    {
+        var benchmarkPanel = _benchmarkPanel;
+        _benchmarkPanel = null;
+        benchmarkPanel?.Dispose();
+    }
+#endif
+
+    private void DisposeRuntimePanel()
+    {
+        var panel = _panel;
+        _panel = null;
+        panel?.Dispose();
+    }
+
+    private void SaveConfigStore()
+        => _store?.Save();
+
+    private void DisposeConfigStore()
+    {
+        var store = _store;
+        _store = null;
+        store?.Dispose();
+    }
 }

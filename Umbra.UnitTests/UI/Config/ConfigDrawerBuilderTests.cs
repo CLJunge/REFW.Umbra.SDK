@@ -323,7 +323,7 @@ public partial class ConfigDrawerBuilderTests
         // Act
         builder.Collect(firstConfig, typeof(SimpleConfig));
         var firstNodeCount = builder.Nodes.Count;
-        var firstDisposableCount = builder.Disposables.Count;
+        _ = builder.Disposables.Count;
 
         builder.Collect(secondConfig, typeof(SimpleConfig));
         var secondNodeCount = builder.Nodes.Count;

@@ -1,4 +1,5 @@
 using Umbra.Config.Attributes;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config.Nodes.UnitTests;
 
@@ -9,25 +10,6 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 public sealed class CategoryNodeTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Tests that drawing a flat category without indentation renders a separator and draws all
     /// children once.
     /// </summary>
@@ -37,7 +19,7 @@ public sealed class CategoryNodeTests
         // Arrange
         var renderer = new TestCategoryNodeRenderer();
         var childDrawCount = 0;
-        var node = new CategoryNode("Test Category", collapseAttr: null, indentAttr: null, renderer);
+        var node = new CategoryNode("Test Category", branchId: null, collapseAttr: null, indentAttr: null, renderer);
         node.Children.Add(new CallbackNode(() => childDrawCount++));
 
         // Act
@@ -65,7 +47,7 @@ public sealed class CategoryNodeTests
         renderer.TreeNodeResults.Enqueue(false);
         var childDrawCount = 0;
         var collapseAttr = new UmbraCollapseAsTreeAttribute(defaultOpen: false);
-        var node = new CategoryNode("Test Category", collapseAttr, indentAttr: null, renderer);
+        var node = new CategoryNode("Test Category", branchId: null, collapseAttr, indentAttr: null, renderer);
         node.Children.Add(new CallbackNode(() => childDrawCount++));
 
         // Act
@@ -74,7 +56,7 @@ public sealed class CategoryNodeTests
         // Assert
         Assert.IsEmpty(renderer.SeparatorLabels);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Test Category", false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Test Category", false, false, false), renderer.TreeNodes[0]);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(0, childDrawCount);
     }
@@ -90,7 +72,7 @@ public sealed class CategoryNodeTests
         var renderer = new TestCategoryNodeRenderer();
         var indentAttr = new UmbraIndentAttribute(20f);
         var childDrawCount = 0;
-        var node = new CategoryNode("Test Category", collapseAttr: null, indentAttr, renderer);
+        var node = new CategoryNode("Test Category", branchId: null, collapseAttr: null, indentAttr, renderer);
         node.Children.Add(new CallbackNode(() => childDrawCount++));
 
         // Act
@@ -118,7 +100,7 @@ public sealed class CategoryNodeTests
         var indentAttr = new UmbraIndentAttribute(20f);
         var collapseAttr = new UmbraCollapseAsTreeAttribute(defaultOpen: true);
         var childDrawCount = 0;
-        var node = new CategoryNode("Test Category", collapseAttr, indentAttr, renderer);
+        var node = new CategoryNode("Test Category", branchId: null, collapseAttr, indentAttr, renderer);
         node.Children.Add(new CallbackNode(() => childDrawCount++));
 
         // Act
@@ -128,7 +110,7 @@ public sealed class CategoryNodeTests
         Assert.HasCount(1, renderer.Indents);
         Assert.HasCount(1, renderer.Unindents);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Test Category", true), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Test Category", true, true, false), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
         Assert.AreEqual(1, childDrawCount);
     }
@@ -145,7 +127,7 @@ public sealed class CategoryNodeTests
         var indentAttr = new UmbraIndentAttribute(10f);
         var collapseAttr = new UmbraCollapseAsTreeAttribute(defaultOpen: false);
         var childDrawCount = 0;
-        var node = new CategoryNode("Test Category", collapseAttr, indentAttr, renderer);
+        var node = new CategoryNode("Test Category", branchId: null, collapseAttr, indentAttr, renderer);
         node.Children.Add(new CallbackNode(() => childDrawCount++));
 
         // Act
@@ -168,7 +150,7 @@ public sealed class CategoryNodeTests
         var renderer = new TestCategoryNodeRenderer();
         renderer.TreeNodeResults.Enqueue(true);
         var collapseAttr = new UmbraCollapseAsTreeAttribute(defaultOpen: true);
-        var node = new CategoryNode("Test Category", collapseAttr, indentAttr: null, renderer);
+        var node = new CategoryNode("Test Category", branchId: null, collapseAttr, indentAttr: null, renderer);
         node.Children.Add(new CallbackNode(() => throw new InvalidOperationException("boom")));
 
         // Act
@@ -200,7 +182,7 @@ public sealed class CategoryNodeTests
         renderer.TreeNodeResults.Enqueue(true);
         renderer.TreeNodeResults.Enqueue(true);
         var collapseAttr = new UmbraCollapseAsTreeAttribute(defaultOpen: true);
-        var node = new CategoryNode("Test Category", collapseAttr, indentAttr: null, renderer);
+        var node = new CategoryNode("Test Category", branchId: null, collapseAttr, indentAttr: null, renderer);
 
         // Act
         node.Draw();
@@ -218,9 +200,95 @@ public sealed class CategoryNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new CategoryNode("Label", null, null, null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new CategoryNode("Label", branchId: null, null, null, null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Tests that a category hides itself when none of its searchable descendants remain visible.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenNoDescendantsMatch_HidesCategory()
+    {
+        // Arrange
+        var renderer = new TestCategoryNodeRenderer();
+        var node = new CategoryNode("Test Category", branchId: "category:test", collapseAttr: null, indentAttr: null, renderer);
+        node.Children.Add(new SearchableCallbackNode(visible: false));
+        var renderState = CreateRenderState();
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsFalse(visible);
+        Assert.IsEmpty(renderer.SeparatorLabels);
+        Assert.IsEmpty(renderer.TreeNodes);
+    }
+
+    /// <summary>
+    /// Tests that a category force-opens its tree node when a searchable descendant is visible during active search.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenDescendantMatches_ForceOpensTreeNode()
+    {
+        // Arrange
+        var renderer = new TestCategoryNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(true);
+        var collapseAttr = new UmbraCollapseAsTreeAttribute(defaultOpen: false);
+        var node = new CategoryNode("Test Category", branchId: "category:test", collapseAttr, indentAttr: null, renderer);
+        node.Children.Add(new SearchableCallbackNode(visible: true));
+        var renderState = CreateRenderState("category:test");
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsTrue(visible);
+        Assert.AreEqual(("Test Category", false, false, true), renderer.TreeNodes[0]);
+    }
+
+    /// <summary>
+    /// Tests that clearing an active search restores the category tree node to its remembered pre-search state.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenQueryClears_RestoresRememberedTreeState()
+    {
+        // Arrange
+        var renderer = new TestCategoryNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(false);
+        renderer.TreeNodeResults.Enqueue(true);
+        renderer.TreeNodeResults.Enqueue(false);
+        var collapseAttr = new UmbraCollapseAsTreeAttribute(defaultOpen: true);
+        var node = new CategoryNode("Test Category", branchId: "category:test", collapseAttr, indentAttr: null, renderer);
+        node.Children.Add(new SearchableCallbackNode(visible: true));
+        var renderState = CreateRenderState("category:test");
+
+        // Act
+        node.Draw();
+        _ = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+        _ = ((IConfigSearchNode)node).ApplySearch(null);
+        node.Draw();
+
+        // Assert
+        Assert.HasCount(3, renderer.TreeNodes);
+        Assert.AreEqual(("Test Category", true, true, false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Test Category", true, false, true), renderer.TreeNodes[1]);
+        Assert.AreEqual(("Test Category", true, false, false), renderer.TreeNodes[2]);
+    }
+
+    private static ConfigSearchRenderState CreateRenderState(params string[] forcedOpenBranchIds)
+    {
+        var searchState = new ConfigDrawerSearchState();
+        searchState.SetQuery("match");
+        searchState.SetMatches(["result"]);
+        return new ConfigSearchRenderState(
+            searchState,
+            new HashSet<string>(["result"], StringComparer.Ordinal),
+            new HashSet<string>(forcedOpenBranchIds, StringComparer.Ordinal));
     }
 
     /// <summary>
@@ -229,5 +297,14 @@ public sealed class CategoryNodeTests
     private sealed class CallbackNode(Action callback) : IDrawNode
     {
         public void Draw() => callback();
+    }
+
+    private sealed class SearchableCallbackNode(bool visible) : IDrawNode, IConfigSearchNode
+    {
+        public void Draw()
+        {
+        }
+
+        public bool ApplySearch(ConfigSearchRenderState? searchState) => visible;
     }
 }

@@ -1,14 +1,13 @@
 using Umbra.Config;
+using Umbra.Input;
 
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
-/// Owns the shared hotkey-capture state machine used by hotkey drawers.
+/// Owns the shared hotkey-capture state machine used by the hotkey drawers.
 /// </summary>
 /// <remarks>
-/// This controller centralizes capture-mode entry, cancellation, captured-key application, and
-/// synchronization with <see cref="HotkeyCaptureState"/> so the concrete drawers only decide how
-/// the current and waiting text should be presented.
+/// This controller centralizes capture-mode entry, cancellation, captured-key application, and synchronization with <see cref="HotkeyCaptureState"/> so the concrete drawers only decide how current and waiting text should be presented.
 /// </remarks>
 internal sealed class HotkeyCaptureController : IDisposable
 {
@@ -22,9 +21,7 @@ internal sealed class HotkeyCaptureController : IDisposable
     /// </summary>
     /// <param name="renderer">The renderer used for text, inline layout, and button operations.</param>
     /// <param name="inputSource">The input source used for key capture.</param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="renderer"/> or <paramref name="inputSource"/> is <see langword="null"/>.
-    /// </exception>
+    /// <exception cref="ArgumentNullException"><paramref name="renderer"/> or <paramref name="inputSource"/> is <see langword="null"/>.</exception>
     internal HotkeyCaptureController(IHotkeyDrawerRenderer renderer, IHotkeyInputSource inputSource)
     {
         ArgumentNullException.ThrowIfNull(renderer);
@@ -39,31 +36,32 @@ internal sealed class HotkeyCaptureController : IDisposable
     internal bool IsDisposed => _disposed;
 
     /// <summary>
-    /// Renders the capture UI for one frame and applies any captured key value.
+    /// Renders the hotkey-capture UI for one frame and applies any captured binding value.
     /// </summary>
     /// <param name="parameter">The hotkey parameter being edited.</param>
-    /// <param name="currentValueText">The text shown while not waiting for input.</param>
-    /// <param name="waitingText">The text shown while waiting for a key press.</param>
-    internal void Draw(Parameter<int> parameter, string currentValueText, string waitingText)
+    /// <param name="currentValueText">The text shown while capture mode is inactive.</param>
+    /// <param name="waitingPrefix">The label prefix shown while capture mode is waiting (e.g. <c>"Hotkey: "</c>). The controller appends held modifier names and a prompt automatically.</param>
+    internal void Draw(Parameter<HotkeyBinding> parameter, string currentValueText, string waitingPrefix)
     {
         var value = parameter.Value;
         var previousValue = value;
         var wasWaiting = _waiting;
 
-        // Prevent multiple drawers from capturing input simultaneously.
         var otherWaiting = HotkeyCaptureState.WaitingCount > (wasWaiting ? 1 : 0);
 
-        // Use the parameter key as the stable unique button ID so two parameters with the same
-        // local label do not share an ImGui button ID within the same window.
         if (_waiting)
         {
+            var modifiers = _inputSource.GetHeldModifierPrefix();
+            var waitingText = modifiers.Length > 0
+                ? $"{waitingPrefix}{modifiers}..."
+                : $"{waitingPrefix}Press any key...";
             _renderer.Text(waitingText);
             _renderer.SameLine();
             if (_renderer.Button($"Cancel##{parameter.Key}"))
             {
                 _waiting = false;
             }
-            else if (_inputSource.TryCaptureKeyboardKey(out var captured))
+            else if (_inputSource.TryCaptureHotkeyBinding(out var captured))
             {
                 value = captured;
                 _waiting = false;
@@ -77,7 +75,6 @@ internal sealed class HotkeyCaptureController : IDisposable
                 _waiting = true;
         }
 
-        // Keep the shared counter in sync when this controller's capture state changes.
         if (_waiting != wasWaiting)
             HotkeyCaptureState.WaitingCount += _waiting ? 1 : -1;
 
@@ -88,6 +85,9 @@ internal sealed class HotkeyCaptureController : IDisposable
     /// <summary>
     /// Releases this controller's contribution to the shared capture counter.
     /// </summary>
+    /// <remarks>
+    /// Repeated calls after the first one do nothing.
+    /// </remarks>
     public void Dispose()
     {
         if (_disposed) return;

@@ -1,76 +1,87 @@
 using System.Diagnostics;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Rendering;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
-/// Draw node that renders a category header and all child controls either as a flat separator block
-/// or as a collapsible tree scope, depending on whether collapse metadata is supplied.
+/// Renders one configuration category together with its child nodes.
 /// </summary>
 /// <remarks>
-/// The default constructor renders through the shared active ImGui context. Unit tests can replace
-/// the low-level renderer through the internal constructor so header/tree behavior can be verified
-/// without requiring an active ImGui frame.
+/// A category can render either as a flat separator block or as a collapsible tree scope depending on whether <see cref="UmbraCollapseAsTreeAttribute"/> metadata is supplied. The default constructor uses the shared ImGui render context; tests can supply a renderer seam to verify category behavior without an active ImGui frame.
 /// </remarks>
 [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-internal sealed class CategoryNode : IDrawNode
+internal sealed class CategoryNode : IDrawNode, IConfigSearchNode
 {
     private readonly string _label;
+    private readonly string? _branchId;
     private readonly UmbraCollapseAsTreeAttribute? _collapseAttr;
     private readonly UmbraIndentAttribute? _indentAttr;
     private readonly ICategoryNodeRenderer _renderer;
+    private bool _searchVisible = true;
+    private bool _forceOpen;
+    private bool _isTreeOpen;
+    private bool _searchStateCaptured;
+    private bool _capturedTreeOpenState;
 
     /// <summary>
-    /// Initializes a new <see cref="CategoryNode"/> that renders through the shared active ImGui context.
+    /// Initializes a new <see cref="CategoryNode"/> that renders through the shared ImGui render context.
     /// </summary>
-    /// <param name="label">The category section label displayed in the header or tree node.</param>
-    /// <param name="collapseAttr">
-    /// When non-<see langword="null"/>, the category renders as a collapsible tree scope; when
-    /// <see langword="null"/>, a flat separator header is used instead.
-    /// </param>
-    /// <param name="indentAttr">
-    /// Optional category-wide indentation applied around the header and all child controls.
-    /// </param>
+    /// <param name="label">The visible category label.</param>
+    /// <param name="branchId">The stable search branch identifier for this category, or <see langword="null"/> when no search-driven branch state is associated with it.</param>
+    /// <param name="collapseAttr">Optional collapse metadata that switches the category to tree-node rendering.</param>
+    /// <param name="indentAttr">Optional indentation metadata applied around the category header and its children.</param>
     internal CategoryNode(
         string label,
+        string? branchId = null,
         UmbraCollapseAsTreeAttribute? collapseAttr = null,
         UmbraIndentAttribute? indentAttr = null)
-        : this(label, collapseAttr, indentAttr, ImGuiConfigRenderContext.Instance)
+        : this(label, branchId, collapseAttr, indentAttr, ImGuiConfigRenderContext.Instance)
     {
     }
 
     /// <summary>
-    /// Initializes a new <see cref="CategoryNode"/> with the specified low-level renderer.
+    /// Initializes a new <see cref="CategoryNode"/> with the specified renderer seam.
     /// </summary>
-    /// <param name="label">The category section label displayed in the header or tree node.</param>
-    /// <param name="collapseAttr">
-    /// When non-<see langword="null"/>, the category renders as a collapsible tree scope; when
-    /// <see langword="null"/>, a flat separator header is used instead.
-    /// </param>
-    /// <param name="indentAttr">Optional category-wide indentation metadata.</param>
+    /// <param name="label">The visible category label.</param>
+    /// <param name="branchId">The stable search branch identifier for this category, or <see langword="null"/> when no search-driven branch state is associated with it.</param>
+    /// <param name="collapseAttr">Optional collapse metadata that switches the category to tree-node rendering.</param>
+    /// <param name="indentAttr">Optional indentation metadata applied around the category header and its children.</param>
     /// <param name="renderer">The renderer used for category-node UI operations.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="renderer"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal CategoryNode(
         string label,
+        string? branchId,
         UmbraCollapseAsTreeAttribute? collapseAttr,
         UmbraIndentAttribute? indentAttr,
         ICategoryNodeRenderer renderer)
     {
         ArgumentNullException.ThrowIfNull(renderer);
         _label = label;
+        _branchId = branchId;
         _collapseAttr = collapseAttr;
         _indentAttr = indentAttr;
         _renderer = renderer;
+        _isTreeOpen = collapseAttr?.DefaultOpen ?? false;
     }
 
+    /// <summary>
+    /// Gets the label-alignment group shared by the parameter rows rendered inside this category.
+    /// </summary>
     internal LabelAlignmentGroup AlignmentGroup { get; } = new();
 
+    /// <summary>
+    /// Gets the ordered child nodes rendered inside this category.
+    /// </summary>
     internal readonly List<IDrawNode> Children = [];
 
     /// <inheritdoc/>
     public void Draw()
     {
+        if (!_searchVisible)
+            return;
+
         var hasIndent = _indentAttr != null;
         if (hasIndent) _renderer.Indent(_indentAttr!.Amount);
         try
@@ -84,6 +95,9 @@ internal sealed class CategoryNode : IDrawNode
         }
     }
 
+    /// <summary>
+    /// Renders the category as a non-collapsible separator header followed by all child nodes.
+    /// </summary>
     private void DrawAsHeader()
     {
         _renderer.SeparatorText(_label);
@@ -91,9 +105,13 @@ internal sealed class CategoryNode : IDrawNode
             child.Draw();
     }
 
+    /// <summary>
+    /// Renders the category as a collapsible tree node and draws its children only while the tree is open.
+    /// </summary>
     private void DrawAsTree()
     {
-        var open = _renderer.TreeNode(_label, _collapseAttr!.DefaultOpen);
+        var open = _renderer.TreeNode(_label, _collapseAttr!.DefaultOpen, _isTreeOpen, _forceOpen);
+        _isTreeOpen = open;
         if (!open) return;
 
         try
@@ -115,5 +133,59 @@ internal sealed class CategoryNode : IDrawNode
             displayString += $" ({Children.Count} child node{(Children.Count > 1 ? "s" : "")})";
 
         return displayString;
+    }
+
+    bool IConfigSearchNode.ApplySearch(ConfigSearchRenderState? searchState)
+    {
+        if (searchState is null || !searchState.HasActiveQuery)
+        {
+            RestoreTreeStateAfterSearch();
+            _searchVisible = true;
+            _forceOpen = false;
+            ApplySearchToChildren(null);
+            return true;
+        }
+
+        CaptureTreeStateForSearch();
+        var hasVisibleChild = ApplySearchToChildren(searchState);
+        _searchVisible = hasVisibleChild;
+        _forceOpen = hasVisibleChild || searchState.IsBranchForcedOpen(_branchId);
+        return hasVisibleChild;
+    }
+
+    private void CaptureTreeStateForSearch()
+    {
+        if (_collapseAttr is null || _searchStateCaptured)
+            return;
+
+        _capturedTreeOpenState = _isTreeOpen;
+        _searchStateCaptured = true;
+    }
+
+    private void RestoreTreeStateAfterSearch()
+    {
+        if (_collapseAttr is null || !_searchStateCaptured)
+            return;
+
+        _isTreeOpen = _capturedTreeOpenState;
+        _searchStateCaptured = false;
+    }
+
+    private bool ApplySearchToChildren(ConfigSearchRenderState? searchState)
+    {
+        var hasVisibleChild = false;
+        foreach (var child in Children)
+        {
+            if (child is IConfigSearchNode searchNode)
+            {
+                if (searchNode.ApplySearch(searchState))
+                    hasVisibleChild = true;
+                continue;
+            }
+
+            hasVisibleChild = true;
+        }
+
+        return hasVisibleChild;
     }
 }

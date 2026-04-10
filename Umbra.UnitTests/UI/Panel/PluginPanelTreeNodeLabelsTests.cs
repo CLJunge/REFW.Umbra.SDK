@@ -159,14 +159,14 @@ public class PluginPanelTreeNodeLabelsTests
     }
 
     /// <summary>
-    /// Tests that WarnIfInvalid does not throw when the section's TreeNodeLabel is null.
+    /// Tests that WarnIfInvalid does not throw when the section's SectionLabel is null.
     /// </summary>
     [TestMethod]
-    public void WarnIfInvalid_NullTreeNodeLabel_DoesNotThrow()
+    public void WarnIfInvalid_NullSectionLabel_DoesNotThrow()
     {
         // Arrange
         var mockSection = new Mock<IPanelSection>();
-        mockSection.Setup(s => s.TreeNodeLabel).Returns((string?)null);
+        mockSection.Setup(s => s.SectionLabel).Returns((string?)null);
         mockSection.Setup(s => s.SectionId).Returns("TestSection_NullLabel");
 
         // Act & Assert
@@ -174,14 +174,14 @@ public class PluginPanelTreeNodeLabelsTests
     }
 
     /// <summary>
-    /// Tests that WarnIfInvalid does not throw when the section's TreeNodeLabel does not contain the separator.
+    /// Tests that WarnIfInvalid does not throw when the section's SectionLabel does not contain the separator.
     /// </summary>
     [TestMethod]
-    public void WarnIfInvalid_TreeNodeLabelWithoutSeparator_DoesNotThrow()
+    public void WarnIfInvalid_SectionLabelWithoutSeparator_DoesNotThrow()
     {
         // Arrange
         var mockSection = new Mock<IPanelSection>();
-        mockSection.Setup(s => s.TreeNodeLabel).Returns("ValidLabel");
+        mockSection.Setup(s => s.SectionLabel).Returns("ValidLabel");
         mockSection.Setup(s => s.SectionId).Returns("TestSection_ValidLabel");
 
         // Act & Assert
@@ -189,7 +189,7 @@ public class PluginPanelTreeNodeLabelsTests
     }
 
     /// <summary>
-    /// Tests that WarnIfInvalid does not throw when the section's TreeNodeLabel contains the separator in the middle.
+    /// Tests that WarnIfInvalid does not throw when the section's SectionLabel contains the separator in the middle.
     /// Expected: A warning should be logged (cannot verify directly due to static Logger).
     /// </summary>
     [TestMethod]
@@ -197,12 +197,10 @@ public class PluginPanelTreeNodeLabelsTests
     {
         // Arrange
         var mockSection = new Mock<IPanelSection>();
-        mockSection.Setup(s => s.TreeNodeLabel).Returns("Label##ID");
+        mockSection.Setup(s => s.SectionLabel).Returns("Label##ID");
         mockSection.Setup(s => s.SectionId).Returns("TestSection_SeparatorInMiddle");
 
         // Act & Assert
-        // Note: Cannot verify Logger.Warning call directly as it's a static method.
-        // This test verifies the method executes without throwing.
         PluginPanelTreeNodeLabels.WarnIfInvalid(mockSection.Object);
     }
 
@@ -215,12 +213,10 @@ public class PluginPanelTreeNodeLabelsTests
     {
         // Arrange
         var mockSection = new Mock<IPanelSection>();
-        mockSection.Setup(s => s.TreeNodeLabel).Returns("Label##DuplicateTest");
+        mockSection.Setup(s => s.SectionLabel).Returns("Label##DuplicateTest");
         mockSection.Setup(s => s.SectionId).Returns("TestSection_DuplicateCall");
 
         // Act & Assert
-        // Note: Cannot verify that warning is logged only once due to static Logger.
-        // This test verifies the method executes without throwing on multiple calls.
         PluginPanelTreeNodeLabels.WarnIfInvalid(mockSection.Object);
         PluginPanelTreeNodeLabels.WarnIfInvalid(mockSection.Object);
         PluginPanelTreeNodeLabels.WarnIfInvalid(mockSection.Object);
@@ -250,7 +246,7 @@ public class PluginPanelTreeNodeLabelsTests
                     for (var i = 0; i < callsPerThread; i++)
                     {
                         var mockSection = new Mock<IPanelSection>();
-                        mockSection.Setup(s => s.TreeNodeLabel).Returns($"Thread{threadIndex}Label##ID{i}");
+                        mockSection.Setup(s => s.SectionLabel).Returns($"Thread{threadIndex}Label##ID{i}");
                         mockSection.Setup(s => s.SectionId).Returns($"TestSection_Thread{threadIndex}_{i}");
 
                         PluginPanelTreeNodeLabels.WarnIfInvalid(mockSection.Object);
@@ -287,7 +283,7 @@ public class PluginPanelTreeNodeLabelsTests
         var barrier = new Barrier(threadCount);
 
         var mockSection = new Mock<IPanelSection>();
-        mockSection.Setup(s => s.TreeNodeLabel).Returns("ConcurrentLabel##Shared");
+        mockSection.Setup(s => s.SectionLabel).Returns("ConcurrentLabel##Shared");
         mockSection.Setup(s => s.SectionId).Returns("TestSection_ConcurrentShared");
 
         var tasks = new Task[threadCount];
@@ -323,11 +319,11 @@ public class PluginPanelTreeNodeLabelsTests
     [TestMethod]
     public void Sanitize_LabelWithAppendedSectionSuffix_ReturnsVisiblePrefixOnly()
     {
-        var input = "General Settings##PluginConfig";
+        var input = "General##PluginConfig";
 
         var result = PluginPanelTreeNodeLabels.Sanitize(input);
 
-        Assert.AreEqual("General Settings", result);
+        Assert.AreEqual("General", result);
     }
 
     /// <summary>
@@ -337,11 +333,11 @@ public class PluginPanelTreeNodeLabelsTests
     public void WarnIfInvalid_SameLabelDifferentSectionIds_DoesNotThrow()
     {
         var firstSection = new Mock<IPanelSection>();
-        firstSection.Setup(s => s.TreeNodeLabel).Returns("Shared##Label");
+        firstSection.Setup(s => s.SectionLabel).Returns("Shared##Label");
         firstSection.Setup(s => s.SectionId).Returns("SectionA");
 
         var secondSection = new Mock<IPanelSection>();
-        secondSection.Setup(s => s.TreeNodeLabel).Returns("Shared##Label");
+        secondSection.Setup(s => s.SectionLabel).Returns("Shared##Label");
         secondSection.Setup(s => s.SectionId).Returns("SectionB");
 
         PluginPanelTreeNodeLabels.WarnIfInvalid(firstSection.Object);

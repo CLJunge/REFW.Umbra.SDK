@@ -10,25 +10,6 @@ public sealed class IdScopeNodeTests
     private static readonly int[] _expectedThreeElements = [1, 2, 3];
 
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Verifies that drawing a node with multiple children draws each child once in declaration
     /// order inside one pushed ID scope.
     /// </summary>
@@ -137,7 +118,7 @@ public sealed class IdScopeNodeTests
     {
         var renderer = new TestIdScopeNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new IdScopeNode("scope", null!, renderer));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new IdScopeNode("scope", null!, renderer));
 
         Assert.AreEqual("children", exception.ParamName);
     }
@@ -148,7 +129,7 @@ public sealed class IdScopeNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new IdScopeNode("scope", [], null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new IdScopeNode("scope", [], null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }

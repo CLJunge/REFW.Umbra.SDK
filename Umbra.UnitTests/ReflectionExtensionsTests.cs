@@ -173,7 +173,6 @@ public sealed class ReflectionExtensionsTests
         [TestGeneric<int>]
         public void WithMatchingGenericAttribute()
         {
-            // No-op for testing
         }
 
         [Other("Other")]
@@ -181,13 +180,11 @@ public sealed class ReflectionExtensionsTests
         [TestGeneric<string>]
         public void WithMixedAttributes()
         {
-            // No-op for testing
         }
 
         [OtherGeneric<int>]
         public void WithOnlyNonMatchingGenericAttribute()
         {
-            // No-op for testing
         }
     }
 

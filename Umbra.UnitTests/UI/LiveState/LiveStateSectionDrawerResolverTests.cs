@@ -7,25 +7,6 @@ namespace Umbra.UI.LiveState.UnitTests;
 public partial class LiveStateSectionDrawerResolverTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
-    /// <summary>
     /// Verifies that <see cref="LiveStateSectionDrawerResolver.Resolve"/> successfully
     /// returns a compiled <see cref="Action"/> when provided with a valid state type
     /// and drawer.
@@ -96,7 +77,7 @@ public partial class LiveStateSectionDrawerResolverTests
     [TestMethod]
     public void Resolve_StateWithoutDrawerAttribute_ThrowsInvalidOperationException()
     {
-        var exception = AssertThrows<InvalidOperationException>(
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(
             () => LiveStateSectionDrawerResolver.Resolve(typeof(StateWithoutDrawerAttribute), new StateWithoutDrawerAttribute(), out _));
 
         Assert.Contains("is not decorated", exception.Message);
@@ -108,7 +89,7 @@ public partial class LiveStateSectionDrawerResolverTests
     [TestMethod]
     public void Resolve_IncompatibleDrawerType_ThrowsInvalidOperationException()
     {
-        var exception = AssertThrows<InvalidOperationException>(
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(
             () => LiveStateSectionDrawerResolver.Resolve(typeof(StateWithIncompatibleDrawer), new StateWithIncompatibleDrawer(), out _));
 
         Assert.Contains("does not implement ILiveStateSectionDrawer<T>", exception.Message);
@@ -120,7 +101,7 @@ public partial class LiveStateSectionDrawerResolverTests
     [TestMethod]
     public void Resolve_DrawerWithoutPublicParameterlessConstructor_ThrowsInvalidOperationException()
     {
-        var exception = AssertThrows<InvalidOperationException>(
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(
             () => LiveStateSectionDrawerResolver.Resolve(typeof(StateWithDrawerWithoutDefaultConstructor), new StateWithDrawerWithoutDefaultConstructor(), out _));
 
         Assert.Contains("public parameterless constructor", exception.Message);

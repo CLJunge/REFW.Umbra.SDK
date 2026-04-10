@@ -1,24 +1,25 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Marks the decorated settings class as the root node of a plugin configuration tree,
-/// causing <see cref="UI.Config.ConfigDrawer{TConfig}"/> to wrap all child categories and
-/// parameters inside a single collapsible top-level
-/// <see cref="Hexa.NET.ImGui.ImGui.TreeNode(string)"/>.
+/// Declares the top-level tree node used when <see cref="UI.Config.ConfigDrawer{TConfig}"/> renders an annotated configuration type.
 /// </summary>
-/// <param name="label">
-/// The label displayed on the root tree node header, or <see langword="null"/> to fall back
-/// to a space-separated form of the config class name.
-/// </param>
-/// <param name="defaultOpen">
-/// When <see langword="true"/>, the root tree node starts in its expanded state.
-/// </param>
+/// <remarks>
+/// This attribute affects only UI presentation. It does not change parameter registration or persisted keys.
+/// </remarks>
+/// <param name="label">The optional visible label shown on the root tree node.</param>
+/// <param name="expandedByDefault"><see langword="true"/> to start the root tree node expanded; otherwise, <see langword="false"/>.</param>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public sealed class UmbraRootNodeAttribute(string? label = null, bool defaultOpen = false) : Attribute
+public sealed class UmbraRootNodeAttribute(string? label = null, bool expandedByDefault = false) : Attribute
 {
-    /// <summary>Gets the label shown on the root tree node header.</summary>
+    /// <summary>
+    /// Gets the visible label shown on the root tree node.
+    /// </summary>
+    /// <value>The declared label, or <see langword="null"/> when Umbra should infer one from the type name.</value>
     public string? Label { get; } = label;
 
-    /// <summary>Gets whether the root tree node starts in its expanded state.</summary>
-    public bool DefaultOpen { get; } = defaultOpen;
+    /// <summary>
+    /// Gets a value indicating whether the root section starts in the expanded state.
+    /// </summary>
+    /// <value><see langword="true"/> if the root section should start expanded; otherwise, <see langword="false"/>.</value>
+    public bool ExpandedByDefault { get; } = expandedByDefault;
 }

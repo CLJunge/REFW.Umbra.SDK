@@ -1,4 +1,5 @@
 using Umbra.Config;
+using Umbra.Input;
 
 namespace Umbra.UI.Config.Drawers.UnitTests;
 
@@ -11,25 +12,6 @@ public sealed class HotkeyDrawerTests
 {
     private TestHotkeyDrawerRenderer _renderer = null!;
     private TestHotkeyInputSource _inputSource = null!;
-
-    /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
 
     /// <summary>
     /// Resets the shared capture state and creates deterministic test doubles before each test.
@@ -59,7 +41,7 @@ public sealed class HotkeyDrawerTests
         drawer.Dispose();
 
         // Act
-        drawer.Draw("Hotkey", new Parameter<int>(70));
+        drawer.Draw("Hotkey", new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false)));
 
         // Assert
         Assert.IsEmpty(_renderer.DisabledTexts);
@@ -72,7 +54,7 @@ public sealed class HotkeyDrawerTests
     /// Verifies that a null or wrong-typed parameter renders disabled text.
     /// </summary>
     [TestMethod]
-    public void Draw_WhenParameterIsNotParameterOfInt_RendersDisabledText()
+    public void Draw_WhenParameterIsNotParameterOfHotkeyBinding_RendersDisabledText()
     {
         // Arrange
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
@@ -82,19 +64,19 @@ public sealed class HotkeyDrawerTests
 
         // Assert
         Assert.HasCount(1, _renderer.DisabledTexts);
-        Assert.AreEqual("Hotkey: (HotkeyDrawer requires Parameter<int>)", _renderer.DisabledTexts[0]);
+        Assert.AreEqual("Hotkey: (HotkeyDrawer requires Parameter<HotkeyBinding>)", _renderer.DisabledTexts[0]);
     }
 
     /// <summary>
-    /// Verifies that a non-waiting drawer renders the current key name and a change button.
+    /// Verifies that a non-waiting drawer renders the current binding name and a change button.
     /// </summary>
     [TestMethod]
     public void Draw_WhenNotWaiting_RendersCurrentKeyNameAndChangeButton()
     {
         // Arrange
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
-        _inputSource.SetKeyName(70, "F2");
-        var parameter = new Parameter<int>(70)
+        _inputSource.SetBindingDisplayName(new HotkeyBinding(70, false, false, false), "F2");
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
         {
             Key = "testKey",
             Metadata = new ParameterMetadata()
@@ -109,7 +91,7 @@ public sealed class HotkeyDrawerTests
         Assert.HasCount(1, _renderer.Buttons);
         Assert.AreEqual("Change##testKey", _renderer.Buttons[0]);
         Assert.AreEqual(1, _renderer.SameLineCount);
-        Assert.AreEqual(0, _inputSource.CaptureCallCount);
+        Assert.AreEqual(0, _inputSource.BindingCaptureCallCount);
         Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
     }
 
@@ -122,7 +104,7 @@ public sealed class HotkeyDrawerTests
         // Arrange
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
         _renderer.ButtonResults.Enqueue(true);
-        var parameter = new Parameter<int>(70)
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
         {
             Key = "testKey",
             Metadata = new ParameterMetadata()
@@ -143,6 +125,30 @@ public sealed class HotkeyDrawerTests
     }
 
     /// <summary>
+    /// Verifies that the waiting text includes held modifier prefix when modifiers are held.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenWaitingWithModifiersHeld_ShowsModifierPrefix()
+    {
+        // Arrange
+        var drawer = new HotkeyDrawer(_renderer, _inputSource);
+        _renderer.ButtonResults.Enqueue(true);
+        _inputSource.HeldModifierPrefix = "Ctrl+Shift+";
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
+        {
+            Key = "testKey",
+            Metadata = new ParameterMetadata()
+        };
+
+        // Act
+        drawer.Draw("Hotkey", parameter);
+        drawer.Draw("Hotkey", parameter);
+
+        // Assert
+        Assert.AreEqual("Hotkey: Ctrl+Shift+...", _renderer.Texts[1]);
+    }
+
+    /// <summary>
     /// Verifies that another waiting drawer prevents this drawer from entering capture mode.
     /// </summary>
     [TestMethod]
@@ -152,7 +158,7 @@ public sealed class HotkeyDrawerTests
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
         _renderer.ButtonResults.Enqueue(true);
         HotkeyCaptureState.WaitingCount = 1;
-        var parameter = new Parameter<int>(70)
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
         {
             Key = "testKey",
             Metadata = new ParameterMetadata()
@@ -177,7 +183,7 @@ public sealed class HotkeyDrawerTests
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
         _renderer.ButtonResults.Enqueue(true);
         _renderer.ButtonResults.Enqueue(true);
-        var parameter = new Parameter<int>(70)
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
         {
             Key = "testKey",
             Metadata = new ParameterMetadata()
@@ -188,14 +194,14 @@ public sealed class HotkeyDrawerTests
         drawer.Draw("Hotkey", parameter);
 
         // Assert
-        Assert.AreEqual(70, parameter.Value);
+        Assert.AreEqual(new HotkeyBinding(70, false, false, false), parameter.Value);
         Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
         drawer.Draw("Hotkey", parameter);
         Assert.AreEqual("Hotkey: Key(70)", _renderer.Texts[2]);
     }
 
     /// <summary>
-    /// Verifies that a captured key updates the parameter value and exits waiting mode.
+    /// Verifies that a captured binding updates the parameter value and exits waiting mode.
     /// </summary>
     [TestMethod]
     public void Draw_WhenKeyIsCaptured_UpdatesValueAndLeavesWaitingMode()
@@ -204,9 +210,9 @@ public sealed class HotkeyDrawerTests
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
         _renderer.ButtonResults.Enqueue(true);
         _renderer.ButtonResults.Enqueue(false);
-        _inputSource.QueueCapturedKey(71);
-        _inputSource.SetKeyName(71, "F3");
-        var parameter = new Parameter<int>(70)
+        _inputSource.QueueCapturedBinding(new HotkeyBinding(71, false, false, false));
+        _inputSource.SetBindingDisplayName(new HotkeyBinding(71, false, false, false), "F3");
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
         {
             Key = "testKey",
             Metadata = new ParameterMetadata()
@@ -218,10 +224,10 @@ public sealed class HotkeyDrawerTests
         drawer.Draw("Hotkey", parameter);
 
         // Assert
-        Assert.AreEqual(71, parameter.Value);
+        Assert.AreEqual(new HotkeyBinding(71, false, false, false), parameter.Value);
         Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
         Assert.AreEqual("Hotkey: F3", _renderer.Texts[2]);
-        Assert.AreEqual(1, _inputSource.CaptureCallCount);
+        Assert.AreEqual(1, _inputSource.BindingCaptureCallCount);
     }
 
     /// <summary>
@@ -232,7 +238,7 @@ public sealed class HotkeyDrawerTests
     {
         // Arrange
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
-        var parameter = new Parameter<int>(70)
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
         {
             Key = "testKey",
             Metadata = new ParameterMetadata
@@ -257,7 +263,7 @@ public sealed class HotkeyDrawerTests
     public void Draw_WhenDescriptionIsNull_DoesNotRenderHelpMarker()
     {
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
-        var parameter = new Parameter<int>(70)
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
         {
             Key = "testKey",
             Metadata = new ParameterMetadata
@@ -281,7 +287,7 @@ public sealed class HotkeyDrawerTests
         // Arrange
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
         _renderer.ButtonResults.Enqueue(true);
-        var parameter = new Parameter<int>(70)
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
         {
             Key = "testKey",
             Metadata = new ParameterMetadata()
@@ -304,7 +310,7 @@ public sealed class HotkeyDrawerTests
     {
         // Arrange
         var drawer = new HotkeyDrawer(_renderer, _inputSource);
-        var parameter = new Parameter<int>(70)
+        var parameter = new Parameter<HotkeyBinding>(new HotkeyBinding(70, false, false, false))
         {
             Key = "testKey",
             Metadata = new ParameterMetadata()
@@ -316,9 +322,9 @@ public sealed class HotkeyDrawerTests
         drawer.Draw("Hotkey", parameter);
 
         // Assert
-        Assert.AreEqual(70, parameter.Value);
+        Assert.AreEqual(new HotkeyBinding(70, false, false, false), parameter.Value);
         Assert.AreEqual(0, HotkeyCaptureState.WaitingCount);
-        Assert.AreEqual(0, _inputSource.CaptureCallCount);
+        Assert.AreEqual(0, _inputSource.BindingCaptureCallCount);
     }
 
     /// <summary>
@@ -327,7 +333,7 @@ public sealed class HotkeyDrawerTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new HotkeyDrawer(null!, new TestHotkeyInputSource()));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new HotkeyDrawer(null!, new TestHotkeyInputSource()));
 
         Assert.AreEqual("renderer", exception.ParamName);
     }
@@ -338,7 +344,7 @@ public sealed class HotkeyDrawerTests
     [TestMethod]
     public void Constructor_NullInputSource_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new HotkeyDrawer(new TestHotkeyDrawerRenderer(), null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new HotkeyDrawer(new TestHotkeyDrawerRenderer(), null!));
 
         Assert.AreEqual("inputSource", exception.ParamName);
     }

@@ -107,14 +107,11 @@ public sealed class LabelAlignmentGroupTests
     {
         // Arrange
         var group = new LabelAlignmentGroup();
-        // No labels registered - _entries list is empty
 
         // Act
         group.EnsureSeeded();
 
         // Assert
-        // Should complete without throwing
-        // Subsequent calls should be no-ops due to guard clause
         group.EnsureSeeded();
     }
 

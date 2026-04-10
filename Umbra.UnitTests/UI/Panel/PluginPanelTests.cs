@@ -70,7 +70,7 @@ public sealed class PluginPanelTests_Draw
         var renderer = new TestPluginPanelRenderer();
         renderer.TreeNodeResults.Enqueue(false);
         var sectionDrawn = false;
-        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Settings", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
+        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Config", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
         panel.Add(new CallbackPanelSection("SectionA", 0, null, false, () => sectionDrawn = true));
 
         // Act
@@ -80,7 +80,7 @@ public sealed class PluginPanelTests_Draw
         Assert.HasCount(1, renderer.PushIds);
         Assert.AreEqual("RootScope", renderer.PushIds[0]);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Config", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
         Assert.IsFalse(sectionDrawn);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(0, renderer.SeparatorCount);
@@ -100,7 +100,7 @@ public sealed class PluginPanelTests_Draw
         var renderer = new TestPluginPanelRenderer();
         renderer.TreeNodeResults.Enqueue(true);
         var calls = new List<int>();
-        using var panel = new PluginPanel("OpenRootScope", rootNodeLabel: "Settings", rootNodeDefaultOpen: true, drawSeparator: true, renderer);
+        using var panel = new PluginPanel("OpenRootScope", rootNodeLabel: "Config", rootNodeDefaultOpen: true, drawSeparator: true, renderer);
         panel.Add(new CallbackPanelSection("Section2", 2, null, false, () => calls.Add(2)));
         panel.Add(new CallbackPanelSection("Section1", 1, null, false, () => calls.Add(1)));
 
@@ -110,7 +110,7 @@ public sealed class PluginPanelTests_Draw
         // Assert
         CollectionAssert.AreEqual(_expectedCalls, calls);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Config", ImGuiTreeNodeFlags.DefaultOpen), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.SeparatorCount);
         Assert.AreEqual(1, renderer.PopIdCount);
@@ -126,14 +126,14 @@ public sealed class PluginPanelTests_Draw
         // Arrange
         var renderer = new TestPluginPanelRenderer();
         renderer.TreeNodeResults.Enqueue(false);
-        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Settings##IgnoredSuffix", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
+        using var panel = new PluginPanel("RootScope", rootNodeLabel: "Config##IgnoredSuffix", rootNodeDefaultOpen: false, drawSeparator: true, renderer);
 
         // Act
         panel.Draw();
 
         // Assert
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Settings", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Config", ImGuiTreeNodeFlags.None), renderer.TreeNodes[0]);
         Assert.AreEqual(0, renderer.TreePopCount);
         Assert.AreEqual(1, renderer.PopIdCount);
     }
@@ -204,15 +204,15 @@ public sealed class PluginPanelTests_Draw
     private sealed class CallbackPanelSection(
         string sectionId,
         int order,
-        string? treeNodeLabel,
-        bool treeNodeDefaultOpen,
+        string? sectionLabel,
+        bool expandedByDefault,
         Action callback) : IPanelSection
     {
         public int Order => order;
 
-        public string? TreeNodeLabel => treeNodeLabel;
+        public string? SectionLabel => sectionLabel;
 
-        public bool TreeNodeDefaultOpen => treeNodeDefaultOpen;
+        public bool ExpandedByDefault => expandedByDefault;
 
         public string SectionId => sectionId;
 
@@ -231,25 +231,6 @@ public sealed class PluginPanelTests_Draw
 [TestClass]
 public sealed class PluginPanelTests
 {
-    /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
     /// <summary>
     /// Tests that Add returns the same PluginPanel instance for fluent chaining.
     /// </summary>
@@ -299,16 +280,16 @@ public sealed class PluginPanelTests
     }
 
     /// <summary>
-    /// Tests that Add accepts section with null TreeNodeLabel without throwing.
+    /// Tests that Add accepts section with null SectionLabel without throwing.
     /// </summary>
     [TestMethod]
-    public void Add_SectionWithNullTreeNodeLabel_DoesNotThrow()
+    public void Add_SectionWithNullSectionLabel_DoesNotThrow()
     {
         // Arrange
         var panel = new PluginPanel("TestPanel");
         var mockSection = new Mock<IPanelSection>();
         mockSection.Setup(s => s.Order).Returns(0);
-        mockSection.Setup(s => s.TreeNodeLabel).Returns((string?)null);
+        mockSection.Setup(s => s.SectionLabel).Returns((string?)null);
         mockSection.Setup(s => s.SectionId).Returns("NullLabelSection");
 
         // Act & Assert - Should not throw
@@ -392,7 +373,7 @@ public sealed class PluginPanelTests
     [DataRow("")]
     [DataRow(" ")]
     [DataRow("Root Node")]
-    [DataRow("Settings")]
+    [DataRow("Config")]
     [DataRow("Configuration Panel")]
     public void Constructor_WithRootNodeLabel_CreatesInstance(string? rootNodeLabel)
     {
@@ -416,8 +397,8 @@ public sealed class PluginPanelTests
     /// <param name="rootNodeDefaultOpen">Whether the root node is open by default.</param>
     /// <param name="drawSeparator">Whether to draw a separator.</param>
     [TestMethod]
-    [DataRow("Plugin1", "Settings", true, true)]
-    [DataRow("Plugin2", "Config", true, false)]
+    [DataRow("Plugin1", "Config", true, true)]
+    [DataRow("Plugin2", "Settings", true, false)]
     [DataRow("Plugin3", "Panel", false, true)]
     [DataRow("Plugin4", "Options", false, false)]
     [DataRow("Plugin5", null, true, true)]
@@ -460,7 +441,7 @@ public sealed class PluginPanelTests
     {
         using var panel = new PluginPanel($"NullSection_{Guid.NewGuid()}");
 
-        var exception = AssertThrows<ArgumentNullException>(() => panel.Add(null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => panel.Add(null!));
 
         Assert.AreEqual("section", exception.ParamName);
     }
@@ -477,7 +458,7 @@ public sealed class PluginPanelTests
         mockSection.Setup(s => s.SectionId).Returns("Section");
         panel.Dispose();
 
-        AssertThrows<ObjectDisposedException>(() => panel.Add(mockSection.Object));
+        Assert.ThrowsExactly<ObjectDisposedException>(() => panel.Add(mockSection.Object));
     }
 
     /// <summary>
@@ -498,4 +479,50 @@ public sealed class PluginPanelTests
         Assert.IsNotNull(second);
     }
 
+    private static readonly string[] _expectedSections = new[] { "FirstSection", "SecondSection" };
+
+    /// <summary>
+    /// Tests that disposing a panel continues disposing later sections even when an earlier section throws.
+    /// </summary>
+    [TestMethod]
+    public void Dispose_WhenSectionDisposeThrows_DisposesRemainingSections()
+    {
+        // Arrange
+        var disposedSections = new List<string>();
+        var panel = new PluginPanel($"DisposeSections_{Guid.NewGuid()}");
+        panel.Add(new DisposableTrackingPanelSection(
+            "FirstSection",
+            0,
+            () =>
+            {
+                disposedSections.Add("FirstSection");
+                throw new InvalidOperationException("boom");
+            }));
+        panel.Add(new DisposableTrackingPanelSection(
+            "SecondSection",
+            1,
+            () => disposedSections.Add("SecondSection")));
+
+        // Act
+        panel.Dispose();
+
+        // Assert
+        CollectionAssert.AreEqual(_expectedSections, disposedSections);
+    }
+
+    private sealed class DisposableTrackingPanelSection(
+        string sectionId,
+        int order,
+        Action disposeCallback) : IPanelSection
+    {
+        public int Order => order;
+
+        public string SectionId => sectionId;
+
+        public void Draw()
+        {
+        }
+
+        public void Dispose() => disposeCallback();
+    }
 }

@@ -1,26 +1,18 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Specifies a key prefix that is prepended to every parameter key within
-/// the decorated settings class or struct, or within the nested settings group
-/// exposed by the decorated property.
+/// Declares the persisted key prefix applied to an annotated configuration scope.
 /// </summary>
 /// <remarks>
-/// Changing the prefix changes the fully-qualified persisted keys produced for every parameter in
-/// that scope. This is a supported way to rename or regroup settings keys, but it does not migrate
-/// existing JSON automatically: previously saved values under the old prefix will no longer match
-/// during load unless the file is updated to the new key names. When the attribute contributes a
-/// nested path segment, the prefix must be non-empty.
+/// Applied to a root config type, this prefix becomes the first segment of every discovered parameter key in that scope. Applied to a nested-group property, it contributes the nested path segment used when child parameters are registered. Changing the prefix renames the persisted keys produced for that scope and does not migrate existing JSON automatically.
 /// </remarks>
-/// <param name="prefix">
-/// The prefix string to prepend to each parameter key. Use a non-empty value when the prefix is meant
-/// to contribute a persisted path segment.
-/// </param>
+/// <param name="prefix">The prefix string to prepend to parameter keys in the annotated scope.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class UmbraPrefixAttribute(string prefix) : Attribute
 {
     /// <summary>
-    /// Gets the prefix string applied to parameter keys in the decorated scope.
+    /// Gets the declared key prefix.
     /// </summary>
+    /// <value>The prefix string applied to parameter keys in the annotated scope.</value>
     public string Prefix { get; } = prefix;
 }

@@ -5,97 +5,64 @@ using Umbra.UI.LiveState;
 namespace Umbra.UI.Panel;
 
 /// <summary>
-/// Defines the rendering and disposal contract that all sections owned by a
-/// <see cref="PluginPanel"/> must satisfy.
+/// Defines the rendering, ordering, and disposal contract for sections owned by a <see cref="PluginPanel"/>.
 /// </summary>
 /// <remarks>
-/// Implement this interface directly only when neither <see cref="ConfigSection{TConfig}"/>
-/// nor <see cref="LiveStateSection{T}"/> suits the use case. For settings UI, use
-/// <see cref="ConfigSection{TConfig}"/>. For live game state display, use
-/// <see cref="LiveStateSection{T}"/>.
+/// Implement this interface directly only when neither <see cref="ConfigSection{TConfig}"/> nor <see cref="LiveStateSection{T}"/> matches the section's responsibility. <see cref="PluginPanel"/> uses this contract to sort sections, optionally wrap them in tree nodes, and dispose them when the panel is disposed.
 /// </remarks>
 public interface IPanelSection : IDisposable
 {
     /// <summary>
-    /// Gets the render position of this section within its owning <see cref="PluginPanel"/>.
-    /// Lower values render first. Sections that do not override this property sort last.
+    /// Gets the render order for this section within its owning <see cref="PluginPanel"/>.
     /// </summary>
+    /// <value>An ascending sort key. Lower values render first. The default value is <see cref="int.MaxValue"/>.</value>
     /// <remarks>
-    /// <see cref="LiveStateSection{T}"/> and <see cref="ConfigSection{TConfig}"/> derive this value
-    /// from a <see cref="UmbraSectionOrderAttribute"/> placed on the state or config type.
-    /// Custom <see cref="IPanelSection"/> implementations can override this property directly.
+    /// <see cref="LiveStateSection{T}"/> and <see cref="ConfigSection{TConfig}"/> derive this value from <see cref="UmbraSectionOrderAttribute"/> on the state or config type. Custom implementations can override the property directly.
     /// </remarks>
     int Order => int.MaxValue;
 
     /// <summary>
-    /// Gets the optional label for the tree node that wraps this section's content within the
-    /// owning <see cref="PluginPanel"/>, or <see langword="null"/> to render the section flat
-    /// with no tree node.
+    /// Gets the optional visible section label that wraps this section inside the owning <see cref="PluginPanel"/>.
     /// </summary>
+    /// <value>The visible section label, or <see langword="null"/> to render the section without a wrapping collapsible section.</value>
     /// <remarks>
     /// <para>
-    /// When non-<see langword="null"/>, <see cref="PluginPanel.Draw"/> wraps this section's
-    /// <see cref="Draw"/> call inside a collapsible <see cref="ImGui.TreeNode(string)"/> with this label.
-    /// Custom <see cref="IPanelSection"/> implementations can override this property to opt in.
-    /// <see cref="ConfigSection{TConfig}"/> derives this value from
-    /// <see cref="Umbra.Config.Attributes.UmbraRootNodeAttribute"/> on the config type, or from
-    /// an explicit constructor argument. <see cref="LiveStateSection{T}"/> accepts it as a constructor
-    /// parameter.
+    /// When this property is non-<see langword="null"/>, the panel wraps <see cref="Draw()"/> in a collapsible <see cref="ImGui.TreeNode(string)"/>. <see cref="ConfigSection{TConfig}"/> derives the label from <see cref="Umbra.Config.Attributes.UmbraRootNodeAttribute"/> on the config type or from an explicit constructor argument. <see cref="LiveStateSection{T}"/> accepts it as a constructor argument.
     /// </para>
     /// <para>
-    /// The label must not contain the ImGui label/ID separator <c>"##"</c>. ImGui treats the
-    /// first <c>"##"</c> in a label string as the boundary between the visible text and the
-    /// hidden widget ID; any <c>"##"</c> already present here would prevent the
-    /// <c>##{SectionId}</c> disambiguation suffix appended by <see cref="PluginPanel"/> from
-    /// taking effect. <see cref="PluginPanel.Add"/> logs a developer warning when this is
-    /// detected, and the <c>"##..."</c> suffix is stripped at render time as a fallback.
+    /// The label must not contain ImGui's <c>"##"</c> label and ID separator. <see cref="PluginPanel.Add(IPanelSection)"/> warns when that token is present, and <see cref="PluginPanelTreeNodeLabels"/> strips the suffix at render time so the panel can append its own stable ID disambiguation suffix.
     /// </para>
     /// </remarks>
-    string? TreeNodeLabel => null;
+    string? SectionLabel => null;
 
     /// <summary>
-    /// Gets whether the tree node wrapping this section starts in its open (expanded) state.
+    /// Gets a value indicating whether the wrapping section starts expanded.
     /// </summary>
+    /// <value><see langword="true"/> if the wrapping section should default to the expanded state; otherwise, <see langword="false"/>.</value>
     /// <remarks>
-    /// Ignored when <see cref="TreeNodeLabel"/> is <see langword="null"/>.
-    /// When <see langword="false"/> (the default), the node starts collapsed.
+    /// This property is ignored when <see cref="SectionLabel"/> is <see langword="null"/>.
     /// </remarks>
-    bool TreeNodeDefaultOpen => false;
+    bool ExpandedByDefault => false;
 
     /// <summary>
-    /// Gets the stable string identifier used by the owning <see cref="PluginPanel"/> to
-    /// disambiguate this section's tree node via ImGui's <c>##</c> suffix convention.
+    /// Gets the stable identifier used by the owning <see cref="PluginPanel"/> to disambiguate this section's collapsible node in ImGui.
     /// </summary>
+    /// <value>A stable string appended to the visible label through ImGui's <c>##</c> suffix convention.</value>
     /// <remarks>
     /// <para>
-    /// When <see cref="TreeNodeLabel"/> is non-<see langword="null"/>, <see cref="PluginPanel"/>
-    /// renders the tree node as <c>ImGui.TreeNodeEx($"{TreeNodeLabel}##{SectionId}", flags)</c>.
-    /// The <c>##</c> suffix is invisible in the UI but changes the ImGui hash, so two sections
-    /// with identical display labels still get distinct persisted open/closed states without
-    /// an additional <see cref="ImGui.PushID(string)"/> scope level being pushed by the panel around the node.
-    /// Sections own their full internal widget-ID scoping via their own <see cref="ImGui.PushID(string)"/> calls.
+    /// When <see cref="SectionLabel"/> is non-<see langword="null"/>, the panel renders the node as <c>$"{SectionLabel}##{SectionId}"</c>. The suffix is invisible in the UI but changes ImGui's hash so multiple sections with the same visible label still keep distinct persisted open and closed state.
     /// </para>
     /// <para>
-    /// The value must be stable for the lifetime of the panel — changing it between frames
-    /// resets ImGui's persisted open/closed state for the tree node. The default implementation
-    /// returns the runtime type's <see cref="Type.FullName"/>, falling back to
-    /// <see cref="System.Reflection.MemberInfo.Name"/> when <see cref="Type.FullName"/> is <see langword="null"/>.
-    /// The namespace-qualified name prevents two custom section types with the same short name in
-    /// different namespaces from sharing the same ImGui hash. Override when two sections of the
-    /// same concrete type are added to the same panel. <see cref="ConfigSection{TConfig}"/> and
-    /// <see cref="LiveStateSection{T}"/> apply the same runtime-type fallback resolution on their
-    /// respective type parameters (or use an explicit constructor-supplied ID scope when one was
-    /// provided).
+    /// The identifier must remain stable for the lifetime of the panel. The default implementation returns the runtime type's <see cref="Type.FullName"/>, falling back to <see cref="System.Reflection.MemberInfo.Name"/> when the full name is unavailable. Override this property when multiple sections of the same concrete type can appear in one panel.
     /// </para>
     /// </remarks>
     string SectionId => GetType().FullName ?? GetType().Name;
 
     /// <summary>
-    /// Renders the section. Must be called from within an active ImGui window or child window.
+    /// Renders the section inside the current ImGui window or child window.
     /// </summary>
     /// <remarks>
-    /// Called every frame by <see cref="PluginPanel.Draw"/> while the panel is active.
-    /// Implementations must be safe to call on the game's render thread.
+    /// <see cref="PluginPanel.Draw()"/> calls this method every frame while the panel is active. Implementations should be safe to execute on the game's render thread.
     /// </remarks>
     void Draw();
 }

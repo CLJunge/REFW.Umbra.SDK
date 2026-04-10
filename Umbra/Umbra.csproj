@@ -38,11 +38,22 @@
 
         <!-- Path to the local deployment script; read by PostBuild_DeployLocal in Directory.Build.targets. -->
         <UmbraDeployScript>$(MSBuildProjectDirectory)\..\scripts\deploy_reframework_deps.bat</UmbraDeployScript>
+        <UmbraCleanUpScript>$(MSBuildProjectDirectory)\..\scripts\remove_reframework_deps.bat</UmbraCleanUpScript>
         <Title>REFW.Umbra</Title>
         <Configurations>Debug;Release;Benchmark</Configurations>
     </PropertyGroup>
 
     <Import Project="Umbra.Local.props" Condition="Exists('Umbra.Local.props')" />
+
+    <ItemGroup>
+      <Compile Remove="Config\Presets\**" />
+      <EmbeddedResource Remove="Config\Presets\**" />
+      <None Remove="Config\Presets\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Runtime\game-metadata.json" />
+    </ItemGroup>
 
     <ItemGroup>
         <None Include="..\LICENSE.txt" Pack="true" PackagePath="" Visible="false" />
@@ -64,6 +75,10 @@
     <ItemGroup>
         <!-- Explicitly opt out of the implicit System.Linq global using to enforce the no-LINQ rule. -->
         <Using Remove="System.Linq" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Runtime\game-metadata.json" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,172 +1,56 @@
-# REFW.Umbra
+# 🌑 REFW.Umbra
 
-A support library for building REFramework.NET mods and plugins for RE Engine games. `Umbra` provides a small set of reusable building blocks for typed settings, ImGui-based settings panels, live-state panels, logging, and input handling inside the game process.
+**Umbra** is a support library for building managed [REFramework.NET](https://github.com/praydog/REFramework) plugins for RE Engine games. It runs **inside the game process** and provides reusable building blocks for typed configuration, ImGui-based UI, plugin lifecycle hosting, logging, input capture, and runtime game detection.
 
-## Overview
+| Project | Purpose |
+|---|---|
+| `Umbra` | Reusable runtime, config, logging, and UI library |
+| `Umbra.SamplePlugin` | Reference plugin demonstrating recommended patterns |
+| `Umbra.UnitTests` | Automated test coverage for all Umbra subsystems |
 
-`Umbra` is intended for managed plugins that run under `REFramework.NET`, not standalone desktop applications. It helps plugin authors avoid repeating the same infrastructure for:
+---
 
-- strongly typed JSON-backed configuration
-- ImGui settings rendering
-- panel composition
-- live state display
-- safe plugin logging
-- keyboard capture helpers
+## ✨ Features
 
-The repository also includes `Umbra.SamplePlugin`, which demonstrates the current configuration and panel workflow, and `Umbra.UnitTests`, which provides focused automated coverage for settings, lifecycle, and persistence behaviors.
+**Configuration**
+- Attribute-driven typed config with `Parameter<T>` for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable enum
+- JSON persistence via `ConfigStore<TConfig>` with automatic file recovery
+- Event-driven auto-save via `ConfigSaveController` — instant saves for discrete changes, deferred saves during slider/drag and text input interactions
+- Validation attributes: `[UmbraRequired]`, `[UmbraMinLength]`, `[UmbraMaxLength]`, `[UmbraRegex]`, `[UmbraValidateWith<T>]` with inline UI feedback
+- Versioned config import/export with schema validation
 
-## Features
-
-- Attribute-driven settings registration with `SettingsStore<TConfig>` and `Parameter<T>`
-- JSON persistence for `bool`, `int`, `float`, `double`, `string`, `enum`, and nullable-enum parameters
-- Deferred auto-save with `DeferredSaveController<TConfig>`
-- Pre-built ImGui settings UI with `ConfigDrawer<TConfig>`
+**UI**
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
-- Custom parameter drawers, two-column drawers, and nested-group drawers
-- Per-plugin logging with `PluginLogger`
-- Global SDK logging control with `Logger`
-- Keyboard capture utilities in `KeyboardInput`
-- Small runtime helper `ManagedObjectResolver` with `Resolve<T>` / `TryResolve<T>` for resolving REFramework managed objects
+- Automatic config rendering from metadata via `ConfigDrawer<TConfig>` — one-time reflection, per-frame draw
+- Built-in search, filter, and match navigation
+- Per-section undo/redo stack with slider-aware and text-input-aware coalescing, batch undo, and Ctrl+Z/Y keyboard shortcuts
+- Toast notifications for undo operations
+- Built-in transfer UI for import/export
+- Conditional visibility and disable with `[UmbraHideIf]` and `[UmbraDisableIf]`
+- Custom drawers: `IParameterDrawer`, `ITwoColumnParameterDrawer`, `INestedDrawer<T>`
 
-### Plugin lifecycle callbacks
+**Plugin System**
+- `PluginHost<TPlugin>` for single-instance lifecycle management and safe callback dispatch
+- `UmbraPlugin` base class with resilient `RunShutdownStep` sequencing
+- Callback forwarding: `OnPreUpdateBehavior`, `OnPreImGuiDrawUI`, `OnPreImGuiRenderer`
 
-`UmbraPlugin` exposes five `virtual` methods — override only the ones your plugin needs:
+**Supporting**
+- Per-plugin `PluginLogger` and global `Logger` with level filtering
+- `GameContext.CurrentGame` for RE Engine title detection
+- `KeyboardInput` and `HotkeyBinding` for hardware-backed hotkey capture via `UmbraKey`
+- Optional panel draw benchmarking when `BENCHMARK` is defined
 
-| Override | REFramework callback | Typical use |
-|---|---|---|
-| `Initialize()` | `[PluginEntryPoint]` | One-time startup; load config, build panel |
-| `Shutdown()` | `[PluginExitPoint]` | Flush/dispose config, panel, and state |
-| `OnPreUpdateBehavior()` | `[Callback(typeof(UpdateBehavior), Pre)]` | Per-frame game logic |
-| `OnPreImGuiDrawUI()` | `[Callback(typeof(ImGuiDrawUI), Pre)]` | Draw settings/status panel via ImGui; tick `DeferredSaveController` |
-| `OnPreImGuiRenderer()` | `[Callback(typeof(ImGuiRender), Pre)]` | Draw in-game overlays via ImGui |
+---
 
-### Default config drawers
+## 🚀 Quick Start
 
-- `Parameter<Action>` → button via `ButtonDrawer`
-- `Parameter<bool>` → checkbox
-- `Parameter<int>` → slider when `[UmbraRange]` is present, otherwise drag input
-- `Parameter<float>` → slider when `[UmbraRange]` is present, otherwise drag input
-- `Parameter<double>` → slider when `[UmbraRange]` is present, otherwise drag input
-- `Parameter<string>` → single-line text input by default, multiline text input when `[UmbraMultiline]` is present
-- `Parameter<TEnum>` → enum combo box
-- `Parameter<TEnum?>` → enum combo box with a `<None>` option for `null`
-- Explicit `[UmbraDrawer<TDrawer>]` and `[UmbraTwoColumnDrawer<TDrawer>]` override the defaults
-
-### Custom drawers
-
-- `[UmbraDrawer<TDrawer>]` uses an `IParameterDrawer` and gives the drawer full control over the entire parameter row
-- `[UmbraTwoColumnDrawer<TDrawer>]` uses an `ITwoColumnParameterDrawer` and keeps the standard two-column label layout while the drawer renders only the editing widget
-- `[UmbraNestedDrawer<TDrawer>]` uses an `INestedDrawer<T>` and replaces the normal recursive rendering for an entire nested settings group
-- Use a custom parameter drawer when you need a completely custom control layout, a two-column drawer when you want a custom widget that still aligns with normal settings rows, and a nested-group drawer when one drawer should own a whole section
-
-## Architecture Summary
-
-```text
-REFW.Umbra
-├─ Umbra
-│  ├─ Config
-│  │  ├─ Parameter<T>, IParameter, ParameterMetadata
-│  │  ├─ SettingsStore<TConfig>, SettingsPersistence, SettingsRegistrar
-│  │  ├─ DeferredSaveController<TConfig>
-│  │  └─ Attributes for settings discovery and UI metadata
-│  ├─ UI
-│  │  ├─ Config
-│  │  │  ├─ ConfigDrawer<TConfig>, ConfigSection<TConfig>
-│  │  │  ├─ ControlFactory, draw-tree builder, nodes
-│  │  │  └─ custom drawers and nested-group drawers
-│  │  ├─ LiveState
-│  │  │  ├─ LiveStateSection<T>
-│  │  │  ├─ ILiveStateSectionDrawer<T>
-│  │  │  └─ LiveStateSectionDrawerAttribute<TDrawer>
-│  │  ├─ Panel
-│  │  │  ├─ PluginPanel
-│  │  │  └─ IPanelSection
-│  │  └─ ImGuiWidgets
-│  ├─ Logging
-│  │  ├─ PluginLogger
-│  │  ├─ Logger
-│  │  └─ LogLevel
-│  ├─ Input
-│  │  └─ KeyboardInput
-│  └─ Runtime
-│     ├─ UmbraPlugin (Initialize / Shutdown / OnPreUpdateBehavior / OnPreImGuiDrawUI / OnPreImGuiRenderer)
-│     ├─ PluginHost<TPlugin>
-│     ├─ PluginBootstrapper
-│     ├─ PluginInstanceGuard
-│     └─ ManagedObjectResolver
-├─ Umbra.SamplePlugin
-│  └─ reference plugin showing settings, deferred save, nested groups, custom drawers, and broad control coverage
-└─ Umbra.UnitTests
-   └─ automated tests covering settings registration, persistence recovery, lifecycle guards, and listener bookkeeping
-```
-
-### Main flow
-
-1. Define a config type with `[UmbraAutoRegister]` and `Parameter<T>` properties marked with `[UmbraParameter]`.
-2. Load it through `SettingsStore<TConfig>.Load()`.
-3. Optionally attach `DeferredSaveController<TConfig>` after load.
-4. Render it with `ConfigDrawer<TConfig>` directly or through `ConfigSection<TConfig>` inside `PluginPanel`.
-5. For live read-only or hook-driven state, bind a state object to `LiveStateSection<T>` and declare its drawer with `[LiveStateSectionDrawer<TDrawer>]`.
-6. On unload, flush/dispose the save controller, save/dispose the store, then dispose the panel.
-
-- `DeferredSaveController<TConfig>` requires a store that has already completed `Load()` and throws immediately if constructed too early.
-- `SettingsStore<TConfig>` exposes `IsLoaded` and `IsDisposed` for explicit lifecycle checks.
-- Core APIs (`Save()`, listeners, `ResetAll()`, `CopyValuesTo(...)`) require the store to be loaded.
-- Listener registration/removal APIs on `SettingsStore<TConfig>` now validate `listener`/`predicate` arguments explicitly and throw `ArgumentNullException` for invalid inputs.
-- Preferred unload order: controller first, then store; controller cleanup remains safe after store disposal, but pending saves are lost.
-- On unreadable JSON, `Load()` attempts a timestamped `.invalid-*.json` backup and restores defaults; if backup fails, the file is left untouched, defaults are used for the session, and future `Save()` calls are suppressed.
-
-### Notes on persisted key names
-
-- Setting keys are built from `[UmbraPrefix("...")]` + parameter name (or `keyOverride`).
-- Changing the prefix effectively renames/regroups persisted keys.
-- Prefix changes do **not** migrate existing JSON automatically: values saved under the old key names will no longer be loaded until the file is updated to the new keys.
-
-## Setup Instructions
-
-### Prerequisites
-
-- `.NET 10` SDK
-- Windows x64
-- an RE Engine game with `REFramework` installed
-- local REFramework API/game-binding dependencies under `dependencies/reframework`
-
-### Install dependencies
-
-From the repository root:
+### 1. Install dependencies
 
 ```powershell
 .\scripts\setup_reframework_deps.ps1
 ```
 
-or
-
-```bash
-.\scripts\setup_reframework_deps.bat
-```
-
-This prepares the REFramework API references used by both projects and also sets up the deployment scripts that copy the output DLLs to the correct location under the game `reframework` directory.
-
-### Build
-
-```bash
-dotnet build REFW.Umbra.slnx
-```
-
-### Test
-
-```bash
-dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj
-```
-
-In Debug builds, the repository uses the local deployment scripts configured in each project:
-
-- `Umbra` uses `scripts\deploy_reframework_deps.bat`
-- `Umbra.SamplePlugin` uses `scripts\deploy_reframework_plugin.bat`
-
-## Usage Example
-
-### Minimal config
+### 2. Define a config type
 
 ```csharp
 using Umbra.Config;
@@ -174,98 +58,102 @@ using Umbra.Config.Attributes;
 
 [UmbraAutoRegister]
 [UmbraPrefix("myPlugin")]
-[UmbraCategory("My Plugin")]
+[UmbraRootNode("My Plugin")]
 public record MyConfig
 {
     [UmbraParameter]
     [UmbraDisplayName("Enabled")]
-    [UmbraDescription("Turns the plugin on or off.")]
     public Parameter<bool> IsEnabled { get; set; } = new(true);
 
     [UmbraParameter]
-    [UmbraDisplayName("Hotkey")]
-    public Parameter<int> Hotkey { get; set; } = new(574);
+    [UmbraDisplayName("Volume")]
+    [UmbraRange(0, 100)]
+    public Parameter<int> Volume { get; set; } = new(75);
 }
 ```
 
-### Minimal plugin
+### 3. Create the plugin instance
 
 ```csharp
 using REFrameworkNET;
-using REFrameworkNET.Attributes;
-using REFrameworkNET.Callbacks;
+using Umbra;
 using Umbra.Config;
 using Umbra.Logging;
-using Umbra.Runtime;
 using Umbra.UI.Config;
+using Umbra.UI.Config.Search;
 using Umbra.UI.Panel;
 
-// Instance class — owns all per-plugin state and behavior.
 public sealed class MyPlugin : UmbraPlugin
 {
     private static readonly PluginLogger _log = new("MyPlugin");
 
-    private PluginPanel?                      _panel;
-    private SettingsStore<MyConfig>?          _store;
-    private DeferredSaveController<MyConfig>? _saveController;
+    private PluginPanel? _panel;
+    private ConfigStore<MyConfig>? _store;
 
     public MyPlugin() : base(_log) { }
 
     public override void Initialize()
     {
-        var pluginDir  = API.GetPluginDirectory(GetType().Assembly);
-        var configPath = Path.Combine(pluginDir, "data", "MyPlugin", "config.json");
+        var configPath = Path.Combine(
+            API.GetPluginDirectory(GetType().Assembly), "data", "MyPlugin", "config.json");
 
-        _store          = new SettingsStore<MyConfig>(configPath);
-        var config      = _store.Load();
-        _saveController = new DeferredSaveController<MyConfig>(_store);
+        _store = new ConfigStore<MyConfig>(configPath);
+        var config = _store.Load();
 
-        _panel = new PluginPanel("MyPlugin")
-            .Add(new ConfigSection<MyConfig>(config));
+        // CreateWithStore wires auto-save, search, and undo in one call.
+        _panel = new PluginPanel("MyPlugin.Panel")
+            .Add(ConfigSection<MyConfig>.CreateWithStore(
+                config, _store,
+                new ConfigDrawerOptions
+                {
+                    Search  = new ConfigSearchOptions(),
+                    Undo    = new ConfigUndoOptions(),
+                },
+                "MyPlugin.Section"));
 
         Log.Info("Loaded.");
     }
 
     public override void Shutdown()
     {
-        _saveController?.Flush();
-        _saveController?.Dispose();
-        _saveController = null;
-
-        _store?.Save();
-        _store?.Dispose();
-        _store = null;
-
-        _panel?.Dispose();
-        _panel = null;
-
+        RunShutdownStep("dispose panel", () => { var p = _panel; _panel = null; p?.Dispose(); });
+        RunShutdownStep("save store",    () => _store?.Save());
+        RunShutdownStep("dispose store", () => { var s = _store; _store = null; s?.Dispose(); });
         Log.Info("Unloaded.");
     }
 
-    // Override OnPreUpdateBehavior here if the plugin needs per-frame logic, e.g. for polling input, updating live state, etc.
-
-    // Draw the settings panel when the REFramework UI pass is active.
     public override void OnPreImGuiDrawUI()
     {
-        if (API.IsDrawingUI())
-        {
-            _panel?.Draw();
-        }
-
-        _saveController?.Tick();
+        if (API.IsDrawingUI()) _panel?.Draw();
     }
-
-    // Override OnPreImGuiRenderer() here if the plugin needs an in-game overlay.
 }
+```
 
-// Static host — satisfies REFramework's static entry-point requirement and owns the mutex identity.
+> **Note:** `ConfigSection.CreateWithStore()` creates and owns the `ConfigSaveController` internally — no manual tick or flush required. Disposing the panel disposes the save controller.
+
+### 4. Create the static host
+
+```csharp
+using REFrameworkNET.Attributes;
+using REFrameworkNET.Callbacks;
+using Umbra;
+using Umbra.Logging;
+using Umbra.Runtime;
+
 public static class MyPluginHost
 {
-    private static readonly PluginHost<MyPlugin> _host =
-        new(typeof(MyPlugin), static () => new MyPlugin());
+    private static readonly PluginHost<MyPlugin> _host = new(static () => new MyPlugin());
 
     [PluginEntryPoint]
-    public static void Load() => _host.Load();
+    public static void Load()
+    {
+        if (GameContext.CurrentGame == REGame.Unknown)
+        {
+            Logger.Warning("Unsupported game, skipping load.");
+            return;
+        }
+        _host.Load();
+    }
 
     [PluginExitPoint]
     public static void Unload() => _host.Unload();
@@ -281,92 +169,17 @@ public static class MyPluginHost
 }
 ```
 
-For a fuller reference, see `Umbra.SamplePlugin`, which now organizes the sample config into nested groups for booleans, numeric sliders and drags, strings, enums, custom drawers, nested-group drawers, and nested-type presentation tests alongside deferred saving.
+### 5. Build
 
-### Plugin panel benchmarking
-
-`PluginPanelBenchmark` and related benchmark types are only compiled when `BENCHMARK`
-is defined. Normal package builds do not expose the benchmark API.
-
-`PluginPanelBenchmark` provides a reusable ImGui benchmark window for measuring one duplicate
-`PluginPanel.Draw()` call per frame and exporting CSV, JSON, and Markdown artifacts.
-
-When the benchmark target is a config-backed panel, use the convenience factory
-`PluginPanelBenchmark.CreateForConfig(...)` to generate and own the duplicate benchmark panel:
-
-```csharp
-using REFrameworkNET;
-using Umbra.Config;
-using Umbra.Logging;
-using Umbra.Runtime;
-using Umbra.UI.Config;
-using Umbra.UI.Panel;
-using Umbra.UI.Panel.Benchmark;
-
-public sealed class MyPlugin : UmbraPlugin
-{
-    private static readonly PluginLogger _log = new("MyPlugin");
-
-    private PluginPanel? _panel;
-    private PluginPanelBenchmark? _panelBenchmark;
-    private SettingsStore<MyConfig>? _store;
-    private DeferredSaveController<MyConfig>? _saveController;
-
-    public MyPlugin() : base(_log) { }
-
-    public override void Initialize()
-    {
-        var pluginDir = API.GetPluginDirectory(GetType().Assembly);
-        var configPath = Path.Combine(pluginDir, "data", "MyPlugin", "config.json");
-        var benchmarkDirectory = Path.Combine(pluginDir, "data", "MyPlugin", "artifacts", "perf", "runtime", "panel-draw");
-
-        _store = new SettingsStore<MyConfig>(configPath);
-        var config = _store.Load();
-        _saveController = new DeferredSaveController<MyConfig>(_store);
-
-        _panel = new PluginPanel("MyPlugin.RuntimePanel")
-            .Add(new ConfigSection<MyConfig>(config, "MyPlugin.RuntimeConfigSection"));
-
-        _panelBenchmark = PluginPanelBenchmark.CreateForConfig(
-            "MyPlugin Panel Benchmark",
-            config,
-            "MyPlugin.BenchmarkPanel",
-            benchmarkDirectory,
-            sectionIdScope: "MyPlugin.BenchmarkConfigSection");
-    }
-
-    public override void Shutdown()
-    {
-        _panelBenchmark?.CompleteActiveRun("PluginUnload");
-        _panelBenchmark?.Dispose();
-        _panelBenchmark = null;
-
-        _saveController?.Flush();
-        _saveController?.Dispose();
-        _saveController = null;
-
-        _store?.Save();
-        _store?.Dispose();
-        _store = null;
-
-        _panel?.Dispose();
-        _panel = null;
-    }
-
-    public override void OnPreImGuiDrawUI()
-    {
-        if (API.IsDrawingUI())
-        {
-            if (_panelBenchmark is null || !_panelBenchmark.ShouldSuppressRuntimePanel)
-                _panel?.Draw();
-
-            _panelBenchmark?.DrawWindow();
-        }
-
-        _saveController?.Tick();
-    }
-}
+```bash
+dotnet build REFW.Umbra.slnx -c Release
+dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj -c Release
 ```
 
-Use the constructor overload instead when the benchmark target panel is assembled manually from
-custom `IPanelSection` implementations and should remain caller-owned.
+---
+
+## 📚 Documentation
+
+Full guides, API walkthroughs, and architecture details are in the **[Umbra Wiki](https://docs.cljunge.com/refw-umbra/)**.
+
+For a complete real-world reference, see `Umbra.SamplePlugin` — it demonstrates nested config groups, game gating, action binding, custom drawers, import/export, and resilient shutdown.

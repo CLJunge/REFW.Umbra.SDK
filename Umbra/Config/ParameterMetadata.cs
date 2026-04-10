@@ -5,42 +5,31 @@ using Umbra.Config.Attributes;
 namespace Umbra.Config;
 
 /// <summary>
-/// Holds descriptive metadata associated with a <see cref="Parameter{T}"/> instance,
-/// sourced from attributes applied to the parameter's declaring member or its
-/// enclosing settings class.
+/// Stores the descriptive and UI metadata resolved for a registered <see cref="Parameter{T}"/>.
 /// </summary>
 /// <remarks>
-/// Metadata is populated by <see cref="ParameterMetadataReader"/> via reflection and is
-/// consumed by the settings UI to render appropriate labels, tooltips, sliders,
-/// and input constraints without requiring each parameter to carry that information
-/// itself. Public properties expose the descriptive configuration contract, while Umbra keeps
-/// derived render-cache values internal so UI implementation details are not part of the public
-/// package surface. All properties are optional; absent values are represented as
-/// <see langword="null"/>. Debugger-only summary formatting is delegated to
-/// <see cref="ParameterMetadataDebuggerDisplayFormatter"/> so this type stays focused on immutable
-/// metadata storage.
+/// <see cref="ParameterMetadataReader"/> builds this object from attributes applied to the parameter's declaring member and containing config types. The config UI consumes the resulting values to choose labels, grouping, spacing, validation hints, and drawer behavior without rescanning attributes during rendering.
 /// </remarks>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class ParameterMetadata
 {
     /// <summary>
-    /// Gets the category name used to group related parameters together in the UI.
-    /// Sourced from <see cref="UmbraCategoryAttribute"/> on the parameter's declaring member or its
-    /// enclosing settings group. <see langword="null"/> if no category has been assigned.
+    /// Gets the category name used to group related parameters in the UI.
     /// </summary>
+    /// <value>The resolved category name, or <see langword="null"/> when no category is assigned.</value>
     public string? Category { get; init; }
 
     /// <summary>
-    /// Gets the human-readable display name for the parameter, shown in the UI.
-    /// Sourced from <see cref="UmbraDisplayNameAttribute"/>. <see langword="null"/> if not specified.
+    /// Gets the explicit display name declared for the parameter.
     /// </summary>
+    /// <value>The attribute-supplied display name, or <see langword="null"/> when no explicit display name is declared.</value>
     public string? DisplayName { get; init; }
 
     /// <summary>
     /// Gets the fully resolved display label for this parameter. Equals <see cref="DisplayName"/>
     /// when a <c>[UmbraDisplayName(...)]</c> attribute is present; otherwise the property name
     /// converted to a human-readable form (e.g. <c>"FieldOfView"</c> → <c>"Field Of View"</c>).
-    /// Pre-computed by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to
+    /// Pre-computed by <see cref="ParameterMetadataReader"/> during <see cref="ConfigStore{TConfig}.Load()"/> to
     /// avoid repeated <see cref="System.Text.StringBuilder"/> allocations at draw-tree construction time.
     /// </summary>
     internal string ResolvedLabel { get; init; } = string.Empty;
@@ -51,6 +40,31 @@ public sealed class ParameterMetadata
     /// <see langword="null"/> if not specified.
     /// </summary>
     public string? Description { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the parameter requires a non-empty value.
+    /// Sourced from <see cref="UmbraRequiredAttribute"/>.
+    /// </summary>
+    /// <remarks>
+    /// For nullable value types and reference types, a required parameter rejects
+    /// <see langword="null"/>. For <see cref="string"/> parameters, empty text is also invalid.
+    /// Whitespace-only acceptance is controlled by <see cref="AllowWhitespace"/>.
+    /// </remarks>
+    public bool Required { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether whitespace-only strings satisfy
+    /// <see cref="Required"/>.
+    /// Sourced from <see cref="UmbraRequiredAttribute.AllowWhitespace"/>.
+    /// </summary>
+    /// <value><see langword="true"/> when whitespace-only strings are accepted; otherwise, <see langword="false"/>.</value>
+    public bool AllowWhitespace { get; init; }
+
+    /// <summary>
+    /// Gets the minimum character length required for string input fields.
+    /// Sourced from <see cref="UmbraMinLengthAttribute"/>. <see langword="null"/> when not specified.
+    /// </summary>
+    public uint? MinLength { get; init; }
 
     /// <summary>
     /// Gets the maximum character length for string input fields.
@@ -95,6 +109,19 @@ public sealed class ParameterMetadata
     public string? Format { get; init; }
 
     /// <summary>
+    /// Gets the regular-expression pattern required for valid string values.
+    /// Sourced from <see cref="UmbraRegexAttribute"/>. <see langword="null"/> when not specified.
+    /// </summary>
+    public string? RegexPattern { get; init; }
+
+    /// <summary>
+    /// Gets the optional custom validation message shown when <see cref="RegexPattern"/>
+    /// does not match.
+    /// Sourced from <see cref="UmbraRegexAttribute.Message"/>. <see langword="null"/> when not specified.
+    /// </summary>
+    public string? RegexMessage { get; init; }
+
+    /// <summary>
     /// Gets the visual color style applied to a button rendered by
     /// <see cref="Umbra.UI.Config.Drawers.ButtonDrawer"/>.
     /// Sourced from <see cref="UmbraButtonStyleAttribute"/>. <see langword="null"/> when not specified;
@@ -114,7 +141,7 @@ public sealed class ParameterMetadata
     public (Vector4 Normal, Vector4 Hovered, Vector4 Active)? CustomButtonColors { get; init; }
 
     /// <summary>
-    /// Gets the explicit pixel width for a settings control's editing widget.
+    /// Gets the explicit pixel width for a parameter control's editing widget.
     /// Sourced from <see cref="UmbraControlWidthAttribute"/>.
     /// </summary>
     /// <remarks>
@@ -196,6 +223,13 @@ public sealed class ParameterMetadata
     internal Type? TwoColumnDrawerType { get; init; }
 
     /// <summary>
+    /// Gets the concrete <see cref="Validation.IParameterValidator"/> type used to validate this
+    /// parameter, or <see langword="null"/> when no
+    /// <c>[UmbraValidateWithAttribute&lt;TValidator&gt;]</c> attribute is present.
+    /// </summary>
+    internal Type? ValidatorType { get; init; }
+
+    /// <summary>
     /// Gets the cached hide-condition data sourced from <see cref="UmbraHideIfAttribute{T}"/> on this
     /// parameter's declaring member, or <see langword="null"/> when no such attribute is present.
     /// Consumed by <see cref="Umbra.UI.Config.VisibilityPredicateResolver"/> to compile the per-frame visibility predicate
@@ -204,12 +238,20 @@ public sealed class ParameterMetadata
     internal IHideIfAttribute? HideIf { get; init; }
 
     /// <summary>
+    /// Gets the cached disable-condition data sourced from <see cref="UmbraDisableIfAttribute{T}"/> on this
+    /// parameter's declaring member, or <see langword="null"/> when no such attribute is present.
+    /// Consumed by <see cref="Umbra.UI.Config.DisablePredicateResolver"/> to compile the per-frame disabled-state predicate
+    /// without requiring a second attribute scan at draw-tree construction time.
+    /// </summary>
+    internal IDisableIfAttribute? DisableIf { get; init; }
+
+    /// <summary>
     /// Gets the fully resolved printf format string used by float and double ImGui controls.
     /// Equals <see cref="Format"/> when an <see cref="UmbraFormatAttribute"/> (<c>[UmbraFormat(...)]</c>)
     /// attribute is present; otherwise the value inferred from the decimal-place count of
     /// <see cref="Step"/>, defaulting to <c>"%.2f"</c>. Precomputed by
     /// <see cref="ParameterMetadataReader"/> during
-    /// <see cref="SettingsStore{TConfig}.Load()"/> to eliminate <c>Number.FormatFloat</c> overhead at
+    /// <see cref="ConfigStore{TConfig}.Load()"/> to eliminate <c>Number.FormatFloat</c> overhead at
     /// draw-tree construction time.
     /// </summary>
     internal string InferredFloatFormat { get; init; } = "%.2f";
@@ -217,13 +259,25 @@ public sealed class ParameterMetadata
     /// <summary>
     /// Gets the pre-computed hidden ImGui control label (<c>"##" + Key</c>) for this parameter,
     /// or <see langword="null"/> when the parameter key was not available at metadata-read time.
-    /// Cached by <see cref="ParameterMetadataReader"/> during <see cref="SettingsStore{TConfig}.Load()"/> to avoid
+    /// Cached by <see cref="ParameterMetadataReader"/> during <see cref="ConfigStore{TConfig}.Load()"/> to avoid
     /// a <c>string.Concat</c> allocation per parameter per <see cref="Umbra.UI.Config.ConfigDrawer{TConfig}"/> construction.
     /// </summary>
     internal string? HiddenLabel { get; init; }
 
     /// <summary>
-    /// Gets the concise debugger summary used by <see cref="DebuggerDisplayAttribute"/>.
+    /// Gets the batch-undo label declared by <see cref="Attributes.UmbraBatchUndoAttribute"/> on
+    /// this parameter's declaring member, or <see langword="null"/> when no such attribute is present.
+    /// </summary>
+    /// <remarks>
+    /// When non-<see langword="null"/>, <see cref="ConfigUndoStack{TConfig}"/> automatically wraps
+    /// the parameter's current <see cref="Action"/> delegate with
+    /// <see cref="ConfigUndoStack{TConfig}.WrapWithBatch"/> at construction time so the action
+    /// produces a single atomic undo entry.
+    /// </remarks>
+    public string? BatchUndoLabel { get; init; }
+
+    /// <summary>
+    /// Gets the debugger summary used by <see cref="DebuggerDisplayAttribute"/>.
     /// </summary>
     internal string DebuggerDisplay => ParameterMetadataDebuggerDisplayFormatter.Format(this);
 }

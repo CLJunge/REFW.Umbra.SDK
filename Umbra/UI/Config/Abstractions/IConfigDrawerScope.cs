@@ -6,8 +6,7 @@ namespace Umbra.UI.Config;
 /// Defines the ImGui ID-scope operations required by <see cref="ConfigDrawer{TConfig}"/>.
 /// </summary>
 /// <remarks>
-/// This composed seam isolates the outer draw scope from the shared ImGui render context so unit
-/// tests can verify draw ordering and cleanup behavior without requiring an active ImGui frame.
+/// This abstraction isolates the outer draw scope from the concrete ImGui render context so tests can verify draw ordering and push/pop cleanup without requiring an active ImGui frame.
 /// </remarks>
 internal interface IConfigDrawerScope : IIdScopeOps
 {

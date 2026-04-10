@@ -1,47 +1,28 @@
-using Hexa.NET.ImGui;
 using Umbra.Config;
 
 namespace Umbra.UI.Config.Drawers;
 
 /// <summary>
-/// Defines a contract for drawing a UI control for a configuration parameter using ImGui.
-/// Implements <see cref="IDisposable"/> so drawers that hold captured input state (e.g.
-/// <see cref="HotkeyDrawer"/>) can release shared resources when the owning
-/// <see cref="ConfigDrawer{TConfig}"/> is disposed. Implementations that hold no
-/// per-instance state do not need to override <see cref="IDisposable.Dispose"/>.
+/// Defines the contract for a custom parameter drawer with full row-layout control.
 /// </summary>
 /// <remarks>
-/// <para>
-/// Use this interface with
-/// <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/> (<c>[UmbraDrawer&lt;TDrawer&gt;]</c>)
-/// for complete layout control (custom label rendering, non-standard row structure), use
-/// <see cref="ITwoColumnParameterDrawer"/> with
-/// <see cref="Umbra.Config.Attributes.UmbraTwoColumnDrawerAttribute{TDrawer}"/> 
-/// (<c>[UmbraTwoColumnDrawer&lt;TDrawer&gt;]</c>) when you need a fully custom control but still
-/// want the label aligned with all other parameters in the same category or root scope instead.
-/// </para>
+/// Use this interface with <see cref="Umbra.Config.Attributes.UmbraDrawerAttribute{TDrawer}"/> when a parameter needs custom label rendering or a non-standard row structure. For custom widgets that should still participate in Umbra's standard two-column layout, use <see cref="ITwoColumnParameterDrawer"/> instead. Property-level wrapper attributes such as <see cref="Umbra.Config.Attributes.UmbraHideIfAttribute{T}"/> and <see cref="Umbra.Config.Attributes.UmbraDisableIfAttribute{T}"/> are still honored around the drawer output by the surrounding configuration-drawer pipeline.
 /// </remarks>
 public interface IParameterDrawer : IDisposable
 {
     /// <summary>
-    /// Draws an ImGui control for the specified configuration parameter.
+    /// Draws the ImGui control for the specified parameter.
     /// </summary>
     /// <remarks>
-    /// All widget IDs are scoped by the owning <see cref="ConfigDrawer{TConfig}"/> via
-    /// <see cref="ImGui.PushID(string)"/> / <see cref="ImGui.PopID()"/>. Use <c>$"##{parameter.Key}"</c>
-    /// (or any suffix of your choice) as the ImGui widget ID; cross-plugin uniqueness
-    /// is guaranteed without any extra effort here.
+    /// All widget IDs are scoped by the owning <see cref="ConfigDrawer{TConfig}"/>. Drawers can therefore use a local ID such as <c>$"##{parameter.Key}"</c> without adding extra cross-plugin uniqueness logic.
     /// </remarks>
-    /// <param name="label">The human-readable label displayed alongside the control.</param>
-    /// <param name="parameter">The configuration parameter to render and interact with.</param>
+    /// <param name="label">The human-readable label associated with the parameter.</param>
+    /// <param name="parameter">The parameter to render and edit.</param>
     void Draw(string label, IParameter parameter);
 
     /// <inheritdoc cref="IDisposable.Dispose"/>
     /// <remarks>
-    /// Default implementation calls <see cref="GC.SuppressFinalize"/> to prevent a redundant
-    /// finalizer call when a concrete class follows the full Dispose pattern. Override when
-    /// the drawer holds shared state that must be released on plugin unload
-    /// (e.g. a capture-mode counter or a cached resource handle).
+    /// The default implementation calls <see cref="GC.SuppressFinalize(object)"/>. Override it when the drawer owns resources that must be released on plugin unload.
     /// </remarks>
     void IDisposable.Dispose() => GC.SuppressFinalize(this);
 }

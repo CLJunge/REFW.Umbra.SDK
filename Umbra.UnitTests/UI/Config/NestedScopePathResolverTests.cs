@@ -10,54 +10,54 @@ namespace Umbra.UI.Config.UnitTests;
 public class NestedScopePathResolverTests
 {
     /// <summary>
-    /// Verifies that when <see cref="TypeDrawMetadata.PropertyDrawMetadata.SettingsPrefix"/> is non-null,
+    /// Verifies that when <see cref="TypeDrawMetadata.PropertyDrawMetadata.ConfigPrefix"/> is non-null,
     /// it is selected as the segment and combined with the parent path.
     /// </summary>
     [TestMethod]
-    public void Resolve_WhenPropMetaSettingsPrefixIsNonNull_UsesSettingsPrefix()
+    public void Resolve_WhenPropMetaConfigPrefixIsNonNull_UsesConfigPrefix()
     {
         // Arrange
         var parentPath = "parent.path";
-        var expectedSegment = "propSettingsPrefix";
+        var expectedSegment = "propConfigPrefix";
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: expectedSegment,
-            settingsParameterKeyOverride: null,
+            configPrefix: expectedSegment,
+            configParameterKeyOverride: null,
             propertyName: "TestProperty");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: "typePrefix");
+        var propTypeMeta = CreateTypeMetadata(configPrefix: "typePrefix");
 
         // Act
         var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
-        Assert.AreEqual("parent.path.propSettingsPrefix", result);
+        Assert.AreEqual("parent.path.propConfigPrefix", result);
     }
 
     /// <summary>
-    /// Verifies that when <see cref="TypeDrawMetadata.PropertyDrawMetadata.SettingsPrefix"/> is null,
-    /// but <see cref="TypeDrawMetadata.SettingsPrefix"/> is non-null, the type-level prefix is used.
+    /// Verifies that when <see cref="TypeDrawMetadata.PropertyDrawMetadata.ConfigPrefix"/> is null,
+    /// but <see cref="TypeDrawMetadata.ConfigPrefix"/> is non-null, the type-level prefix is used.
     /// </summary>
     [TestMethod]
-    public void Resolve_WhenPropMetaSettingsPrefixIsNullButPropTypeMetaSettingsPrefixIsNonNull_UsesTypeLevelPrefix()
+    public void Resolve_WhenPropMetaConfigPrefixIsNullButPropTypeMetaConfigPrefixIsNonNull_UsesTypeLevelPrefix()
     {
         // Arrange
         var parentPath = "parent";
-        var expectedSegment = "typeSettingsPrefix";
+        var expectedSegment = "typeConfigPrefix";
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: "keyOverride",
+            configPrefix: null,
+            configParameterKeyOverride: "keyOverride",
             propertyName: "TestProperty");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: expectedSegment);
+        var propTypeMeta = CreateTypeMetadata(configPrefix: expectedSegment);
 
         // Act
         var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
 
         // Assert
-        Assert.AreEqual("parent.typeSettingsPrefix", result);
+        Assert.AreEqual("parent.typeConfigPrefix", result);
     }
 
     /// <summary>
-    /// Verifies that when both <see cref="TypeDrawMetadata.PropertyDrawMetadata.SettingsPrefix"/> and
-    /// <see cref="TypeDrawMetadata.SettingsPrefix"/> are null, but <see cref="TypeDrawMetadata.PropertyDrawMetadata.SettingsParameterKeyOverride"/>
+    /// Verifies that when both <see cref="TypeDrawMetadata.PropertyDrawMetadata.ConfigPrefix"/> and
+    /// <see cref="TypeDrawMetadata.ConfigPrefix"/> are null, but <see cref="TypeDrawMetadata.PropertyDrawMetadata.ConfigParameterKeyOverride"/>
     /// is non-null, the key override is used as the segment.
     /// </summary>
     [TestMethod]
@@ -67,10 +67,10 @@ public class NestedScopePathResolverTests
         var parentPath = "root";
         var expectedSegment = "customKey";
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: expectedSegment,
+            configPrefix: null,
+            configParameterKeyOverride: expectedSegment,
             propertyName: "TestProperty");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(configPrefix: null);
 
         // Act
         var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
@@ -88,10 +88,10 @@ public class NestedScopePathResolverTests
         // Arrange
         var parentPath = "base";
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: null,
+            configPrefix: null,
+            configParameterKeyOverride: null,
             propertyName: "MyProperty");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(configPrefix: null);
 
         // Act
         var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
@@ -109,10 +109,10 @@ public class NestedScopePathResolverTests
         // Arrange
         var parentPath = "";
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: "segment",
-            settingsParameterKeyOverride: null,
+            configPrefix: "segment",
+            configParameterKeyOverride: null,
             propertyName: "Property");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(configPrefix: null);
 
         // Act
         var result = NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta);
@@ -129,10 +129,10 @@ public class NestedScopePathResolverTests
     {
         // Arrange
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: "overrideKey",
+            configPrefix: null,
+            configParameterKeyOverride: "overrideKey",
             propertyName: "Property");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(configPrefix: null);
 
         // Act
         var result = NestedScopePathResolver.Resolve(string.Empty, propMeta, propTypeMeta);
@@ -149,10 +149,10 @@ public class NestedScopePathResolverTests
     {
         // Arrange
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: null,
+            configPrefix: null,
+            configParameterKeyOverride: null,
             propertyName: "dummyProperty");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(configPrefix: null);
 
         // Act
         var result = NestedScopePathResolver.Resolve(string.Empty, propMeta, propTypeMeta);
@@ -170,13 +170,13 @@ public class NestedScopePathResolverTests
         // Arrange
         var parentPath = "parent";
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: null,
+            configPrefix: null,
+            configParameterKeyOverride: null,
             propertyName: "");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(configPrefix: null);
 
         // Act
-        var exception = AssertThrowsInvalidOperationException(
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(
             () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
 
         // Assert
@@ -185,40 +185,40 @@ public class NestedScopePathResolverTests
     }
 
     /// <summary>
-    /// Verifies that an explicitly empty property-level settings prefix is rejected.
+    /// Verifies that an explicitly empty property-level config prefix is rejected.
     /// </summary>
     [TestMethod]
-    public void Resolve_WhenPropMetaSettingsPrefixIsEmptyString_ThrowsInvalidOperationException()
+    public void Resolve_WhenPropMetaConfigPrefixIsEmptyString_ThrowsInvalidOperationException()
     {
         // Arrange
         var parentPath = "parent";
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: "",
-            settingsParameterKeyOverride: "override",
+            configPrefix: "",
+            configParameterKeyOverride: "override",
             propertyName: "Property");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: "typePrefix");
+        var propTypeMeta = CreateTypeMetadata(configPrefix: "typePrefix");
 
         // Assert
-        AssertThrowsInvalidOperationException(
+        Assert.ThrowsExactly<InvalidOperationException>(
             () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
     }
 
     /// <summary>
-    /// Verifies that an explicitly empty type-level settings prefix is rejected.
+    /// Verifies that an explicitly empty type-level config prefix is rejected.
     /// </summary>
     [TestMethod]
-    public void Resolve_WhenPropTypeMetaSettingsPrefixIsEmptyString_ThrowsInvalidOperationException()
+    public void Resolve_WhenPropTypeMetaConfigPrefixIsEmptyString_ThrowsInvalidOperationException()
     {
         // Arrange
         var parentPath = "parent";
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: "override",
+            configPrefix: null,
+            configParameterKeyOverride: "override",
             propertyName: "Property");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: "");
+        var propTypeMeta = CreateTypeMetadata(configPrefix: "");
 
         // Assert
-        AssertThrowsInvalidOperationException(
+        Assert.ThrowsExactly<InvalidOperationException>(
             () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
     }
 
@@ -226,34 +226,19 @@ public class NestedScopePathResolverTests
     /// Verifies that an explicitly empty key override is rejected.
     /// </summary>
     [TestMethod]
-    public void Resolve_WhenSettingsParameterKeyOverrideIsEmptyString_ThrowsInvalidOperationException()
+    public void Resolve_WhenConfigParameterKeyOverrideIsEmptyString_ThrowsInvalidOperationException()
     {
         // Arrange
         var parentPath = "parent";
         var propMeta = CreatePropertyMetadata(
-            settingsPrefix: null,
-            settingsParameterKeyOverride: "",
+            configPrefix: null,
+            configParameterKeyOverride: "",
             propertyName: "Property");
-        var propTypeMeta = CreateTypeMetadata(settingsPrefix: null);
+        var propTypeMeta = CreateTypeMetadata(configPrefix: null);
 
         // Assert
-        AssertThrowsInvalidOperationException(
+        Assert.ThrowsExactly<InvalidOperationException>(
             () => NestedScopePathResolver.Resolve(parentPath, propMeta, propTypeMeta));
-    }
-
-    private static InvalidOperationException AssertThrowsInvalidOperationException(Action action)
-    {
-        try
-        {
-            action();
-            Assert.Fail("Expected InvalidOperationException.");
-        }
-        catch (InvalidOperationException exception)
-        {
-            return exception;
-        }
-
-        throw new InvalidOperationException("Unreachable");
     }
 
     /// <summary>
@@ -261,13 +246,12 @@ public class NestedScopePathResolverTests
     /// with the minimal required parameters and a stable value accessor for testing.
     /// </summary>
     private static TypeDrawMetadata.PropertyDrawMetadata CreatePropertyMetadata(
-        string? settingsPrefix,
-        string? settingsParameterKeyOverride,
+        string? configPrefix,
+        string? configParameterKeyOverride,
         string propertyName)
     {
         PropertyInfo propertyInfo;
 
-        // Try to use a real property from TestPropertyHolder, otherwise use a mock
         var realProperty = typeof(TestPropertyHolder).GetProperty(propertyName);
         if (realProperty != null)
         {
@@ -275,7 +259,6 @@ public class NestedScopePathResolverTests
         }
         else
         {
-            // For property names not in TestPropertyHolder, create a mock
             propertyInfo = new MockPropertyInfo(propertyName);
         }
 
@@ -290,18 +273,19 @@ public class NestedScopePathResolverTests
             labelMarginAttr: null,
             nestedDrawerAttr: null,
             hideIf: null,
+            disableIf: null,
             order: 0,
             spacingBefore: 0,
             spacingAfter: 0,
-            settingsPrefix: settingsPrefix,
-            settingsParameterKeyOverride: settingsParameterKeyOverride);
+            configPrefix: configPrefix,
+            configParameterKeyOverride: configParameterKeyOverride);
     }
 
     /// <summary>
     /// Helper method to create a <see cref="TypeDrawMetadata"/> instance
     /// with minimal required parameters for testing.
     /// </summary>
-    private static TypeDrawMetadata CreateTypeMetadata(string? settingsPrefix)
+    private static TypeDrawMetadata CreateTypeMetadata(string? configPrefix)
     {
         return (TypeDrawMetadata)Activator.CreateInstance(
             typeof(TypeDrawMetadata),
@@ -309,14 +293,14 @@ public class NestedScopePathResolverTests
             null,
             new object?[]
             {
-                null, // category
-                settingsPrefix, // settingsPrefix
-                null, // indentAttr
-                null, // collapseAttr
-                null, // labelMarginAttr
-                null, // nestedGroupDrawerAttr
-                false, // isAutoRegisterSettings
-                Array.Empty<TypeDrawMetadata.PropertyDrawMetadata>() // properties
+                null,
+                configPrefix,
+                null,
+                null,
+                null,
+                null,
+                false,
+                Array.Empty<TypeDrawMetadata.PropertyDrawMetadata>()
             },
             null)!;
     }

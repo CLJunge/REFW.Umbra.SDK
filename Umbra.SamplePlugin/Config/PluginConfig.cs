@@ -1,5 +1,6 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
+using Umbra.Input;
 using Umbra.UI.Config.Drawers;
 
 namespace Umbra.SamplePlugin.Config;
@@ -11,7 +12,7 @@ namespace Umbra.SamplePlugin.Config;
 /// </summary>
 /// <remarks>
 /// This config is intentionally broad rather than minimal so the sample plugin can exercise most
-/// of Umbra's settings surface in one place: hotkeys, booleans, numeric sliders and drags,
+/// of Umbra's config surface in one place: hotkeys, booleans, numeric sliders and drags,
 /// strings, enums, action buttons, custom drawers, nested-group drawers, category scoping,
 /// type-level metadata fallback, indentation, label margins, ordering, spacing, and visibility
 /// predicates.
@@ -36,23 +37,26 @@ public record PluginConfig
 
     /// <summary>
     /// Resets the entire sample configuration tree to its default values.
+    /// The sample plugin entry point replaces the default no-op delegate with the live store-level
+    /// reset action after loading the persisted config instance.
     /// </summary>
     [UmbraParameter]
     [UmbraDisplayName("Reset All Samples")]
     [UmbraDescription("Resets every sample group to its default values.")]
+    [UmbraBatchUndo("Reset All Samples")]
     [UmbraButtonStyle(ButtonStyle.Danger)]
     [UmbraControlWidth(-1f)]
     [UmbraParameterOrder(1)]
-    public Parameter<Action> ResetAllSamples { get; init; }
+    public Parameter<Action> ResetAllSamples { get; init; } = new(static () => { });
 
     /// <summary>
-    /// Gets or sets the general sample settings, including the enable toggle and hotkey drawers.
+    /// Gets or sets the general sample config group, including the enable toggle and hotkey drawers.
     /// </summary>
     [UmbraParameter]
     [UmbraCategory("General")]
     [UmbraPrefix("general")]
     [UmbraCollapseAsTree(true)]
-    public GeneralSettings General { get; set; } = new();
+    public GeneralConfig General { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the boolean checkbox samples.
@@ -128,88 +132,6 @@ public record PluginConfig
     public NestedTypeTests NestedTypes { get; set; } = new();
 
     /// <summary>
-    /// Initializes a new <see cref="PluginConfig"/> and wires the root-level sample actions.
-    /// </summary>
-    public PluginConfig()
-    {
-        ResetAllSamples = new(() =>
-        {
-            General.IsEnabled.Reset();
-            General.ToggleHotkey.Reset();
-            General.SwitchViewHotkey.Reset();
-            General.ShowVerboseLogs.Reset();
-
-            Booleans.EnableOverlay.Reset();
-            Booleans.EnableFilmGrain.Reset();
-            Booleans.UseExperimentalPipeline.Reset();
-            Booleans.RequireRestart.Reset();
-
-            Integers.Sliders.MasterVolume.Reset();
-            Integers.Sliders.RetryCount.Reset();
-            Integers.Sliders.PaddingPixels.Reset();
-            Integers.Drags.HorizontalOffset.Reset();
-            Integers.Drags.VerticalOffset.Reset();
-            Integers.Drags.PriorityBias.Reset();
-
-            Floats.Sliders.Opacity.Reset();
-            Floats.Sliders.Gamma.Reset();
-            Floats.Sliders.Exposure.Reset();
-            Floats.Drags.MoveSpeed.Reset();
-            Floats.Drags.BloomStrength.Reset();
-            Floats.Drags.CameraLag.Reset();
-
-            Doubles.Sliders.PrecisionScale.Reset();
-            Doubles.Sliders.ZoomFactor.Reset();
-            Doubles.Drags.WorldOffset.Reset();
-            Doubles.Drags.CalibrationBias.Reset();
-
-            Strings.SingleLine.ProfileName.Reset();
-            Strings.SingleLine.ExportDirectory.Reset();
-            Strings.SingleLine.SearchFilter.Reset();
-            Strings.Multiline.Notes.Reset();
-            Strings.Multiline.Changelog.Reset();
-
-            Enums.Quality.Reset();
-            Enums.Theme.Reset();
-            Enums.Channel.Reset();
-            Enums.ShowPreviewTheme.Reset();
-            Enums.OptionalTheme.Reset();
-            Enums.PreviewTheme.Reset();
-
-            CustomDrawers.VisualMeter.Reset();
-            CustomDrawers.AccentButtonClicks.Reset();
-            CustomDrawers.PrimaryNestedDrawer.Value1.Reset();
-            CustomDrawers.PrimaryNestedDrawer.Value2.Reset();
-            CustomDrawers.PrimaryNestedDrawer.Value3.Reset();
-            CustomDrawers.PrimaryNestedDrawer.Value4.Reset();
-            CustomDrawers.SecondaryNestedDrawer.Value1.Reset();
-            CustomDrawers.SecondaryNestedDrawer.Value2.Reset();
-            CustomDrawers.SecondaryNestedDrawer.Value3.Reset();
-            CustomDrawers.SecondaryNestedDrawer.Value4.Reset();
-
-            NestedTypes.Graphics.Enabled.Reset();
-            NestedTypes.Graphics.ShowAdvanced.Reset();
-            NestedTypes.Graphics.Intensity.Reset();
-            NestedTypes.Graphics.Advanced.Threshold.Reset();
-            NestedTypes.Graphics.Advanced.Bias.Reset();
-            NestedTypes.Graphics.Advanced.Notes.Reset();
-            NestedTypes.Audio.Enabled.Reset();
-            NestedTypes.Audio.ShowAdvanced.Reset();
-            NestedTypes.Audio.Intensity.Reset();
-            NestedTypes.Audio.Advanced.Threshold.Reset();
-            NestedTypes.Audio.Advanced.Bias.Reset();
-            NestedTypes.Audio.Advanced.Notes.Reset();
-            NestedTypes.TypeLevelFallback.SampleValue.Reset();
-            NestedTypes.TypeLevelFallback.Notes.Reset();
-            NestedTypes.PropertyOverride.SampleValue.Reset();
-            NestedTypes.PropertyOverride.Notes.Reset();
-            NestedTypes.IndentedLayout.PrimaryScale.Reset();
-            NestedTypes.IndentedLayout.SecondaryScale.Reset();
-            NestedTypes.IndentedLayout.LayoutNotes.Reset();
-        });
-    }
-
-    /// <summary>
     /// Sample quality levels used by the enum combo-box demos.
     /// </summary>
     public enum SampleQualityLevel
@@ -242,10 +164,10 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// General sample settings covering the basic boolean and hotkey controls used by many plugins.
+    /// General sample config covering the basic boolean and hotkey controls used by many plugins.
     /// </summary>
     [UmbraAutoRegister]
-    public record GeneralSettings
+    public record GeneralConfig
     {
         /// <summary>Gets or sets whether the sample plugin is enabled.</summary>
         [UmbraParameter]
@@ -258,14 +180,14 @@ public record PluginConfig
         [UmbraDisplayName("Toggle Hotkey")]
         [UmbraDescription("The hotkey used to toggle the sample plugin on and off.")]
         [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
-        public Parameter<int> ToggleHotkey { get; set; } = new(574);
+        public Parameter<HotkeyBinding> ToggleHotkey { get; set; } = new(new HotkeyBinding((int)UmbraKey.F3, false, false, false));
 
         /// <summary>Gets or sets the hotkey that switches between demo views.</summary>
         [UmbraParameter]
         [UmbraDisplayName("Switch View Hotkey")]
         [UmbraDescription("The hotkey used to switch between first-person and third-person demo views.")]
         [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
-        public Parameter<int> SwitchViewHotkey { get; set; } = new(575);
+        public Parameter<HotkeyBinding> SwitchViewHotkey { get; set; } = new(new HotkeyBinding((int)UmbraKey.F4, false, false, false));
 
         /// <summary>Gets or sets whether the sample emits extra diagnostic logging.</summary>
         [UmbraParameter]
@@ -273,16 +195,17 @@ public record PluginConfig
         [UmbraDescription("When enabled, the sample plugin emits extra diagnostic log lines during manual testing.")]
         public Parameter<bool> ShowVerboseLogs { get; set; } = new(false);
 
-        /// <summary>Resets the general sample settings to their defaults.</summary>
+        /// <summary>Resets the general sample config values to their defaults.</summary>
         [UmbraParameter]
         [UmbraDisplayName("Reset General")]
         [UmbraDescription("Resets the sample plugin enable toggle, hotkeys, and verbose logging flag.")]
+        [UmbraBatchUndo("Reset General")]
         [UmbraButtonStyle(ButtonStyle.Danger)]
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetGeneral { get; init; }
 
-        /// <summary>Initializes a new <see cref="GeneralSettings"/> and wires the reset action.</summary>
-        public GeneralSettings()
+        /// <summary>Initializes a new <see cref="GeneralConfig"/> and wires the reset action.</summary>
+        public GeneralConfig()
         {
             ResetGeneral = new(() =>
             {
@@ -334,6 +257,7 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraDisplayName("Reset Booleans")]
         [UmbraDescription("Resets the boolean checkbox samples to their defaults.")]
+        [UmbraBatchUndo("Reset Booleans")]
         [UmbraButtonStyle(ButtonStyle.Danger)]
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetBooleans { get; init; }
@@ -557,7 +481,7 @@ public record PluginConfig
         [UmbraPrefix("graphics")]
         [UmbraCollapseAsTree(true)]
         [UmbraParameterOrder(0)]
-        public ScopedBranchSettings Graphics { get; set; } = new()
+        public ScopedBranchConfig Graphics { get; set; } = new()
         {
             Intensity = new(.25f),
             Advanced = new()
@@ -574,7 +498,7 @@ public record PluginConfig
         [UmbraPrefix("audio")]
         [UmbraCollapseAsTree(true)]
         [UmbraParameterOrder(1)]
-        public ScopedBranchSettings Audio { get; set; } = new()
+        public ScopedBranchConfig Audio { get; set; } = new()
         {
             Enabled = new(false),
             ShowAdvanced = new(false),
@@ -593,7 +517,7 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraPrefix("typeLevelFallback")]
         [UmbraParameterOrder(2)]
-        public TypeLevelPresentationSettings TypeLevelFallback { get; set; } = new();
+        public TypeLevelPresentationConfig TypeLevelFallback { get; set; } = new();
 
         /// <summary>
         /// Gets or sets the nested group whose property-level category overrides its type-level fallback metadata.
@@ -603,7 +527,7 @@ public record PluginConfig
         [UmbraPrefix("propertyOverride")]
         [UmbraCollapseAsTree]
         [UmbraParameterOrder(3)]
-        public TypeLevelPresentationSettings PropertyOverride { get; set; } = new()
+        public TypeLevelPresentationConfig PropertyOverride { get; set; } = new()
         {
             SampleValue = new(77),
             Notes = new("Property-level category should win.")
@@ -615,14 +539,14 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraPrefix("indentedLayout")]
         [UmbraParameterOrder(4)]
-        public IndentedLayoutSettings IndentedLayout { get; set; } = new();
+        public IndentedLayoutConfig IndentedLayout { get; set; } = new();
     }
 
     /// <summary>
     /// Shared branch used by the nested-type tests to validate local category scoping and nested visibility.
     /// </summary>
     [UmbraAutoRegister]
-    public record ScopedBranchSettings
+    public record ScopedBranchConfig
     {
         /// <summary>Gets or sets whether this branch is enabled.</summary>
         [UmbraParameter]
@@ -658,14 +582,14 @@ public record PluginConfig
         [UmbraSpacingBefore]
         [UmbraSpacingAfter]
         [UmbraParameterOrder(2)]
-        public ScopedAdvancedSettings Advanced { get; set; } = new();
+        public ScopedAdvancedConfig Advanced { get; set; } = new();
     }
 
     /// <summary>
     /// Second-level nested branch used by the scoped-branch demo.
     /// </summary>
     [UmbraAutoRegister]
-    public record ScopedAdvancedSettings
+    public record ScopedAdvancedConfig
     {
         /// <summary>Gets or sets the advanced threshold value.</summary>
         [UmbraParameter]
@@ -693,12 +617,12 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// Nested settings group that declares its own presentation metadata at the type level.
+    /// Nested config group that declares its own presentation metadata at the type level.
     /// </summary>
     [UmbraAutoRegister]
     [UmbraCategory("Type-Level Fallback")]
     [UmbraCollapseAsTree]
-    public record TypeLevelPresentationSettings
+    public record TypeLevelPresentationConfig
     {
         /// <summary>Gets or sets the sample numeric value rendered in the fallback group.</summary>
         [UmbraParameter]
@@ -718,14 +642,14 @@ public record PluginConfig
     }
 
     /// <summary>
-    /// Nested settings group that demonstrates class-level indentation and label-margin metadata.
+    /// Nested config group that demonstrates class-level indentation and label-margin metadata.
     /// </summary>
     [UmbraAutoRegister]
     [UmbraCategory("Indented Layout")]
     [UmbraCollapseAsTree(true)]
     [UmbraIndent(18f)]
     [UmbraLabelMargin(16f)]
-    public record IndentedLayoutSettings
+    public record IndentedLayoutConfig
     {
         /// <summary>Gets or sets the primary layout scale.</summary>
         [UmbraParameter]
@@ -758,12 +682,15 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record IntegerSliderSamples
     {
+        /// <summary>Gets or sets the master volume slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Master Volume"), UmbraDescription("A ranged integer slider with a percentage-like value."), UmbraRange(0, 100)]
         public Parameter<int> MasterVolume { get; set; } = new(80);
 
+        /// <summary>Gets or sets the retry count slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Retry Count"), UmbraDescription("A small ranged integer slider used for discrete step testing."), UmbraRange(0, 10)]
         public Parameter<int> RetryCount { get; set; } = new(3);
 
+        /// <summary>Gets or sets the padding slider sample with a custom display format.</summary>
         [UmbraParameter, UmbraDisplayName("Padding"), UmbraDescription("A ranged integer slider with a custom integer display format."), UmbraRange(0, 64), UmbraFormat("%d px")]
         public Parameter<int> PaddingPixels { get; set; } = new(12);
     }
@@ -774,12 +701,15 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record IntegerDragSamples
     {
+        /// <summary>Gets or sets the horizontal offset drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Horizontal Offset"), UmbraDescription("An unconstrained integer drag sample."), UmbraStep(1)]
         public Parameter<int> HorizontalOffset { get; set; } = new(16);
 
+        /// <summary>Gets or sets the vertical offset drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Vertical Offset"), UmbraDescription("A second unconstrained integer drag sample with a negative default."), UmbraStep(1)]
         public Parameter<int> VerticalOffset { get; set; } = new(-8);
 
+        /// <summary>Gets or sets the priority bias drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Priority Bias"), UmbraDescription("An unconstrained integer drag sample with a larger drag step."), UmbraStep(5)]
         public Parameter<int> PriorityBias { get; set; } = new(25);
     }
@@ -790,12 +720,15 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record FloatSliderSamples
     {
+        /// <summary>Gets or sets the opacity slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Opacity"), UmbraDescription("A normalized float slider."), UmbraRange(0f, 1f), UmbraFormat("%.2f")]
         public Parameter<float> Opacity { get; set; } = new(.65f);
 
+        /// <summary>Gets or sets the gamma slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Gamma"), UmbraDescription("A wider float slider range for manual validation."), UmbraRange(0.5f, 3.0f), UmbraFormat("%.2f")]
         public Parameter<float> Gamma { get; set; } = new(1.20f);
 
+        /// <summary>Gets or sets the exposure slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Exposure"), UmbraDescription("A float slider with one decimal place."), UmbraRange(-2f, 2f), UmbraFormat("%.1f")]
         public Parameter<float> Exposure { get; set; } = new(.5f);
     }
@@ -806,12 +739,15 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record FloatDragSamples
     {
+        /// <summary>Gets or sets the move speed drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Move Speed"), UmbraDescription("An unconstrained float drag sample."), UmbraStep(0.05f), UmbraFormat("%.2f")]
         public Parameter<float> MoveSpeed { get; set; } = new(1.50f);
 
+        /// <summary>Gets or sets the bloom strength drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Bloom Strength"), UmbraDescription("A smaller-step float drag sample."), UmbraStep(0.01f), UmbraFormat("%.2f")]
         public Parameter<float> BloomStrength { get; set; } = new(.35f);
 
+        /// <summary>Gets or sets the camera lag drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Camera Lag"), UmbraDescription("A float drag sample with three decimal places."), UmbraStep(0.005f), UmbraFormat("%.3f")]
         public Parameter<float> CameraLag { get; set; } = new(.125f);
     }
@@ -822,9 +758,11 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record DoubleSliderSamples
     {
+        /// <summary>Gets or sets the precision scale slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Precision Scale"), UmbraDescription("A ranged double slider used to validate native double-precision slider editing."), UmbraRange(0.0, 1.0), UmbraStep(0.001), UmbraFormat("%.3f")]
         public Parameter<double> PrecisionScale { get; set; } = new(0.125);
 
+        /// <summary>Gets or sets the zoom factor slider sample.</summary>
         [UmbraParameter, UmbraDisplayName("Zoom Factor"), UmbraDescription("A second ranged double slider with a broader range."), UmbraRange(0.5, 4.0), UmbraStep(0.001), UmbraFormat("%.3f")]
         public Parameter<double> ZoomFactor { get; set; } = new(1.750);
     }
@@ -835,9 +773,11 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record DoubleDragSamples
     {
+        /// <summary>Gets or sets the world offset drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("World Offset"), UmbraDescription("An unconstrained double drag sample used to validate precision beyond float."), UmbraStep(0.125), UmbraFormat("%.3f")]
         public Parameter<double> WorldOffset { get; set; } = new(12.375);
 
+        /// <summary>Gets or sets the calibration bias drag sample.</summary>
         [UmbraParameter, UmbraDisplayName("Calibration Bias"), UmbraDescription("A second unconstrained double drag sample with a small step size."), UmbraStep(0.0005), UmbraFormat("%.4f")]
         public Parameter<double> CalibrationBias { get; set; } = new(0.0025);
     }
@@ -848,13 +788,16 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record SingleLineStringSamples
     {
-        [UmbraParameter, UmbraDisplayName("Profile Name"), UmbraDescription("A short single-line string sample."), UmbraMaxLength(40)]
+        /// <summary>Gets or sets the profile name text sample.</summary>
+        [UmbraParameter, UmbraDisplayName("Profile Name"), UmbraDescription("A short single-line string sample with required and minimum-length validation."), UmbraRequired, UmbraMinLength(3), UmbraMaxLength(40)]
         public Parameter<string> ProfileName { get; set; } = new("Umbra Tester");
 
-        [UmbraParameter, UmbraDisplayName("Export Directory"), UmbraDescription("A longer single-line string sample."), UmbraMaxLength(120)]
+        /// <summary>Gets or sets the export directory text sample.</summary>
+        [UmbraParameter, UmbraDisplayName("Export Directory"), UmbraDescription("A longer single-line string sample with required and regex validation."), UmbraRequired, UmbraRegex("^[A-Za-z0-9_./-]+$", Message = "Use letters, digits, underscores, dots, slashes, or dashes only."), UmbraMaxLength(120)]
         public Parameter<string> ExportDirectory { get; set; } = new("data/Umbra/SamplePlugin/exports");
 
-        [UmbraParameter, UmbraDisplayName("Search Filter"), UmbraDescription("A third single-line string sample used for quick manual edits."), UmbraMaxLength(60)]
+        /// <summary>Gets or sets the search filter text sample with custom validation.</summary>
+        [UmbraParameter, UmbraDisplayName("Search Filter"), UmbraDescription("A third single-line string sample that demonstrates required, minimum-length, regex, and custom-validator feedback."), UmbraRequired, UmbraMinLength(3), UmbraRegex("^[a-z0-9 _-]+$", Message = "Use lowercase letters, digits, spaces, underscores, or dashes only."), UmbraValidateWith<SearchFilterValidator>, UmbraMaxLength(60)]
         public Parameter<string> SearchFilter { get; set; } = new("player camera");
     }
 
@@ -864,15 +807,17 @@ public record PluginConfig
     [UmbraAutoRegister]
     public record MultilineStringSamples
     {
-        [UmbraParameter, UmbraDisplayName("Notes"), UmbraDescription("A short multi-line text sample."), UmbraMultiline(3), UmbraMaxLength(160)]
+        /// <summary>Gets or sets the multi-line notes text sample.</summary>
+        [UmbraParameter, UmbraDisplayName("Notes"), UmbraDescription("A short multi-line text sample that allows whitespace-only content while still rejecting null or empty text."), UmbraRequired(AllowWhitespace = true), UmbraMultiline(3), UmbraMaxLength(160)]
         public Parameter<string> Notes { get; set; } = new("Use this field to validate multi-line text persistence.");
 
+        /// <summary>Gets or sets the multi-line changelog text sample.</summary>
         [UmbraParameter, UmbraDisplayName("Changelog"), UmbraDescription("A larger multi-line text sample with more visible rows."), UmbraMultiline(5), UmbraMaxLength(320)]
         public Parameter<string> Changelog { get; set; } = new("- Added data-type sample groups\n- Added nested type tests\n- Added custom drawer coverage");
     }
 
     /// <summary>
-    /// Sample nested settings group rendered by a custom nested-group drawer.
+    /// Sample nested config group rendered by a custom nested-group drawer.
     /// Multiple instances of this type intentionally reuse the same local widget labels so the
     /// sample can validate nested-group ImGui ID scoping manually.
     /// </summary>

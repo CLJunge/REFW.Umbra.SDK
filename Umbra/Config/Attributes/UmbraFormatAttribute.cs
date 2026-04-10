@@ -1,13 +1,18 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Overrides the printf-style format string used when displaying a numeric parameter's value
-/// inside ImGui controls such as sliders and drag inputs.
+/// Declares the printf-style format string used when an annotated numeric parameter is rendered in ImGui controls.
 /// </summary>
-/// <param name="format">A printf-style format string compatible with ImGui.</param>
+/// <remarks>
+/// This attribute overrides the fallback format that Umbra would otherwise infer from <see cref="UmbraStepAttribute"/>.
+/// </remarks>
+/// <param name="format">The ImGui-compatible printf-style format string.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraFormatAttribute(string format) : Attribute
 {
-    /// <summary>Gets the printf-style format string used to display the parameter's value.</summary>
+    /// <summary>
+    /// Gets the declared ImGui format string.
+    /// </summary>
+    /// <value>The printf-style format string used for display.</value>
     public string Format { get; } = format;
 }

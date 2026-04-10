@@ -1,16 +1,18 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Marks a public instance property as a settings parameter so that
-/// <see cref="SettingsStore{TConfig}.Load()"/> discovers and registers it during initialization.
+/// Marks a member as a config-parameter declaration consumed by Umbra's registration pipeline.
 /// </summary>
-/// <param name="keyOverride">
-/// An optional explicit key used to store and retrieve this parameter. When supplied, the override
-/// must be non-empty.
-/// </param>
+/// <remarks>
+/// <see cref="ConfigStore{TConfig}.Load()"/> currently discovers only public instance properties marked with this attribute. Field targets remain allowed for attribute-shape consistency and reflective tooling, but fields are ignored by <see cref="ConfigRegistrar"/> during normal registration.
+/// </remarks>
+/// <param name="keyOverride">The optional explicit persisted key segment for the annotated parameter.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraParameterAttribute(string? keyOverride = null) : Attribute
 {
-    /// <summary>Gets the explicit key override for this parameter.</summary>
+    /// <summary>
+    /// Gets the explicit persisted-key override declared for the annotated member.
+    /// </summary>
+    /// <value>The explicit key segment, or <see langword="null"/> when Umbra should derive the segment from the member name.</value>
     public string? KeyOverride { get; } = keyOverride;
 }

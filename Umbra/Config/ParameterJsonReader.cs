@@ -1,35 +1,79 @@
+using System.Numerics;
 using System.Text.Json;
+using Umbra.Input;
 using Umbra.Logging;
 
 namespace Umbra.Config;
 
 /// <summary>
-/// Provides internal utilities for deserializing <see cref="JsonElement"/> values
-/// into the concrete types expected by <see cref="IParameter"/> instances.
+/// Converts persisted JSON values into objects that can be applied to registered <see cref="IParameter"/> instances.
 /// </summary>
+/// <remarks>
+/// <see cref="ConfigPersistence"/> uses this helper while loading a config file. Values are applied through <see cref="IParameter.SetValueWithoutNotify(object?)"/> so persisted-state restoration does not trigger change notifications.
+/// </remarks>
 internal static class ParameterJsonReader
 {
     /// <summary>
-    /// Reads the value from <paramref name="element"/> and silently applies it to
-    /// <paramref name="param"/> without raising <see cref="IParameter.ValueChanged"/>.
+    /// Converts <paramref name="element"/> to the value type expected by <paramref name="param"/> and applies it silently.
     /// </summary>
+    /// <param name="param">The registered parameter that should receive the converted value.</param>
+    /// <param name="element">The persisted JSON value to restore.</param>
     /// <remarks>
-    /// When <see cref="ConvertElement"/> returns <see langword="null"/> for a non-null JSON element
-    /// (e.g. an unrecognised enum string), the assignment is skipped entirely so the parameter
-    /// retains its default value rather than being overwritten with <see langword="null"/>.
+    /// When <see cref="ConvertElement"/> returns <see langword="null"/> for a non-null JSON element, the assignment is skipped so the parameter keeps its current in-memory value. This preserves declared defaults for stale or unrecognized persisted values such as renamed enum members.
     /// </remarks>
-    /// <param name="param">The parameter to receive the deserialized value.</param>
-    /// <param name="element">
-    /// The <see cref="JsonElement"/> containing the persisted value to restore.
-    /// </param>
     internal static void Apply(IParameter param, JsonElement element)
     {
         var value = ConvertElement(element, param.ValueType);
-        // A null result from ConvertElement for a non-null element means the stored value
-        // was unrecognised (e.g. a stale/renamed enum member). Skip the assignment so the
-        // parameter keeps its in-memory default instead of being set to null.
         if (value is null && element.ValueKind != JsonValueKind.Null) return;
         param.SetValueWithoutNotify(value);
+    }
+
+    /// <summary>
+    /// Attempts to convert <paramref name="element"/> to a value assignable to <paramref name="targetType"/>.
+    /// </summary>
+    /// <param name="element">The JSON element to convert.</param>
+    /// <param name="targetType">The destination CLR type.</param>
+    /// <param name="value">Receives the converted value when conversion succeeds.</param>
+    /// <param name="failureReason">Receives a human-readable conversion failure reason when conversion fails.</param>
+    /// <returns><see langword="true"/> when conversion succeeds; otherwise, <see langword="false"/>.</returns>
+    internal static bool TryConvert(
+        JsonElement element,
+        Type targetType,
+        out object? value,
+        out string? failureReason)
+    {
+        ArgumentNullException.ThrowIfNull(targetType);
+
+        value = null;
+        failureReason = null;
+
+        if (element.ValueKind == JsonValueKind.Null)
+        {
+            if (targetType.IsValueType && Nullable.GetUnderlyingType(targetType) == null)
+            {
+                failureReason = $"Null is not valid for non-nullable value type '{targetType.FullName ?? targetType.Name}'.";
+                return false;
+            }
+
+            return true;
+        }
+
+        try
+        {
+            value = ConvertElement(element, targetType);
+        }
+        catch (Exception ex)
+        {
+            failureReason = ex.Message;
+            value = null;
+            return false;
+        }
+
+        if (value is not null)
+            return true;
+
+        failureReason = $"JSON value kind '{element.ValueKind}' is not compatible with '{targetType.FullName ?? targetType.Name}'.";
+        return false;
     }
 
     /// <summary>
@@ -53,6 +97,7 @@ internal static class ParameterJsonReader
                 when targetType == typeof(bool) || targetType == typeof(bool?)
                 => element.GetBoolean(),
             JsonValueKind.String => ConvertString(element, targetType),
+            JsonValueKind.Object => ConvertObject(element, targetType),
             _ => null
         };
     }
@@ -104,5 +149,67 @@ internal static class ParameterJsonReader
             return null;
         }
         return raw;
+    }
+
+    /// <summary>
+    /// Converts a JSON object element to the specified CLR type.
+    /// Supports <see cref="Vector4"/> and <see cref="HotkeyBinding"/>.
+    /// </summary>
+    /// <param name="element">The JSON object element to convert.</param>
+    /// <param name="t">The target CLR type.</param>
+    /// <returns>The converted value, or <see langword="null"/> if the type is not supported.</returns>
+    private static object? ConvertObject(JsonElement element, Type t)
+    {
+        if (t == typeof(Vector4) || t == typeof(Vector4?))
+            return ConvertVector4(element);
+
+        if (t == typeof(HotkeyBinding) || t == typeof(HotkeyBinding?))
+            return ConvertHotkeyBinding(element);
+
+        return null;
+    }
+
+    /// <summary>
+    /// Reads a <see cref="Vector4"/> from a JSON object with <c>X</c>, <c>Y</c>, <c>Z</c>, <c>W</c> properties.
+    /// </summary>
+    private static Vector4? ConvertVector4(JsonElement element)
+    {
+        if (!element.TryGetProperty("X", out var xProp) && !element.TryGetProperty("x", out xProp))
+            return null;
+        if (!element.TryGetProperty("Y", out var yProp) && !element.TryGetProperty("y", out yProp))
+            return null;
+        if (!element.TryGetProperty("Z", out var zProp) && !element.TryGetProperty("z", out zProp))
+            return null;
+        if (!element.TryGetProperty("W", out var wProp) && !element.TryGetProperty("w", out wProp))
+            return null;
+
+        return new Vector4(xProp.GetSingle(), yProp.GetSingle(), zProp.GetSingle(), wProp.GetSingle());
+    }
+
+    /// <summary>
+    /// Reads a <see cref="HotkeyBinding"/> from a JSON object with <c>Key</c>, <c>Ctrl</c>, <c>Shift</c>, <c>Alt</c> properties.
+    /// </summary>
+    private static HotkeyBinding? ConvertHotkeyBinding(JsonElement element)
+    {
+        if (!element.TryGetProperty("Key", out var keyProp) && !element.TryGetProperty("key", out keyProp))
+            return null;
+
+        var key = keyProp.GetInt32();
+        var ctrl = TryGetBool(element, "Ctrl", "ctrl");
+        var shift = TryGetBool(element, "Shift", "shift");
+        var alt = TryGetBool(element, "Alt", "alt");
+
+        return new HotkeyBinding(key, ctrl, shift, alt);
+    }
+
+    /// <summary>
+    /// Tries to read a boolean property by Pascal-case or camelCase name, defaulting to <see langword="false"/>.
+    /// </summary>
+    private static bool TryGetBool(JsonElement element, string pascalName, string camelName)
+    {
+        if (element.TryGetProperty(pascalName, out var prop) || element.TryGetProperty(camelName, out prop))
+            return prop.ValueKind == JsonValueKind.True;
+
+        return false;
     }
 }

@@ -25,7 +25,6 @@ public partial class PluginPanelScopeRegistryTests
         Assert.IsTrue(firstRegister, "First registration should succeed.");
         Assert.IsTrue(secondRegister, "Second registration after release should succeed.");
 
-        // Cleanup
         PluginPanelScopeRegistry.Release(idScope);
     }
 
@@ -51,7 +50,6 @@ public partial class PluginPanelScopeRegistryTests
         Assert.IsTrue(thirdRegister, "Registration after release should succeed.");
         Assert.IsFalse(fourthRegister, "Duplicate registration after re-registration should fail.");
 
-        // Cleanup
         PluginPanelScopeRegistry.Release(idScope);
     }
 
@@ -119,7 +117,7 @@ public partial class PluginPanelScopeRegistryTests
         // Arrange
         var idScope = $"TestScope_{Guid.NewGuid()}";
         PluginPanelScopeRegistry.TryRegister(idScope);
-        PluginPanelScopeRegistry.TryRegister(idScope); // Trigger warning tracking
+        PluginPanelScopeRegistry.TryRegister(idScope);
 
         // Act
         PluginPanelScopeRegistry.Release(idScope);
@@ -128,7 +126,6 @@ public partial class PluginPanelScopeRegistryTests
         var canReRegister = PluginPanelScopeRegistry.TryRegister(idScope);
         Assert.IsTrue(canReRegister, "Scope should be completely released and re-registerable.");
 
-        // Cleanup
         PluginPanelScopeRegistry.Release(idScope);
     }
 
@@ -211,7 +208,6 @@ public partial class PluginPanelScopeRegistryTests
         Assert.IsTrue(firstResult, "First registration of empty string should return true.");
         Assert.IsFalse(secondResult, "Duplicate registration of empty string should return false.");
 
-        // Cleanup
         PluginPanelScopeRegistry.Release(emptyScope);
     }
 
@@ -230,10 +226,8 @@ public partial class PluginPanelScopeRegistryTests
         var result = PluginPanelScopeRegistry.TryRegister(nullScope!);
 
         // Assert
-        // HashSet<string> can store null, so first call should return true
         Assert.IsTrue(result, "First registration of null should return true.");
 
-        // Cleanup
         PluginPanelScopeRegistry.Release(nullScope!);
     }
 
@@ -256,7 +250,6 @@ public partial class PluginPanelScopeRegistryTests
         Assert.IsTrue(firstResult, "First registration of null should return true.");
         Assert.IsFalse(secondResult, "Duplicate registration of null should return false.");
 
-        // Cleanup
         PluginPanelScopeRegistry.Release(nullScope!);
     }
 

@@ -1,7 +1,4 @@
-// <copyright file="NestedGroupDrawerBinderTests.cs" company="Umbra">
-// Copyright (c) Umbra. All rights reserved.
-// </copyright>
-
+using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.UI.Config.Drawers;
 
@@ -13,25 +10,6 @@ namespace Umbra.UI.Config.UnitTests;
 [TestClass]
 public sealed class NestedDrawerBinderTests
 {
-    /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
     /// <summary>
     /// Verifies that a compatible drawer produces a draw action bound to the provided group instance.
     /// </summary>
@@ -135,7 +113,22 @@ public sealed class NestedDrawerBinderTests
         var attribute = new TestNestedDrawerAttribute(typeof(CompatibleDrawerWithoutParameterlessConstructor));
         var group = new TestGroup();
 
-        AssertThrows<MissingMethodException>(() => NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out _));
+        Assert.ThrowsExactly<MissingMethodException>(() => NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestGroup), group, out _));
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="ConfigTransferDrawer"/> no longer binds through the nested-drawer binder.
+    /// </summary>
+    [TestMethod]
+    public void BuildDrawAction_WithConfigTransferDrawer_ReturnsNull()
+    {
+        var attribute = new TestNestedDrawerAttribute(typeof(ConfigTransferDrawer));
+        var group = new TestTransferGroup();
+
+        var action = NestedDrawerBinder.BuildDrawAction(attribute, typeof(TestTransferGroup), group, out var disposable);
+
+        Assert.IsNull(action);
+        Assert.IsNull(disposable);
     }
 
     /// <summary>
@@ -183,12 +176,10 @@ public sealed class NestedDrawerBinderTests
     {
         public void Draw(TestGroup group)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -206,7 +197,6 @@ public sealed class NestedDrawerBinderTests
     {
         public void Draw(OtherGroup group)
         {
-            // No-op for testing
         }
     }
 
@@ -222,6 +212,18 @@ public sealed class NestedDrawerBinderTests
     /// </summary>
     private sealed class DerivedGroup : BaseGroup
     {
+    }
+
+    /// <summary>
+    /// Concrete transfer-group type used to verify assignable nested-drawer binding.
+    /// </summary>
+    private sealed class TestTransferGroup
+    {
+        public Parameter<string> ConfigFilePath { get; } = new("config.json");
+
+        public Parameter<Action> ImportConfig { get; } = new(static () => { });
+
+        public Parameter<Action> ExportConfig { get; } = new(static () => { });
     }
 
     /// <summary>
@@ -241,7 +243,9 @@ public sealed class NestedDrawerBinderTests
     /// </summary>
     private sealed class CompatibleDrawerWithoutParameterlessConstructor : INestedDrawer<TestGroup>
     {
+#pragma warning disable IDE0290 // Use primary constructor
         public CompatibleDrawerWithoutParameterlessConstructor(int _) { }
+#pragma warning restore IDE0290 // Use primary constructor
 
         public void Draw(TestGroup group)
         {

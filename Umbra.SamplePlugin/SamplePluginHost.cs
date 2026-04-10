@@ -1,6 +1,7 @@
 using REFrameworkNET;
 using REFrameworkNET.Attributes;
 using REFrameworkNET.Callbacks;
+using Umbra.Logging;
 using Umbra.Runtime;
 
 namespace Umbra.SamplePlugin;
@@ -27,6 +28,12 @@ public static class SamplePluginHost
 #if DEBUG
         System.Diagnostics.Debugger.Launch();
 #endif
+
+        if (GameContext.CurrentGame != REGame.RE9)
+        {
+            Logger.Warning("SamplePlugin is only compatible with RE9, skipping load.");
+            return;
+        }
 
         _host.Load();
     }

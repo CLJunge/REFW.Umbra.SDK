@@ -1,3 +1,5 @@
+using Umbra.UI.Config.Search;
+
 namespace Umbra.UI.Config.Nodes.UnitTests;
 
 /// <summary>
@@ -7,22 +9,73 @@ namespace Umbra.UI.Config.Nodes.UnitTests;
 public sealed class ParameterNodeTests
 {
     /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
+    /// Verifies that when the disabled predicate returns <see langword="true"/>, the draw action still runs inside one disabled region.
     /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
+    [TestMethod]
+    public void Draw_WhenDisabledPredicateReturnsTrue_WrapsDrawInDisabledRegion()
     {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        bool isDisabled() => true;
+        void draw() => drawCallCount++;
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 0, 0, renderer, isDisabled: isDisabled);
 
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(1, renderer.BeginDisabledCount);
+        Assert.AreEqual(1, renderer.EndDisabledCount);
+        Assert.IsTrue(renderer.LastBeginDisabledValue);
+    }
+
+    /// <summary>
+    /// Verifies that when the disabled predicate returns <see langword="false"/>, no disabled region is emitted.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenDisabledPredicateReturnsFalse_DoesNotEmitDisabledRegion()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        bool isVisible() => true;
+        bool isDisabled() => false;
+        void draw() => drawCallCount++;
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 0, 0, renderer, isDisabled: isDisabled);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(0, renderer.BeginDisabledCount);
+        Assert.AreEqual(0, renderer.EndDisabledCount);
+    }
+
+    /// <summary>
+    /// Verifies that a hidden node does not begin a disabled region even if its disabled predicate would return <see langword="true"/>.
+    /// </summary>
+    [TestMethod]
+    public void Draw_WhenNotVisible_DoesNotEmitDisabledRegion()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCalled = false;
+        bool isVisible() => false;
+        bool isDisabled() => true;
+        void draw() => drawCalled = true;
+        var node = new ParameterNode(isVisible, draw, int.MaxValue, 0, 0, renderer, isDisabled: isDisabled);
+
+        // Act
+        node.Draw();
+
+        // Assert
+        Assert.IsFalse(drawCalled);
+        Assert.AreEqual(0, renderer.BeginDisabledCount);
+        Assert.AreEqual(0, renderer.EndDisabledCount);
     }
 
     /// <summary>
@@ -300,7 +353,7 @@ public sealed class ParameterNodeTests
     {
         var renderer = new TestParameterNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(null!, static () => { }, int.MaxValue, 0, 0, renderer));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ParameterNode(null!, static () => { }, int.MaxValue, 0, 0, renderer));
 
         Assert.AreEqual("isVisible", exception.ParamName);
     }
@@ -313,7 +366,7 @@ public sealed class ParameterNodeTests
     {
         var renderer = new TestParameterNodeRenderer();
 
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, null!, int.MaxValue, 0, 0, renderer));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ParameterNode(static () => true, null!, int.MaxValue, 0, 0, renderer));
 
         Assert.AreEqual("draw", exception.ParamName);
     }
@@ -324,8 +377,164 @@ public sealed class ParameterNodeTests
     [TestMethod]
     public void Constructor_NullRenderer_ThrowsArgumentNullException()
     {
-        var exception = AssertThrows<ArgumentNullException>(() => _ = new ParameterNode(static () => true, static () => { }, int.MaxValue, 0, 0, renderer: null!));
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ParameterNode(static () => true, static () => { }, int.MaxValue, 0, 0, renderer: null!));
 
         Assert.AreEqual("renderer", exception.ParamName);
+    }
+
+    /// <summary>
+    /// Verifies that applying a matching search state keeps the node visible and applies match highlighting.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenResultMatches_AppliesMatchHighlight()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        var node = new ParameterNode(static () => true, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
+        var renderState = CreateRenderState(["alpha"], focusedResultId: null, pendingScrollResultId: null, pendingFocusResultId: null);
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsTrue(visible);
+        Assert.AreEqual(1, drawCallCount);
+        Assert.AreEqual(4, renderer.PushStyleColorCount);
+        Assert.AreEqual(Hexa.NET.ImGui.ImGuiCol.Text, renderer.PushedStyleColors[0].Color);
+        Assert.AreNotEqual(0, renderer.PopStyleColorCount);
+        Assert.AreEqual(0, renderer.KeyboardFocusCount);
+    }
+
+    /// <summary>
+    /// Verifies that applying a focused search state uses the focused highlight, scrolls the node into view once, and requests keyboard focus once.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenResultIsFocused_AppliesFocusedHighlightScrollAndKeyboardFocusOnce()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        var node = new ParameterNode(static () => true, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
+        var renderState = CreateRenderState(["alpha"], focusedResultId: "alpha", pendingScrollResultId: "alpha", pendingFocusResultId: "alpha");
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+        node.Draw();
+
+        // Assert
+        Assert.IsTrue(visible);
+        Assert.AreEqual(2, drawCallCount);
+        Assert.AreEqual(8, renderer.PushStyleColorCount);
+        Assert.AreEqual(Hexa.NET.ImGui.ImGuiCol.Text, renderer.PushedStyleColors[0].Color);
+        Assert.AreEqual(1, renderer.ScrollHereCount);
+        Assert.AreEqual(1, renderer.KeyboardFocusCount);
+    }
+
+    /// <summary>
+    /// Verifies that applying a non-matching search state hides the node and skips drawing.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenResultDoesNotMatch_HidesNode()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        var node = new ParameterNode(static () => true, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
+        var renderState = CreateRenderState(["beta"], focusedResultId: null, pendingScrollResultId: null, pendingFocusResultId: null);
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsFalse(visible);
+        Assert.AreEqual(0, drawCallCount);
+        Assert.AreEqual(0, renderer.PushStyleColorCount);
+        Assert.AreEqual(0, renderer.KeyboardFocusCount);
+    }
+
+    /// <summary>
+    /// Verifies that a matching result stays hidden during search when the runtime visibility predicate is false.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenMatchingResultIsRuntimeHidden_HidesNode()
+    {
+        // Arrange
+        var renderer = new TestParameterNodeRenderer();
+        var drawCallCount = 0;
+        var node = new ParameterNode(static () => false, () => drawCallCount++, resultId: "alpha", renderer: renderer, order: int.MaxValue, spacingBefore: 0, spacingAfter: 0);
+        var renderState = CreateRenderState(["alpha"], focusedResultId: null, pendingScrollResultId: null, pendingFocusResultId: null);
+
+        // Act
+        var visible = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+
+        // Assert
+        Assert.IsFalse(visible);
+        Assert.AreEqual(0, drawCallCount);
+        Assert.AreEqual(0, renderer.PushStyleColorCount);
+        Assert.AreEqual(0, renderer.KeyboardFocusCount);
+    }
+
+    /// <summary>
+    /// Verifies that a hidden wrapper does not stay visible during search just because a child result matches.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenMatchingChildIsWrappedByHiddenNode_HidesWrapper()
+    {
+        // Arrange
+        var wrapperRenderer = new TestParameterNodeRenderer();
+        var childRenderer = new TestParameterNodeRenderer();
+        var childDrawCallCount = 0;
+        var childNode = new ParameterNode(static () => true, () => childDrawCallCount++, resultId: "alpha", renderer: childRenderer, order: 0, spacingBefore: 0, spacingAfter: 0);
+        var wrapperNode = new ParameterNode(static () => false, static () => { }, order: 0, spacingBefore: 0, spacingAfter: 0, renderer: wrapperRenderer, children: [childNode]);
+        var renderState = CreateRenderState(["alpha"], focusedResultId: null, pendingScrollResultId: null, pendingFocusResultId: null);
+
+        // Act
+        var visible = ((IConfigSearchNode)wrapperNode).ApplySearch(renderState);
+        wrapperNode.Draw();
+
+        // Assert
+        Assert.IsFalse(visible);
+        Assert.AreEqual(0, childDrawCallCount);
+        Assert.AreEqual(0, childRenderer.PushStyleColorCount);
+        Assert.AreEqual(0, wrapperRenderer.PushStyleColorCount);
+    }
+
+    private static ConfigSearchRenderState CreateRenderState(
+        string[] matchIds,
+        string? focusedResultId,
+        string? pendingScrollResultId,
+        string? pendingFocusResultId)
+    {
+        var searchState = new ConfigDrawerSearchState();
+        searchState.SetQuery("alpha");
+        searchState.SetMatches(matchIds);
+
+        if (focusedResultId is not null && searchState.FocusedResultId != focusedResultId)
+        {
+            for (var i = 0; i < matchIds.Length; i++)
+            {
+                if (searchState.FocusedResultId == focusedResultId)
+                    break;
+
+                searchState.MoveNext();
+            }
+        }
+
+        if (pendingScrollResultId is null && searchState.PendingScrollResultId is not null)
+            searchState.ClearPendingScrollTarget(searchState.PendingScrollResultId);
+
+        if (pendingFocusResultId is null && searchState.PendingFocusResultId is not null)
+            searchState.ClearPendingFocusTarget(searchState.PendingFocusResultId);
+#pragma warning disable IDE0028
+        return new ConfigSearchRenderState(
+            searchState,
+            new HashSet<string>(matchIds, StringComparer.Ordinal),
+            new HashSet<string>(StringComparer.Ordinal));
+#pragma warning restore IDE0028
     }
 }

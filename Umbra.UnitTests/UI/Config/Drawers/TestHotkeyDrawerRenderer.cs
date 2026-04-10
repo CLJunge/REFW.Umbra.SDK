@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Umbra.UI.Config.Drawers.UnitTests;
 
 /// <summary>
@@ -7,6 +9,7 @@ internal sealed class TestHotkeyDrawerRenderer : IHotkeyDrawerRenderer
 {
     public List<string> DisabledTexts { get; } = [];
     public List<string> Texts { get; } = [];
+    public List<(Vector4 Color, string Text)> ColoredTexts { get; } = [];
     public List<string> Buttons { get; } = [];
     public List<string> HelpMarkers { get; } = [];
     public int SameLineCount { get; private set; }
@@ -28,4 +31,6 @@ internal sealed class TestHotkeyDrawerRenderer : IHotkeyDrawerRenderer
     }
 
     public void DrawHelpMarker(string description) => HelpMarkers.Add(description);
+
+    public void TextColored(Vector4 color, string text) => ColoredTexts.Add((color, text));
 }

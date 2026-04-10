@@ -7,9 +7,7 @@ namespace Umbra.UI.Config;
 /// Represents one local layout scope while a configuration draw tree is being assembled.
 /// </summary>
 /// <remarks>
-/// A scope owns the node list, category map, and label-alignment state for one configuration
-/// group. Category creation and routing are handled here so <see cref="ConfigDrawerBuilder"/>
-/// can stay focused on traversal and composition.
+/// A scope owns the node list, local category map, and shared label-alignment state for one configuration group. Category materialization and routing happen here so the higher-level builder can stay focused on traversal and composition.
 /// </remarks>
 internal sealed class ConfigDrawScope(
     string groupPath,
@@ -33,8 +31,7 @@ internal sealed class ConfigDrawScope(
     internal LabelAlignmentGroup AlignmentGroup { get; } = alignmentGroup ?? new();
 
     /// <summary>
-    /// Routes one node into the specified category bucket of this scope, or the scope root when
-    /// <paramref name="category"/> is <see langword="null"/>.
+    /// Routes <paramref name="node"/> into the specified local category bucket, or the scope root when <paramref name="category"/> is <see langword="null"/>.
     /// </summary>
     /// <param name="category">The local category bucket to route into, or <see langword="null"/> for the root list.</param>
     /// <param name="node">The node to append.</param>
@@ -45,8 +42,7 @@ internal sealed class ConfigDrawScope(
     }
 
     /// <summary>
-    /// Returns the active <see cref="LabelAlignmentGroup"/> for <paramref name="category"/>,
-    /// creating the category header on demand when required.
+    /// Returns the <see cref="LabelAlignmentGroup"/> used for <paramref name="category"/> in this scope.
     /// </summary>
     /// <param name="category">The local category name, or <see langword="null"/> for the scope-wide alignment group.</param>
     internal LabelAlignmentGroup GetAlignmentGroup(string? category)
@@ -59,7 +55,7 @@ internal sealed class ConfigDrawScope(
     }
 
     /// <summary>
-    /// Materializes this collected scope into a visible container category.
+    /// Materializes this scope's current top-level nodes into a visible category container.
     /// </summary>
     /// <param name="category">The category label for the container.</param>
     /// <returns>
@@ -67,7 +63,7 @@ internal sealed class ConfigDrawScope(
     /// </returns>
     internal CategoryNode CreateContainerNode(string category)
     {
-        var node = new CategoryNode(category, CollapseAttr, CategoryIndentAttr);
+        var node = new CategoryNode(category, BuildCategoryBranchId(category), CollapseAttr, CategoryIndentAttr);
         foreach (var child in Nodes)
             node.Children.Add(child);
 
@@ -105,11 +101,16 @@ internal sealed class ConfigDrawScope(
             return;
         }
 
-        var node = new CategoryNode(category, CollapseAttr, CategoryIndentAttr);
+        var node = new CategoryNode(category, BuildCategoryBranchId(category), CollapseAttr, CategoryIndentAttr);
         Nodes.Add(node);
         _namedCategories[category] = node;
         _currentCategoryNode = node;
         _lastCategory = category;
         registerCategory(node);
     }
+
+    private string BuildCategoryBranchId(string category)
+        => string.IsNullOrEmpty(GroupPath)
+            ? $"category:{category}"
+            : $"category:{GroupPath}|{category}";
 }

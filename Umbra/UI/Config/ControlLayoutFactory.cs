@@ -3,12 +3,10 @@ using Umbra.Config;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Creates precomputed <see cref="ControlLayout"/> values for parameter rows.
+/// Creates the precomputed <see cref="ControlLayout"/> values used for parameter rows.
 /// </summary>
 /// <remarks>
-/// This type isolates layout-value construction from <see cref="ControlFactory"/>, including
-/// hidden-label fallback resolution, description detection, default width selection, and alignment
-/// group registration.
+/// This helper resolves hidden-label fallbacks, description presence, default control widths, and alignment-group registration so the control builders can stay focused on widget-specific behavior.
 /// </remarks>
 internal static class ControlLayoutFactory
 {
@@ -16,15 +14,12 @@ internal static class ControlLayoutFactory
     private const string HiddenLabelPrefix = "##";
 
     /// <summary>
-    /// Constructs the precomputed layout state for one parameter row.
+    /// Builds the precomputed layout state for one parameter row.
     /// </summary>
-    /// <param name="label">The resolved display label for the parameter.</param>
+    /// <param name="label">The resolved display label.</param>
     /// <param name="parameter">The parameter being rendered.</param>
-    /// <param name="alignGroup">The shared alignment group for the owning category or root scope.</param>
-    /// <returns>
-    /// A <see cref="ControlLayout"/> capturing the label, description, alignment group, widget width,
-    /// and hidden ImGui label for the row.
-    /// </returns>
+    /// <param name="alignGroup">The alignment group shared by the current scope.</param>
+    /// <returns>The precomputed layout state for the row.</returns>
     internal static ControlLayout Create(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
     {
         ArgumentNullException.ThrowIfNull(label);

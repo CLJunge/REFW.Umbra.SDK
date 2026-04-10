@@ -4,22 +4,22 @@ using Umbra.Config.Attributes;
 namespace Umbra.UI.Config.Rendering;
 
 /// <summary>
-/// Defines button color-stack operations shared by button-based controls.
+/// Defines the button color-stack operations shared by button-based configuration controls.
 /// </summary>
+/// <remarks>
+/// <see cref="Drawers.ButtonDrawer"/> and other button-oriented renderers use this abstraction to apply either a built-in <see cref="ButtonStyle"/> palette or an explicit custom color triple before drawing the widget.
+/// </remarks>
 internal interface IButtonColorOps
 {
     /// <summary>
-    /// Applies the preset colors associated with the specified button style.
+    /// Pushes the preset colors associated with <paramref name="style"/>.
     /// </summary>
-    /// <param name="style">The style whose colors should be applied.</param>
-    /// <returns>
-    /// <see langword="true"/> when colors were pushed and must later be popped; otherwise
-    /// <see langword="false"/>.
-    /// </returns>
+    /// <param name="style">The built-in button style whose colors should be applied.</param>
+    /// <returns><see langword="true"/> if colors were pushed and must later be popped; otherwise, <see langword="false"/>.</returns>
     bool PushButtonColors(ButtonStyle style);
 
     /// <summary>
-    /// Applies fully custom button colors.
+    /// Pushes a fully custom button color triple.
     /// </summary>
     /// <param name="normal">The normal-state color.</param>
     /// <param name="hovered">The hovered-state color.</param>
@@ -28,7 +28,7 @@ internal interface IButtonColorOps
     bool PushButtonColors(Vector4 normal, Vector4 hovered, Vector4 active);
 
     /// <summary>
-    /// Pops the previously pushed button colors.
+    /// Pops the button colors pushed by <see cref="PushButtonColors(ButtonStyle)"/> or <see cref="PushButtonColors(Vector4, Vector4, Vector4)"/>.
     /// </summary>
     void PopButtonColors();
 }

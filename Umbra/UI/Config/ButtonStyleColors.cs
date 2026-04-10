@@ -5,12 +5,13 @@ using Umbra.Config.Attributes;
 namespace Umbra.UI.Config;
 
 /// <summary>
-/// Defines the ImGui color table for each <see cref="ButtonStyle"/> variant
-/// and provides push/pop color scope helpers for rendering styled buttons.
+/// Maps <see cref="ButtonStyle"/> values to the ImGui color triples used when rendering styled buttons.
 /// </summary>
+/// <remarks>
+/// This helper also abstracts the low-level color push and pop operations through <see cref="IButtonStyleColorSink"/> so tests can validate style selection without invoking native ImGui entry points.
+/// </remarks>
 internal static class ButtonStyleColors
 {
-    // Three ImGui color slots (normal / hovered / active) for each non-default style variant.
     private static readonly Dictionary<ButtonStyle, (Vector4 Normal, Vector4 Hovered, Vector4 Active)> _colors =
         new()
         {
@@ -69,16 +70,10 @@ internal static class ButtonStyleColors
     }
 
     /// <summary>
-    /// Pushes the three button color slots (<see cref="ImGuiCol.Button"/>,
-    /// <see cref="ImGuiCol.ButtonHovered"/>, <see cref="ImGuiCol.ButtonActive"/>)
-    /// for the requested <paramref name="style"/>.
+    /// Pushes the ImGui button colors for <paramref name="style"/> when the style defines an explicit color table.
     /// </summary>
-    /// <param name="style">The style variant whose colors should be applied.</param>
-    /// <returns>
-    /// <see langword="true"/> when colors were pushed and <see cref="Pop"/> must be called;
-    /// <see langword="false"/> for <see cref="ButtonStyle.Default"/>, which leaves the
-    /// active ImGui theme untouched.
-    /// </returns>
+    /// <param name="style">The button style whose colors should be applied.</param>
+    /// <returns><see langword="true"/> if colors were pushed and <see cref="Pop"/> must be called; otherwise, <see langword="false"/>.</returns>
     internal static bool Push(ButtonStyle style)
     {
         if (!_colors.TryGetValue(style, out var c)) return false;
@@ -90,15 +85,11 @@ internal static class ButtonStyleColors
     }
 
     /// <summary>
-    /// Pushes fully custom RGBA colors into the three button color slots
-    /// (<see cref="ImGuiCol.Button"/>, <see cref="ImGuiCol.ButtonHovered"/>,
-    /// <see cref="ImGuiCol.ButtonActive"/>).
-    /// Always returns <see langword="true"/>; <see cref="Pop"/> must always be called
-    /// after the button widget is rendered.
+    /// Pushes an explicit normal, hovered, and active color triple for the next button draw.
     /// </summary>
-    /// <param name="normal">Color applied to <see cref="ImGuiCol.Button"/>.</param>
-    /// <param name="hovered">Color applied to <see cref="ImGuiCol.ButtonHovered"/>.</param>
-    /// <param name="active">Color applied to <see cref="ImGuiCol.ButtonActive"/>.</param>
+    /// <param name="normal">The color applied to <see cref="ImGuiCol.Button"/>.</param>
+    /// <param name="hovered">The color applied to <see cref="ImGuiCol.ButtonHovered"/>.</param>
+    /// <param name="active">The color applied to <see cref="ImGuiCol.ButtonActive"/>.</param>
     /// <returns>Always <see langword="true"/>.</returns>
     internal static bool Push(Vector4 normal, Vector4 hovered, Vector4 active)
     {
@@ -110,8 +101,7 @@ internal static class ButtonStyleColors
     }
 
     /// <summary>
-    /// Pops the three color slots pushed by <see cref="Push(ButtonStyle)"/> or <see cref="Push(Vector4, Vector4, Vector4)"/>.
-    /// Must only be called when <see cref="Push(ButtonStyle)"/> or <see cref="Push(Vector4, Vector4, Vector4)"/> returned <see langword="true"/>.
+    /// Pops the three button color entries previously pushed by <see cref="Push(ButtonStyle)"/> or <see cref="Push(Vector4, Vector4, Vector4)"/>.
     /// </summary>
     internal static void Pop() => GetColorSink().PopStyleColor(3);
 }

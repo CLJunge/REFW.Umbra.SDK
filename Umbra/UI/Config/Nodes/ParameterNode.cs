@@ -1,112 +1,144 @@
+using System.Numerics;
+using Hexa.NET.ImGui;
 using Umbra.UI.Config.Rendering;
+using Umbra.UI.Config.Search;
 
 namespace Umbra.UI.Config.Nodes;
 
 /// <summary>
-/// Draw node that conditionally invokes a per-frame draw action based on a visibility predicate.
+/// Renders one configuration-row draw action with optional visibility, spacing, and indentation behavior.
 /// </summary>
 /// <remarks>
-/// The default constructor renders spacing through the shared active ImGui context. Unit tests can
-/// replace the low-level renderer through the internal constructor so visibility, spacing, and
-/// optional indentation behavior can be verified without requiring an active ImGui frame.
+/// The default constructors render through the shared ImGui render context. Tests can supply a renderer seam to verify visibility, spacing, indentation, highlight, scroll, and focused-control handoff behavior without requiring an active ImGui frame.
 /// </remarks>
-internal sealed class ParameterNode : IDrawNode
+internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
 {
+    private static readonly Vector4 MatchTextColor = new(1f, 0.95f, 0.60f, 1f);
+    private static readonly Vector4 MatchFrameColor = new(0.35f, 0.28f, 0.08f, 0.70f);
+    private static readonly Vector4 MatchFrameHoveredColor = new(0.42f, 0.34f, 0.10f, 0.82f);
+    private static readonly Vector4 MatchFrameActiveColor = new(0.48f, 0.40f, 0.12f, 0.90f);
+    private static readonly Vector4 FocusedTextColor = new(1f, 1f, 0.78f, 1f);
+    private static readonly Vector4 FocusedFrameColor = new(0.50f, 0.32f, 0.08f, 0.88f);
+    private static readonly Vector4 FocusedFrameHoveredColor = new(0.58f, 0.38f, 0.10f, 0.94f);
+    private static readonly Vector4 FocusedFrameActiveColor = new(0.66f, 0.44f, 0.12f, 1f);
+
     private readonly Func<bool>? _isVisible;
+    private readonly Func<bool>? _isDisabled;
     private readonly bool _alwaysVisible;
     private readonly Action _draw;
+    private readonly List<IDrawNode>? _children;
     private readonly float? _indentAmount;
     private readonly int _spacingBefore;
     private readonly int _spacingAfter;
+    private readonly string? _resultId;
     private readonly IParameterNodeRenderer _renderer;
+    private bool _searchVisible = true;
+    private bool _scrollIntoView;
+    private bool _focusControl;
+    private SearchMatchVisualState _searchVisualState;
 
     /// <summary>
-    /// Initializes a new <see cref="ParameterNode"/> that renders spacing through the shared active ImGui context.
+    /// Initializes a new always-visible <see cref="ParameterNode"/> that renders through the shared ImGui render context.
     /// </summary>
+    /// <param name="draw">The per-frame draw action to invoke.</param>
+    /// <param name="order">The sort key for this node within its local rendered scope.</param>
+    /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
+    /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
+    /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
+    /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
+    /// <param name="isDisabled">The optional predicate evaluated each frame to determine whether the row should render disabled.</param>
     internal ParameterNode(
         Action draw,
         int order = int.MaxValue,
         int spacingBefore = 0,
         int spacingAfter = 0,
-        float? indentAmount = null)
-        : this(draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount)
+        float? indentAmount = null,
+        string? resultId = null,
+        List<IDrawNode>? children = null,
+        Func<bool>? isDisabled = null)
+        : this(draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount, resultId, children, isDisabled)
     {
     }
 
     /// <summary>
-    /// Initializes a new always-visible <see cref="ParameterNode"/> with the specified low-level renderer.
+    /// Initializes a new always-visible <see cref="ParameterNode"/> with the specified renderer seam.
     /// </summary>
     /// <param name="draw">The per-frame draw action to invoke.</param>
     /// <param name="order">The sort key for this node within its local rendered scope.</param>
-    /// <param name="spacingBefore">The number of spacing calls emitted before the draw action.</param>
-    /// <param name="spacingAfter">The number of spacing calls emitted after the draw action.</param>
-    /// <param name="renderer">The renderer used for spacing operations.</param>
-    /// <param name="indentAmount">
-    /// The optional indentation width applied around the draw action, or <see langword="null"/>
-    /// when no indentation is required.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="draw"/> or <paramref name="renderer"/> is <see langword="null"/>.
-    /// </exception>
+    /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
+    /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
+    /// <param name="renderer">The renderer used for spacing, indentation, highlight, scroll, and focus operations.</param>
+    /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
+    /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
+    /// <param name="isDisabled">The optional predicate evaluated each frame to determine whether the row should render disabled.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="draw"/> or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ParameterNode(
         Action draw,
         int order,
         int spacingBefore,
         int spacingAfter,
         IParameterNodeRenderer renderer,
-        float? indentAmount = null)
+        float? indentAmount = null,
+        string? resultId = null,
+        List<IDrawNode>? children = null,
+        Func<bool>? isDisabled = null)
     {
         ArgumentNullException.ThrowIfNull(draw);
         ArgumentNullException.ThrowIfNull(renderer);
         _alwaysVisible = true;
         _draw = draw;
+        _children = children;
         _indentAmount = indentAmount;
         _spacingBefore = spacingBefore;
         _spacingAfter = spacingAfter;
+        _resultId = resultId;
         _renderer = renderer;
+        _isDisabled = isDisabled;
         Order = order;
     }
 
     /// <summary>
-    /// Initializes a new <see cref="ParameterNode"/> that conditionally invokes a per-frame draw action
-    /// based on a visibility predicate.
+    /// Initializes a new conditionally visible <see cref="ParameterNode"/> that renders through the shared ImGui render context.
     /// </summary>
-    /// <param name="isVisible">Predicate evaluated each frame to determine visibility.</param>
+    /// <param name="isVisible">The predicate evaluated each frame to determine whether drawing should occur.</param>
     /// <param name="draw">The per-frame draw action to invoke when visible.</param>
     /// <param name="order">The sort key for this node within its local rendered scope.</param>
-    /// <param name="spacingBefore">The number of spacing calls emitted before the draw action.</param>
-    /// <param name="spacingAfter">The number of spacing calls emitted after the draw action.</param>
-    /// <param name="indentAmount">
-    /// The optional indentation width applied around the draw action, or <see langword="null"/>
-    /// when no indentation is required.
-    /// </param>
+    /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
+    /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
+    /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
+    /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
+    /// <param name="isDisabled">The optional predicate evaluated each frame to determine whether the row should render disabled.</param>
     internal ParameterNode(
         Func<bool> isVisible,
         Action draw,
         int order = int.MaxValue,
         int spacingBefore = 0,
         int spacingAfter = 0,
-        float? indentAmount = null)
-        : this(isVisible, draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount)
+        float? indentAmount = null,
+        string? resultId = null,
+        List<IDrawNode>? children = null,
+        Func<bool>? isDisabled = null)
+        : this(isVisible, draw, order, spacingBefore, spacingAfter, ImGuiConfigRenderContext.Instance, indentAmount, resultId, children, isDisabled)
     {
     }
 
     /// <summary>
-    /// Initializes a new <see cref="ParameterNode"/> with the specified low-level renderer.
+    /// Initializes a new conditionally visible <see cref="ParameterNode"/> with the specified renderer seam.
     /// </summary>
-    /// <param name="isVisible">Predicate evaluated each frame to determine visibility.</param>
+    /// <param name="isVisible">The predicate evaluated each frame to determine whether drawing should occur.</param>
     /// <param name="draw">The per-frame draw action to invoke when visible.</param>
     /// <param name="order">The sort key for this node within its local rendered scope.</param>
-    /// <param name="spacingBefore">The number of spacing calls emitted before the draw action.</param>
-    /// <param name="spacingAfter">The number of spacing calls emitted after the draw action.</param>
-    /// <param name="indentAmount">
-    /// The optional indentation width applied around the draw action, or <see langword="null"/>
-    /// when no indentation is required.
-    /// </param>
-    /// <param name="renderer">The renderer used for spacing operations.</param>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="isVisible"/>, <paramref name="draw"/>, or <paramref name="renderer"/> is <see langword="null"/>.
-    /// </exception>
+    /// <param name="spacingBefore">The number of spacing calls emitted before drawing.</param>
+    /// <param name="spacingAfter">The number of spacing calls emitted after drawing.</param>
+    /// <param name="renderer">The renderer used for spacing, indentation, highlight, scroll, and focus operations.</param>
+    /// <param name="indentAmount">The optional indentation width applied around the draw action.</param>
+    /// <param name="resultId">The stable search-result identifier for this row, or <see langword="null"/> when the node does not participate as a searchable leaf result.</param>
+    /// <param name="children">The optional child nodes routed through this parameter node when it acts as a searchable container wrapper.</param>
+    /// <param name="isDisabled">The optional predicate evaluated each frame to determine whether the row should render disabled.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="isVisible"/>, <paramref name="draw"/>, or <paramref name="renderer"/> is <see langword="null"/>.</exception>
     internal ParameterNode(
         Func<bool> isVisible,
         Action draw,
@@ -114,47 +146,181 @@ internal sealed class ParameterNode : IDrawNode
         int spacingBefore,
         int spacingAfter,
         IParameterNodeRenderer renderer,
-        float? indentAmount = null)
+        float? indentAmount = null,
+        string? resultId = null,
+        List<IDrawNode>? children = null,
+        Func<bool>? isDisabled = null)
     {
         ArgumentNullException.ThrowIfNull(isVisible);
         ArgumentNullException.ThrowIfNull(draw);
         ArgumentNullException.ThrowIfNull(renderer);
         _isVisible = isVisible;
         _draw = draw;
+        _children = children;
         _indentAmount = indentAmount;
         _spacingBefore = spacingBefore;
         _spacingAfter = spacingAfter;
+        _resultId = resultId;
         _renderer = renderer;
+        _isDisabled = isDisabled;
         Order = order;
     }
 
-    /// <summary>Gets the sort key for this node within its local rendered scope.</summary>
+    /// <summary>
+    /// Gets the sort key for this node within its local rendered scope.
+    /// </summary>
     internal int Order { get; }
 
     /// <inheritdoc/>
     public void Draw()
     {
-        if (!_alwaysVisible && !_isVisible!()) return;
+        if (!_searchVisible) return;
+        if (!IsRuntimeVisible()) return;
+
         for (var i = 0; i < _spacingBefore; i++) _renderer.Spacing();
 
-        if (_indentAmount.HasValue)
+        var highlightDepth = PushSearchHighlight();
+        var disabled = IsRuntimeDisabled();
+        try
         {
-            var amount = _indentAmount.Value;
-            _renderer.Indent(amount);
+            if (disabled)
+                _renderer.BeginDisabled(true);
+
             try
             {
-                _draw();
+                if (_indentAmount.HasValue)
+                {
+                    var amount = _indentAmount.Value;
+                    _renderer.Indent(amount);
+                    try
+                    {
+                        DrawCore();
+                    }
+                    finally
+                    {
+                        _renderer.Unindent(amount);
+                    }
+                }
+                else
+                {
+                    DrawCore();
+                }
             }
             finally
             {
-                _renderer.Unindent(amount);
+                if (disabled)
+                    _renderer.EndDisabled();
             }
         }
-        else
+        finally
         {
-            _draw();
+            if (highlightDepth > 0)
+                _renderer.PopStyleColor(highlightDepth);
         }
 
         for (var i = 0; i < _spacingAfter; i++) _renderer.Spacing();
+    }
+
+    bool IConfigSearchNode.ApplySearch(ConfigSearchRenderState? searchState)
+    {
+        _scrollIntoView = false;
+        _focusControl = false;
+
+        if (searchState is null || !searchState.HasActiveQuery)
+        {
+            _searchVisible = true;
+            _searchVisualState = SearchMatchVisualState.None;
+
+            if (_children is null)
+                return true;
+
+            for (var i = 0; i < _children.Count; i++)
+            {
+                if (_children[i] is IConfigSearchNode searchNode)
+                    searchNode.ApplySearch(null);
+            }
+
+            return true;
+        }
+
+        var matchesSelf = _resultId is not null && searchState.IsMatch(_resultId);
+        var hasVisibleChild = false;
+        if (_children is not null)
+        {
+            for (var i = 0; i < _children.Count; i++)
+            {
+                if (_children[i] is IConfigSearchNode searchNode)
+                {
+                    if (searchNode.ApplySearch(searchState))
+                        hasVisibleChild = true;
+
+                    continue;
+                }
+
+                hasVisibleChild = true;
+            }
+        }
+
+        _searchVisible = IsRuntimeVisible() && (matchesSelf || hasVisibleChild);
+        _searchVisualState = matchesSelf
+            ? searchState.IsFocused(_resultId)
+                ? SearchMatchVisualState.FocusedMatch
+                : SearchMatchVisualState.Match
+            : SearchMatchVisualState.None;
+
+        if (matchesSelf && _resultId is not null)
+        {
+            _scrollIntoView = searchState.ShouldScrollIntoView(_resultId);
+            _focusControl = searchState.ShouldFocusControl(_resultId);
+
+            if (_scrollIntoView)
+                searchState.MarkScrolled(_resultId);
+
+            if (_focusControl)
+                searchState.MarkFocused(_resultId);
+        }
+
+        return _searchVisible;
+    }
+
+    private bool IsRuntimeVisible() => _alwaysVisible || _isVisible?.Invoke() != false;
+
+    private bool IsRuntimeDisabled() => _isDisabled?.Invoke() == true;
+
+    private void DrawCore()
+    {
+        if (_focusControl)
+        {
+            _renderer.SetKeyboardFocusHere();
+            _focusControl = false;
+        }
+
+        _draw();
+        if (_scrollIntoView)
+        {
+            _renderer.SetScrollHereY(0.5f);
+            _scrollIntoView = false;
+        }
+    }
+
+    private int PushSearchHighlight()
+    {
+        if (_searchVisualState == SearchMatchVisualState.None)
+            return 0;
+
+        if (_searchVisualState == SearchMatchVisualState.FocusedMatch)
+        {
+            _renderer.PushStyleColor(ImGuiCol.Text, FocusedTextColor);
+            _renderer.PushStyleColor(ImGuiCol.FrameBg, FocusedFrameColor);
+            _renderer.PushStyleColor(ImGuiCol.FrameBgHovered, FocusedFrameHoveredColor);
+            _renderer.PushStyleColor(ImGuiCol.FrameBgActive, FocusedFrameActiveColor);
+            return 4;
+        }
+
+        _renderer.PushStyleColor(ImGuiCol.Text, MatchTextColor);
+        _renderer.PushStyleColor(ImGuiCol.FrameBg, MatchFrameColor);
+        _renderer.PushStyleColor(ImGuiCol.FrameBgHovered, MatchFrameHoveredColor);
+        _renderer.PushStyleColor(ImGuiCol.FrameBgActive, MatchFrameActiveColor);
+        return 4;
     }
 }

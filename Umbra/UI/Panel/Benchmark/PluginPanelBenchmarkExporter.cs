@@ -7,14 +7,10 @@ using Umbra.Logging;
 namespace Umbra.UI.Panel.Benchmark;
 
 /// <summary>
-/// Persists <see cref="PluginPanel"/> benchmark runs to CSV, JSON, and Markdown files.
+/// Writes <see cref="PluginPanel"/> benchmark runs to CSV, JSON, and Markdown artifacts.
 /// </summary>
 /// <remarks>
-/// CSV output is streamed incrementally as frames are measured so partially completed runs still
-/// leave behind useful raw timing data. A JSON export is written when the run completes, stops,
-/// resets, or is disposed, combining run metadata, summary statistics, and the collected samples
-/// into one analysis-friendly document. A sibling Markdown export summarizes the same run in a
-/// format that is easy to inspect directly in the repository or attach to later analysis.
+/// Raw frame timings are streamed incrementally to CSV while a run is active so partially completed runs still leave behind usable sample data. When the run completes, the exporter writes a JSON document and a Markdown summary that combine run metadata, aggregate statistics, and collected samples.
 /// </remarks>
 internal sealed class PluginPanelBenchmarkExporter
 {
@@ -40,7 +36,7 @@ internal sealed class PluginPanelBenchmarkExporter
     /// <summary>
     /// Initializes a new exporter that writes benchmark artifacts to <paramref name="outputDirectory"/>.
     /// </summary>
-    /// <param name="outputDirectory">The directory that will receive CSV, JSON, and Markdown benchmark exports.</param>
+    /// <param name="outputDirectory">The directory that receives CSV, JSON, and Markdown exports.</param>
     internal PluginPanelBenchmarkExporter(string outputDirectory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
@@ -48,7 +44,7 @@ internal sealed class PluginPanelBenchmarkExporter
     }
 
     /// <summary>
-    /// Gets whether an export run is currently active.
+    /// Gets a value indicating whether an export run is currently active.
     /// </summary>
     internal bool IsRunActive => _runId is not null;
 
@@ -68,10 +64,10 @@ internal sealed class PluginPanelBenchmarkExporter
     internal string? LastMarkdownPath { get; private set; }
 
     /// <summary>
-    /// Starts a new export run and opens the CSV stream for incremental sample writes.
+    /// Starts a new export run and opens the CSV stream used for incremental sample writes.
     /// </summary>
-    /// <param name="benchmarkName">A stable benchmark name describing the measured panel draw call.</param>
-    /// <param name="scenario">A stable scenario label describing the benchmark target.</param>
+    /// <param name="benchmarkName">The stable benchmark name describing the measured draw call.</param>
+    /// <param name="scenario">The stable scenario label describing the benchmark target.</param>
     /// <param name="warmupFrames">The configured warmup-frame count.</param>
     /// <param name="sampleFrames">The configured recorded-sample count.</param>
     /// <param name="suppressedRuntimePanel">Whether the normal runtime panel is suppressed while sampling.</param>
@@ -114,9 +110,9 @@ internal sealed class PluginPanelBenchmarkExporter
     }
 
     /// <summary>
-    /// Appends one measured frame to the active CSV stream and in-memory JSON sample list.
+    /// Appends one measured frame to the active CSV stream and in-memory sample list.
     /// </summary>
-    /// <param name="sample">The measured frame to persist.</param>
+    /// <param name="sample">The measured frame sample to persist.</param>
     internal void RecordSample(PluginPanelBenchmarkSample sample)
     {
         if (!IsRunActive || _csvWriter is null || _runId is null || _benchmarkName is null || _scenario is null)
@@ -148,7 +144,7 @@ internal sealed class PluginPanelBenchmarkExporter
     }
 
     /// <summary>
-    /// Completes the active export run and writes the JSON and Markdown summary documents.
+    /// Completes the active export run and writes the JSON document and Markdown summary.
     /// </summary>
     /// <param name="session">The benchmark session providing aggregate statistics, or <see langword="null"/> when unavailable.</param>
     /// <param name="completionReason">The reason the export run ended.</param>
@@ -233,7 +229,7 @@ internal sealed class PluginPanelBenchmarkExporter
     }
 
     /// <summary>
-    /// Clears active-run state while preserving the last export paths for UI display.
+    /// Clears active-run state while preserving the last exported paths for later UI display.
     /// </summary>
     private void ResetState()
     {
@@ -249,17 +245,15 @@ internal sealed class PluginPanelBenchmarkExporter
     }
 
     /// <summary>
-    /// Returns a RFC 4180-compliant CSV-escaped representation of <paramref name="value"/>.
+    /// Returns an RFC 4180-compliant CSV-escaped representation of <paramref name="value"/>.
     /// </summary>
     /// <param name="value">The raw string value to escape.</param>
-    /// <returns>
-    /// The value wrapped in double quotes, with any embedded double-quote characters doubled.
-    /// </returns>
+    /// <returns>The escaped value wrapped in double quotes, with embedded quotes doubled.</returns>
     private static string EscapeCsvField(string value)
         => "\"" + value.Replace("\"", "\"\"") + "\"";
 
     /// <summary>
-    /// JSON-serializable export document written at the end of each benchmark run.
+    /// Stores the JSON-serializable export document written at the end of each benchmark run.
     /// </summary>
     private sealed class PluginPanelBenchmarkExportDocument
     {

@@ -1,3 +1,5 @@
+using Umbra.Config.Validation;
+
 namespace Umbra.Config.UnitTests;
 
 
@@ -7,25 +9,6 @@ namespace Umbra.Config.UnitTests;
 [TestClass]
 public class ParameterTests
 {
-    /// <summary>
-    /// Verifies that an action throws the expected exception type and returns the captured exception.
-    /// </summary>
-    private static TException AssertThrows<TException>(Action action)
-        where TException : Exception
-    {
-        try
-        {
-            action();
-        }
-        catch (TException exception)
-        {
-            return exception;
-        }
-
-        Assert.Fail($"Expected exception of type {typeof(TException).Name}.");
-        throw new InvalidOperationException("Unreachable");
-    }
-
     #region IsModified Tests - Initial State
 
     /// <summary>
@@ -413,7 +396,6 @@ public class ParameterTests
         var parameter = new Parameter<double>(double.NaN);
 
         // Act & Assert - NaN != NaN by IEEE 754, so IsModified should be true even when "unchanged"
-        // EqualityComparer<double>.Default treats NaN == NaN as true, so IsModified should be false
         Assert.IsFalse(parameter.IsModified, "IsModified should be false when default and current are both NaN (EqualityComparer behavior)");
 
         // Act - change to a different value
@@ -893,6 +875,78 @@ public class ParameterTests
     }
 
     /// <summary>
+    /// Test validator that rejects one reserved string value.
+    /// </summary>
+    private sealed class RejectBlockedValueValidator : IParameterValidator
+    {
+        public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
+        {
+            _ = parameterKey;
+            _ = valueType;
+            _ = metadata;
+
+            if (value is string text && text == "blocked")
+                return ParameterValidationResult.Invalid("The value 'blocked' is reserved.");
+
+            return ParameterValidationResult.Valid();
+        }
+    }
+
+    /// <summary>
+    /// Test validator that counts instance creation and validation calls.
+    /// </summary>
+    private sealed class CountingValidator : IParameterValidator
+    {
+        internal static int InstanceCount;
+        internal static int ValidateCallCount;
+
+        public CountingValidator()
+        {
+            InstanceCount++;
+        }
+
+        public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
+        {
+            _ = parameterKey;
+            _ = value;
+            _ = valueType;
+            _ = metadata;
+            ValidateCallCount++;
+            return ParameterValidationResult.Valid();
+        }
+
+        internal static void Reset()
+        {
+            InstanceCount = 0;
+            ValidateCallCount = 0;
+        }
+    }
+
+    /// <summary>
+    /// Alternate test validator used to verify cache refresh when validator types change.
+    /// </summary>
+    private sealed class AlternateCountingValidator : IParameterValidator
+    {
+        internal static int InstanceCount;
+
+        public AlternateCountingValidator()
+        {
+            InstanceCount++;
+        }
+
+        public ParameterValidationResult Validate(string parameterKey, object? value, Type valueType, ParameterMetadata metadata)
+        {
+            _ = parameterKey;
+            _ = value;
+            _ = valueType;
+            _ = metadata;
+            return ParameterValidationResult.Valid();
+        }
+
+        internal static void Reset() => InstanceCount = 0;
+    }
+
+    /// <summary>
     /// Tests that Reset with raiseEvent=true raises both ValueChanged and IParameter.ValueChanged events
     /// when the current value differs from the default value.
     /// </summary>
@@ -1169,7 +1223,7 @@ public class ParameterTests
         // Assert
         Assert.AreEqual(10, parameter.Value);
         Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(1, eventCallCount); // Only first reset should raise event
+        Assert.AreEqual(1, eventCallCount);
     }
 
     /// <summary>
@@ -1180,7 +1234,7 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(100);
-        parameter.SetWithoutNotify(0); // Set to default(int) without raising event
+        parameter.SetWithoutNotify(0);
 
         // Act
         parameter.Reset();
@@ -1592,7 +1646,7 @@ public class ParameterTests
         };
 
         // Act
-        var exception = AssertThrows<ArgumentOutOfRangeException>(() => parameter.SetOrThrow(5));
+        var exception = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => parameter.SetOrThrow(5));
 
         // Assert
         Assert.AreEqual("value", exception.ParamName);
@@ -1619,13 +1673,208 @@ public class ParameterTests
     }
 
     /// <summary>
+    /// Tests that the non-throwing Value setter rejects a missing required value and records the validation error.
+    /// </summary>
+    [TestMethod]
+    public void Value_WhenRequiredValueIsNull_LeavesValueUnchangedAndStoresValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { Required = true }
+        };
+        var validationState = (IParameterValidationState)parameter;
+
+        // Act
+        parameter.Value = null;
+
+        // Assert
+        Assert.AreEqual("valid", parameter.Value);
+        Assert.IsTrue(validationState.HasValidationError);
+        Assert.AreEqual("Value is required.", validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that TrySet rejects values shorter than the configured minimum length and records the failure reason.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_ValueShorterThanMinLength_ReturnsFalseAndStoresValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { MinLength = 5 }
+        };
+        var validationState = (IParameterValidationState)parameter;
+
+        // Act
+        var result = parameter.TrySet("abc");
+
+        // Assert
+        Assert.IsFalse(result);
+        Assert.AreEqual("valid", parameter.Value);
+        Assert.IsTrue(validationState.HasValidationError);
+        Assert.AreEqual("Value must be at least 5 characters long.", validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that SetOrThrow rejects regex mismatches and preserves the specific failure message.
+    /// </summary>
+    [TestMethod]
+    public void SetOrThrow_ValueDoesNotMatchRegex_ThrowsAndStoresValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("ABC")
+        {
+            Metadata = new ParameterMetadata
+            {
+                RegexPattern = "^[A-Z]{3}$",
+                RegexMessage = "Use exactly three uppercase letters."
+            }
+        };
+        var validationState = (IParameterValidationState)parameter;
+
+        // Act
+        var exception = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => parameter.SetOrThrow("ab1"));
+
+        // Assert
+        Assert.AreEqual("value", exception.ParamName);
+        Assert.AreEqual("ABC", parameter.Value);
+        Assert.IsTrue(validationState.HasValidationError);
+        Assert.AreEqual("Use exactly three uppercase letters.", validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that a custom validator can reject a value and report its own failure reason.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_CustomValidatorRejectsValue_ReturnsFalseAndStoresValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { ValidatorType = typeof(RejectBlockedValueValidator) }
+        };
+        var validationState = (IParameterValidationState)parameter;
+
+        // Act
+        var result = parameter.TrySet("blocked");
+
+        // Assert
+        Assert.IsFalse(result);
+        Assert.AreEqual("valid", parameter.Value);
+        Assert.IsTrue(validationState.HasValidationError);
+        Assert.AreEqual("The value 'blocked' is reserved.", validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that a custom validator instance is reused across repeated validation attempts.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_CustomValidatorRepeatedValidation_CachesValidatorInstance()
+    {
+        // Arrange
+        CountingValidator.Reset();
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { ValidatorType = typeof(CountingValidator) }
+        };
+
+        // Act
+        var firstResult = parameter.TrySet("first");
+        var secondResult = parameter.TrySet("second");
+
+        // Assert
+        Assert.IsTrue(firstResult);
+        Assert.IsTrue(secondResult);
+        Assert.AreEqual(1, CountingValidator.InstanceCount);
+        Assert.AreEqual(2, CountingValidator.ValidateCallCount);
+    }
+
+    /// <summary>
+    /// Tests that changing the configured validator type causes the cached validator instance to be recreated.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_WhenValidatorTypeChanges_RecreatesCachedValidator()
+    {
+        // Arrange
+        CountingValidator.Reset();
+        AlternateCountingValidator.Reset();
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { ValidatorType = typeof(CountingValidator) }
+        };
+
+        var firstResult = parameter.TrySet("first");
+
+        // Act
+        parameter.Metadata = new ParameterMetadata { ValidatorType = typeof(AlternateCountingValidator) };
+        var secondResult = parameter.TrySet("second");
+
+        // Assert
+        Assert.IsTrue(firstResult);
+        Assert.IsTrue(secondResult);
+        Assert.AreEqual(1, CountingValidator.InstanceCount);
+        Assert.AreEqual(1, AlternateCountingValidator.InstanceCount);
+    }
+
+    /// <summary>
+    /// Tests that a successful set clears a previously recorded validation error.
+    /// </summary>
+    [TestMethod]
+    public void TrySet_WhenValidAfterFailure_ClearsValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { MinLength = 5 }
+        };
+        var validationState = (IParameterValidationState)parameter;
+        var firstResult = parameter.TrySet("abc");
+        Assert.IsFalse(firstResult);
+        Assert.IsTrue(validationState.HasValidationError);
+
+        // Act
+        var secondResult = parameter.TrySet("updated");
+
+        // Assert
+        Assert.IsTrue(secondResult);
+        Assert.AreEqual("updated", parameter.Value);
+        Assert.IsFalse(validationState.HasValidationError);
+        Assert.IsNull(validationState.ValidationError);
+    }
+
+    /// <summary>
+    /// Tests that Reset clears any previously recorded validation error.
+    /// </summary>
+    [TestMethod]
+    public void Reset_AfterValidationFailure_ClearsValidationError()
+    {
+        // Arrange
+        var parameter = new Parameter<string>("valid")
+        {
+            Metadata = new ParameterMetadata { Required = true }
+        };
+        var validationState = (IParameterValidationState)parameter;
+        parameter.Value = null;
+        Assert.IsTrue(validationState.HasValidationError);
+
+        // Act
+        parameter.Reset();
+
+        // Assert
+        Assert.IsFalse(validationState.HasValidationError);
+        Assert.IsNull(validationState.ValidationError);
+    }
+
+    /// <summary>
     /// Tests that Set maintains IsModified state correctly when setting different values.
     /// </summary>
     [TestMethod]
     public void Set_DifferentValue_UpdatesIsModifiedState()
     {
         // Arrange
-        var parameter = new Parameter<int>(10); // DefaultValue = 10
+        var parameter = new Parameter<int>(10);
 
         // Act & Assert
         Assert.IsFalse(parameter.IsModified, "Should not be modified initially");
@@ -1670,8 +1919,8 @@ public class ParameterTests
     [DataRow(42, 42)]
     [DataRow(-1, -1)]
     [DataRow(-100, -100)]
-    [DataRow(2147483647, 2147483647)] // int.MaxValue
-    [DataRow(-2147483648, -2147483648)] // int.MinValue
+    [DataRow(2147483647, 2147483647)]
+    [DataRow(-2147483648, -2147483648)]
     public void GetValue_IntParameterWithSpecificValue_ReturnsCorrectValue(int initialValue, int expectedValue)
     {
         // Arrange
@@ -1693,7 +1942,7 @@ public class ParameterTests
     [TestMethod]
     [DataRow(0, 100)]
     [DataRow(50, -50)]
-    [DataRow(2147483647, -2147483648)] // MaxValue to MinValue
+    [DataRow(2147483647, -2147483648)]
     public void GetValue_IntParameterAfterValueModification_ReturnsNewValue(int initialValue, int newValue)
     {
         // Arrange
@@ -1742,8 +1991,8 @@ public class ParameterTests
     [DataRow(1.5)]
     [DataRow(-2.7)]
     [DataRow(3.14159)]
-    [DataRow(1.7976931348623157E+308)] // double.MaxValue
-    [DataRow(-1.7976931348623157E+308)] // double.MinValue
+    [DataRow(1.7976931348623157E+308)]
+    [DataRow(-1.7976931348623157E+308)]
     public void GetValue_DoubleParameterWithRegularValue_ReturnsCorrectValue(double initialValue)
     {
         // Arrange
@@ -1869,8 +2118,8 @@ public class ParameterTests
     [DataRow(0)]
     [DataRow(42)]
     [DataRow(-100)]
-    [DataRow(2147483647)] // int.MaxValue
-    [DataRow(-2147483648)] // int.MinValue
+    [DataRow(2147483647)]
+    [DataRow(-2147483648)]
     public void GetValue_NullableIntParameterWithValue_ReturnsCorrectValue(int initialValue)
     {
         // Arrange

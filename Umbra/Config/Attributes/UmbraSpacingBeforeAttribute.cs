@@ -1,13 +1,15 @@
 namespace Umbra.Config.Attributes;
 
 /// <summary>
-/// Inserts one or more <see cref="Hexa.NET.ImGui.ImGui.Spacing()"/> calls above the decorated
-/// parameter in the settings UI.
+/// Declares extra vertical spacing inserted above an annotated parameter in the configuration UI.
 /// </summary>
-/// <param name="count">The number of spacing lines to insert. Defaults to <c>1</c>.</param>
+/// <param name="count">The number of <c>ImGui.Spacing()</c> calls to insert above the parameter.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class UmbraSpacingBeforeAttribute(int count = 1) : Attribute
 {
-    /// <summary>Gets the number of spacing lines to insert before the parameter control.</summary>
+    /// <summary>
+    /// Gets the number of spacing calls inserted above the parameter.
+    /// </summary>
+    /// <value>The declared spacing count.</value>
     public int Count { get; } = count;
 }
