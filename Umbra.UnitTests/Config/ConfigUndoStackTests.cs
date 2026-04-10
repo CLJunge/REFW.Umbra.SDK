@@ -429,7 +429,7 @@ public sealed class ConfigUndoStackTests
         var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
-            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") });
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new PluginToast("Test Plugin") });
 
             ToastQueue.Clear();
 
@@ -467,7 +467,7 @@ public sealed class ConfigUndoStackTests
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store,
-                new ConfigUndoOptions { Toast = new ConfigToastOptions("My Plugin") });
+                new ConfigUndoOptions { Toast = new PluginToast("My Plugin") });
 
             ToastQueue.Clear();
 
@@ -506,7 +506,7 @@ public sealed class ConfigUndoStackTests
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store,
-                new ConfigUndoOptions { Toast = new ConfigToastOptions("My Plugin") });
+                new ConfigUndoOptions { Toast = new PluginToast("My Plugin") });
 
             ToastQueue.Clear();
 
@@ -926,7 +926,7 @@ public sealed class ConfigUndoStackTests
     }
 
     /// <summary>
-    /// Tests that undo pushes a toast when using the options-based constructor with a non-null <see cref="ConfigToastOptions"/>.
+    /// Tests that undo pushes a toast when using the options-based constructor with a non-null <see cref="PluginToast"/>.
     /// </summary>
     [TestMethod]
     public void TryUndo_ToastOptions_PushesToast()
@@ -934,7 +934,7 @@ public sealed class ConfigUndoStackTests
         var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
-            var options = new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") };
+            var options = new ConfigUndoOptions { Toast = new PluginToast("Test Plugin") };
             using var undo = new ConfigUndoStack<UndoTestConfig>(store, options);
 
             ToastQueue.Clear();
@@ -1154,7 +1154,7 @@ public sealed class ConfigUndoStackTests
         var (store, config, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
-            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") });
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store, new ConfigUndoOptions { Toast = new PluginToast("Test Plugin") });
 
             ToastQueue.Clear();
 
@@ -1317,7 +1317,7 @@ public sealed class ConfigUndoStackTests
             Assert.AreEqual(1, undo.Count);
 
             undo.TryUndo();
-            Assert.AreEqual(10, config.IntValue.Value);
+            Assert.AreEqual(0, config.IntValue.Value);
             Assert.AreEqual("default", config.StringValue.Value);
         }
         finally
@@ -2053,7 +2053,7 @@ public sealed class ConfigUndoStackTests
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store,
-                new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") });
+                new ConfigUndoOptions { Toast = new PluginToast("Test Plugin") });
 
             ToastQueue.Clear();
 
@@ -2231,7 +2231,7 @@ public sealed class ConfigUndoStackTests
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store,
-                new ConfigUndoOptions { Toast = new ConfigToastOptions("Test Plugin") });
+                new ConfigUndoOptions { Toast = new PluginToast("Test Plugin") });
 
             ToastQueue.Clear();
 

@@ -33,6 +33,7 @@ public sealed class SamplePlugin : UmbraPlugin
 #endif
 
     private static readonly PluginLogger _log = new("SamplePlugin");
+   private static readonly PluginToast _toast = new("Sample Plugin");
     private PluginPanel? _panel;
 #if BENCHMARK
     private PluginPanel? _benchmarkPanel;
@@ -210,7 +211,7 @@ public sealed class SamplePlugin : UmbraPlugin
     /// <returns>The config section with undo, search, and transfer support.</returns>
     private static ConfigSection<PluginConfig> CreateRuntimeSection(PluginConfig config, ConfigStore<PluginConfig> store)
     {
-        var toast = new ConfigToastOptions("Sample Plugin") { Duration = TimeSpan.FromSeconds(2) };
+        var toast = new PluginToast("Sample Plugin", TimeSpan.FromSeconds(2));
         return ConfigSection<PluginConfig>.CreateWithStore(
             config,
             store,
