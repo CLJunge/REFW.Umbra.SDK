@@ -42,7 +42,7 @@ public sealed class SamplePlugin : UmbraPlugin
     private PluginConfig? _config;
 
     /// <summary>
-    /// Initialises a new plugin instance with its dedicated plugin logger.
+    /// Initializes a new plugin instance with its dedicated plugin logger.
     /// </summary>
     public SamplePlugin() : base(_log) { }
 
