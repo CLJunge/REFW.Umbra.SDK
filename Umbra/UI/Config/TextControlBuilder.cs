@@ -19,7 +19,7 @@ internal static class TextControlBuilder
     /// When <see cref="ParameterMetadata.MultilineLines"/> is present, the returned action renders a multi-line text input; otherwise, it renders the standard single-line text input.
     /// When <paramref name="textEditSink"/> is non-null, the returned action notifies the sink of interaction boundaries via <see cref="ITextEditSink.BeginTextEdit"/> and <see cref="ITextEditSink.EndTextEdit"/>.
     /// </remarks>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Guard clauses with early returns are more readable than a single chained conditional expression for multi-condition validation.")]
     internal static Action BuildString(string label, IParameter parameter, LabelAlignmentGroup alignGroup, ITextEditSink? textEditSink = null)
     {
         var p = (Parameter<string>)parameter;

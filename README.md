@@ -24,7 +24,7 @@
 - Automatic config rendering from metadata via `ConfigDrawer<TConfig>` — one-time reflection, per-frame draw
 - Built-in search, filter, and match navigation
 - Per-section undo/redo stack with slider-aware and text-input-aware coalescing, batch undo, and Ctrl+Z/Y keyboard shortcuts
-- Toast notifications for undo operations
+- Plugin-scoped toast notifications via `PluginToast`, with optional undo/redo integration
 - Built-in transfer UI for import/export
 - Conditional visibility and disable with `[UmbraHideIf]` and `[UmbraDisableIf]`
 - Custom drawers: `IParameterDrawer`, `ITwoColumnParameterDrawer`, `INestedDrawer<T>`
@@ -182,4 +182,4 @@ dotnet test Umbra.UnitTests/Umbra.UnitTests.csproj -c Release
 
 Full guides, API walkthroughs, and architecture details are in the **[Umbra Wiki](https://docs.cljunge.com/refw-umbra/)**.
 
-For a complete real-world reference, see `Umbra.SamplePlugin` — it demonstrates nested config groups, game gating, action binding, custom drawers, import/export, and resilient shutdown.
+**`Umbra.SamplePlugin`** demonstrates nested config groups, game gating, action binding, custom drawers, import/export, toast notifications, and resilient shutdown.

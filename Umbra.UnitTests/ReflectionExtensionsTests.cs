@@ -167,7 +167,7 @@ public sealed class ReflectionExtensionsTests
     {
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Instance methods are required for testing attribute behavior on instance members.")]
     private sealed class GenericAttributeContainer
     {
         [TestGeneric<int>]
