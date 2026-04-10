@@ -35,10 +35,12 @@ internal sealed class KeyStateTracker
         _provider = provider;
         _trackedKeys = trackedKeys;
 
-        _previouslyDown = [with(trackedKeys.Length)];
-        _currentlyDown = [with(trackedKeys.Length)];
-        _justPressed = [with(8)];
-        _justReleased = [with(8)];
+#pragma warning disable IDE0028 // Simplify collection initialization
+        _previouslyDown = new(trackedKeys.Length);
+        _currentlyDown = new(trackedKeys.Length);
+        _justPressed = new(8);
+        _justReleased = new(8);
+#pragma warning restore IDE0028 // Simplify collection initialization
     }
 
     /// <summary>
