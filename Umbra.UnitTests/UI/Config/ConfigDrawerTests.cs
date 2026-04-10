@@ -808,12 +808,12 @@ public sealed class ConfigDrawerTests
 
     private static class ConfigDrawerReflection
     {
-        private const string NodesFieldName = "_nodes";
+        private const string _nodesFieldName = "_nodes";
 
         public static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class
         {
             var nodesField = drawer.GetType().GetField(
-                NodesFieldName,
+                _nodesFieldName,
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 
             Assert.IsNotNull(nodesField);
