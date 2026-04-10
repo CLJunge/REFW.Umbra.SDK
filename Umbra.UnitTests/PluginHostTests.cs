@@ -26,9 +26,9 @@ public sealed class PluginHostTests
         Logger.EnableAll();
         Logger.SetLogSink(_sink);
         ToastQueue.Clear();
-        ToastOverlay.ResetDrawTick();
+        ToastOverlay.ResetDrawFrame();
         ToastOverlay.SetRenderer(null);
-        ToastOverlay.SetTickProvider(static () => 42L);
+        ToastOverlay.SetFrameIdProvider(static () => 42L);
         PluginInstanceGuard.Reset();
         LifecyclePlugin.Reset();
         InitializeFailurePlugin.Reset();
@@ -42,9 +42,9 @@ public sealed class PluginHostTests
     {
         PluginInstanceGuard.Reset();
         ToastQueue.Clear();
-        ToastOverlay.ResetDrawTick();
+        ToastOverlay.ResetDrawFrame();
         ToastOverlay.SetRenderer(null);
-        ToastOverlay.SetTickProvider(null);
+        ToastOverlay.SetFrameIdProvider(null);
         KeyboardInput.ResetKeyStateProvider();
         Logger.ResetLogSink();
         Logger.EnableAll();
