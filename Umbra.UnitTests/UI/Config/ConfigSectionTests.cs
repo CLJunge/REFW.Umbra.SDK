@@ -13,6 +13,9 @@ namespace Umbra.UI.Config.UnitTests;
 [TestClass]
 public sealed class ConfigSectionTests
 {
+    [TestInitialize]
+    public void TestInit() => UndoShortcutCoordinator.Reset();
+
     /// <summary>
     /// Test configuration class used for testing <see cref="ConfigSection{TConfig}"/>.
     /// </summary>
@@ -172,7 +175,6 @@ public sealed class ConfigSectionTests
 
         // Assert
         Assert.IsNotNull(result);
-        // The result should be the display name derived from "ConfigWithNullLabelAttribute"
         Assert.AreEqual("Config With Null Label Attribute", result);
     }
 
@@ -254,20 +256,6 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Tests that <see cref="ConfigSection{TConfig}"/> does not require the config type to expose a
-    /// public parameterless constructor when the caller already supplies the config instance.
-    /// </summary>
-    [TestMethod]
-    public void Constructor_ConfigWithoutParameterlessConstructor_ConstructsSuccessfully()
-    {
-        var config = new ConfigWithoutParameterlessConstructor(new Parameter<bool>(true));
-
-        using var section = new ConfigSection<ConfigWithoutParameterlessConstructor>(config);
-
-        Assert.IsNotNull(section);
-    }
-
-    /// <summary>
     /// Tests that the options-aware constructor succeeds when search-bar support is enabled.
     /// </summary>
     [TestMethod]
@@ -275,7 +263,7 @@ public sealed class ConfigSectionTests
     {
         // Arrange
         var config = new TestConfig();
-        var options = new ConfigDrawerOptions { ShowSearchBar = true };
+        var options = new ConfigDrawerOptions { Search = new ConfigSearchOptions() };
 
         // Act
         using var section = new ConfigSection<TestConfig>(config, options, idScope: "search-enabled");
@@ -295,7 +283,7 @@ public sealed class ConfigSectionTests
         var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
         var options = new ConfigDrawerOptions
         {
-            ShowSearchBar = true,
+            Search = new ConfigSearchOptions(),
             Transfer = new ConfigTransferOptions { Enabled = true }
         };
 
@@ -425,6 +413,251 @@ public sealed class ConfigSectionTests
         Assert.IsFalse(feature.ShowSeparatorBelowButtons);
     }
 
+
+    /// <summary>
+    /// Tests that the factory creates an undo stack when <see cref="ConfigDrawerOptions.Undo"/> is non-null
+    /// and the store is a <see cref="ConfigStore{TConfig}"/>.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithUndoOptionsAndConfigStore_CreatesUndoStack()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var options = new ConfigDrawerOptions { Undo = new ConfigUndoOptions() };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "undo-test");
+
+        Assert.IsNotNull(GetUndoStack(section));
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that the factory does not create an undo stack when <see cref="ConfigDrawerOptions.Undo"/> is null.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithoutUndoOptions_UndoStackIsNull()
+    {
+        using var tempDirectory = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            new TestConfig(), store, new ConfigDrawerOptions());
+
+        Assert.IsNull(GetUndoStack(section));
+    }
+
+    /// <summary>
+    /// Tests that the factory does not create an undo stack when the store is not a
+    /// <see cref="ConfigStore{TConfig}"/>, even when undo options are provided.
+    /// </summary>
+    [TestMethod]
+    public void CreateWithStore_WithUndoOptionsButNonConfigStore_UndoStackIsNull()
+    {
+        using var tempDirectory = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
+        var options = new ConfigDrawerOptions { Undo = new ConfigUndoOptions() };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            new TestConfig(), store, options, idScope: "no-undo");
+
+        Assert.IsNull(GetUndoStack(section));
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigSection{TConfig}.UndoStack"/> exposes the undo stack created by the factory.
+    /// </summary>
+    [TestMethod]
+    public void UndoStack_Property_ExposesCreatedUndoStack()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var options = new ConfigDrawerOptions { Undo = new ConfigUndoOptions() };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "prop-test");
+
+        Assert.IsNotNull(section.UndoStack);
+        Assert.AreSame(GetUndoStack(section), section.UndoStack);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that disposing the section also nulls the undo stack field.
+    /// </summary>
+    [TestMethod]
+    public void Dispose_WithUndoStack_NullsUndoStack()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var options = new ConfigDrawerOptions { Undo = new ConfigUndoOptions() };
+
+        var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "dispose-test");
+        Assert.IsNotNull(section.UndoStack);
+
+        section.Dispose();
+
+        Assert.IsNull(section.UndoStack);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that the built-in undo shortcut restores the latest value change when undo is available.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_WhenShortcutPressedAndUndoAvailable_RestoresPreviousValue()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-shortcut.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var inputSource = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Undo = new ConfigUndoOptions(), UndoInputSource = inputSource },
+            idScope: "undo-shortcut",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        config.TestParameter.Value = false;
+
+        section.TryHandleBuiltInUndo();
+
+        Assert.IsTrue(config.TestParameter.Value);
+        Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
+        Assert.AreEqual(1, inputSource.DefaultUndoShortcutCheckCount);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that built-in undo does nothing when the section does not own an undo stack.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_WhenUndoStackIsMissing_DoesNotQueryInputSource()
+    {
+        var inputSource = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
+        using var section = new ConfigSection<TestConfig>(
+            new TestConfig(),
+            new ConfigDrawerOptions { UndoInputSource = inputSource },
+            idScope: "missing-undo",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        section.TryHandleBuiltInUndo();
+
+        Assert.AreEqual(0, inputSource.WantsTextInputCheckCount);
+        Assert.AreEqual(0, inputSource.DefaultUndoShortcutCheckCount);
+    }
+
+    /// <summary>
+    /// Tests that built-in undo does nothing when the owned undo stack is empty.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_WhenUndoStackIsEmpty_DoesNotQueryInputSource()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-empty.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var inputSource = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Undo = new ConfigUndoOptions(), UndoInputSource = inputSource },
+            idScope: "empty-undo",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        section.TryHandleBuiltInUndo();
+
+        Assert.IsTrue(config.TestParameter.Value);
+        Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
+        Assert.AreEqual(1, inputSource.DefaultUndoShortcutCheckCount);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that built-in undo is suppressed while text input is actively handling editing shortcuts.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_WhenTextInputIsActive_DoesNotUndo()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "undo-text-input.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var inputSource = new TestUndoShortcutInputSource
+        {
+            DefaultUndoShortcutPressed = true,
+            WantsTextInputState = true
+        };
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Undo = new ConfigUndoOptions(), UndoInputSource = inputSource },
+            idScope: "text-input-undo",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        config.TestParameter.Value = false;
+
+        section.TryHandleBuiltInUndo();
+
+        Assert.IsFalse(config.TestParameter.Value);
+        Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
+        Assert.AreEqual(0, inputSource.DefaultUndoShortcutCheckCount);
+        store.Dispose();
+    }
+
+    /// <summary>
+    /// Tests that the built-in redo shortcut re-applies the previously undone value change.
+    /// </summary>
+    [TestMethod]
+    public void TryHandleBuiltInUndo_RedoShortcutAfterUndo_RestoresValue()
+    {
+        using var tempDirectory = new TempDirectory();
+        var storePath = Path.Combine(tempDirectory.Path, "redo-shortcut.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var inputSource = new TestUndoShortcutInputSource();
+
+        using var section = ConfigSection<TestConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions { Undo = new ConfigUndoOptions(), UndoInputSource = inputSource },
+            idScope: "redo-shortcut",
+            sectionLabel: null,
+            expandedByDefault: false,
+            suppressTreeNode: false);
+
+        config.TestParameter.Value = false;
+
+        inputSource.DefaultUndoShortcutPressed = true;
+        section.TryHandleBuiltInUndo();
+        Assert.IsTrue(config.TestParameter.Value);
+
+        UndoShortcutCoordinator.Reset();
+        UndoShortcutCoordinator.Register(section.UndoStack!);
+        inputSource.DefaultUndoShortcutPressed = false;
+        inputSource.DefaultRedoShortcutPressed = true;
+        section.TryHandleBuiltInUndo();
+        Assert.IsFalse(config.TestParameter.Value);
+
+        store.Dispose();
+    }
+
     /// <summary>
     /// Tests that the section preserves caller-enabled search while suppressing the wrapped drawer root node.
     /// </summary>
@@ -433,7 +666,7 @@ public sealed class ConfigSectionTests
     {
         // Arrange
         var config = new RootWrappedSectionConfig();
-        var options = new ConfigDrawerOptions { ShowSearchBar = true };
+        var options = new ConfigDrawerOptions { Search = new ConfigSearchOptions() };
 
         // Act
         using var section = new ConfigSection<RootWrappedSectionConfig>(config, options, idScope: "search-enabled");
@@ -506,16 +739,6 @@ public sealed class ConfigSectionTests
     }
 
     /// <summary>
-    /// Test configuration type without a public parameterless constructor for constraint tests.
-    /// </summary>
-    [UmbraAutoRegister]
-    internal sealed class ConfigWithoutParameterlessConstructor(Parameter<bool> enabled)
-    {
-        [UmbraParameter]
-        public Parameter<bool> Enabled { get; } = enabled;
-    }
-
-    /// <summary>
     /// Test configuration class with UmbraConfigRootNodeAttribute specifying a label.
     /// </summary>
     [UmbraAutoRegister]
@@ -555,9 +778,15 @@ public sealed class ConfigSectionTests
     }
 
     private static ConfigTransferFeature? GetTransferFeature<T>(ConfigSection<T> section)
-        where T : class
+        where T : class, new()
         => (ConfigTransferFeature?)typeof(ConfigSection<T>)
             .GetField("_transferFeature", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            ?.GetValue(section);
+
+    private static ConfigUndoStack<T>? GetUndoStack<T>(ConfigSection<T> section)
+        where T : class, new()
+        => (ConfigUndoStack<T>?)typeof(ConfigSection<T>)
+            .GetField("_undoStack", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
             ?.GetValue(section);
 
     private sealed class TempDirectory : IDisposable
@@ -609,7 +838,6 @@ public sealed class ConfigSectionTests
         section.Dispose();
 
         // Assert
-        // No exception thrown - successful disposal
     }
 
     /// <summary>
@@ -634,43 +862,42 @@ public sealed class ConfigSectionTests
         section.Dispose();
 
         // Assert
-        // No exception thrown - idempotent disposal
     }
 
     /// <summary>
-    /// Tests that the transfer UI should be hidden while search is active.
+    /// Tests that a feature section should be hidden while search is active.
     /// </summary>
     [TestMethod]
-    public void ShouldDrawTransferFeature_HasTransferAndActiveSearch_ReturnsFalse()
+    public void ShouldDrawFeatureSection_HasFeatureAndActiveSearch_ReturnsFalse()
     {
         // Act
-        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawTransferFeature(hasTransferFeature: true, hasActiveSearchQuery: true);
+        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawFeatureSection(hasFeature: true, hasActiveSearchQuery: true);
 
         // Assert
         Assert.IsFalse(shouldDraw);
     }
 
     /// <summary>
-    /// Tests that the transfer UI should be shown when transfer exists and search is inactive.
+    /// Tests that a feature section should be shown when the feature exists and search is inactive.
     /// </summary>
     [TestMethod]
-    public void ShouldDrawTransferFeature_HasTransferAndNoActiveSearch_ReturnsTrue()
+    public void ShouldDrawFeatureSection_HasFeatureAndNoActiveSearch_ReturnsTrue()
     {
         // Act
-        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawTransferFeature(hasTransferFeature: true, hasActiveSearchQuery: false);
+        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawFeatureSection(hasFeature: true, hasActiveSearchQuery: false);
 
         // Assert
         Assert.IsTrue(shouldDraw);
     }
 
     /// <summary>
-    /// Tests that the transfer UI should remain hidden when no transfer feature exists.
+    /// Tests that a feature section should remain hidden when no feature exists.
     /// </summary>
     [TestMethod]
-    public void ShouldDrawTransferFeature_NoTransferFeature_ReturnsFalse()
+    public void ShouldDrawFeatureSection_NoFeature_ReturnsFalse()
     {
         // Act
-        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawTransferFeature(hasTransferFeature: false, hasActiveSearchQuery: false);
+        var shouldDraw = ConfigSection<TestConfig>.ShouldDrawFeatureSection(hasFeature: false, hasActiveSearchQuery: false);
 
         // Assert
         Assert.IsFalse(shouldDraw);
@@ -930,7 +1157,7 @@ public sealed class ConfigSectionTests
         section.Dispose();
 
         // Act & Assert
-        section.Draw(); // Should return immediately without throwing
+        section.Draw();
     }
 
     /// <summary>
@@ -948,7 +1175,7 @@ public sealed class ConfigSectionTests
         // Act & Assert
         section.Draw();
         section.Draw();
-        section.Draw(); // Multiple calls should all be safe no-ops
+        section.Draw();
     }
 
     /// <summary>
@@ -1259,7 +1486,6 @@ public sealed class ConfigSectionTests
         Assert.IsTrue(section.ExpandedByDefault);
     }
 
-    // Test config classes
 
     internal sealed class BasicConfig
     {
@@ -1305,7 +1531,7 @@ public sealed class ConfigSectionTests
     {
     }
 
-    private static ConfigDrawer<TConfig> GetDrawer<TConfig>(ConfigSection<TConfig> section) where TConfig : class => TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigSection<TConfig>, ConfigDrawer<TConfig>>(section, "_drawer");
+    private static ConfigDrawer<TConfig> GetDrawer<TConfig>(ConfigSection<TConfig> section) where TConfig : class, new() => TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigSection<TConfig>, ConfigDrawer<TConfig>>(section, "_drawer");
 
     private static List<IDrawNode> GetTopLevelNodes<TConfig>(ConfigDrawer<TConfig> drawer) where TConfig : class => TestReflectionHelper.GetRequiredPrivateFieldValue<ConfigDrawer<TConfig>, List<IDrawNode>>(drawer, "_nodes");
 

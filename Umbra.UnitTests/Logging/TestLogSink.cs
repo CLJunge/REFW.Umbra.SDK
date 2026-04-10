@@ -10,6 +10,11 @@ namespace Umbra.Logging.UnitTests;
 internal sealed class TestLogSink : ILogSink
 {
     /// <summary>
+    /// Gets the debug messages written during a test.
+    /// </summary>
+    public List<string> DebugMessages { get; } = [];
+
+    /// <summary>
     /// Gets the informational messages written during a test.
     /// </summary>
     public List<string> InfoMessages { get; } = [];
@@ -23,6 +28,9 @@ internal sealed class TestLogSink : ILogSink
     /// Gets the error messages written during a test.
     /// </summary>
     public List<string> ErrorMessages { get; } = [];
+
+    /// <inheritdoc/>
+    public void Debug(string message) => DebugMessages.Add(message);
 
     /// <inheritdoc/>
     public void Info(string message) => InfoMessages.Add(message);

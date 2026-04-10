@@ -80,7 +80,7 @@ public sealed class ConfigDrawerSearchApplicatorTests
 
         // Assert
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Root", false, true), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Root", false, false, true), renderer.TreeNodes[0]);
     }
 
     /// <summary>

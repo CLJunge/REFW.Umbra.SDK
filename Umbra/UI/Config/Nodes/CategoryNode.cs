@@ -21,6 +21,9 @@ internal sealed class CategoryNode : IDrawNode, IConfigSearchNode
     private readonly ICategoryNodeRenderer _renderer;
     private bool _searchVisible = true;
     private bool _forceOpen;
+    private bool _isTreeOpen;
+    private bool _searchStateCaptured;
+    private bool _capturedTreeOpenState;
 
     /// <summary>
     /// Initializes a new <see cref="CategoryNode"/> that renders through the shared ImGui render context.
@@ -60,6 +63,7 @@ internal sealed class CategoryNode : IDrawNode, IConfigSearchNode
         _collapseAttr = collapseAttr;
         _indentAttr = indentAttr;
         _renderer = renderer;
+        _isTreeOpen = collapseAttr?.DefaultOpen ?? false;
     }
 
     /// <summary>
@@ -106,7 +110,8 @@ internal sealed class CategoryNode : IDrawNode, IConfigSearchNode
     /// </summary>
     private void DrawAsTree()
     {
-        var open = _renderer.TreeNode(_label, _collapseAttr!.DefaultOpen, _forceOpen);
+        var open = _renderer.TreeNode(_label, _collapseAttr!.DefaultOpen, _isTreeOpen, _forceOpen);
+        _isTreeOpen = open;
         if (!open) return;
 
         try
@@ -134,16 +139,36 @@ internal sealed class CategoryNode : IDrawNode, IConfigSearchNode
     {
         if (searchState is null || !searchState.HasActiveQuery)
         {
+            RestoreTreeStateAfterSearch();
             _searchVisible = true;
             _forceOpen = false;
             ApplySearchToChildren(null);
             return true;
         }
 
+        CaptureTreeStateForSearch();
         var hasVisibleChild = ApplySearchToChildren(searchState);
         _searchVisible = hasVisibleChild;
         _forceOpen = hasVisibleChild || searchState.IsBranchForcedOpen(_branchId);
         return hasVisibleChild;
+    }
+
+    private void CaptureTreeStateForSearch()
+    {
+        if (_collapseAttr is null || _searchStateCaptured)
+            return;
+
+        _capturedTreeOpenState = _isTreeOpen;
+        _searchStateCaptured = true;
+    }
+
+    private void RestoreTreeStateAfterSearch()
+    {
+        if (_collapseAttr is null || !_searchStateCaptured)
+            return;
+
+        _isTreeOpen = _capturedTreeOpenState;
+        _searchStateCaptured = false;
     }
 
     private bool ApplySearchToChildren(ConfigSearchRenderState? searchState)

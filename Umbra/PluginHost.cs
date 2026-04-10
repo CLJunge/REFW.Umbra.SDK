@@ -1,4 +1,6 @@
+using Umbra.Input;
 using Umbra.Logging;
+using Umbra.UI.Toast;
 
 namespace Umbra;
 
@@ -64,12 +66,18 @@ public sealed class PluginHost<TPlugin>
     }
 
     /// <summary>
-    /// Forwards <see cref="IUmbraPlugin.OnPreUpdateBehavior"/> to the live plugin instance.
+    /// Updates the shared keyboard state tracker and forwards <see cref="IUmbraPlugin.OnPreUpdateBehavior"/> to the live plugin instance.
     /// </summary>
     /// <remarks>
-    /// If no instance is currently loaded, this method does nothing.
+    /// <see cref="KeyboardInput.Update"/> is called before the plugin callback so that edge
+    /// state (pressed/released) is current for the entire tick. If no instance is currently
+    /// loaded, the keyboard state is still updated so shared state stays consistent.
     /// </remarks>
-    public void OnPreUpdateBehavior() => _instance?.OnPreUpdateBehavior();
+    public void OnPreUpdateBehavior()
+    {
+        KeyboardInput.Update();
+        _instance?.OnPreUpdateBehavior();
+    }
 
     /// <summary>
     /// Forwards <see cref="IUmbraPlugin.OnPreImGuiDrawUI"/> to the live plugin instance.
@@ -80,12 +88,20 @@ public sealed class PluginHost<TPlugin>
     public void OnPreImGuiDrawUI() => _instance?.OnPreImGuiDrawUI();
 
     /// <summary>
-    /// Forwards <see cref="IUmbraPlugin.OnPreImGuiRenderer"/> to the live plugin instance.
+    /// Forwards <see cref="IUmbraPlugin.OnPreImGuiRenderer"/> to the live plugin instance and then renders the shared toast overlay.
     /// </summary>
     /// <remarks>
     /// If no instance is currently loaded, this method does nothing.
     /// </remarks>
-    public void OnPreImGuiRenderer() => _instance?.OnPreImGuiRenderer();
+    public void OnPreImGuiRenderer()
+    {
+        var instance = _instance;
+        if (instance is null)
+            return;
+
+        instance.OnPreImGuiRenderer();
+        ToastOverlay.Draw();
+    }
 
     /// <summary>
     /// Creates, initializes, and publishes the live plugin instance.

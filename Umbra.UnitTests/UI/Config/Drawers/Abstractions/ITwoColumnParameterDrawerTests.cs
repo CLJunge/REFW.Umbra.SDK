@@ -59,7 +59,6 @@ public class ITwoColumnParameterDrawerTests
     {
         public void Draw(IParameter parameter)
         {
-            // Minimal implementation for testing
         }
     }
 

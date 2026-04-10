@@ -18,6 +18,9 @@ internal sealed class RootTreeNode : IDrawNode, IConfigSearchNode
     private readonly IRootTreeNodeRenderer _renderer;
     private bool _searchVisible = true;
     private bool _forceOpen;
+    private bool _isOpen;
+    private bool _searchStateCaptured;
+    private bool _capturedOpenState;
 
     /// <summary>
     /// Initializes a new <see cref="RootTreeNode"/> that renders through the shared ImGui render context.
@@ -49,13 +52,16 @@ internal sealed class RootTreeNode : IDrawNode, IConfigSearchNode
         _branchId = branchId;
         _children = children;
         _renderer = renderer;
+        _isOpen = defaultOpen;
     }
 
     /// <inheritdoc/>
     public void Draw()
     {
         if (!_searchVisible) return;
-        if (!_renderer.TreeNode(_label, _defaultOpen, _forceOpen)) return;
+        var open = _renderer.TreeNode(_label, _defaultOpen, _isOpen, _forceOpen);
+        _isOpen = open;
+        if (!open) return;
         try
         {
             foreach (var child in _children)
@@ -71,16 +77,36 @@ internal sealed class RootTreeNode : IDrawNode, IConfigSearchNode
     {
         if (searchState is null || !searchState.HasActiveQuery)
         {
+            RestoreTreeStateAfterSearch();
             _searchVisible = true;
             _forceOpen = false;
             ApplySearchToChildren(null);
             return true;
         }
 
+        CaptureTreeStateForSearch();
         var hasVisibleChild = ApplySearchToChildren(searchState);
         _searchVisible = hasVisibleChild;
         _forceOpen = hasVisibleChild || searchState.IsBranchForcedOpen(_branchId);
         return hasVisibleChild;
+    }
+
+    private void CaptureTreeStateForSearch()
+    {
+        if (_searchStateCaptured)
+            return;
+
+        _capturedOpenState = _isOpen;
+        _searchStateCaptured = true;
+    }
+
+    private void RestoreTreeStateAfterSearch()
+    {
+        if (!_searchStateCaptured)
+            return;
+
+        _isOpen = _capturedOpenState;
+        _searchStateCaptured = false;
     }
 
     private bool ApplySearchToChildren(ConfigSearchRenderState? searchState)

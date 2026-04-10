@@ -1,5 +1,6 @@
 using Umbra.Config;
 using Umbra.Config.Attributes;
+using Umbra.Input;
 using Umbra.UI.Config.Drawers;
 
 namespace Umbra.SamplePlugin.Config;
@@ -42,6 +43,7 @@ public record PluginConfig
     [UmbraParameter]
     [UmbraDisplayName("Reset All Samples")]
     [UmbraDescription("Resets every sample group to its default values.")]
+    [UmbraBatchUndo("Reset All Samples")]
     [UmbraButtonStyle(ButtonStyle.Danger)]
     [UmbraControlWidth(-1f)]
     [UmbraParameterOrder(1)]
@@ -178,14 +180,14 @@ public record PluginConfig
         [UmbraDisplayName("Toggle Hotkey")]
         [UmbraDescription("The hotkey used to toggle the sample plugin on and off.")]
         [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
-        public Parameter<int> ToggleHotkey { get; set; } = new(574);
+        public Parameter<HotkeyBinding> ToggleHotkey { get; set; } = new(new HotkeyBinding((int)UmbraKey.F3, false, false, false));
 
         /// <summary>Gets or sets the hotkey that switches between demo views.</summary>
         [UmbraParameter]
         [UmbraDisplayName("Switch View Hotkey")]
         [UmbraDescription("The hotkey used to switch between first-person and third-person demo views.")]
         [UmbraTwoColumnDrawer<TwoColumnHotkeyDrawer>]
-        public Parameter<int> SwitchViewHotkey { get; set; } = new(575);
+        public Parameter<HotkeyBinding> SwitchViewHotkey { get; set; } = new(new HotkeyBinding((int)UmbraKey.F4, false, false, false));
 
         /// <summary>Gets or sets whether the sample emits extra diagnostic logging.</summary>
         [UmbraParameter]
@@ -197,6 +199,7 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraDisplayName("Reset General")]
         [UmbraDescription("Resets the sample plugin enable toggle, hotkeys, and verbose logging flag.")]
+        [UmbraBatchUndo("Reset General")]
         [UmbraButtonStyle(ButtonStyle.Danger)]
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetGeneral { get; init; }
@@ -254,6 +257,7 @@ public record PluginConfig
         [UmbraParameter]
         [UmbraDisplayName("Reset Booleans")]
         [UmbraDescription("Resets the boolean checkbox samples to their defaults.")]
+        [UmbraBatchUndo("Reset Booleans")]
         [UmbraButtonStyle(ButtonStyle.Danger)]
         [UmbraControlWidth(-1f)]
         public Parameter<Action> ResetBooleans { get; init; }

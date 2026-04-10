@@ -20,13 +20,15 @@ internal static class ParameterNodeComposer
         LabelAlignmentGroup alignmentGroup,
         float? classIndentAmount,
         float? classLabelMarginPixels,
-        Func<bool>? isDisabled = null)
+        Func<bool>? isDisabled = null,
+        INumericEditSink? numericEditSink = null,
+        ITextEditSink? textEditSink = null)
     {
         var meta = parameter.Metadata;
         if (classLabelMarginPixels.HasValue && alignmentGroup.Margin != classLabelMarginPixels.Value)
             alignmentGroup.Margin = classLabelMarginPixels.Value;
 
-        var (draw, resource) = ControlFactory.BuildDrawAction(parameter, meta.ResolvedLabel, alignmentGroup);
+        var (draw, resource) = ControlFactory.BuildDrawAction(parameter, meta.ResolvedLabel, alignmentGroup, numericEditSink, textEditSink);
 
         var indentAmount = meta.Indent ?? classIndentAmount;
         if (meta.HideIf is null)

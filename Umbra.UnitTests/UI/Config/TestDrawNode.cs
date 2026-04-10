@@ -5,16 +5,11 @@ namespace Umbra.UI.Config.UnitTests;
 /// <summary>
 /// Records draw invocations for <see cref="ConfigDrawer{TConfig}"/> unit tests.
 /// </summary>
-internal sealed class TestDrawNode : IDrawNode
+internal sealed class TestDrawNode(Action? onDraw = null) : IDrawNode
 {
-    private readonly Action? _onDraw;
+    private readonly Action? _onDraw = onDraw;
 
     public int DrawCount { get; private set; }
-
-    public TestDrawNode(Action? onDraw = null)
-    {
-        _onDraw = onDraw;
-    }
 
     public void Draw()
     {

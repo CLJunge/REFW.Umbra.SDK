@@ -265,6 +265,18 @@ public sealed class ParameterMetadata
     internal string? HiddenLabel { get; init; }
 
     /// <summary>
+    /// Gets the batch-undo label declared by <see cref="Attributes.UmbraBatchUndoAttribute"/> on
+    /// this parameter's declaring member, or <see langword="null"/> when no such attribute is present.
+    /// </summary>
+    /// <remarks>
+    /// When non-<see langword="null"/>, <see cref="ConfigUndoStack{TConfig}"/> automatically wraps
+    /// the parameter's current <see cref="Action"/> delegate with
+    /// <see cref="ConfigUndoStack{TConfig}.WrapWithBatch"/> at construction time so the action
+    /// produces a single atomic undo entry.
+    /// </remarks>
+    public string? BatchUndoLabel { get; init; }
+
+    /// <summary>
     /// Gets the debugger summary used by <see cref="DebuggerDisplayAttribute"/>.
     /// </summary>
     internal string DebuggerDisplay => ParameterMetadataDebuggerDisplayFormatter.Format(this);

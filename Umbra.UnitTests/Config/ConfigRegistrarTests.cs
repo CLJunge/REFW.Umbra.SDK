@@ -230,7 +230,7 @@ public partial class ConfigRegistrarTests
     {
         // Arrange
         var config = new ConfigWithCircularReference();
-        config.Other.Other = config; // Create circular reference
+        config.Other.Other = config;
 
         // Act
         var result = ConfigRegistrar.Register(config);
@@ -440,7 +440,6 @@ public partial class ConfigRegistrarTests
         Assert.IsTrue(result.ContainsKey("typeOnlyPrefix.nestedValue"));
     }
 
-    // Test helper classes
     [UmbraAutoRegister]
     internal class SimpleConfig
     {

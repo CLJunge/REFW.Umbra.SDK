@@ -12,6 +12,7 @@ internal static class StringExtensions
     /// </summary>
     /// <param name="value">The identifier to convert.</param>
     /// <returns>The original value when it is <see langword="null"/>, empty, or already starts with a lowercase character; otherwise, a new string whose first character has been lowercased.</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "<Pending>")]
     internal static string? ToCamelCase(this string? value)
     {
         if (string.IsNullOrEmpty(value) || char.IsLower(value[0]))
@@ -41,7 +42,6 @@ internal static class StringExtensions
             if (i > 0 && char.IsUpper(current))
             {
                 var prev = name[i - 1];
-                // Insert space unless previous is uppercase or a word separator
                 if (!char.IsUpper(prev) && !IsWordSeparator(prev))
                     sb.Append(' ');
             }

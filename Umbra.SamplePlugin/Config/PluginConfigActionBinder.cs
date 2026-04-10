@@ -7,6 +7,11 @@ namespace Umbra.SamplePlugin.Config;
 /// Binds live runtime actions to the sample plugin's delegate-backed config parameters after the
 /// config store has loaded.
 /// </summary>
+/// <remarks>
+/// Action wiring runs immediately after config load and wires actions that only need the store and
+/// logger. Batch-undo wrapping is handled automatically by <see cref="ConfigUndoStack{TConfig}"/>
+/// via <see cref="Attributes.UmbraBatchUndoAttribute"/> on the reset properties.
+/// </remarks>
 internal static class PluginConfigActionBinder
 {
     /// <summary>

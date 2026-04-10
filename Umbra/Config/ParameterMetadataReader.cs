@@ -45,6 +45,7 @@ internal static class ParameterMetadataReader
         var spacingBefore = member.GetCustomAttribute<UmbraSpacingBeforeAttribute>();
         var spacingAfter = member.GetCustomAttribute<UmbraSpacingAfterAttribute>();
         var indent = member.GetCustomAttribute<UmbraIndentAttribute>();
+        var batchUndo = member.GetCustomAttribute<UmbraBatchUndoAttribute>();
         var validation = ReadValidationMetadata(member);
 
         Type? drawerType = null;
@@ -96,6 +97,7 @@ internal static class ParameterMetadataReader
             DisableIf = disableIf,
             InferredFloatFormat = inferredFloatFormat,
             HiddenLabel = parameterKey is not null ? string.Concat("##", parameterKey) : null,
+            BatchUndoLabel = batchUndo?.Label,
         };
     }
 

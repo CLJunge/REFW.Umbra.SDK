@@ -1,5 +1,7 @@
+using System.Numerics;
 using System.Text.Json;
 using Moq;
+using Umbra.Input;
 
 
 namespace Umbra.Config.UnitTests;
@@ -782,7 +784,7 @@ public partial class ParameterJsonReaderTests
     {
         // Arrange
         var mockParam = new Mock<IParameter>();
-        mockParam.Setup(p => p.ValueType).Returns(typeof(decimal)); // Unsupported numeric type
+        mockParam.Setup(p => p.ValueType).Returns(typeof(decimal));
         using var doc = JsonDocument.Parse("3.14");
         var element = doc.RootElement;
 
@@ -791,5 +793,195 @@ public partial class ParameterJsonReaderTests
 
         // Assert
         mockParam.Verify(p => p.SetValueWithoutNotify(3.14), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply correctly reads a Vector4 from a JSON object with uppercase X/Y/Z/W properties.
+    /// </summary>
+    [TestMethod]
+    public void Apply_Vector4Object_CallsSetValueWithoutNotifyWithVector4()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(Vector4));
+        using var doc = JsonDocument.Parse("""{"X":0.2,"Y":0.6,"Z":1.0,"W":1.0}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(new Vector4(0.2f, 0.6f, 1.0f, 1.0f)), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply correctly reads a Vector4 from a JSON object with lowercase x/y/z/w properties.
+    /// </summary>
+    [TestMethod]
+    public void Apply_Vector4LowercaseObject_CallsSetValueWithoutNotifyWithVector4()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(Vector4));
+        using var doc = JsonDocument.Parse("""{"x":1,"y":0.5,"z":0,"w":0.8}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(new Vector4(1f, 0.5f, 0f, 0.8f)), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply skips assignment when a Vector4 JSON object is missing a required property.
+    /// </summary>
+    [TestMethod]
+    public void Apply_Vector4MissingProperty_DoesNotCallSetValueWithoutNotify()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(Vector4));
+        using var doc = JsonDocument.Parse("""{"X":1,"Y":0.5,"Z":0}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(It.IsAny<object?>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Tests that Apply correctly reads a nullable Vector4 from a JSON object.
+    /// </summary>
+    [TestMethod]
+    public void Apply_NullableVector4Object_CallsSetValueWithoutNotifyWithVector4()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(Vector4?));
+        using var doc = JsonDocument.Parse("""{"X":0,"Y":0,"Z":0,"W":1}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(new Vector4(0f, 0f, 0f, 1f)), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply correctly reads a HotkeyBinding from a JSON object with PascalCase properties.
+    /// </summary>
+    [TestMethod]
+    public void Apply_HotkeyBindingPascalCase_CallsSetValueWithoutNotifyWithBinding()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(HotkeyBinding));
+        using var doc = JsonDocument.Parse("""{"Key":574,"Ctrl":true,"Shift":false,"Alt":true}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(new HotkeyBinding(574, true, false, true)), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply correctly reads a HotkeyBinding from a JSON object with camelCase properties.
+    /// </summary>
+    [TestMethod]
+    public void Apply_HotkeyBindingCamelCase_CallsSetValueWithoutNotifyWithBinding()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(HotkeyBinding));
+        using var doc = JsonDocument.Parse("""{"key":575,"ctrl":false,"shift":true,"alt":false}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(new HotkeyBinding(575, false, true, false)), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply skips assignment when the HotkeyBinding JSON object is missing the Key property.
+    /// </summary>
+    [TestMethod]
+    public void Apply_HotkeyBindingMissingKey_DoesNotCallSetValueWithoutNotify()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(HotkeyBinding));
+        using var doc = JsonDocument.Parse("""{"Ctrl":true,"Shift":false,"Alt":false}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(It.IsAny<object?>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Tests that Apply defaults missing modifier properties to false.
+    /// </summary>
+    [TestMethod]
+    public void Apply_HotkeyBindingKeyOnly_DefaultsModifiersToFalse()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(HotkeyBinding));
+        using var doc = JsonDocument.Parse("""{"Key":574}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(new HotkeyBinding(574, false, false, false)), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply correctly reads a nullable HotkeyBinding from a JSON object.
+    /// </summary>
+    [TestMethod]
+    public void Apply_NullableHotkeyBindingObject_CallsSetValueWithoutNotifyWithBinding()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(HotkeyBinding?));
+        using var doc = JsonDocument.Parse("""{"Key":574,"Ctrl":false,"Shift":false,"Alt":false}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(new HotkeyBinding(574, false, false, false)), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Apply reads a HotkeyBinding with all modifiers set to true.
+    /// </summary>
+    [TestMethod]
+    public void Apply_HotkeyBindingAllModifiers_CallsSetValueWithoutNotifyWithAllModifiers()
+    {
+        // Arrange
+        var mockParam = new Mock<IParameter>();
+        mockParam.Setup(p => p.ValueType).Returns(typeof(HotkeyBinding));
+        using var doc = JsonDocument.Parse("""{"Key":574,"Ctrl":true,"Shift":true,"Alt":true}""");
+        var element = doc.RootElement;
+
+        // Act
+        ParameterJsonReader.Apply(mockParam.Object, element);
+
+        // Assert
+        mockParam.Verify(p => p.SetValueWithoutNotify(new HotkeyBinding(574, true, true, true)), Times.Once);
     }
 }

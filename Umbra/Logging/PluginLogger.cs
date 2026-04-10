@@ -64,6 +64,42 @@ public sealed class PluginLogger
     }
 
     /// <summary>
+    /// Logs a debug-level message.
+    /// </summary>
+    /// <remarks>
+    /// This method returns without writing anything when global logging is suppressed or when <see cref="MinLevel"/> is above <see cref="LogLevel.Debug"/>. Prefix-format and sink failures are swallowed.
+    /// </remarks>
+    /// <param name="message">The message to log.</param>
+    public void Debug(string message)
+    {
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Debug) return;
+        try { Logger.GetLogSink().Debug(FormatMessage(message)); }
+        catch (Exception ex) { Logger.ReportSuppressedFailure("PluginLogger.Debug", ex); }
+    }
+
+    /// <summary>
+    /// Logs a formatted debug-level message.
+    /// </summary>
+    /// <remarks>
+    /// This overload formats the message first, then delegates to <see cref="Debug(string)"/>. If global logging is suppressed, <see cref="MinLevel"/> filters out debug messages, or <see cref="string.Format(string, object[])"/> throws, no log is emitted.
+    /// </remarks>
+    /// <param name="format">A composite format string.</param>
+    /// <param name="args">An array of objects to format.</param>
+    public void Debug(string format, params object[] args)
+    {
+        if (!Logger.IsEnabled || MinLevel > LogLevel.Debug) return;
+        string message;
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            Logger.ReportSuppressedFailure("PluginLogger.Debug(format)", ex);
+            return;
+        }
+
+        Debug(message);
+    }
+
+    /// <summary>
     /// Logs an informational message.
     /// </summary>
     /// <remarks>

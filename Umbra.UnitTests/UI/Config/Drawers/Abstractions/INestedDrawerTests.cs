@@ -54,7 +54,6 @@ public class INestedDrawerTests
     {
         public void Draw(T groupInstance)
         {
-            // Minimal implementation for testing purposes
         }
     }
 

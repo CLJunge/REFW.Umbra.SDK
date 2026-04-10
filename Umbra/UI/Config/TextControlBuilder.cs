@@ -17,8 +17,10 @@ internal static class TextControlBuilder
     /// </summary>
     /// <remarks>
     /// When <see cref="ParameterMetadata.MultilineLines"/> is present, the returned action renders a multi-line text input; otherwise, it renders the standard single-line text input.
+    /// When <paramref name="textEditSink"/> is non-null, the returned action notifies the sink of interaction boundaries via <see cref="ITextEditSink.BeginTextEdit"/> and <see cref="ITextEditSink.EndTextEdit"/>.
     /// </remarks>
-    internal static Action BuildString(string label, IParameter parameter, LabelAlignmentGroup alignGroup)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "<Pending>")]
+    internal static Action BuildString(string label, IParameter parameter, LabelAlignmentGroup alignGroup, ITextEditSink? textEditSink = null)
     {
         var p = (Parameter<string>)parameter;
         var meta = p.Metadata;
@@ -32,8 +34,13 @@ internal static class TextControlBuilder
                 var v = p.Value ?? string.Empty;
                 var height = ImGui.GetTextLineHeightWithSpacing() * lines;
                 layout.Pre();
-                if (ImGui.InputTextMultiline(layout.HiddenLabel, ref v, maxLen, new Vector2(0f, height)))
-                    p.Value = v;
+                var changed = ImGui.InputTextMultiline(layout.HiddenLabel, ref v, maxLen, new Vector2(0f, height));
+                var activated = textEditSink is not null && ImGui.IsItemActivated();
+                var deactivated = textEditSink is not null && ImGui.IsItemDeactivated();
+
+                if (activated) textEditSink!.BeginTextEdit(parameter);
+                if (changed) p.Value = v;
+                if (deactivated) textEditSink!.EndTextEdit(parameter);
 
                 ValidationMessageRenderer.Draw(parameter, _textOps);
             };
@@ -43,7 +50,14 @@ internal static class TextControlBuilder
         {
             var v = p.Value ?? string.Empty;
             layout.Pre();
-            if (ImGui.InputText(layout.HiddenLabel, ref v, maxLen)) p.Value = v;
+            var changed = ImGui.InputText(layout.HiddenLabel, ref v, maxLen);
+            var activated = textEditSink is not null && ImGui.IsItemActivated();
+            var deactivated = textEditSink is not null && ImGui.IsItemDeactivated();
+
+            if (activated) textEditSink!.BeginTextEdit(parameter);
+            if (changed) p.Value = v;
+            if (deactivated) textEditSink!.EndTextEdit(parameter);
+
             ValidationMessageRenderer.Draw(parameter, _textOps);
         };
     }

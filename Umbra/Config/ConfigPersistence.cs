@@ -41,7 +41,10 @@ internal static class ConfigPersistence
         Failed
     }
 
-    private static readonly JsonSerializerOptions _jsonOptions = new()
+    /// <summary>
+    /// Shared JSON serializer options used for config persistence.
+    /// </summary>
+    internal static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
@@ -66,13 +69,11 @@ internal static class ConfigPersistence
             var dict = new Dictionary<string, object?>();
             foreach (var param in parameters.Values)
             {
-                // Action-backed button parameters are never persisted — delegates are not
-                // JSON-serializable and carry no meaningful state to save or restore.
                 if (typeof(Delegate).IsAssignableFrom(param.ValueType)) continue;
                 dict[param.Key] = param.GetValue();
             }
 
-            File.WriteAllText(filePath, JsonSerializer.Serialize(dict, _jsonOptions));
+            File.WriteAllText(filePath, JsonSerializer.Serialize(dict, JsonOptions));
             Logger.Info($"ConfigPersistence: saved {dict.Count} parameter(s) to '{filePath}'.");
         }
         catch (Exception ex)
@@ -95,7 +96,7 @@ internal static class ConfigPersistence
         try
         {
             var json = File.ReadAllText(filePath);
-            var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json, _jsonOptions);
+            var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json, JsonOptions);
             if (dict == null) return LoadResult.Success;
 
             var applied = 0;
@@ -131,8 +132,6 @@ internal static class ConfigPersistence
     /// <returns><see langword="true"/> when the file was moved successfully; otherwise <see langword="false"/>.</returns>
     private static bool TryBackupUnreadableConfigFile(string filePath, out string backupPath)
     {
-        backupPath = string.Empty;
-
         try
         {
             backupPath = GetUnreadableConfigBackupPath(filePath);

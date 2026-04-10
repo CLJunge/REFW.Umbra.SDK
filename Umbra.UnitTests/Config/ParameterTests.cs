@@ -396,7 +396,6 @@ public class ParameterTests
         var parameter = new Parameter<double>(double.NaN);
 
         // Act & Assert - NaN != NaN by IEEE 754, so IsModified should be true even when "unchanged"
-        // EqualityComparer<double>.Default treats NaN == NaN as true, so IsModified should be false
         Assert.IsFalse(parameter.IsModified, "IsModified should be false when default and current are both NaN (EqualityComparer behavior)");
 
         // Act - change to a different value
@@ -1224,7 +1223,7 @@ public class ParameterTests
         // Assert
         Assert.AreEqual(10, parameter.Value);
         Assert.IsFalse(parameter.IsModified);
-        Assert.AreEqual(1, eventCallCount); // Only first reset should raise event
+        Assert.AreEqual(1, eventCallCount);
     }
 
     /// <summary>
@@ -1235,7 +1234,7 @@ public class ParameterTests
     {
         // Arrange
         var parameter = new Parameter<int>(100);
-        parameter.SetWithoutNotify(0); // Set to default(int) without raising event
+        parameter.SetWithoutNotify(0);
 
         // Act
         parameter.Reset();
@@ -1875,7 +1874,7 @@ public class ParameterTests
     public void Set_DifferentValue_UpdatesIsModifiedState()
     {
         // Arrange
-        var parameter = new Parameter<int>(10); // DefaultValue = 10
+        var parameter = new Parameter<int>(10);
 
         // Act & Assert
         Assert.IsFalse(parameter.IsModified, "Should not be modified initially");
@@ -1920,8 +1919,8 @@ public class ParameterTests
     [DataRow(42, 42)]
     [DataRow(-1, -1)]
     [DataRow(-100, -100)]
-    [DataRow(2147483647, 2147483647)] // int.MaxValue
-    [DataRow(-2147483648, -2147483648)] // int.MinValue
+    [DataRow(2147483647, 2147483647)]
+    [DataRow(-2147483648, -2147483648)]
     public void GetValue_IntParameterWithSpecificValue_ReturnsCorrectValue(int initialValue, int expectedValue)
     {
         // Arrange
@@ -1943,7 +1942,7 @@ public class ParameterTests
     [TestMethod]
     [DataRow(0, 100)]
     [DataRow(50, -50)]
-    [DataRow(2147483647, -2147483648)] // MaxValue to MinValue
+    [DataRow(2147483647, -2147483648)]
     public void GetValue_IntParameterAfterValueModification_ReturnsNewValue(int initialValue, int newValue)
     {
         // Arrange
@@ -1992,8 +1991,8 @@ public class ParameterTests
     [DataRow(1.5)]
     [DataRow(-2.7)]
     [DataRow(3.14159)]
-    [DataRow(1.7976931348623157E+308)] // double.MaxValue
-    [DataRow(-1.7976931348623157E+308)] // double.MinValue
+    [DataRow(1.7976931348623157E+308)]
+    [DataRow(-1.7976931348623157E+308)]
     public void GetValue_DoubleParameterWithRegularValue_ReturnsCorrectValue(double initialValue)
     {
         // Arrange
@@ -2119,8 +2118,8 @@ public class ParameterTests
     [DataRow(0)]
     [DataRow(42)]
     [DataRow(-100)]
-    [DataRow(2147483647)] // int.MaxValue
-    [DataRow(-2147483648)] // int.MinValue
+    [DataRow(2147483647)]
+    [DataRow(-2147483648)]
     public void GetValue_NullableIntParameterWithValue_ReturnsCorrectValue(int initialValue)
     {
         // Arrange

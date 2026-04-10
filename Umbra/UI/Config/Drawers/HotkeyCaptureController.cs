@@ -1,4 +1,5 @@
 using Umbra.Config;
+using Umbra.Input;
 
 namespace Umbra.UI.Config.Drawers;
 
@@ -35,12 +36,12 @@ internal sealed class HotkeyCaptureController : IDisposable
     internal bool IsDisposed => _disposed;
 
     /// <summary>
-    /// Renders the hotkey-capture UI for one frame and applies any captured key value.
+    /// Renders the hotkey-capture UI for one frame and applies any captured binding value.
     /// </summary>
     /// <param name="parameter">The hotkey parameter being edited.</param>
     /// <param name="currentValueText">The text shown while capture mode is inactive.</param>
-    /// <param name="waitingText">The text shown while capture mode is waiting for a key press.</param>
-    internal void Draw(Parameter<int> parameter, string currentValueText, string waitingText)
+    /// <param name="waitingPrefix">The label prefix shown while capture mode is waiting (e.g. <c>"Hotkey: "</c>). The controller appends held modifier names and a prompt automatically.</param>
+    internal void Draw(Parameter<HotkeyBinding> parameter, string currentValueText, string waitingPrefix)
     {
         var value = parameter.Value;
         var previousValue = value;
@@ -50,13 +51,17 @@ internal sealed class HotkeyCaptureController : IDisposable
 
         if (_waiting)
         {
+            var modifiers = _inputSource.GetHeldModifierPrefix();
+            var waitingText = modifiers.Length > 0
+                ? $"{waitingPrefix}{modifiers}..."
+                : $"{waitingPrefix}Press any key...";
             _renderer.Text(waitingText);
             _renderer.SameLine();
             if (_renderer.Button($"Cancel##{parameter.Key}"))
             {
                 _waiting = false;
             }
-            else if (_inputSource.TryCaptureKeyboardKey(out var captured))
+            else if (_inputSource.TryCaptureHotkeyBinding(out var captured))
             {
                 value = captured;
                 _waiting = false;

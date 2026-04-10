@@ -317,7 +317,6 @@ public class NestedNodeComposerTests
         // Arrange
         var registerCategoryNodeMock = new Mock<Action<CategoryNode>>();
         var nestedDrawerAttrMock = new Mock<INestedDrawerAttribute>();
-        // Use a drawer type that doesn't support the group type to force BuildDrawAction to return null
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(IncompatibleDrawer));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
         var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, disableIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
@@ -415,7 +414,6 @@ public class NestedNodeComposerTests
         // Arrange
         var registerCategoryNodeMock = new Mock<Action<CategoryNode>>();
         var nestedDrawerAttrMock = new Mock<INestedDrawerAttribute>();
-        // Use a drawer type without parameterless constructor to trigger exception during Activator.CreateInstance
         nestedDrawerAttrMock.Setup(x => x.DrawerType).Returns(typeof(InvalidDrawerWithoutDefaultConstructor));
         var propInfo = typeof(TestConfig).GetProperty(nameof(TestConfig.TestProperty))!;
         var propMeta = new TypeDrawMetadata.PropertyDrawMetadata(property: propInfo, propertyType: typeof(TestNestedGroup), getValue: owner => propInfo.GetValue(owner), isParameter: false, category: null, indentAttr: null, collapseAttr: null, labelMarginAttr: null, nestedDrawerAttr: null, hideIf: null, disableIf: null, order: 0, spacingBefore: 0, spacingAfter: 0, configPrefix: null, configParameterKeyOverride: null);
@@ -452,7 +450,6 @@ public class NestedNodeComposerTests
     {
         public void Draw(TestNestedGroup groupInstance)
         {
-            // No-op for testing
         }
     }
 
@@ -463,12 +460,10 @@ public class NestedNodeComposerTests
     {
         public void Draw(TestNestedGroup groupInstance)
         {
-            // No-op for testing
         }
 
         public void Dispose()
         {
-            // No-op for testing
         }
     }
 
@@ -479,7 +474,6 @@ public class NestedNodeComposerTests
     {
         public void Draw(string groupInstance)
         {
-            // No-op for testing
         }
     }
 
@@ -488,14 +482,14 @@ public class NestedNodeComposerTests
     /// </summary>
     private sealed class InvalidDrawerWithoutDefaultConstructor : INestedDrawer<TestNestedGroup>
     {
+#pragma warning disable IDE0060 // Remove unused parameter
         public InvalidDrawerWithoutDefaultConstructor(string required)
+#pragma warning restore IDE0060 // Remove unused parameter
         {
-            // Intentionally requires a parameter to prevent default construction
         }
 
         public void Draw(TestNestedGroup groupInstance)
         {
-            // No-op for testing
         }
     }
     #endregion

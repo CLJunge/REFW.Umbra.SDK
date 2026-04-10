@@ -201,8 +201,6 @@ public class PluginPanelTreeNodeLabelsTests
         mockSection.Setup(s => s.SectionId).Returns("TestSection_SeparatorInMiddle");
 
         // Act & Assert
-        // Note: Cannot verify Logger.Warning call directly as it's a static method.
-        // This test verifies the method executes without throwing.
         PluginPanelTreeNodeLabels.WarnIfInvalid(mockSection.Object);
     }
 
@@ -219,8 +217,6 @@ public class PluginPanelTreeNodeLabelsTests
         mockSection.Setup(s => s.SectionId).Returns("TestSection_DuplicateCall");
 
         // Act & Assert
-        // Note: Cannot verify that warning is logged only once due to static Logger.
-        // This test verifies the method executes without throwing on multiple calls.
         PluginPanelTreeNodeLabels.WarnIfInvalid(mockSection.Object);
         PluginPanelTreeNodeLabels.WarnIfInvalid(mockSection.Object);
         PluginPanelTreeNodeLabels.WarnIfInvalid(mockSection.Object);

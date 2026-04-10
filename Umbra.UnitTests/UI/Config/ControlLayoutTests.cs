@@ -219,9 +219,6 @@ public class ControlLayoutTests
         var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
 
         // Assert
-        // The Register method was called with (label, true) because desc is not null.
-        // Since we cannot directly verify the call without mocking and LabelAlignmentGroup is sealed,
-        // we verify that the constructor completes successfully, which implies Register was called.
         Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
     }
 
@@ -243,9 +240,6 @@ public class ControlLayoutTests
         var layout = new ControlLayout(label, desc, alignGroup, controlWidth, hiddenLabel);
 
         // Assert
-        // The Register method was called with (label, false) because desc is null.
-        // Since we cannot directly verify the call without mocking and LabelAlignmentGroup is sealed,
-        // we verify that the constructor completes successfully, which implies Register was called.
         Assert.AreEqual(hiddenLabel, layout.HiddenLabel);
     }
 

@@ -28,7 +28,7 @@ public sealed class RootTreeNodeTests
 
         // Assert
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Test Node", true, false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Test Node", true, true, false), renderer.TreeNodes[0]);
         Assert.AreEqual(0, renderer.TreePopCount);
     }
 
@@ -57,7 +57,7 @@ public sealed class RootTreeNodeTests
         // Assert
         CollectionAssert.AreEqual(_expectedThreeElements, calls);
         Assert.HasCount(1, renderer.TreeNodes);
-        Assert.AreEqual(("Parent Node", false, false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Parent Node", false, false, false), renderer.TreeNodes[0]);
         Assert.AreEqual(1, renderer.TreePopCount);
     }
 
@@ -190,7 +190,35 @@ public sealed class RootTreeNodeTests
 
         // Assert
         Assert.IsTrue(visible);
-        Assert.AreEqual(("Root", false, true), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Root", false, false, true), renderer.TreeNodes[0]);
+    }
+
+    /// <summary>
+    /// Tests that clearing an active search restores the remembered root tree open state.
+    /// </summary>
+    [TestMethod]
+    public void ApplySearch_WhenQueryClears_RestoresRememberedRootTreeState()
+    {
+        // Arrange
+        var renderer = new TestRootTreeNodeRenderer();
+        renderer.TreeNodeResults.Enqueue(false);
+        renderer.TreeNodeResults.Enqueue(true);
+        renderer.TreeNodeResults.Enqueue(false);
+        var node = new RootTreeNode("Root", defaultOpen: true, [new SearchableCallbackNode(visible: true)], branchId: "root:test", renderer);
+        var renderState = CreateRenderState("root:test");
+
+        // Act
+        node.Draw();
+        _ = ((IConfigSearchNode)node).ApplySearch(renderState);
+        node.Draw();
+        _ = ((IConfigSearchNode)node).ApplySearch(null);
+        node.Draw();
+
+        // Assert
+        Assert.HasCount(3, renderer.TreeNodes);
+        Assert.AreEqual(("Root", true, true, false), renderer.TreeNodes[0]);
+        Assert.AreEqual(("Root", true, false, true), renderer.TreeNodes[1]);
+        Assert.AreEqual(("Root", true, false, false), renderer.TreeNodes[2]);
     }
 
     /// <summary>

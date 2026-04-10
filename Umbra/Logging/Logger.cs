@@ -89,6 +89,42 @@ public static class Logger
     }
 
     /// <summary>
+    /// Logs a debug-level message.
+    /// </summary>
+    /// <remarks>
+    /// When <see cref="IsEnabled"/> is <see langword="false"/>, this method returns before resolving the underlying sink so suppressed test and benchmark paths remain host-independent.
+    /// </remarks>
+    /// <param name="message">The message to log.</param>
+    public static void Debug(string message)
+    {
+        if (!IsEnabled) return;
+        try { GetLogSink().Debug(message); }
+        catch (Exception ex) { ReportSuppressedFailure("Logger.Debug", ex); }
+    }
+
+    /// <summary>
+    /// Logs a formatted debug-level message.
+    /// </summary>
+    /// <remarks>
+    /// This overload formats the message first, then delegates to <see cref="Debug(string)"/>. If logging is globally disabled or <see cref="string.Format(string, object[])"/> throws, no log is emitted.
+    /// </remarks>
+    /// <param name="format">A composite format string.</param>
+    /// <param name="args">An array of objects to format.</param>
+    public static void Debug(string format, params object[] args)
+    {
+        if (!IsEnabled) return;
+        string message;
+        try { message = string.Format(format, args); }
+        catch (Exception ex)
+        {
+            ReportSuppressedFailure("Logger.Debug(format)", ex);
+            return;
+        }
+
+        Debug(message);
+    }
+
+    /// <summary>
     /// Logs an informational message.
     /// </summary>
     /// <remarks>

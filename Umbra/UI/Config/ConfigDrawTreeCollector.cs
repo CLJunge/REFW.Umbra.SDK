@@ -22,6 +22,8 @@ internal static class ConfigDrawTreeCollector
     /// <param name="disposables">Collects disposable resources created while resolving nodes and drawers.</param>
     /// <param name="sortNodesInPlace">Applies the caller's stable local ordering policy.</param>
     /// <param name="searchIndex">Collects the flat search index built alongside the rendered nodes.</param>
+    /// <param name="numericEditSink">The optional numeric edit sink forwarded to built-in numeric controls, or <see langword="null"/> when numeric edit tracking is disabled.</param>
+    /// <param name="textEditSink">The optional text edit sink forwarded to built-in text controls, or <see langword="null"/> when text edit tracking is disabled.</param>
     /// <param name="inheritedVisibility">The effective runtime visibility inherited from ancestor wrappers, or <see langword="null"/> when no ancestor visibility filter applies.</param>
     /// <param name="inheritedDisabled">The effective disabled state inherited from ancestor wrappers, or <see langword="null"/> when no ancestor disabled condition applies.</param>
     internal static void CollectInto(
@@ -32,6 +34,8 @@ internal static class ConfigDrawTreeCollector
         List<IDisposable> disposables,
         Action<List<IDrawNode>> sortNodesInPlace,
         ConfigSearchIndex searchIndex,
+        INumericEditSink? numericEditSink = null,
+        ITextEditSink? textEditSink = null,
         Func<bool>? inheritedVisibility = null,
         Func<bool>? inheritedDisabled = null)
     {
@@ -71,7 +75,9 @@ internal static class ConfigDrawTreeCollector
                     alignmentGroup,
                     classIndent?.Amount,
                     classLabelMargin?.Pixels,
-                    parameterDisabled);
+                    parameterDisabled,
+                    numericEditSink,
+                    textEditSink);
                 if (resource is not null)
                     disposables.Add(resource);
 
@@ -143,7 +149,7 @@ internal static class ConfigDrawTreeCollector
                 registerCategoryNode,
                 childAlignmentGroup);
 
-            CollectInto(childScope, nested, propType, registerCategoryNode, disposables, sortNodesInPlace, searchIndex, nestedVisibility, nestedDisabled);
+            CollectInto(childScope, nested, propType, registerCategoryNode, disposables, sortNodesInPlace, searchIndex, numericEditSink, textEditSink, nestedVisibility, nestedDisabled);
 
             if (nestedLocalCategory is null)
                 sortNodesInPlace(childScope.Nodes);

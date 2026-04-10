@@ -12,4 +12,13 @@ internal sealed class KeyboardHotkeyInputSource : IHotkeyInputSource
 
     /// <inheritdoc/>
     public string GetKeyName(int key) => KeyboardInput.GetKeyName(key);
+
+    /// <inheritdoc/>
+    public bool TryCaptureHotkeyBinding(out HotkeyBinding binding) => KeyboardInput.TryCaptureHotkeyBinding(out binding);
+
+    /// <inheritdoc/>
+    public string GetBindingDisplayName(HotkeyBinding binding) => binding.GetDisplayName();
+
+    /// <inheritdoc/>
+    public string GetHeldModifierPrefix() => KeyboardInput.GetHeldModifierPrefix();
 }

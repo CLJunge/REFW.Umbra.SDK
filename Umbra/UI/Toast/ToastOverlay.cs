@@ -1,0 +1,71 @@
+namespace Umbra.UI.Toast;
+
+/// <summary>
+/// Static entry point for rendering all active toasts each frame.
+/// </summary>
+/// <remarks>
+/// Call <see cref="Draw"/> from the host's <c>OnPreImGuiRenderer</c> callback.
+/// When multiple <c>PluginHost&lt;TPlugin&gt;</c> instances share the same process,
+/// each one calls <see cref="Draw"/>; the per-tick guard ensures the renderer only
+/// runs once per frame. The renderer and tick provider can be replaced via
+/// <see cref="SetRenderer"/> and <see cref="SetTickProvider"/> for testing.
+/// </remarks>
+public static class ToastOverlay
+{
+    private static volatile IToastRenderer _renderer = new ImGuiToastRenderer();
+    private static Func<long> _tickProvider = static () => Environment.TickCount64;
+
+    /// <summary>
+    /// Tracks the last tick value at which <see cref="Draw"/> rendered,
+    /// used to deduplicate calls within the same tick (same frame from multiple plugin hosts).
+    /// </summary>
+    private static long _lastDrawTick;
+
+    /// <summary>
+    /// Draws all currently active toasts using the configured renderer.
+    /// </summary>
+    /// <remarks>
+    /// Repeated calls within the same tick are deduplicated so that multiple plugin hosts
+    /// sharing the same process do not render duplicate toast windows in a single ImGui frame.
+    /// </remarks>
+    public static void Draw()
+    {
+        var now = _tickProvider();
+        if (now == _lastDrawTick)
+            return;
+
+        _lastDrawTick = now;
+
+        var entries = ToastQueue.GetActiveEntries();
+        if (entries.Count == 0) return;
+        _renderer.Draw(entries);
+    }
+
+    /// <summary>
+    /// Replaces the active renderer. Intended for testing.
+    /// </summary>
+    /// <param name="renderer">The renderer instance to use, or <see langword="null"/> to restore the default.</param>
+    internal static void SetRenderer(IToastRenderer? renderer) => _renderer = renderer ?? new ImGuiToastRenderer();
+
+    /// <summary>
+    /// Replaces the tick provider used by <see cref="Draw"/> to read the current frame tick.
+    /// </summary>
+    /// <param name="provider">
+    /// A delegate that returns the current tick, or <see langword="null"/> to restore
+    /// <see cref="Environment.TickCount64"/>.
+    /// </param>
+    /// <remarks>
+    /// This is an internal test seam. Production code should never call this method.
+    /// Supply a fixed-value delegate in tests to make the per-tick dedup guard deterministic.
+    /// </remarks>
+    internal static void SetTickProvider(Func<long>? provider) =>
+        _tickProvider = provider ?? (static () => Environment.TickCount64);
+
+    /// <summary>
+    /// Resets the per-tick dedup guard so the next <see cref="Draw"/> call is not suppressed.
+    /// </summary>
+    /// <remarks>
+    /// This is an internal test seam. Production code should never call this method.
+    /// </remarks>
+    internal static void ResetDrawTick() => _lastDrawTick = 0;
+}

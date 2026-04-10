@@ -1,4 +1,6 @@
+using System.Numerics;
 using System.Text.Json;
+using Umbra.Input;
 using Umbra.Logging;
 
 namespace Umbra.Config;
@@ -95,6 +97,7 @@ internal static class ParameterJsonReader
                 when targetType == typeof(bool) || targetType == typeof(bool?)
                 => element.GetBoolean(),
             JsonValueKind.String => ConvertString(element, targetType),
+            JsonValueKind.Object => ConvertObject(element, targetType),
             _ => null
         };
     }
@@ -146,5 +149,67 @@ internal static class ParameterJsonReader
             return null;
         }
         return raw;
+    }
+
+    /// <summary>
+    /// Converts a JSON object element to the specified CLR type.
+    /// Supports <see cref="Vector4"/> and <see cref="HotkeyBinding"/>.
+    /// </summary>
+    /// <param name="element">The JSON object element to convert.</param>
+    /// <param name="t">The target CLR type.</param>
+    /// <returns>The converted value, or <see langword="null"/> if the type is not supported.</returns>
+    private static object? ConvertObject(JsonElement element, Type t)
+    {
+        if (t == typeof(Vector4) || t == typeof(Vector4?))
+            return ConvertVector4(element);
+
+        if (t == typeof(HotkeyBinding) || t == typeof(HotkeyBinding?))
+            return ConvertHotkeyBinding(element);
+
+        return null;
+    }
+
+    /// <summary>
+    /// Reads a <see cref="Vector4"/> from a JSON object with <c>X</c>, <c>Y</c>, <c>Z</c>, <c>W</c> properties.
+    /// </summary>
+    private static Vector4? ConvertVector4(JsonElement element)
+    {
+        if (!element.TryGetProperty("X", out var xProp) && !element.TryGetProperty("x", out xProp))
+            return null;
+        if (!element.TryGetProperty("Y", out var yProp) && !element.TryGetProperty("y", out yProp))
+            return null;
+        if (!element.TryGetProperty("Z", out var zProp) && !element.TryGetProperty("z", out zProp))
+            return null;
+        if (!element.TryGetProperty("W", out var wProp) && !element.TryGetProperty("w", out wProp))
+            return null;
+
+        return new Vector4(xProp.GetSingle(), yProp.GetSingle(), zProp.GetSingle(), wProp.GetSingle());
+    }
+
+    /// <summary>
+    /// Reads a <see cref="HotkeyBinding"/> from a JSON object with <c>Key</c>, <c>Ctrl</c>, <c>Shift</c>, <c>Alt</c> properties.
+    /// </summary>
+    private static HotkeyBinding? ConvertHotkeyBinding(JsonElement element)
+    {
+        if (!element.TryGetProperty("Key", out var keyProp) && !element.TryGetProperty("key", out keyProp))
+            return null;
+
+        var key = keyProp.GetInt32();
+        var ctrl = TryGetBool(element, "Ctrl", "ctrl");
+        var shift = TryGetBool(element, "Shift", "shift");
+        var alt = TryGetBool(element, "Alt", "alt");
+
+        return new HotkeyBinding(key, ctrl, shift, alt);
+    }
+
+    /// <summary>
+    /// Tries to read a boolean property by Pascal-case or camelCase name, defaulting to <see langword="false"/>.
+    /// </summary>
+    private static bool TryGetBool(JsonElement element, string pascalName, string camelName)
+    {
+        if (element.TryGetProperty(pascalName, out var prop) || element.TryGetProperty(camelName, out prop))
+            return prop.ValueKind == JsonValueKind.True;
+
+        return false;
     }
 }

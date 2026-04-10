@@ -1,3 +1,4 @@
+using Moq;
 using Umbra.Config;
 
 
@@ -243,6 +244,58 @@ public class TextControlBuilderTests
 
         var result = TextControlBuilder.BuildString(label, parameter, alignGroup);
 
+        Assert.IsNotNull(result);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="TextControlBuilder.BuildString"/> returns a non-null Action
+    /// when a non-null <see cref="ITextEditSink"/> is supplied.
+    /// </summary>
+    [TestMethod]
+    public void BuildString_WithTextEditSink_ReturnsNonNullAction()
+    {
+        // Arrange
+        var label = "Sink Label";
+        var parameter = new Parameter<string>("value")
+        {
+            Key = "sinkKey",
+            Metadata = new ParameterMetadata()
+        };
+        var alignGroup = new LabelAlignmentGroup();
+        var sinkMock = new Mock<ITextEditSink>(MockBehavior.Loose);
+
+        // Act
+        var result = TextControlBuilder.BuildString(label, parameter, alignGroup, sinkMock.Object);
+
+        // Assert
+        Assert.IsNotNull(result);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="TextControlBuilder.BuildString"/> returns a non-null Action
+    /// when a non-null <see cref="ITextEditSink"/> is supplied in multiline mode.
+    /// </summary>
+    [TestMethod]
+    public void BuildString_MultilineWithTextEditSink_ReturnsNonNullAction()
+    {
+        // Arrange
+        var label = "Multiline Sink";
+        var parameter = new Parameter<string>("value")
+        {
+            Key = "multiSinkKey",
+            Metadata = new ParameterMetadata
+            {
+                MultilineLines = 4,
+                MaxLength = 256
+            }
+        };
+        var alignGroup = new LabelAlignmentGroup();
+        var sinkMock = new Mock<ITextEditSink>(MockBehavior.Loose);
+
+        // Act
+        var result = TextControlBuilder.BuildString(label, parameter, alignGroup, sinkMock.Object);
+
+        // Assert
         Assert.IsNotNull(result);
     }
 

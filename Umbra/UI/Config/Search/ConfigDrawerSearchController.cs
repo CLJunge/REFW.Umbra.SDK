@@ -10,8 +10,6 @@ namespace Umbra.UI.Config.Search;
 /// </remarks>
 internal sealed class ConfigDrawerSearchController
 {
-    private const uint SearchBarMaxLength = 256;
-    private const float MinimumSearchInputWidth = 64f;
     private const string SearchLabel = "Search";
     private const string SearchInputLabel = "##ConfigDrawerSearch";
     private const string PreviousButtonLabel = "<##ConfigDrawerSearchPrevious";
@@ -21,11 +19,13 @@ internal sealed class ConfigDrawerSearchController
     private readonly ConfigSearchIndex _searchIndex;
     private readonly ConfigDrawerSearchState? _searchState;
     private readonly ConfigDrawerSearchLayoutState? _searchLayoutState;
+    private readonly uint _maxInputLength;
+    private readonly float _minimumSearchInputWidth;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConfigDrawerSearchController"/> class.
     /// </summary>
-    /// <param name="options">The drawer options that enable or disable the built-in search row.</param>
+    /// <param name="options">The drawer options that contain the optional search settings.</param>
     /// <param name="renderer">The renderer used for search-row UI and measurement operations.</param>
     /// <param name="searchIndex">The flat search index used to refresh matches from the current query.</param>
     /// <exception cref="ArgumentNullException">
@@ -43,8 +43,11 @@ internal sealed class ConfigDrawerSearchController
 
         _renderer = renderer;
         _searchIndex = searchIndex;
-        _searchState = options.ShowSearchBar ? new ConfigDrawerSearchState() : null;
-        _searchLayoutState = options.ShowSearchBar ? new ConfigDrawerSearchLayoutState() : null;
+        var searchOptions = options.Search;
+        _searchState = searchOptions is not null ? new ConfigDrawerSearchState() : null;
+        _searchLayoutState = searchOptions is not null ? new ConfigDrawerSearchLayoutState() : null;
+        _maxInputLength = searchOptions?.MaxInputLength ?? ConfigSearchOptions.DefaultMaxInputLength;
+        _minimumSearchInputWidth = searchOptions?.MinimumSearchInputWidth ?? ConfigSearchOptions.DefaultMinimumSearchInputWidth;
     }
 
     /// <summary>
@@ -69,7 +72,7 @@ internal sealed class ConfigDrawerSearchController
 
         var query = searchState.Query;
         _renderer.SetNextItemWidth(layoutState.SearchInputWidth);
-        if (_renderer.InputText(SearchInputLabel, ref query, SearchBarMaxLength))
+        if (_renderer.InputText(SearchInputLabel, ref query, _maxInputLength))
         {
             searchState.SetQuery(query);
             RefreshSearchMatches(searchState);
@@ -101,7 +104,7 @@ internal sealed class ConfigDrawerSearchController
             - layoutState.PreviousButtonWidth
             - layoutState.NextButtonWidth
             - (spacingX * 3f);
-        layoutState.SearchInputWidth = Math.Max(MinimumSearchInputWidth, searchInputWidth);
+        layoutState.SearchInputWidth = Math.Max(_minimumSearchInputWidth, searchInputWidth);
         layoutState.IsInitialized = true;
     }
 

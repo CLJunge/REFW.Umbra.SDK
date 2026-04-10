@@ -5,6 +5,7 @@ using Umbra.SamplePlugin.Config;
 using Umbra.UI.Config;
 using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
+using Umbra.UI.Toast;
 #if BENCHMARK
 using Umbra.UI.Panel.Benchmark;
 #endif
@@ -13,7 +14,7 @@ namespace Umbra.SamplePlugin;
 
 /// <summary>
 /// Sample REFramework.NET plugin instance that demonstrates Umbra config registration,
-/// automatic deferred persistence, panel-based ImGui rendering, and optional reusable
+/// automatic persistence, panel-based ImGui rendering, and optional reusable
 /// plugin-panel benchmarking in <c>BENCHMARK</c> builds.
 /// </summary>
 /// <remarks>
@@ -38,7 +39,6 @@ public sealed class SamplePlugin : UmbraPlugin
     private PluginPanelBenchmark? _panelBenchmark;
 #endif
     private ConfigStore<PluginConfig>? _store;
-    private DeferredSaveController<PluginConfig>? _saveController;
     private PluginConfig? _config;
 
     /// <summary>
@@ -77,8 +77,6 @@ public sealed class SamplePlugin : UmbraPlugin
 #endif
 
         RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
-        RunShutdownStep("flush deferred save controller", FlushDeferredSaveController);
-        RunShutdownStep("dispose deferred save controller", DisposeDeferredSaveController);
         RunShutdownStep("save config store", SaveConfigStore);
         RunShutdownStep("dispose config store", DisposeConfigStore);
 
@@ -100,23 +98,31 @@ public sealed class SamplePlugin : UmbraPlugin
         if (!System.Diagnostics.Debugger.IsAttached
             && Input.KeyboardInput.IsCtrlHeld && Input.KeyboardInput.IsShiftHeld
             && Input.KeyboardInput.TryCaptureKeyboardKey(out var capturedKey)
-            && capturedKey == (int)Hexa.NET.ImGui.ImGuiKey.F12)
+            && capturedKey == (int)Input.UmbraKey.F12)
         {
             Log.Info("Ctrl + Shift + F12 detected, attaching debugger...");
             System.Diagnostics.Debugger.Launch();
+        }
+
+        if (Input.KeyboardInput.IsCtrlHeld && Input.KeyboardInput.IsShiftHeld
+            && Input.KeyboardInput.TryCaptureKeyboardKey(out capturedKey)
+            && capturedKey == (int)Input.UmbraKey.F11)
+        {
+            Log.Info("Ctrl + Shift + F11 detected, posting test toast notifications...");
+            ToastQueue.Push("This is a test info toast.");
+            ToastQueue.Push("This is a test warning toast.", ToastLevel.Warning);
+            ToastQueue.Push("This is a test error toast.", ToastLevel.Error);
+            ToastQueue.Push("This is a test success toast.", ToastLevel.Success);
+            ToastQueue.Push("This is a test toast with a custom duration of 5 seconds.", ToastLevel.Info, TimeSpan.FromSeconds(5));
+            ToastQueue.Push("This is a test toast with a custom duration of 1 second.", ToastLevel.Info, TimeSpan.FromSeconds(1));
         }
 #endif
     }
 
     /// <summary>
-    /// Renders the sample plugin UI and advances deferred persistence when the REFramework UI pass
-    /// is active.
+    /// Renders the sample plugin UI when the REFramework UI pass is active.
     /// </summary>
-    public override void OnPreImGuiDrawUI()
-    {
-        DrawUiIfActive();
-        TickDeferredSaveController();
-    }
+    public override void OnPreImGuiDrawUI() => DrawUiIfActive();
 
     /// <summary>
     /// Resolves the absolute path to the plugin's JSON configuration file.
@@ -182,33 +188,40 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 
     /// <summary>
-    /// Creates the runtime panel and deferred-save controller for the loaded sample config.
+    /// Creates the runtime panel for the loaded sample config.
     /// </summary>
+    /// <remarks>
+    /// Batch-undo wrapping for reset actions is handled automatically by the undo stack via
+    /// <see cref="Config.Attributes.UmbraBatchUndoAttribute"/> on the reset properties.
+    /// </remarks>
     /// <param name="config">The loaded config instance.</param>
     /// <param name="store">The loaded config store.</param>
     private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
     {
-        _saveController = new DeferredSaveController<PluginConfig>(store);
-        _panel = CreateRuntimePanel(config, store);
+        var section = CreateRuntimeSection(config, store);
+        _panel = new PluginPanel(_runtimePanelScope).Add(section);
     }
 
     /// <summary>
-    /// Builds the plugin's normal runtime panel.
+    /// Builds the config section for the runtime panel.
     /// </summary>
     /// <param name="config">The loaded config instance shared by the panel sections.</param>
-    /// <param name="store">The loaded config store used for built-in transfer UI support.</param>
-    /// <returns>The runtime panel.</returns>
-    private static PluginPanel CreateRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
-        => new PluginPanel(_runtimePanelScope)
-            .Add(ConfigSection<PluginConfig>.CreateWithStore(
-                config,
-                store,
-                new ConfigDrawerOptions
-                {
-                    ShowSearchBar = true,
-                    Transfer = new ConfigTransferOptions { Enabled = true }
-                },
-                _runtimeSectionScope));
+    /// <param name="store">The loaded config store used for event-driven persistence, transfer UI, and undo support.</param>
+    /// <returns>The config section with undo, search, and transfer support.</returns>
+    private static ConfigSection<PluginConfig> CreateRuntimeSection(PluginConfig config, ConfigStore<PluginConfig> store)
+    {
+        var toast = new ConfigToastOptions("Sample Plugin") { Duration = TimeSpan.FromSeconds(2) };
+        return ConfigSection<PluginConfig>.CreateWithStore(
+            config,
+            store,
+            new ConfigDrawerOptions
+            {
+                Search = new UI.Config.Search.ConfigSearchOptions(),
+                Transfer = new ConfigTransferOptions { Enabled = true },
+                Undo = new ConfigUndoOptions() { Toast = toast }
+            },
+            _runtimeSectionScope);
+    }
 
     /// <summary>
     /// Creates the benchmark panel and benchmark host for isolated panel-draw measurement.
@@ -258,12 +271,6 @@ public sealed class SamplePlugin : UmbraPlugin
 #endif
     }
 
-    /// <summary>
-    /// Advances deferred-save timing so pending configuration changes can flush to disk.
-    /// </summary>
-    private void TickDeferredSaveController()
-        => _saveController?.Tick();
-
 #if BENCHMARK
     private void CompleteActiveBenchmarkRun()
         => _panelBenchmark?.CompleteActiveRun("PluginUnload");
@@ -288,16 +295,6 @@ public sealed class SamplePlugin : UmbraPlugin
         var panel = _panel;
         _panel = null;
         panel?.Dispose();
-    }
-
-    private void FlushDeferredSaveController()
-        => _saveController?.Flush();
-
-    private void DisposeDeferredSaveController()
-    {
-        var saveController = _saveController;
-        _saveController = null;
-        saveController?.Dispose();
     }
 
     private void SaveConfigStore()

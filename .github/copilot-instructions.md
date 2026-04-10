@@ -38,6 +38,7 @@ When generating or modifying code for this repository:
 - Prefer resilient behavior over hard failures because plugin code executes in-process with the game.
 - Update affected XML documentation when changing public APIs or externally visible behavior.
 - Prefer existing abstractions and utilities before adding new ones.
+- **`init` accessor + `readonly` backing field is valid and intentional.** C# 9+ `init` accessors have the same write rights as constructors and may assign `readonly` fields. Do not flag or suggest removing `readonly` from a backing field assigned only in an `init` accessor — this is the standard pattern for validated, immutable-after-construction properties in this codebase.
 
 ## Logging, hooks, and runtime state
 - Use `PluginLogger` for plugin-scoped logging. Declare it as `private static readonly PluginLogger _log = new("PluginName");` on the plugin class.
@@ -56,9 +57,10 @@ When generating or modifying code for this repository:
   - mark config types with `[UmbraAutoRegister]`
   - store values in `Parameter<T>` properties marked with `[UmbraParameter]`
   - load and save through `ConfigStore<TConfig>`
-  - create `DeferredSaveController<TConfig>` only after `Load()` completes
+  - use `ConfigSaveController` for config persistence only after `Load()` completes
 - For nested config groups, put `[UmbraPrefix("...")]` on the parent property, not the nested type.
 - Reuse existing helpers where applicable: `KeyboardInput`, `ImGuiWidgets`, and drawers under `Umbra.UI.Config.Drawers`.
+- Optional features should only receive related dependencies when that feature is actually enabled; for undo, the input source should be supplied only when undo is used.
 
 ## Testing patterns
 - Match the existing `MSTest` style: `[TestClass]`, `[TestMethod]`, and `[DataRow]` where appropriate.
@@ -75,6 +77,19 @@ When generating or modifying code for this repository:
 - If the phase is fully implemented, update the implementation plan with the concrete implementation details for that phase.
 - After updating the implementation plan, post a short summary of what was completed for that phase.
 - When running tests in this repository, use the Release configuration.
+
+## Optional features in `ConfigDrawerOptions` / `ConfigSection<TConfig>`
+The following optional features are toggled through `ConfigDrawerOptions` when constructing a `ConfigSection<TConfig>` or `ConfigDrawer<TConfig>`. Each is enabled by supplying a non-null options instance (or, for Transfer, setting `Enabled = true`).
+
+| Feature | Options type | Enabled when |
+|---|---|---|
+| **Search** | `ConfigSearchOptions` | `ConfigDrawerOptions.Search` is non-null |
+| **Transfer** | `ConfigTransferOptions` | `ConfigDrawerOptions.Transfer` is non-null **and** `Enabled` is `true` |
+| **Undo** | `ConfigUndoOptions` | `ConfigDrawerOptions.Undo` is non-null (store must be `ConfigStore<TConfig>`) |
+| **Save Controller** | *(auto-created)* | Section is created via `ConfigSection<TConfig>.CreateWithStore` and the store is `IConfigStore<TConfig>` |
+| **Toast (Undo)** | `ConfigToastOptions` | `ConfigUndoOptions.Toast` is non-null |
+
+In `DEBUG` builds, `ConfigSectionDebugOverlay` renders a compact status block at the top of every `ConfigSection<TConfig>.Draw()` call listing which of the four primary features (Search, Transfer, Undo, Save Controller) are enabled or disabled. This overlay can be suppressed by passing `enableDebugOverlay: false` to any `ConfigSection<TConfig>` constructor or `CreateWithStore` factory method.
 
 ## Key resources
 - `README.md` - architecture, runtime model, setup, and usage

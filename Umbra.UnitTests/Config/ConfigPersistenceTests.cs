@@ -36,7 +36,6 @@ public class ConfigPersistenceTests
             }
             catch
             {
-                // Ignore cleanup errors
             }
         }
     }
@@ -822,7 +821,6 @@ public class ConfigPersistenceTests
         };
 
         // Act & Assert
-        // Should not throw - exception is caught internally
         ConfigPersistence.Save(invalidPath, parameters);
     }
 
