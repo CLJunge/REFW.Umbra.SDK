@@ -11,6 +11,8 @@ namespace Umbra.UI.Toast;
 /// </remarks>
 public static class ToastQueue
 {
+    private const int _maxCapacity = 8;
+
     /// <summary>
     /// The default display duration when none is specified.
     /// </summary>
@@ -18,11 +20,6 @@ public static class ToastQueue
 
     private static readonly object _lock = new();
     private static readonly List<ToastEntry> _entries = [];
-
-    /// <summary>
-    /// Maximum number of simultaneously visible toasts. Oldest entries are dropped when exceeded.
-    /// </summary>
-    public static int MaxCapacity { get; set; } = 8;
 
     /// <summary>
     /// Enqueues a toast notification.
@@ -94,7 +91,7 @@ public static class ToastQueue
 
     private static void TrimOldest()
     {
-        while (_entries.Count > MaxCapacity)
+        while (_entries.Count > _maxCapacity)
             _entries.RemoveAt(0);
     }
 }

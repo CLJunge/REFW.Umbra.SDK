@@ -7,18 +7,10 @@ namespace Umbra.UnitTests.UI.Toast;
 public sealed class ToastQueueTests
 {
     [TestInitialize]
-    public void Setup()
-    {
-        ToastQueue.Clear();
-        ToastQueue.MaxCapacity = 8;
-    }
+    public void Setup() => ToastQueue.Clear();
 
     [TestCleanup]
-    public void Cleanup()
-    {
-        ToastQueue.Clear();
-        ToastQueue.MaxCapacity = 8;
-    }
+    public void Cleanup() => ToastQueue.Clear();
 
     [TestMethod]
     public void Push_WithValidMessage_AddsEntry()
@@ -28,7 +20,7 @@ public sealed class ToastQueueTests
 
         // Assert
         var entries = ToastQueue.GetActiveEntries();
-        Assert.AreEqual(1, entries.Count);
+        Assert.HasCount(1, entries);
         Assert.AreEqual("Hello", entries[0].Message);
         Assert.AreEqual(ToastLevel.Info, entries[0].Level);
     }
@@ -102,21 +94,15 @@ public sealed class ToastQueueTests
     [TestMethod]
     public void Push_ExceedingCapacity_TrimsOldestEntries()
     {
-        // Arrange
-        ToastQueue.MaxCapacity = 3;
-
-        // Act
-        ToastQueue.Push("First");
-        ToastQueue.Push("Second");
-        ToastQueue.Push("Third");
-        ToastQueue.Push("Fourth");
+        // Arrange & Act — push 9 entries to exceed the internal capacity of 8
+        for (var i = 1; i <= 9; i++)
+            ToastQueue.Push($"Toast {i}");
 
         // Assert
         var entries = ToastQueue.GetActiveEntries();
-        Assert.AreEqual(3, entries.Count);
-        Assert.AreEqual("Second", entries[0].Message);
-        Assert.AreEqual("Third", entries[1].Message);
-        Assert.AreEqual("Fourth", entries[2].Message);
+        Assert.HasCount(8, entries);
+        Assert.AreEqual("Toast 2", entries[0].Message);
+        Assert.AreEqual("Toast 9", entries[7].Message);
     }
 
     [TestMethod]
@@ -133,7 +119,7 @@ public sealed class ToastQueueTests
         var entries = ToastQueue.GetActiveEntries();
 
         // Assert
-        Assert.AreEqual(1, entries.Count);
+        Assert.HasCount(1, entries);
         Assert.AreEqual("Active", entries[0].Message);
     }
 
@@ -149,8 +135,8 @@ public sealed class ToastQueueTests
         var second = ToastQueue.GetActiveEntries();
 
         // Assert
-        Assert.AreEqual(1, first.Count);
-        Assert.AreEqual(2, second.Count);
+        Assert.HasCount(1, first);
+        Assert.HasCount(2, second);
     }
 
     [TestMethod]
@@ -198,7 +184,7 @@ public sealed class ToastQueueTests
         var progress = entry.GetProgress();
 
         // Assert — should be very close to zero
-        Assert.IsTrue(progress < 0.01f, $"Expected near-zero progress but got {progress}");
+        Assert.IsLessThan(0.01f, progress, $"Expected near-zero progress but got {progress}");
     }
 
     [TestMethod]
@@ -227,7 +213,7 @@ public sealed class ToastQueueTests
 
         // Assert
         var entries = ToastQueue.GetActiveEntries();
-        Assert.AreEqual(1, entries.Count);
+        Assert.HasCount(1, entries);
         Assert.AreEqual(level, entries[0].Level);
     }
 }
