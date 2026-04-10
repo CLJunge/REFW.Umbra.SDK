@@ -38,6 +38,7 @@ When generating or modifying code for this repository:
 - Prefer resilient behavior over hard failures because plugin code executes in-process with the game.
 - Update affected XML documentation when changing public APIs or externally visible behavior.
 - Prefer existing abstractions and utilities before adding new ones.
+- **`init` accessor + `readonly` backing field is valid and intentional.** C# 9+ `init` accessors have the same write rights as constructors and may assign `readonly` fields. Do not flag or suggest removing `readonly` from a backing field assigned only in an `init` accessor — this is the standard pattern for validated, immutable-after-construction properties in this codebase.
 
 ## Logging, hooks, and runtime state
 - Use `PluginLogger` for plugin-scoped logging. Declare it as `private static readonly PluginLogger _log = new("PluginName");` on the plugin class.
