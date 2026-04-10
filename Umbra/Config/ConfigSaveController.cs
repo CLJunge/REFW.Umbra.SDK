@@ -155,7 +155,9 @@ public sealed class ConfigSaveController<TConfig> : IDisposable, INumericEditSin
             return;
         }
 
+#if !RELEASE
         Logger.Debug($"ConfigSaveController<{typeof(TConfig).Name}>: saving changes to disk.");
+#endif
         _store.Save();
         _pendingSave = false;
     }
