@@ -3,7 +3,7 @@ namespace Umbra.UI.Config.UnitTests;
 /// <summary>
 /// Records <see cref="ConfigDrawer{TConfig}"/> scope operations for unit tests.
 /// </summary>
-internal sealed class TestConfigDrawerRenderer : IConfigDrawerRenderer
+internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
 {
     public List<string> PushedIds { get; } = [];
     public List<string> RenderedTexts { get; } = [];
@@ -65,10 +65,7 @@ internal sealed class TestConfigDrawerRenderer : IConfigDrawerRenderer
     public bool Button(string label)
     {
         ButtonLabels.Add(label);
-        if (ButtonResults.Count == 0)
-            return false;
-
-        return ButtonResults.Dequeue();
+        return ButtonResults.Count != 0 && ButtonResults.Dequeue();
     }
 
     public void Text(string text) => RenderedTexts.Add(text);
