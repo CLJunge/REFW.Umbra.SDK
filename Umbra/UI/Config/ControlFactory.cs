@@ -1,6 +1,7 @@
 using System.Numerics;
 using Hexa.NET.ImGui;
 using Umbra.Config;
+using Umbra.Input;
 
 namespace Umbra.UI.Config;
 
@@ -37,6 +38,9 @@ internal static class ControlFactory
 
         if (_defaultBuilders.TryGetValue(parameter.ValueType, out var builder))
             return (builder(label, parameter, alignGroup, numericEditSink, textEditSink), null);
+
+        if (parameter.ValueType == typeof(HotkeyBinding))
+            return BuildHotkeyDraw(label, parameter, alignGroup);
 
         var enumType = Nullable.GetUnderlyingType(parameter.ValueType) ?? parameter.ValueType;
         if (enumType.IsEnum)
@@ -84,6 +88,25 @@ internal static class ControlFactory
             layout.Pre();
             if (ImGui.Checkbox(layout.HiddenLabel, ref v)) p.Value = v;
         };
+    }
+
+    /// <summary>
+    /// Builds the per-frame draw action used for a <see cref="HotkeyBinding"/> parameter.
+    /// </summary>
+    /// <param name="label">The visible label for the parameter row.</param>
+    /// <param name="parameter">The hotkey-binding parameter being rendered.</param>
+    /// <param name="alignGroup">The shared alignment group for the owning scope.</param>
+    /// <returns>A tuple containing the draw action and the disposable <see cref="Drawers.TwoColumnHotkeyDrawer"/> resource.</returns>
+    private static (Action draw, IDisposable resource) BuildHotkeyDraw(
+        string label, IParameter parameter, LabelAlignmentGroup alignGroup)
+    {
+        var drawer = new Drawers.TwoColumnHotkeyDrawer();
+        var layout = CreateControlLayout(label, parameter, alignGroup);
+        return (() =>
+        {
+            layout.Pre();
+            drawer.Draw(parameter);
+        }, drawer);
     }
 
     /// <summary>
