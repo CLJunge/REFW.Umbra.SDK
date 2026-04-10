@@ -110,44 +110,45 @@ internal static class VirtualKeyMap
 
     private static Dictionary<int, int> BuildUmbraToVkMap()
     {
-        var map = new Dictionary<int, int>(128);
+        var map = new Dictionary<int, int>(128)
+        {
+            // Navigation
+            [(int)UmbraKey.Tab] = VK_TAB,
+            [(int)UmbraKey.LeftArrow] = VK_LEFT,
+            [(int)UmbraKey.RightArrow] = VK_RIGHT,
+            [(int)UmbraKey.UpArrow] = VK_UP,
+            [(int)UmbraKey.DownArrow] = VK_DOWN,
+            [(int)UmbraKey.PageUp] = VK_PRIOR,
+            [(int)UmbraKey.PageDown] = VK_NEXT,
+            [(int)UmbraKey.Home] = VK_HOME,
+            [(int)UmbraKey.End] = VK_END,
+            [(int)UmbraKey.Insert] = VK_INSERT,
+            [(int)UmbraKey.Delete] = VK_DELETE,
+            [(int)UmbraKey.Backspace] = VK_BACK,
+            [(int)UmbraKey.Space] = VK_SPACE,
+            [(int)UmbraKey.Enter] = VK_RETURN,
+            [(int)UmbraKey.Escape] = VK_ESCAPE,
 
-        // Navigation
-        map[(int)UmbraKey.Tab] = VK_TAB;
-        map[(int)UmbraKey.LeftArrow] = VK_LEFT;
-        map[(int)UmbraKey.RightArrow] = VK_RIGHT;
-        map[(int)UmbraKey.UpArrow] = VK_UP;
-        map[(int)UmbraKey.DownArrow] = VK_DOWN;
-        map[(int)UmbraKey.PageUp] = VK_PRIOR;
-        map[(int)UmbraKey.PageDown] = VK_NEXT;
-        map[(int)UmbraKey.Home] = VK_HOME;
-        map[(int)UmbraKey.End] = VK_END;
-        map[(int)UmbraKey.Insert] = VK_INSERT;
-        map[(int)UmbraKey.Delete] = VK_DELETE;
-        map[(int)UmbraKey.Backspace] = VK_BACK;
-        map[(int)UmbraKey.Space] = VK_SPACE;
-        map[(int)UmbraKey.Enter] = VK_RETURN;
-        map[(int)UmbraKey.Escape] = VK_ESCAPE;
+            // Punctuation / symbols
+            [(int)UmbraKey.Apostrophe] = VK_OEM_7,
+            [(int)UmbraKey.Comma] = VK_OEM_COMMA,
+            [(int)UmbraKey.Minus] = VK_OEM_MINUS,
+            [(int)UmbraKey.Period] = VK_OEM_PERIOD,
+            [(int)UmbraKey.Slash] = VK_OEM_2,
+            [(int)UmbraKey.Semicolon] = VK_OEM_1,
+            [(int)UmbraKey.Equal] = VK_OEM_PLUS,
+            [(int)UmbraKey.LeftBracket] = VK_OEM_4,
+            [(int)UmbraKey.Backslash] = VK_OEM_5,
+            [(int)UmbraKey.RightBracket] = VK_OEM_6,
+            [(int)UmbraKey.GraveAccent] = VK_OEM_3,
 
-        // Punctuation / symbols
-        map[(int)UmbraKey.Apostrophe] = VK_OEM_7;
-        map[(int)UmbraKey.Comma] = VK_OEM_COMMA;
-        map[(int)UmbraKey.Minus] = VK_OEM_MINUS;
-        map[(int)UmbraKey.Period] = VK_OEM_PERIOD;
-        map[(int)UmbraKey.Slash] = VK_OEM_2;
-        map[(int)UmbraKey.Semicolon] = VK_OEM_1;
-        map[(int)UmbraKey.Equal] = VK_OEM_PLUS;
-        map[(int)UmbraKey.LeftBracket] = VK_OEM_4;
-        map[(int)UmbraKey.Backslash] = VK_OEM_5;
-        map[(int)UmbraKey.RightBracket] = VK_OEM_6;
-        map[(int)UmbraKey.GraveAccent] = VK_OEM_3;
-
-        // Lock keys
-        map[(int)UmbraKey.CapsLock] = VK_CAPITAL;
-        map[(int)UmbraKey.ScrollLock] = VK_SCROLL;
-        map[(int)UmbraKey.NumLock] = VK_NUMLOCK;
-        map[(int)UmbraKey.PrintScreen] = VK_SNAPSHOT;
-        map[(int)UmbraKey.Pause] = VK_PAUSE;
+            // Lock keys
+            [(int)UmbraKey.CapsLock] = VK_CAPITAL,
+            [(int)UmbraKey.ScrollLock] = VK_SCROLL,
+            [(int)UmbraKey.NumLock] = VK_NUMLOCK,
+            [(int)UmbraKey.PrintScreen] = VK_SNAPSHOT,
+            [(int)UmbraKey.Pause] = VK_PAUSE
+        };
 
         // Numpad
         for (var i = 0; i < 10; i++)

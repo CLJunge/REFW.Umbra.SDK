@@ -237,10 +237,7 @@ public class KeyStateTrackerTests
     /// Tests that the constructor throws when provider is null.
     /// </summary>
     [TestMethod]
-    public void Constructor_NullProvider_ThrowsArgumentNullException()
-    {
-        Assert.ThrowsExactly<ArgumentNullException>(() => new KeyStateTracker(null!, TrackedKeys));
-    }
+    public void Constructor_NullProvider_ThrowsArgumentNullException() => Assert.ThrowsExactly<ArgumentNullException>(() => new KeyStateTracker(null!, TrackedKeys));
 
     /// <summary>
     /// Tests that the constructor throws when tracked keys array is null.

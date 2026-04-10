@@ -35,10 +35,10 @@ internal sealed class KeyStateTracker
         _provider = provider;
         _trackedKeys = trackedKeys;
 
-        _previouslyDown = new HashSet<int>(trackedKeys.Length);
-        _currentlyDown = new HashSet<int>(trackedKeys.Length);
-        _justPressed = new List<int>(8);
-        _justReleased = new List<int>(8);
+        _previouslyDown = [with(trackedKeys.Length)];
+        _currentlyDown = [with(trackedKeys.Length)];
+        _justPressed = [with(8)];
+        _justReleased = [with(8)];
     }
 
     /// <summary>

@@ -653,7 +653,7 @@ public sealed class ConfigSectionTests
 
         // Redo via shortcut — need a new tick so coordinator doesn't deduplicate
         UndoShortcutCoordinator.Reset();
-        UndoShortcutCoordinator.Register((IUndoStackHandle)section.UndoStack!);
+        UndoShortcutCoordinator.Register(section.UndoStack!);
         inputSource.DefaultUndoShortcutPressed = false;
         inputSource.DefaultRedoShortcutPressed = true;
         section.TryHandleBuiltInUndo();

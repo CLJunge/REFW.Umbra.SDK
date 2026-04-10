@@ -55,10 +55,7 @@ internal static class UndoShortcutCoordinator
     /// resolution. Called by the <see cref="ConfigUndoStack{TConfig}"/> constructor.
     /// </summary>
     /// <param name="stack">The stack to register.</param>
-    internal static void Register(IUndoStackHandle stack)
-    {
-        _registeredStacks.Add(stack);
-    }
+    internal static void Register(IUndoStackHandle stack) => _registeredStacks.Add(stack);
 
     /// <summary>
     /// Unregisters <paramref name="stack"/> and clears the active reference if it points
@@ -77,10 +74,7 @@ internal static class UndoShortcutCoordinator
     /// <see cref="ConfigUndoStack{TConfig}"/> when a change is recorded.
     /// </summary>
     /// <param name="stack">The stack that just recorded a change.</param>
-    internal static void SetActive(IUndoStackHandle stack)
-    {
-        _activeStack = stack;
-    }
+    internal static void SetActive(IUndoStackHandle stack) => _activeStack = stack;
 
     /// <summary>
     /// Checks the undo and redo shortcuts via <paramref name="inputSource"/> and, when pressed,

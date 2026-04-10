@@ -1,8 +1,8 @@
+using Umbra.Input;
 using Umbra.Logging;
 using Umbra.Logging.UnitTests;
-using Umbra.Input;
-using Umbra.UnitTests.Input;
 using Umbra.UI.Toast;
+using Umbra.UnitTests.Input;
 
 namespace Umbra.UnitTests;
 

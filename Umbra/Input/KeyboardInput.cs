@@ -268,8 +268,8 @@ public static class KeyboardInput
     /// Builds the lookup set used by <see cref="IsModifierKey(int)"/>.
     /// </summary>
     /// <returns>A set containing the integer values of every modifier key in <see cref="UmbraKey"/>.</returns>
-    private static HashSet<int> BuildModifierKeyValueSet() => new()
-    {
+    private static HashSet<int> BuildModifierKeyValueSet() =>
+    [
         (int)UmbraKey.LeftCtrl,
         (int)UmbraKey.RightCtrl,
         (int)UmbraKey.LeftShift,
@@ -278,7 +278,7 @@ public static class KeyboardInput
         (int)UmbraKey.RightAlt,
         (int)UmbraKey.LeftSuper,
         (int)UmbraKey.RightSuper,
-    };
+    ];
 
     private static KeyStateTracker CreateDefaultTracker()
         => new(new NativeKeyStateProvider(), VirtualKeyMap.GetTrackedVirtualKeys());
