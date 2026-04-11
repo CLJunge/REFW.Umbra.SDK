@@ -262,12 +262,8 @@ public static class PluginPanelFactory
     /// </param>
     /// <returns>A fully initialized <see cref="PluginPanel"/> ready for <see cref="PluginPanel.Draw"/>.</returns>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="config"/>, <paramref name="store"/>, or
-    /// <paramref name="options"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="panelIdScope"/>, <paramref name="config"/>, <paramref name="store"/>, or
-    /// <paramref name="options"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="panelIdScope"/>, <paramref name="config"/>,
+    /// <paramref name="store"/>, or <paramref name="options"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="panelIdScope"/> is empty or whitespace.
