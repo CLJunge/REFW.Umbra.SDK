@@ -46,12 +46,6 @@
     <Import Project="Umbra.Local.props" Condition="Exists('Umbra.Local.props')" />
 
     <ItemGroup>
-      <Compile Remove="Config\Presets\**" />
-      <EmbeddedResource Remove="Config\Presets\**" />
-      <None Remove="Config\Presets\**" />
-    </ItemGroup>
-
-    <ItemGroup>
       <None Remove="Runtime\game-metadata.json" />
     </ItemGroup>
 
