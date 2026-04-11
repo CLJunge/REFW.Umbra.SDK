@@ -93,17 +93,15 @@ public sealed class PluginPanel : IDisposable
     /// The low-level renderer used for ImGui ID-scope, tree-node, and separator operations.
     /// Tests can replace this dependency to verify draw behavior without an active ImGui frame.
     /// </param>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="idScope"/> is <see langword="null"/> or whitespace.
-    /// </exception>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="renderer"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="idScope"/> or <paramref name="renderer"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="idScope"/> is empty or whitespace.
     /// </exception>
     internal PluginPanel(string idScope, string? rootNodeLabel, bool rootNodeDefaultOpen, bool drawSeparator, IPluginPanelRenderer renderer)
     {
-        if (string.IsNullOrWhiteSpace(idScope))
-            throw new ArgumentException("idScope cannot be null or whitespace.", nameof(idScope));
-
+        ArgumentException.ThrowIfNullOrWhiteSpace(idScope);
         ArgumentNullException.ThrowIfNull(renderer);
 
         _idScope = idScope;

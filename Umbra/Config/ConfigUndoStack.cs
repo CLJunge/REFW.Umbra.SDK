@@ -215,15 +215,15 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
     /// </para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">A batch is already active.</exception>
-    /// <exception cref="ArgumentException"><paramref name="label"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="label"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="label"/> is empty or whitespace.</exception>
     /// <exception cref="ObjectDisposedException">This undo stack has been disposed.</exception>
     public void BeginBatch(string label)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_pendingBatch is not null)
             throw new InvalidOperationException("A batch is already active. Nested batches are not supported.");
-        if (string.IsNullOrWhiteSpace(label))
-            throw new ArgumentException("Batch label cannot be null, empty, or whitespace.", nameof(label));
+        ArgumentException.ThrowIfNullOrWhiteSpace(label);
 
         _batchLabel = label;
         _pendingBatch = [];
@@ -288,12 +288,11 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
     /// scope is always closed even if <paramref name="action"/> throws.
     /// </para>
     /// </remarks>
-    /// <exception cref="ArgumentException"><paramref name="label"/> is <see langword="null"/>, empty, or whitespace.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="label"/> or <paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="label"/> is empty or whitespace.</exception>
     public Action WrapWithBatch(string label, Action action)
     {
-        if (string.IsNullOrWhiteSpace(label))
-            throw new ArgumentException("Batch label cannot be null, empty, or whitespace.", nameof(label));
+        ArgumentException.ThrowIfNullOrWhiteSpace(label);
         ArgumentNullException.ThrowIfNull(action);
 
         return () =>

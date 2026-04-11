@@ -1417,19 +1417,36 @@ public sealed class ConfigUndoStackTests
     }
 
     /// <summary>
-    /// Tests that BeginBatch with null/empty/whitespace label throws ArgumentException.
+    /// Tests that BeginBatch with null label throws ArgumentNullException.
     /// </summary>
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    [DataRow("   ")]
-    public void BeginBatch_InvalidLabel_ThrowsArgumentException(string? label)
+    public void BeginBatch_NullLabel_ThrowsArgumentNullException()
     {
         var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store);
-            Assert.ThrowsExactly<ArgumentException>(() => undo.BeginBatch(label!));
+            Assert.ThrowsExactly<ArgumentNullException>(() => undo.BeginBatch(null!));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that BeginBatch with empty or whitespace label throws ArgumentException.
+    /// </summary>
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void BeginBatch_EmptyOrWhitespaceLabel_ThrowsArgumentException(string label)
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => undo.BeginBatch(label));
         }
         finally
         {
@@ -1601,19 +1618,36 @@ public sealed class ConfigUndoStackTests
     }
 
     /// <summary>
-    /// Tests that <see cref="ConfigUndoStack{TConfig}.WrapWithBatch"/> throws on invalid label.
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.WrapWithBatch"/> throws on null label.
     /// </summary>
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    [DataRow("   ")]
-    public void WrapWithBatch_InvalidLabel_ThrowsArgumentException(string? label)
+    public void WrapWithBatch_NullLabel_ThrowsArgumentNullException()
     {
         var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
         try
         {
             using var undo = new ConfigUndoStack<UndoTestConfig>(store);
-            Assert.ThrowsExactly<ArgumentException>(() => undo.WrapWithBatch(label!, () => { }));
+            Assert.ThrowsExactly<ArgumentNullException>(() => undo.WrapWithBatch(null!, () => { }));
+        }
+        finally
+        {
+            CleanupStore(store, tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigUndoStack{TConfig}.WrapWithBatch"/> throws on empty or whitespace label.
+    /// </summary>
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void WrapWithBatch_EmptyOrWhitespaceLabel_ThrowsArgumentException(string label)
+    {
+        var (store, _, tempPath) = CreateLoadedStore<UndoTestConfig>();
+        try
+        {
+            using var undo = new ConfigUndoStack<UndoTestConfig>(store);
+            Assert.ThrowsExactly<ArgumentException>(() => undo.WrapWithBatch(label, () => { }));
         }
         finally
         {

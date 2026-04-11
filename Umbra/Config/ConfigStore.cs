@@ -36,13 +36,15 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     /// <param name="filePath">
     /// The absolute or relative path to the JSON file used for persisting config data.
     /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="filePath"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="filePath"/> is <see langword="null"/>, empty, or whitespace.
+    /// Thrown when <paramref name="filePath"/> is empty or whitespace.
     /// </exception>
     public ConfigStore(string filePath)
     {
-        if (string.IsNullOrWhiteSpace(filePath))
-            throw new ArgumentException("File path cannot be null, empty, or whitespace.", nameof(filePath));
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
         _persistenceCoordinator = new ConfigStorePersistenceCoordinator<TConfig>(filePath, _parameters);
         _transferCoordinator = new ConfigStoreTransferCoordinator<TConfig>(_parameters);
