@@ -80,7 +80,7 @@ internal sealed class ConfigDrawerSearchController
         }
 
         _renderer.SameLine();
-        _renderer.BeginDisabled(!searchState.HasActiveQuery);
+        _renderer.BeginDisabled(searchState.Query.Length == 0);
         try
         {
             if (_renderer.Button(_clearButtonLabel))

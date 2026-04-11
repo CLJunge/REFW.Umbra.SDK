@@ -217,6 +217,31 @@ public sealed class ConfigDrawerSearchControllerTests
     }
 
     /// <summary>
+    /// Verifies that the clear button is enabled when the query contains only whitespace characters.
+    /// </summary>
+    [TestMethod]
+    public void DrawControls_WhenQueryIsWhitespaceOnly_ClearButtonIsEnabled()
+    {
+        // Arrange
+        var renderer = new TestConfigDrawerScope
+        {
+            NextInputTextResult = true,
+            NextInputTextValue = "   "
+        };
+        var controller = new ConfigDrawerSearchController(
+            new ConfigDrawerOptions { Search = new ConfigSearchOptions() },
+            renderer,
+            new ConfigSearchIndex());
+
+        // Act
+        controller.DrawControls();
+
+        // Assert
+        Assert.IsGreaterThanOrEqualTo(2, renderer.DisabledStack.Count);
+        Assert.IsFalse(renderer.DisabledStack[0]);
+    }
+
+    /// <summary>
     /// Verifies that prev/next buttons are disabled when no matches exist.
     /// </summary>
     [TestMethod]
