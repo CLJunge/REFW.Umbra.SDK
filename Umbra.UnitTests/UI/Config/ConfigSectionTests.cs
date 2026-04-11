@@ -487,7 +487,7 @@ public sealed class ConfigSectionTests
     {
         using var tempDirectory = new TempDirectory();
         var storePath = Path.Combine(tempDirectory.Path, "undo-config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
         var options = new ConfigDrawerOptions { Undo = new ConfigUndoOptions() };
 
@@ -497,7 +497,6 @@ public sealed class ConfigSectionTests
         section.Dispose();
 
         Assert.IsNull(section.UndoStack);
-        store.Dispose();
     }
 
     /// <summary>
@@ -508,7 +507,7 @@ public sealed class ConfigSectionTests
     {
         using var tempDirectory = new TempDirectory();
         var storePath = Path.Combine(tempDirectory.Path, "undo-shortcut.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
         var inputSource = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
 
@@ -528,7 +527,6 @@ public sealed class ConfigSectionTests
         Assert.IsTrue(config.TestParameter.Value);
         Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
         Assert.AreEqual(1, inputSource.DefaultUndoShortcutCheckCount);
-        store.Dispose();
     }
 
     /// <summary>
@@ -560,7 +558,7 @@ public sealed class ConfigSectionTests
     {
         using var tempDirectory = new TempDirectory();
         var storePath = Path.Combine(tempDirectory.Path, "undo-empty.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
         var inputSource = new TestUndoShortcutInputSource { DefaultUndoShortcutPressed = true };
 
@@ -578,7 +576,6 @@ public sealed class ConfigSectionTests
         Assert.IsTrue(config.TestParameter.Value);
         Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
         Assert.AreEqual(1, inputSource.DefaultUndoShortcutCheckCount);
-        store.Dispose();
     }
 
     /// <summary>
@@ -589,7 +586,7 @@ public sealed class ConfigSectionTests
     {
         using var tempDirectory = new TempDirectory();
         var storePath = Path.Combine(tempDirectory.Path, "undo-text-input.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
         var inputSource = new TestUndoShortcutInputSource
         {
@@ -613,7 +610,6 @@ public sealed class ConfigSectionTests
         Assert.IsFalse(config.TestParameter.Value);
         Assert.AreEqual(1, inputSource.WantsTextInputCheckCount);
         Assert.AreEqual(0, inputSource.DefaultUndoShortcutCheckCount);
-        store.Dispose();
     }
 
     /// <summary>
@@ -624,7 +620,7 @@ public sealed class ConfigSectionTests
     {
         using var tempDirectory = new TempDirectory();
         var storePath = Path.Combine(tempDirectory.Path, "redo-shortcut.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
         var inputSource = new TestUndoShortcutInputSource();
 
@@ -649,8 +645,6 @@ public sealed class ConfigSectionTests
         inputSource.DefaultRedoShortcutPressed = true;
         section.TryHandleBuiltInUndo();
         Assert.IsFalse(config.TestParameter.Value);
-
-        store.Dispose();
     }
 
     /// <summary>

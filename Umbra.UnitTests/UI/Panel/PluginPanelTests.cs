@@ -553,7 +553,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         using var panel = PluginPanelFactory.CreateWithConfigStore(
@@ -561,7 +561,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             $"Factory_Defaults_{Guid.NewGuid()}");
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -569,7 +568,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         using var panel = PluginPanelFactory.CreateWithConfigStore(
@@ -578,7 +577,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             sectionIdScope: "custom.section.scope");
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -586,7 +584,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         using var panel = PluginPanelFactory.CreateWithConfigStore(
@@ -597,7 +595,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             enableUndo: false);
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -605,7 +602,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
         var toast = new PluginToast("Test Plugin", TimeSpan.FromSeconds(2));
 
@@ -615,7 +612,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             toast: toast);
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -623,7 +619,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         using var panel = PluginPanelFactory.CreateWithConfigStore(
@@ -633,7 +629,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             rootNodeDefaultOpen: true);
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -641,7 +636,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         _ = store.Load();
 
         var exception = Assert.ThrowsExactly<ArgumentNullException>(
@@ -649,7 +644,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
                 null!, store, $"Factory_NullConfig_{Guid.NewGuid()}"));
 
         Assert.AreEqual("config", exception.ParamName);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -670,14 +664,12 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         Assert.ThrowsExactly<ArgumentException>(
             () => PluginPanelFactory.CreateWithConfigStore(
                 config, store, panelIdScope!));
-
-        store.Dispose();
     }
 
     [TestMethod]
@@ -685,7 +677,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         var panel = PluginPanelFactory.CreateWithConfigStore(
@@ -695,7 +687,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
         panel.Dispose();
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -716,7 +707,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         var options = new ConfigDrawerOptions
@@ -732,7 +723,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             options);
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -740,7 +730,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         var options = new ConfigDrawerOptions
@@ -754,7 +744,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             options);
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -762,7 +751,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         var options = new ConfigDrawerOptions
@@ -776,7 +765,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             options);
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -784,7 +772,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         var options = new ConfigDrawerOptions
@@ -798,7 +786,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             options);
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -806,7 +793,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         var exception = Assert.ThrowsExactly<ArgumentNullException>(
@@ -816,7 +803,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
                 (ConfigDrawerOptions)null!));
 
         Assert.AreEqual("options", exception.ParamName);
-        store.Dispose();
     }
 
     [TestMethod]
@@ -824,7 +810,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
-        var store = new ConfigStore<TestConfig>(storePath);
+        using var store = new ConfigStore<TestConfig>(storePath);
         var config = store.Load();
 
         var options = new ConfigDrawerOptions();
@@ -835,7 +821,6 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
             options);
 
         Assert.IsNotNull(panel);
-        store.Dispose();
     }
 
     private sealed class TestConfigTransferStore(string filePath) : IConfigTransferStore
