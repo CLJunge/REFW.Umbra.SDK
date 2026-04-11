@@ -21,6 +21,8 @@
 
 **UI**
 - Panel composition with `PluginPanel`, `ConfigSection<TConfig>`, and `LiveStateSection<T>`
+- `PluginPanelFactory` for single-call panel creation with managed lifecycle (`ManagedPluginPanel<TConfig>`)
+- Two-tier factory overloads: simple (bool flags) and custom (`ConfigDrawerOptions`) for progressive customization
 - Automatic config rendering from metadata via `ConfigDrawer<TConfig>` — one-time reflection, per-frame draw
 - Built-in search, filter, and match navigation
 - Per-section undo/redo stack with slider-aware and text-input-aware coalescing, batch undo, and Ctrl+Z/Y keyboard shortcuts
@@ -77,18 +79,14 @@ public record MyConfig
 ```csharp
 using REFrameworkNET;
 using Umbra;
-using Umbra.Config;
 using Umbra.Logging;
-using Umbra.UI.Config;
-using Umbra.UI.Config.Search;
 using Umbra.UI.Panel;
 
 public sealed class MyPlugin : UmbraPlugin
 {
     private static readonly PluginLogger _log = new("MyPlugin");
 
-    private PluginPanel? _panel;
-    private ConfigStore<MyConfig>? _store;
+    private ManagedPluginPanel<MyConfig>? _managedPanel;
 
     public MyPlugin() : base(_log) { }
 
@@ -97,39 +95,30 @@ public sealed class MyPlugin : UmbraPlugin
         var configPath = Path.Combine(
             API.GetPluginDirectory(GetType().Assembly), "data", "MyPlugin", "config.json");
 
-        _store = new ConfigStore<MyConfig>(configPath);
-        var config = _store.Load();
-
-        // CreateWithStore wires auto-save, search, and undo in one call.
-        _panel = new PluginPanel("MyPlugin.Panel")
-            .Add(ConfigSection<MyConfig>.CreateWithStore(
-                config, _store,
-                new ConfigDrawerOptions
-                {
-                    Search  = new ConfigSearchOptions(),
-                    Undo    = new ConfigUndoOptions(),
-                },
-                "MyPlugin.Section"));
+        _managedPanel = PluginPanelFactory.Create<MyConfig>(
+            configPath,
+            "MyPlugin.Panel");
 
         Log.Info("Loaded.");
     }
 
     public override void Shutdown()
     {
-        RunShutdownStep("dispose panel", () => { var p = _panel; _panel = null; p?.Dispose(); });
-        RunShutdownStep("save store",    () => _store?.Save());
-        RunShutdownStep("dispose store", () => { var s = _store; _store = null; s?.Dispose(); });
+        RunShutdownStep("dispose managed panel", () =>
+        {
+            var p = _managedPanel; _managedPanel = null; p?.Dispose();
+        });
         Log.Info("Unloaded.");
     }
 
     public override void OnPreImGuiDrawUI()
     {
-        if (API.IsDrawingUI()) _panel?.Draw();
+        if (API.IsDrawingUI()) _managedPanel?.Draw();
     }
 }
 ```
 
-> **Note:** `ConfigSection.CreateWithStore()` creates and owns the `ConfigSaveController` internally — no manual tick or flush required. Disposing the panel disposes the save controller.
+> **Note:** `PluginPanelFactory.Create` handles store creation, config loading, section wiring (including `ConfigSaveController`), and panel construction in one call. `ManagedPluginPanel.Dispose()` disposes the panel, saves, and disposes the store — no manual multi-step shutdown needed. For custom option settings, pass a `ConfigDrawerOptions` instead of relying on the boolean-flag defaults.
 
 ### 4. Create the static host
 
