@@ -56,8 +56,11 @@ public sealed class PluginPanel : IDisposable
     /// When <see langword="true"/> (the default), a horizontal separator is drawn after
     /// all sections. Pass <see langword="false"/> to suppress it.
     /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="idScope"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="idScope"/> is <see langword="null"/> or whitespace.
+    /// Thrown when <paramref name="idScope"/> is empty or consists only of whitespace characters.
     /// </exception>
     public PluginPanel(string idScope, string? rootNodeLabel = null, bool rootNodeDefaultOpen = false, bool drawSeparator = true)
         : this(idScope, rootNodeLabel, rootNodeDefaultOpen, drawSeparator, new ImGuiPluginPanelRenderer())

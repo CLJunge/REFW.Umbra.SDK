@@ -95,7 +95,8 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     /// Exports the current registered parameter values to a versioned config exchange document.
     /// </summary>
     /// <param name="filePath">The destination file path.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="filePath"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is empty or whitespace.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet completed successfully.</exception>
     public void Export(string filePath)
@@ -113,7 +114,8 @@ public class ConfigStore<TConfig> : IConfigStore<TConfig>, IConfigStoreCopyTarge
     /// <param name="filePath">The source file path.</param>
     /// <param name="options">Optional import finalization options.</param>
     /// <returns>A structured report describing the import outcome.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="filePath"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is empty or whitespace.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when this instance has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when <see cref="Load"/> has not yet completed successfully.</exception>
     public ConfigImportReport Import(string filePath, ConfigImportOptions? options = null)
