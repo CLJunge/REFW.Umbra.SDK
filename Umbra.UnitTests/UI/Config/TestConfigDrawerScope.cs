@@ -10,6 +10,7 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public List<string> InputTextLabels { get; } = [];
     public List<string> ButtonLabels { get; } = [];
     public List<bool> DisabledStack { get; } = [];
+    public int EndDisabledCount { get; private set; }
     public List<string> TextWidthRequests { get; } = [];
     public List<string> ButtonWidthRequests { get; } = [];
     public List<float> NextItemWidths { get; } = [];
@@ -69,10 +70,11 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public bool Button(string label)
     {
         ButtonLabels.Add(label);
+        var result = ButtonResults.Count != 0 && ButtonResults.Dequeue();
         if (_disabledCount > 0)
             return false;
 
-        return ButtonResults.Count != 0 && ButtonResults.Dequeue();
+        return result;
     }
 
     public void Text(string text) => RenderedTexts.Add(text);
@@ -101,8 +103,12 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
 
     public void EndDisabled()
     {
-        DisabledStack.Add(false);
-        if (_disabledScopeStack.Count > 0 && _disabledScopeStack.Pop())
+        if (_disabledScopeStack.Count == 0)
+            throw new InvalidOperationException("EndDisabled called without a matching BeginDisabled.");
+
+        if (_disabledScopeStack.Pop())
             _disabledCount--;
+
+        EndDisabledCount++;
     }
 }

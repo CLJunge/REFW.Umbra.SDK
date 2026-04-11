@@ -265,8 +265,8 @@ public sealed class ConfigDrawerSearchControllerTests
 
         // Assert
         Assert.AreEqual(0, controller.CurrentState!.MatchCount);
-        Assert.IsGreaterThanOrEqualTo(4, renderer.DisabledStack.Count);
-        Assert.IsTrue(renderer.DisabledStack[2]);
+        Assert.IsGreaterThanOrEqualTo(2, renderer.DisabledStack.Count);
+        Assert.IsTrue(renderer.DisabledStack[1]);
     }
 
     /// <summary>
@@ -300,7 +300,7 @@ public sealed class ConfigDrawerSearchControllerTests
 
         // Assert
         Assert.AreEqual("alpha", controller.CurrentState!.FocusedResultId);
-        Assert.IsGreaterThanOrEqualTo(4, renderer.DisabledStack.Count);
-        Assert.IsTrue(renderer.DisabledStack[2]);
+        Assert.IsGreaterThanOrEqualTo(2, renderer.DisabledStack.Count);
+        Assert.IsTrue(renderer.DisabledStack[1]);
     }
 }
