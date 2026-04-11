@@ -2,10 +2,10 @@ using Hexa.NET.ImGui;
 using Moq;
 using Umbra.Config;
 using Umbra.Config.Attributes;
-using Umbra.UI.Toast;
 using Umbra.UI.Config;
 using Umbra.UI.Config.Search;
 using Umbra.UI.Config.Transfer;
+using Umbra.UI.Toast;
 
 namespace Umbra.UI.Panel.UnitTests;
 
@@ -485,7 +485,7 @@ public sealed class PluginPanelTests
         Assert.IsNotNull(second);
     }
 
-    private static readonly string[] _expectedSections = new[] { "FirstSection", "SecondSection" };
+    private static readonly string[] _expectedSections = ["FirstSection", "SecondSection"];
 
     /// <summary>
     /// Tests that disposing a panel continues disposing later sections even when an earlier section throws.
