@@ -1,9 +1,4 @@
 using Hexa.NET.ImGui;
-using Umbra.Config;
-using Umbra.UI.Config;
-using Umbra.UI.Config.Search;
-using Umbra.UI.Config.Transfer;
-using Umbra.UI.Toast;
 
 namespace Umbra.UI.Panel;
 
@@ -20,6 +15,10 @@ namespace Umbra.UI.Panel;
 /// <para>
 /// Section collection concerns such as tree-label validation, stable ordering, and section disposal are delegated to <see cref="PluginPanelSectionCollection"/>. Root-node rendering, per-section tree-node wrapping, and separator placement are delegated to <see cref="PluginPanelDrawPipeline"/>.
 /// </para>
+/// <para>
+/// For convenient panel creation with built-in config features, use the static factory methods on
+/// <see cref="PluginPanelFactory"/> instead of constructing a panel directly.
+/// </para>
 /// </remarks>
 public sealed class PluginPanel : IDisposable
 {
@@ -29,99 +28,6 @@ public sealed class PluginPanel : IDisposable
     private readonly PluginPanelSectionCollection _sections = new();
     private readonly PluginPanelDrawPipeline _drawPipeline;
     private bool _disposed;
-
-    /// <summary>
-    /// Creates a fully initialized <see cref="PluginPanel"/> containing a single store-backed
-    /// <see cref="ConfigSection{TConfig}"/> with the specified optional features.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This factory covers the most common plugin panel setup: a single config section with
-    /// search, transfer, and undo support, all wired with default settings. For custom
-    /// <see cref="ConfigDrawerOptions"/> or panels that need multiple sections, use the
-    /// <see cref="PluginPanel(string, string?, bool, bool)"/> constructor with
-    /// <see cref="ConfigSection{TConfig}.CreateWithStore(TConfig, IConfigTransferStore, ConfigDrawerOptions, string?, string?, bool, bool, bool)"/>
-    /// directly.
-    /// </para>
-    /// <para>
-    /// When <paramref name="enableUndo"/> is <see langword="true"/> but <paramref name="store"/>
-    /// is not a <see cref="ConfigStore{TConfig}"/>, the undo stack is silently omitted because
-    /// undo requires the concrete store type.
-    /// </para>
-    /// </remarks>
-    /// <typeparam name="TConfig">The configuration type rendered by the section.</typeparam>
-    /// <param name="config">The already loaded configuration instance to render.</param>
-    /// <param name="store">The loaded config store associated with <paramref name="config"/>.</param>
-    /// <param name="panelIdScope">
-    /// A globally unique identifier string for this panel. Must be non-null and non-whitespace.
-    /// </param>
-    /// <param name="sectionIdScope">
-    /// Optional stable ImGui widget ID sub-scope for the config section. When omitted,
-    /// the section derives its scope from the config type name.
-    /// </param>
-    /// <param name="enableSearch">
-    /// When <see langword="true"/> (the default), the built-in search bar is enabled with
-    /// default <see cref="ConfigSearchOptions"/> settings.
-    /// </param>
-    /// <param name="enableTransfer">
-    /// When <see langword="true"/> (the default), the built-in config import/export UI is
-    /// enabled with default <see cref="ConfigTransferOptions"/> settings.
-    /// </param>
-    /// <param name="enableUndo">
-    /// When <see langword="true"/> (the default), the undo stack is enabled with default
-    /// <see cref="ConfigUndoOptions"/> settings (requires <paramref name="store"/> to be
-    /// a <see cref="ConfigStore{TConfig}"/>).
-    /// </param>
-    /// <param name="toast">
-    /// Optional plugin-scoped toast instance wired into the undo stack for undo/redo
-    /// notifications. Ignored when <paramref name="enableUndo"/> is <see langword="false"/>.
-    /// </param>
-    /// <param name="rootNodeLabel">
-    /// When non-<see langword="null"/>, all sections are rendered inside a single collapsible
-    /// tree node with this label.
-    /// </param>
-    /// <param name="rootNodeDefaultOpen">
-    /// When <see langword="true"/>, the root tree node starts expanded.
-    /// Ignored when <paramref name="rootNodeLabel"/> is <see langword="null"/>.
-    /// </param>
-    /// <param name="drawSeparator">
-    /// When <see langword="true"/> (the default), a horizontal separator is drawn after
-    /// all sections.
-    /// </param>
-    /// <returns>A fully initialized <see cref="PluginPanel"/> ready for <see cref="Draw"/>.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="config"/> or <paramref name="store"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="panelIdScope"/> is <see langword="null"/> or whitespace.
-    /// </exception>
-    public static PluginPanel CreateWithConfigStore<TConfig>(
-        TConfig config,
-        IConfigTransferStore store,
-        string panelIdScope,
-        string? sectionIdScope = null,
-        bool enableSearch = true,
-        bool enableTransfer = true,
-        bool enableUndo = true,
-        PluginToast? toast = null,
-        string? rootNodeLabel = null,
-        bool rootNodeDefaultOpen = false,
-        bool drawSeparator = true)
-        where TConfig : class, new()
-    {
-        ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(store);
-
-        var options = new ConfigDrawerOptions
-        {
-            Search = enableSearch ? new ConfigSearchOptions() : null,
-            Transfer = enableTransfer ? new ConfigTransferOptions() : null,
-            Undo = enableUndo ? new ConfigUndoOptions { Toast = toast } : null
-        };
-
-        var section = ConfigSection<TConfig>.CreateWithStore(config, store, options, sectionIdScope);
-        return new PluginPanel(panelIdScope, rootNodeLabel, rootNodeDefaultOpen, drawSeparator).Add(section);
-    }
 
     /// <summary>
     /// Initializes a new panel with the given top-level ImGui ID scope.

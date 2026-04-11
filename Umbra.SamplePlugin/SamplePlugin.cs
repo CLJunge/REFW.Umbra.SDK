@@ -2,6 +2,7 @@ using REFrameworkNET;
 using Umbra.Config;
 using Umbra.Logging;
 using Umbra.SamplePlugin.Config;
+using Umbra.UI.Config;
 using Umbra.UI.Panel;
 using Umbra.UI.Toast;
 #if BENCHMARK
@@ -31,13 +32,11 @@ public sealed class SamplePlugin : UmbraPlugin
 #endif
 
     private static readonly PluginLogger _log = new("SamplePlugin");
-    private PluginPanel? _panel;
+    private ManagedPluginPanel<PluginConfig>? _managedPanel;
 #if BENCHMARK
     private PluginPanel? _benchmarkPanel;
     private PluginPanelBenchmark? _panelBenchmark;
 #endif
-    private ConfigStore<PluginConfig>? _store;
-    private PluginConfig? _config;
 
     /// <summary>
     /// Initializes a new plugin instance with its dedicated plugin logger.
@@ -52,10 +51,19 @@ public sealed class SamplePlugin : UmbraPlugin
     {
         Log.Info("Loading...");
 
-        (_config, _store) = LoadConfig();
-        InitializeRuntimePanel(_config, _store);
+        var configPath = GetConfigPath();
+        Log.Info($"Config path: {configPath}");
+
+        _managedPanel = PluginPanelFactory.Create<PluginConfig>(
+            configPath,
+            _runtimePanelScope,
+            _runtimeSectionScope,
+            toast: new PluginToast("Sample Plugin", TimeSpan.FromSeconds(2)));
+
+        PluginConfigActionBinder.Bind(_managedPanel.Config, _managedPanel.Store, Log);
+
 #if BENCHMARK
-        InitializeBenchmarking(_config);
+        InitializeBenchmarking(_managedPanel.Config);
 #endif
 
         Log.Info("Loaded successfully.");
@@ -74,11 +82,7 @@ public sealed class SamplePlugin : UmbraPlugin
         RunShutdownStep("dispose benchmark panel", DisposeBenchmarkPanel);
 #endif
 
-        RunShutdownStep("dispose runtime panel", DisposeRuntimePanel);
-        RunShutdownStep("save config store", SaveConfigStore);
-        RunShutdownStep("dispose config store", DisposeConfigStore);
-
-        _config = null;
+        RunShutdownStep("dispose managed panel", DisposeManagedPanel);
 
         Log.Info("Unloaded.");
     }
@@ -133,22 +137,6 @@ public sealed class SamplePlugin : UmbraPlugin
         => Path.Combine(GetConfigDirectoryPath(), "config.json");
 
     /// <summary>
-    /// Creates and loads the sample plugin config store, then binds runtime-backed sample actions.
-    /// </summary>
-    /// <returns>The loaded config instance and its owning config store.</returns>
-    private (PluginConfig Config, ConfigStore<PluginConfig> Store) LoadConfig()
-    {
-        var configPath = GetConfigPath();
-        Log.Info($"Config path: {configPath}");
-
-        var store = new ConfigStore<PluginConfig>(configPath);
-        var config = store.Load();
-        PluginConfigActionBinder.Bind(config, store, Log);
-
-        return (config, store);
-    }
-
-    /// <summary>
     /// Resolves the absolute path to the directory where panel benchmark artifacts are written.
     /// </summary>
     /// <returns>
@@ -183,20 +171,6 @@ public sealed class SamplePlugin : UmbraPlugin
 
         Log.Info($"Config directory not found, creating: {configDir}");
         Directory.CreateDirectory(configDir);
-    }
-
-    /// <summary>
-    /// Creates the runtime panel for the loaded sample config with search, transfer, and undo enabled.
-    /// </summary>
-    /// <param name="config">The loaded config instance.</param>
-    /// <param name="store">The loaded config store.</param>
-    private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
-    {
-        _panel = PluginPanel.CreateWithConfigStore(
-            config, store,
-            _runtimePanelScope,
-            _runtimeSectionScope,
-            toast: new PluginToast("Sample Plugin", TimeSpan.FromSeconds(2)));
     }
 
     /// <summary>
@@ -239,11 +213,11 @@ public sealed class SamplePlugin : UmbraPlugin
 
 #if BENCHMARK
         if (_panelBenchmark is null || !_panelBenchmark.ShouldSuppressRuntimePanel)
-            _panel?.Draw();
+            _managedPanel?.Draw();
 
         _panelBenchmark?.DrawWindow();
 #else
-        _panel?.Draw();
+        _managedPanel?.Draw();
 #endif
     }
 
@@ -266,20 +240,10 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 #endif
 
-    private void DisposeRuntimePanel()
+    private void DisposeManagedPanel()
     {
-        var panel = _panel;
-        _panel = null;
-        panel?.Dispose();
-    }
-
-    private void SaveConfigStore()
-        => _store?.Save();
-
-    private void DisposeConfigStore()
-    {
-        var store = _store;
-        _store = null;
-        store?.Dispose();
+        var managedPanel = _managedPanel;
+        _managedPanel = null;
+        managedPanel?.Dispose();
     }
 }
