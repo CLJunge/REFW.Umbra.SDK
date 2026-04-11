@@ -404,7 +404,7 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Tests that next and previous navigation transfer keyboard focus
+    /// Tests that next and previous navigation transfer keyboard focus for each newly focused control.
     /// </summary>
     [TestMethod]
     public void Draw_WhenNavigationButtonsMoveFocus_RequestsKeyboardFocusForEachNewFocusedControl()
