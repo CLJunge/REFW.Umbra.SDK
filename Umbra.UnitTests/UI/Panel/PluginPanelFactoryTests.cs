@@ -1,7 +1,7 @@
 using Umbra.UI.Config;
 using Umbra.UI.Panel;
 
-namespace Umbra.UnitTests.UI.Panel;
+namespace Umbra.UI.Panel.UnitTests;
 
 [TestClass]
 public sealed class PluginPanelFactoryTests
