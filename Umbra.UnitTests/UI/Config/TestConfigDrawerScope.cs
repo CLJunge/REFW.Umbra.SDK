@@ -70,10 +70,8 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public bool Button(string label)
     {
         ButtonLabels.Add(label);
-        if (_disabledCount > 0)
-            return false;
-
-        return ButtonResults.Count != 0 && ButtonResults.Dequeue();
+        bool clicked = ButtonResults.Count != 0 && ButtonResults.Dequeue();
+        return _disabledCount == 0 && clicked;
     }
 
     public void Text(string text) => RenderedTexts.Add(text);
