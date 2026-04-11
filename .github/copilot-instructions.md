@@ -84,7 +84,7 @@ The following optional features are toggled through `ConfigDrawerOptions` when c
 | Feature | Options type | Enabled when |
 |---|---|---|
 | **Search** | `ConfigSearchOptions` | `ConfigDrawerOptions.Search` is non-null |
-| **Transfer** | `ConfigTransferOptions` | `ConfigDrawerOptions.Transfer` is non-null **and** `Enabled` is `true` |
+| **Transfer** | `ConfigTransferOptions` | `ConfigDrawerOptions.Transfer` is non-null |
 | **Undo** | `ConfigUndoOptions` | `ConfigDrawerOptions.Undo` is non-null (store must be `ConfigStore<TConfig>`) |
 | **Save Controller** | *(auto-created)* | Section is created via `ConfigSection<TConfig>.CreateWithStore` and the store is `IConfigStore<TConfig>` |
 | **Toast** | `PluginToast` | `ConfigUndoOptions.Toast` is non-null, or plugin creates its own `PluginToast` instance for general-purpose toast notifications |

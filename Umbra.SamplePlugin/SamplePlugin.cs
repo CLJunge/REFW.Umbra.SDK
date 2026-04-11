@@ -2,8 +2,6 @@ using REFrameworkNET;
 using Umbra.Config;
 using Umbra.Logging;
 using Umbra.SamplePlugin.Config;
-using Umbra.UI.Config;
-using Umbra.UI.Config.Transfer;
 using Umbra.UI.Panel;
 using Umbra.UI.Toast;
 #if BENCHMARK
@@ -188,39 +186,17 @@ public sealed class SamplePlugin : UmbraPlugin
     }
 
     /// <summary>
-    /// Creates the runtime panel for the loaded sample config.
+    /// Creates the runtime panel for the loaded sample config with search, transfer, and undo enabled.
     /// </summary>
-    /// <remarks>
-    /// Batch-undo wrapping for reset actions is handled automatically by the undo stack via
-    /// <see cref="Config.Attributes.UmbraBatchUndoAttribute"/> on the reset properties.
-    /// </remarks>
     /// <param name="config">The loaded config instance.</param>
     /// <param name="store">The loaded config store.</param>
     private void InitializeRuntimePanel(PluginConfig config, ConfigStore<PluginConfig> store)
     {
-        var section = CreateRuntimeSection(config, store);
-        _panel = new PluginPanel(_runtimePanelScope).Add(section);
-    }
-
-    /// <summary>
-    /// Builds the config section for the runtime panel.
-    /// </summary>
-    /// <param name="config">The loaded config instance shared by the panel sections.</param>
-    /// <param name="store">The loaded config store used for event-driven persistence, transfer UI, and undo support.</param>
-    /// <returns>The config section with undo, search, and transfer support.</returns>
-    private static ConfigSection<PluginConfig> CreateRuntimeSection(PluginConfig config, ConfigStore<PluginConfig> store)
-    {
-        var toast = new PluginToast("Sample Plugin", TimeSpan.FromSeconds(2));
-        return ConfigSection<PluginConfig>.CreateWithStore(
-            config,
-            store,
-            new ConfigDrawerOptions
-            {
-                Search = new UI.Config.Search.ConfigSearchOptions(),
-                Transfer = new ConfigTransferOptions { Enabled = true },
-                Undo = new ConfigUndoOptions() { Toast = toast }
-            },
-            _runtimeSectionScope);
+        _panel = PluginPanel.CreateWithConfigStore(
+            config, store,
+            _runtimePanelScope,
+            _runtimeSectionScope,
+            toast: new PluginToast("Sample Plugin", TimeSpan.FromSeconds(2)));
     }
 
     /// <summary>

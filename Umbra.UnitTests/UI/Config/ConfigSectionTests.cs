@@ -284,7 +284,7 @@ public sealed class ConfigSectionTests
         var options = new ConfigDrawerOptions
         {
             Search = new ConfigSearchOptions(),
-            Transfer = new ConfigTransferOptions { Enabled = true }
+            Transfer = new ConfigTransferOptions { }
         };
 
         using var section = ConfigSection<TestConfig>.CreateWithStore(config, store, options, idScope: "transfer-enabled");
@@ -299,7 +299,7 @@ public sealed class ConfigSectionTests
     public void CreateWithStore_NullStore_ThrowsArgumentNullException()
     {
         var config = new TestConfig();
-        var options = new ConfigDrawerOptions { Transfer = new ConfigTransferOptions { Enabled = true } };
+        var options = new ConfigDrawerOptions { Transfer = new ConfigTransferOptions() };
 
         var exception = Assert.ThrowsExactly<ArgumentNullException>(
             () => _ = ConfigSection<TestConfig>.CreateWithStore(config, null!, options));
@@ -335,7 +335,7 @@ public sealed class ConfigSectionTests
         using var section = ConfigSection<TestConfig>.CreateWithStore(
             config,
             store,
-            new ConfigDrawerOptions { Transfer = new ConfigTransferOptions { Enabled = true } });
+            new ConfigDrawerOptions { Transfer = new ConfigTransferOptions() });
 
         Assert.IsNotNull(GetTransferFeature(section));
     }
@@ -350,7 +350,7 @@ public sealed class ConfigSectionTests
         using var section = ConfigSection<TestConfig>.CreateWithStore(
             config,
             store,
-            new ConfigDrawerOptions { Transfer = new ConfigTransferOptions { Enabled = true } });
+            new ConfigDrawerOptions { Transfer = new ConfigTransferOptions() });
 
         var feature = GetTransferFeature(section);
         Assert.IsNotNull(feature);
@@ -370,12 +370,8 @@ public sealed class ConfigSectionTests
         using var section = ConfigSection<TestConfig>.CreateWithStore(
             config,
             store,
-            new ConfigDrawerOptions
-            {
-                Transfer = new ConfigTransferOptions
-                {
-                    Enabled = true,
-                    SectionLabel = "Transfer Controls",
+            new ConfigDrawerOptions { Transfer = new ConfigTransferOptions {
+                SectionLabel = "Transfer Controls",
                     ExpandedByDefault = true,
                     Placement = ConfigTransferPlacement.BeforeConfig
                 }
@@ -403,7 +399,6 @@ public sealed class ConfigSectionTests
             {
                 Transfer = new ConfigTransferOptions
                 {
-                    Enabled = true,
                     ShowSeparatorBelowButtons = false
                 }
             });

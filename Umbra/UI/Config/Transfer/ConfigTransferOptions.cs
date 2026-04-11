@@ -27,11 +27,6 @@ public sealed class ConfigTransferOptions
     public static readonly TimeSpan DefaultStatusVisibilityTimeout = TimeSpan.FromSeconds(2);
 
     /// <summary>
-    /// Gets or sets a value indicating whether the built-in config transfer UI is enabled.
-    /// </summary>
-    public bool Enabled { get; init; }
-
-    /// <summary>
     /// Gets or sets an optional explicit file path override for the persisted transfer config file.
     /// </summary>
     /// <remarks>

@@ -99,7 +99,6 @@ public sealed class ConfigTransferFeatureTests
         var drawer = new ConfigTransferDrawer();
         var options = new ConfigTransferOptions
         {
-            Enabled = true,
             ConfigFilePath = transferStateFilePath,
             BrowseFallbackDirectory = Path.Combine(tempDirectory.Path, "browse"),
             SectionLabel = "Transfer Controls",
@@ -133,7 +132,7 @@ public sealed class ConfigTransferFeatureTests
         };
 
         var exception = Assert.ThrowsExactly<InvalidOperationException>(
-            () => _ = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true }));
+            () => _ = new ConfigTransferFeature(store, new ConfigTransferOptions()));
 
         Assert.AreEqual("Built-in config transfer UI requires a loaded config store.", exception.Message);
     }
@@ -143,7 +142,7 @@ public sealed class ConfigTransferFeatureTests
     {
         using var tempDirectory = new TempDirectory();
         var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
-        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true });
+        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions());
         var importFilePath = Path.Combine(tempDirectory.Path, "import.json");
         File.WriteAllText(importFilePath, "{}");
         feature.ConfigFilePath.Value = importFilePath;
@@ -158,7 +157,7 @@ public sealed class ConfigTransferFeatureTests
     {
         using var tempDirectory = new TempDirectory();
         var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
-        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true });
+        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions());
         feature.ConfigFilePath.Value = Path.Combine(tempDirectory.Path, "missing-import.json");
 
         feature.ImportConfig.Value!.Invoke();
@@ -171,7 +170,7 @@ public sealed class ConfigTransferFeatureTests
     {
         using var tempDirectory = new TempDirectory();
         var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
-        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true });
+        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions());
         feature.ConfigFilePath.Value = Path.Combine(tempDirectory.Path, "export.json");
 
         feature.ExportConfig.Value!.Invoke();
@@ -184,7 +183,7 @@ public sealed class ConfigTransferFeatureTests
     {
         using var tempDirectory = new TempDirectory();
         var store = new TestConfigTransferStore(Path.Combine(tempDirectory.Path, "config.json"));
-        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true });
+        using var feature = new ConfigTransferFeature(store, new ConfigTransferOptions());
         feature.ConfigFilePath.Value = Path.Combine(tempDirectory.Path, "export.txt");
 
         feature.ExportConfig.Value!.Invoke();
@@ -199,7 +198,7 @@ public sealed class ConfigTransferFeatureTests
         var mainFilePath = Path.Combine(tempDirectory.Path, "config.json");
         var sidecarFilePath = ConfigTransferFeature.ResolveSidecarFilePath(mainFilePath, null);
         var store = new TestConfigTransferStore(mainFilePath);
-        var feature = new ConfigTransferFeature(store, new ConfigTransferOptions { Enabled = true });
+        var feature = new ConfigTransferFeature(store, new ConfigTransferOptions());
         feature.ConfigFilePath.Value = Path.Combine(tempDirectory.Path, "persisted.json");
         feature.TransferMode.Value = ConfigTransferMode.Export;
 

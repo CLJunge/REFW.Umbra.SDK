@@ -1,5 +1,8 @@
 using Hexa.NET.ImGui;
 using Moq;
+using Umbra.Config;
+using Umbra.Config.Attributes;
+using Umbra.UI.Toast;
 
 namespace Umbra.UI.Panel.UnitTests;
 
@@ -524,5 +527,211 @@ public sealed class PluginPanelTests
         }
 
         public void Dispose() => disposeCallback();
+    }
+}
+
+
+/// <summary>
+/// Unit tests for the <see cref="PluginPanel.CreateWithConfigStore{TConfig}"/> factory method.
+/// </summary>
+[TestClass]
+public sealed class PluginPanelTests_CreateWithConfigStore
+{
+    [UmbraAutoRegister]
+    private sealed class TestConfig
+    {
+        [UmbraParameter]
+        public Parameter<bool> Enabled { get; set; } = new(true);
+    }
+
+    [TestMethod]
+    public void CreateWithConfigStore_WithDefaults_ReturnsNonNullPanel()
+    {
+        using var tempDir = new TempDirectory();
+        var storePath = Path.Combine(tempDir.Path, "config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+
+        using var panel = PluginPanel.CreateWithConfigStore(
+            config, store,
+            $"Factory_Defaults_{Guid.NewGuid()}");
+
+        Assert.IsNotNull(panel);
+        store.Dispose();
+    }
+
+    [TestMethod]
+    public void CreateWithConfigStore_WithSectionIdScope_ReturnsPanel()
+    {
+        using var tempDir = new TempDirectory();
+        var storePath = Path.Combine(tempDir.Path, "config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+
+        using var panel = PluginPanel.CreateWithConfigStore(
+            config, store,
+            $"Factory_Section_{Guid.NewGuid()}",
+            sectionIdScope: "custom.section.scope");
+
+        Assert.IsNotNull(panel);
+        store.Dispose();
+    }
+
+    [TestMethod]
+    public void CreateWithConfigStore_WithAllFeaturesDisabled_ReturnsPanel()
+    {
+        using var tempDir = new TempDirectory();
+        var storePath = Path.Combine(tempDir.Path, "config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+
+        using var panel = PluginPanel.CreateWithConfigStore(
+            config, store,
+            $"Factory_NoFeatures_{Guid.NewGuid()}",
+            enableSearch: false,
+            enableTransfer: false,
+            enableUndo: false);
+
+        Assert.IsNotNull(panel);
+        store.Dispose();
+    }
+
+    [TestMethod]
+    public void CreateWithConfigStore_WithToast_ReturnsPanel()
+    {
+        using var tempDir = new TempDirectory();
+        var storePath = Path.Combine(tempDir.Path, "config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+        var toast = new PluginToast("Test Plugin", TimeSpan.FromSeconds(2));
+
+        using var panel = PluginPanel.CreateWithConfigStore(
+            config, store,
+            $"Factory_Toast_{Guid.NewGuid()}",
+            toast: toast);
+
+        Assert.IsNotNull(panel);
+        store.Dispose();
+    }
+
+    [TestMethod]
+    public void CreateWithConfigStore_WithRootNodeLabel_ReturnsPanel()
+    {
+        using var tempDir = new TempDirectory();
+        var storePath = Path.Combine(tempDir.Path, "config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+
+        using var panel = PluginPanel.CreateWithConfigStore(
+            config, store,
+            $"Factory_Root_{Guid.NewGuid()}",
+            rootNodeLabel: "Config",
+            rootNodeDefaultOpen: true);
+
+        Assert.IsNotNull(panel);
+        store.Dispose();
+    }
+
+    [TestMethod]
+    public void CreateWithConfigStore_NullConfig_ThrowsArgumentNullException()
+    {
+        using var tempDir = new TempDirectory();
+        var storePath = Path.Combine(tempDir.Path, "config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        _ = store.Load();
+
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(
+            () => PluginPanel.CreateWithConfigStore<TestConfig>(
+                null!, store, $"Factory_NullConfig_{Guid.NewGuid()}"));
+
+        Assert.AreEqual("config", exception.ParamName);
+        store.Dispose();
+    }
+
+    [TestMethod]
+    public void CreateWithConfigStore_NullStore_ThrowsArgumentNullException()
+    {
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(
+            () => PluginPanel.CreateWithConfigStore(
+                new TestConfig(), null!, $"Factory_NullStore_{Guid.NewGuid()}"));
+
+        Assert.AreEqual("store", exception.ParamName);
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void CreateWithConfigStore_InvalidPanelIdScope_ThrowsArgumentException(string? panelIdScope)
+    {
+        using var tempDir = new TempDirectory();
+        var storePath = Path.Combine(tempDir.Path, "config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+
+        Assert.ThrowsExactly<ArgumentException>(
+            () => PluginPanel.CreateWithConfigStore(
+                config, store, panelIdScope!));
+
+        store.Dispose();
+    }
+
+    [TestMethod]
+    public void CreateWithConfigStore_ReturnedPanel_CanBeDisposedWithoutError()
+    {
+        using var tempDir = new TempDirectory();
+        var storePath = Path.Combine(tempDir.Path, "config.json");
+        var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+
+        var panel = PluginPanel.CreateWithConfigStore(
+            config, store,
+            $"Factory_Dispose_{Guid.NewGuid()}");
+
+        panel.Dispose();
+
+        Assert.IsNotNull(panel);
+        store.Dispose();
+    }
+
+    [TestMethod]
+    public void CreateWithConfigStore_WithNonConfigStore_ReturnsPanel()
+    {
+        using var tempDir = new TempDirectory();
+        var store = new TestConfigTransferStore(Path.Combine(tempDir.Path, "config.json"));
+
+        using var panel = PluginPanel.CreateWithConfigStore(
+            new TestConfig(), store,
+            $"Factory_TransferStore_{Guid.NewGuid()}");
+
+        Assert.IsNotNull(panel);
+    }
+
+    private sealed class TestConfigTransferStore(string filePath) : IConfigTransferStore
+    {
+        public string FilePath => filePath;
+        public bool IsLoaded => true;
+        public bool IsDisposed => false;
+        public void Export(string filePath) { }
+        public ConfigImportReport Import(string filePath, ConfigImportOptions? options = null) => new();
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        internal TempDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path);
+        }
+
+        internal string Path { get; }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+                Directory.Delete(Path, recursive: true);
+
+            GC.SuppressFinalize(this);
+        }
     }
 }

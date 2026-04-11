@@ -47,8 +47,8 @@ public sealed class ConfigDrawerOptions
     /// Gets or sets the optional built-in config transfer UI settings.
     /// </summary>
     /// <remarks>
-    /// When <see langword="null"/> or when <see cref="ConfigTransferOptions.Enabled"/> is <see langword="false"/>,
-    /// the wrapped drawer or section renders no built-in config transfer UI.
+    /// When <see langword="null"/>, the built-in config transfer UI is disabled.
+    /// When non-<see langword="null"/>, a transfer UI is created with the configured settings.
     /// </remarks>
     public ConfigTransferOptions? Transfer { get; init; }
 
