@@ -86,7 +86,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// Thrown when <paramref name="config"/>, <paramref name="idScope"/>, <paramref name="options"/>, or <paramref name="renderer"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="idScope"/> is empty or whitespace.
+    /// Thrown when <paramref name="idScope"/> is empty or consists only of whitespace characters.
     /// </exception>
     internal ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, IConfigDrawerRenderer renderer)
     {
