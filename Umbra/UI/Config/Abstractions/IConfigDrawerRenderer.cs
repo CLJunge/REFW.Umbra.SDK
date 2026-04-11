@@ -8,7 +8,7 @@ namespace Umbra.UI.Config;
 /// <remarks>
 /// This seam keeps <see cref="ConfigDrawer{TConfig}"/> testable without an active ImGui frame while remaining narrower than the full shared render context.
 /// </remarks>
-internal interface IConfigDrawerRenderer : IConfigDrawerScope, IButtonOps, ITextOps
+internal interface IConfigDrawerRenderer : IConfigDrawerScope, IButtonOps, ITextOps, IDisabledRegionOps
 {
     /// <summary>
     /// Gets the horizontal width currently available for the search row.

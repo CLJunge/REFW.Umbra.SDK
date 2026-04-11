@@ -182,4 +182,95 @@ public sealed class ConfigDrawerSearchStateTests
         Assert.IsNull(state.PendingFocusResultId);
         Assert.AreEqual("alpha", state.PendingScrollResultId);
     }
+
+    /// <summary>
+    /// Tests that navigation is disabled when no query is active.
+    /// </summary>
+    [TestMethod]
+    public void CanNavigate_WithoutActiveQuery_ReturnsFalse()
+    {
+        // Arrange
+        var state = new ConfigDrawerSearchState();
+        state.SetMatches(["alpha", "beta"]);
+
+        // Act & Assert
+        Assert.IsFalse(state.CanNavigate);
+    }
+
+    /// <summary>
+    /// Tests that navigation is disabled when a query is active but produces no matches.
+    /// </summary>
+    [TestMethod]
+    public void CanNavigate_WithActiveQueryAndNoMatches_ReturnsFalse()
+    {
+        // Arrange
+        var state = new ConfigDrawerSearchState();
+        state.SetQuery("test");
+
+        // Act & Assert
+        Assert.IsFalse(state.CanNavigate);
+    }
+
+    /// <summary>
+    /// Tests that navigation is enabled when a single match exists but has not been focused.
+    /// </summary>
+    [TestMethod]
+    public void CanNavigate_WithSingleUnfocusedMatch_ReturnsTrue()
+    {
+        // Arrange
+        var state = new ConfigDrawerSearchState();
+        state.SetQuery("test");
+        state.SetMatches(["alpha"]);
+
+        // Act & Assert
+        Assert.IsTrue(state.CanNavigate);
+    }
+
+    /// <summary>
+    /// Tests that navigation is disabled once the sole match is already focused.
+    /// </summary>
+    [TestMethod]
+    public void CanNavigate_WithSingleFocusedMatch_ReturnsFalse()
+    {
+        // Arrange
+        var state = new ConfigDrawerSearchState();
+        state.SetQuery("test");
+        state.SetMatches(["alpha"]);
+        state.MoveNext();
+
+        // Act & Assert
+        Assert.IsFalse(state.CanNavigate);
+    }
+
+    /// <summary>
+    /// Tests that navigation stays enabled when multiple matches exist regardless of focus.
+    /// </summary>
+    [TestMethod]
+    public void CanNavigate_WithMultipleMatches_ReturnsTrue()
+    {
+        // Arrange
+        var state = new ConfigDrawerSearchState();
+        state.SetQuery("test");
+        state.SetMatches(["alpha", "beta"]);
+        state.MoveNext();
+
+        // Act & Assert
+        Assert.IsTrue(state.CanNavigate);
+    }
+
+    /// <summary>
+    /// Tests that <see cref="ConfigDrawerSearchState.MatchCount"/> reflects the current match list size.
+    /// </summary>
+    [TestMethod]
+    public void MatchCount_AfterSetMatches_ReflectsCurrentCount()
+    {
+        // Arrange
+        var state = new ConfigDrawerSearchState();
+
+        // Act
+        state.SetMatches(["alpha", "beta", "gamma"]);
+
+        // Assert
+        Assert.AreEqual(3, state.MatchCount);
+    }
 }

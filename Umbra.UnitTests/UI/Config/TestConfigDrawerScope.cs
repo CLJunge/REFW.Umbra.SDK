@@ -9,6 +9,8 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public List<string> RenderedTexts { get; } = [];
     public List<string> InputTextLabels { get; } = [];
     public List<string> ButtonLabels { get; } = [];
+    public List<bool> BeginDisabledArgs { get; } = [];
+    public int EndDisabledCount { get; private set; }
     public List<string> TextWidthRequests { get; } = [];
     public List<string> ButtonWidthRequests { get; } = [];
     public List<float> NextItemWidths { get; } = [];
@@ -23,6 +25,9 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public Dictionary<string, float> TextWidths { get; } = [];
     public Dictionary<string, float> ButtonWidths { get; } = [];
     public Queue<bool> ButtonResults { get; } = new();
+
+    private readonly Stack<bool> _disabledScopeStack = new();
+    private int _disabledCount;
 
     public void PushId(string idScope) => PushedIds.Add(idScope);
 
@@ -65,7 +70,8 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public bool Button(string label)
     {
         ButtonLabels.Add(label);
-        return ButtonResults.Count != 0 && ButtonResults.Dequeue();
+        bool clicked = ButtonResults.Count != 0 && ButtonResults.Dequeue();
+        return _disabledCount == 0 && clicked;
     }
 
     public void Text(string text) => RenderedTexts.Add(text);
@@ -82,5 +88,24 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
 
     public void DrawHelpMarker(string description)
     {
+    }
+
+    public void BeginDisabled(bool disabled)
+    {
+        BeginDisabledArgs.Add(disabled);
+        _disabledScopeStack.Push(disabled);
+        if (disabled)
+            _disabledCount++;
+    }
+
+    public void EndDisabled()
+    {
+        if (_disabledScopeStack.Count == 0)
+            throw new InvalidOperationException("EndDisabled called without a matching BeginDisabled.");
+
+        if (_disabledScopeStack.Pop())
+            _disabledCount--;
+
+        EndDisabledCount++;
     }
 }

@@ -10,10 +10,11 @@ namespace Umbra.UI.Config.Search;
 /// </remarks>
 internal sealed class ConfigDrawerSearchController
 {
-    private const string SearchLabel = "Search";
-    private const string SearchInputLabel = "##ConfigDrawerSearch";
-    private const string PreviousButtonLabel = "<##ConfigDrawerSearchPrevious";
-    private const string NextButtonLabel = ">##ConfigDrawerSearchNext";
+    private const string _searchLabel = "Search";
+    private const string _searchInputLabel = "##ConfigDrawerSearch";
+    private const string _clearButtonLabel = "\u00d7##ConfigDrawerSearchClear";
+    private const string _previousButtonLabel = "<##ConfigDrawerSearchPrevious";
+    private const string _nextButtonLabel = ">##ConfigDrawerSearchNext";
 
     private readonly IConfigDrawerRenderer _renderer;
     private readonly ConfigSearchIndex _searchIndex;
@@ -67,24 +68,47 @@ internal sealed class ConfigDrawerSearchController
 
         EnsureSearchLayout(layoutState);
 
-        _renderer.Text(SearchLabel);
+        _renderer.Text(_searchLabel);
         _renderer.SameLine();
 
         var query = searchState.Query;
         _renderer.SetNextItemWidth(layoutState.SearchInputWidth);
-        if (_renderer.InputText(SearchInputLabel, ref query, _maxInputLength))
+        if (_renderer.InputText(_searchInputLabel, ref query, _maxInputLength))
         {
             searchState.SetQuery(query);
             RefreshSearchMatches(searchState);
         }
 
         _renderer.SameLine();
-        if (_renderer.Button(PreviousButtonLabel))
-            searchState.MovePrevious();
+        _renderer.BeginDisabled(searchState.Query.Length == 0);
+        try
+        {
+            if (_renderer.Button(_clearButtonLabel))
+            {
+                searchState.SetQuery(string.Empty);
+                RefreshSearchMatches(searchState);
+            }
+        }
+        finally
+        {
+            _renderer.EndDisabled();
+        }
 
         _renderer.SameLine();
-        if (_renderer.Button(NextButtonLabel))
-            searchState.MoveNext();
+        _renderer.BeginDisabled(!searchState.CanNavigate);
+        try
+        {
+            if (_renderer.Button(_previousButtonLabel))
+                searchState.MovePrevious();
+
+            _renderer.SameLine();
+            if (_renderer.Button(_nextButtonLabel))
+                searchState.MoveNext();
+        }
+        finally
+        {
+            _renderer.EndDisabled();
+        }
     }
 
     private void EnsureSearchLayout(ConfigDrawerSearchLayoutState layoutState)
@@ -94,16 +118,18 @@ internal sealed class ConfigDrawerSearchController
             return;
 
         layoutState.LastAvailableWidth = availableWidth;
-        layoutState.PreviousButtonWidth = _renderer.GetButtonWidth(PreviousButtonLabel);
-        layoutState.NextButtonWidth = _renderer.GetButtonWidth(NextButtonLabel);
+        layoutState.ClearButtonWidth = _renderer.GetButtonWidth(_clearButtonLabel);
+        layoutState.PreviousButtonWidth = _renderer.GetButtonWidth(_previousButtonLabel);
+        layoutState.NextButtonWidth = _renderer.GetButtonWidth(_nextButtonLabel);
 
-        var labelWidth = _renderer.GetTextWidth(SearchLabel);
+        var labelWidth = _renderer.GetTextWidth(_searchLabel);
         var spacingX = _renderer.GetItemSpacingX();
         var searchInputWidth = availableWidth
             - labelWidth
+            - layoutState.ClearButtonWidth
             - layoutState.PreviousButtonWidth
             - layoutState.NextButtonWidth
-            - (spacingX * 3f);
+            - (spacingX * 4f);
         layoutState.SearchInputWidth = Math.Max(_minimumSearchInputWidth, searchInputWidth);
         layoutState.IsInitialized = true;
     }
