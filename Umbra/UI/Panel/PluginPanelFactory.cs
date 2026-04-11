@@ -262,11 +262,11 @@ public static class PluginPanelFactory
     /// </param>
     /// <returns>A fully initialized <see cref="PluginPanel"/> ready for <see cref="PluginPanel.Draw"/>.</returns>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="config"/>, <paramref name="store"/>, or
-    /// <paramref name="options"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="panelIdScope"/>, <paramref name="config"/>,
+    /// <paramref name="store"/>, or <paramref name="options"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="panelIdScope"/> is <see langword="null"/> or whitespace.
+    /// Thrown when <paramref name="panelIdScope"/> is empty or whitespace.
     /// </exception>
     public static PluginPanel CreateWithConfigStore<TConfig>(
         TConfig config,
@@ -282,9 +282,7 @@ public static class PluginPanelFactory
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(options);
-
-        if (string.IsNullOrWhiteSpace(panelIdScope))
-            throw new ArgumentException("panelIdScope cannot be null or whitespace.", nameof(panelIdScope));
+        ArgumentException.ThrowIfNullOrWhiteSpace(panelIdScope);
 
         var section = ConfigSection<TConfig>.CreateWithStore(config, store, options, sectionIdScope);
         return new PluginPanel(panelIdScope, rootNodeLabel, rootNodeDefaultOpen, drawSeparator).Add(section);
@@ -354,10 +352,10 @@ public static class PluginPanelFactory
     /// </param>
     /// <returns>A fully initialized <see cref="PluginPanel"/> ready for <see cref="PluginPanel.Draw"/>.</returns>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="config"/> or <paramref name="store"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="panelIdScope"/>, <paramref name="config"/>, or <paramref name="store"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="panelIdScope"/> is <see langword="null"/> or whitespace.
+    /// Thrown when <paramref name="panelIdScope"/> is empty or whitespace.
     /// </exception>
     public static PluginPanel CreateWithConfigStore<TConfig>(
         TConfig config,

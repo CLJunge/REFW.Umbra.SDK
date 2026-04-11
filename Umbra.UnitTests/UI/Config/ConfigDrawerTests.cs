@@ -935,6 +935,17 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
+    /// Tests that the public constructor rejects a null id scope.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullIdScope_ThrowsArgumentNullException()
+    {
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ConfigDrawer<SimpleConfig>(new SimpleConfig(), null!));
+
+        Assert.AreEqual("idScope", exception.ParamName);
+    }
+
+    /// <summary>
     /// Tests that the public constructor rejects whitespace-only id scopes.
     /// </summary>
     [TestMethod]

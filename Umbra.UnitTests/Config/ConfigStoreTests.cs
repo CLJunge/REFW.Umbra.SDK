@@ -1059,6 +1059,17 @@ public partial class ConfigStoreTests
     }
 
     /// <summary>
+    /// Verifies that the constructor rejects a null file path.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullFilePath_ThrowsArgumentNullException()
+    {
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(() => _ = new ConfigStore<TestConfig>(null!));
+
+        Assert.AreEqual("filePath", exception.ParamName);
+    }
+
+    /// <summary>
     /// Verifies that the constructor rejects whitespace-only file paths.
     /// </summary>
     [TestMethod]

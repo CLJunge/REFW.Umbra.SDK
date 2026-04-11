@@ -657,10 +657,22 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
     }
 
     [TestMethod]
-    [DataRow(null)]
+    public void CreateWithConfigStore_NullPanelIdScope_ThrowsArgumentNullException()
+    {
+        using var tempDir = new TempDirectory();
+        var storePath = Path.Combine(tempDir.Path, "config.json");
+        using var store = new ConfigStore<TestConfig>(storePath);
+        var config = store.Load();
+
+        Assert.ThrowsExactly<ArgumentNullException>(
+            () => PluginPanelFactory.CreateWithConfigStore(
+                config, store, null!));
+    }
+
+    [TestMethod]
     [DataRow("")]
     [DataRow("   ")]
-    public void CreateWithConfigStore_InvalidPanelIdScope_ThrowsArgumentException(string? panelIdScope)
+    public void CreateWithConfigStore_EmptyOrWhitespacePanelIdScope_ThrowsArgumentException(string panelIdScope)
     {
         using var tempDir = new TempDirectory();
         var storePath = Path.Combine(tempDir.Path, "config.json");
@@ -669,7 +681,7 @@ public sealed class PluginPanelFactoryTests_CreateWithConfigStore
 
         Assert.ThrowsExactly<ArgumentException>(
             () => PluginPanelFactory.CreateWithConfigStore(
-                config, store, panelIdScope!));
+                config, store, panelIdScope));
     }
 
     [TestMethod]

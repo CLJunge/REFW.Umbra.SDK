@@ -12,7 +12,7 @@ public sealed class PluginToastTests
     public void Cleanup() => ToastQueue.Clear();
 
     [TestMethod]
-    public void Constructor_WithNullPluginName_Throws() => Assert.ThrowsExactly<ArgumentException>(() => new PluginToast(null!));
+    public void Constructor_WithNullPluginName_ThrowsArgumentNullException() => Assert.ThrowsExactly<ArgumentNullException>(() => new PluginToast(null!));
 
     [TestMethod]
     public void Constructor_WithEmptyPluginName_Throws() => Assert.ThrowsExactly<ArgumentException>(() => new PluginToast(""));

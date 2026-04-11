@@ -83,15 +83,17 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// </param>
     /// <param name="renderer">The renderer seam used for outer drawer chrome, ID-scope operations, and search-row layout.</param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="config"/>, <paramref name="options"/>, or <paramref name="renderer"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="config"/>, <paramref name="idScope"/>, <paramref name="options"/>, or <paramref name="renderer"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="idScope"/> is empty or consists only of whitespace characters.
     /// </exception>
     internal ConfigDrawer(TConfig config, string idScope, ConfigDrawerOptions options, IConfigDrawerRenderer renderer)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(renderer);
-        if (string.IsNullOrWhiteSpace(idScope))
-            throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
+        ArgumentException.ThrowIfNullOrWhiteSpace(idScope);
 
         _idScope = idScope;
         _renderer = renderer;
@@ -123,18 +125,18 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// <param name="options">Optional feature flags that customize drawer behavior for the test instance. When <see langword="null"/>, <see cref="ConfigDrawerOptions.Default"/> is used.</param>
     /// <param name="searchIndex">The pre-built flat search index used by the test instance. When <see langword="null"/>, an empty index is created.</param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="nodes"/>, <paramref name="disposables"/>, or <paramref name="renderer"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="idScope"/>, <paramref name="nodes"/>, <paramref name="disposables"/>, or <paramref name="renderer"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="idScope"/> is <see langword="null"/>, empty, or whitespace.
+    /// Thrown when <paramref name="idScope"/> is empty or whitespace.
     /// </exception>
     internal ConfigDrawer(string idScope, List<IDrawNode> nodes, List<IDisposable> disposables, IConfigDrawerRenderer renderer, ConfigDrawerOptions? options = null, ConfigSearchIndex? searchIndex = null)
     {
+        ArgumentNullException.ThrowIfNull(idScope);
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(disposables);
         ArgumentNullException.ThrowIfNull(renderer);
-        if (string.IsNullOrWhiteSpace(idScope))
-            throw new ArgumentException("idScope cannot be null, empty, or whitespace.", nameof(idScope));
+        ArgumentException.ThrowIfNullOrWhiteSpace(idScope);
 
         _idScope = idScope;
         var effectiveOptions = options ?? ConfigDrawerOptions.Default;

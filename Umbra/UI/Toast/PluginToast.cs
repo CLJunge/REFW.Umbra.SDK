@@ -29,13 +29,15 @@ public sealed class PluginToast
     /// An optional default display duration applied when no per-call duration is supplied.
     /// When <see langword="null"/>, <see cref="ToastQueue.DefaultDuration"/> is used.
     /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="pluginName"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ArgumentException">
-    /// <paramref name="pluginName"/> is <see langword="null"/>, empty, or whitespace.
+    /// <paramref name="pluginName"/> is empty or whitespace.
     /// </exception>
     public PluginToast(string pluginName, TimeSpan? defaultDuration = null)
     {
-        if (string.IsNullOrWhiteSpace(pluginName))
-            throw new ArgumentException("Plugin name cannot be null, empty, or whitespace.", nameof(pluginName));
+        ArgumentException.ThrowIfNullOrWhiteSpace(pluginName);
 
         PluginName = pluginName;
         _defaultDuration = defaultDuration;

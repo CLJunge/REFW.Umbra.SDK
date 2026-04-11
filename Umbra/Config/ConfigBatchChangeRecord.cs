@@ -26,10 +26,8 @@ internal sealed class ConfigBatchChangeRecord : IUndoEntry
     /// </exception>
     internal ConfigBatchChangeRecord(string batchLabel, List<ConfigChangeRecord> records)
     {
-        ArgumentNullException.ThrowIfNull(batchLabel);
+        ArgumentException.ThrowIfNullOrWhiteSpace(batchLabel);
         ArgumentNullException.ThrowIfNull(records);
-        if (string.IsNullOrWhiteSpace(batchLabel))
-            throw new ArgumentException("Batch label cannot be empty or whitespace.", nameof(batchLabel));
         if (records.Count == 0)
             throw new ArgumentException("Batch records cannot be empty.", nameof(records));
 
