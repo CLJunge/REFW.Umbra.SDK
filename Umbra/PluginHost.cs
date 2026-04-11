@@ -19,8 +19,23 @@ namespace Umbra;
 public sealed class PluginHost<TPlugin>
     where TPlugin : class, IUmbraPlugin
 {
+    #pragma warning disable CS0649
+    private static volatile TPlugin? _current;
+#pragma warning restore CS0649
+
     private readonly Func<TPlugin> _factory;
     private volatile TPlugin? _instance;
+
+    /// <summary>
+    /// Gets the live plugin instance, or <see langword="null"/> when no instance is loaded.
+    /// </summary>
+    /// <value>
+    /// The current <typeparamref name="TPlugin"/> instance between a successful <see cref="Load"/> and a subsequent <see cref="Unload"/>; otherwise, <see langword="null"/>.
+    /// </value>
+    /// <remarks>
+    /// This property is intended for static <c>[MethodHook]</c> methods and other static callbacks that need to forward game events to the instance-based plugin without holding a reference to the <see cref="PluginHost{TPlugin}"/> object. The backing field is <see langword="volatile"/>, so reads from any thread observe the most recently published value. Callers should use null-conditional access (<c>Current?.SomeMethod()</c>) so forwarded calls become safe no-ops after unload or before load completes.
+    /// </remarks>
+    public static TPlugin? Current => _current;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PluginHost{TPlugin}"/> class.
@@ -61,6 +76,7 @@ public sealed class PluginHost<TPlugin>
         }
         finally
         {
+            _current = null;
             _instance = null;
         }
     }
@@ -113,6 +129,7 @@ public sealed class PluginHost<TPlugin>
         {
             instance.Initialize();
             _instance = instance;
+            _current = instance;
         }
         catch (Exception initializationException)
         {
@@ -143,4 +160,12 @@ public sealed class PluginHost<TPlugin>
                 initializationException.Message);
         }
     }
+
+    /// <summary>
+    /// Clears the static <see cref="Current"/> reference.
+    /// </summary>
+    /// <remarks>
+    /// This method exists for unit tests that need deterministic isolation between runs.
+    /// </remarks>
+    internal static void ResetCurrent() => _current = null;
 }

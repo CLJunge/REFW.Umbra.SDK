@@ -32,6 +32,8 @@ public sealed class PluginHostTests
         PluginInstanceGuard.Reset();
         LifecyclePlugin.Reset();
         InitializeFailurePlugin.Reset();
+        PluginHost<LifecyclePlugin>.ResetCurrent();
+        PluginHost<InitializeFailurePlugin>.ResetCurrent();
     }
 
     /// <summary>
@@ -41,6 +43,8 @@ public sealed class PluginHostTests
     public void TestCleanup()
     {
         PluginInstanceGuard.Reset();
+        PluginHost<LifecyclePlugin>.ResetCurrent();
+        PluginHost<InitializeFailurePlugin>.ResetCurrent();
         ToastQueue.Clear();
         ToastOverlay.ResetDrawFrame();
         ToastOverlay.SetRenderer(null);
@@ -77,6 +81,98 @@ public sealed class PluginHostTests
         Assert.AreEqual(1, LifecyclePlugin.PreDrawCount);
         Assert.AreEqual(1, LifecyclePlugin.PreRendererCount);
         Assert.AreEqual(1, LifecyclePlugin.ShutdownCount);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="PluginHost{TPlugin}.Current"/> is <see langword="null"/> before
+    /// <see cref="PluginHost{TPlugin}.Load"/> is called.
+    /// </summary>
+    [TestMethod]
+    public void Current_BeforeLoad_ReturnsNull()
+    {
+        // Arrange
+        _ = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        // Act / Assert
+        Assert.IsNull(PluginHost<LifecyclePlugin>.Current);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="PluginHost{TPlugin}.Current"/> exposes the live plugin instance
+    /// after a successful <see cref="PluginHost{TPlugin}.Load"/>.
+    /// </summary>
+    [TestMethod]
+    public void Current_AfterSuccessfulLoad_ReturnsLivePlugin()
+    {
+        // Arrange
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        // Act
+        host.Load();
+
+        // Assert
+        Assert.IsNotNull(PluginHost<LifecyclePlugin>.Current);
+        host.Unload();
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="PluginHost{TPlugin}.Current"/> is <see langword="null"/> after
+    /// <see cref="PluginHost{TPlugin}.Unload"/>.
+    /// </summary>
+    [TestMethod]
+    public void Current_AfterUnload_ReturnsNull()
+    {
+        // Arrange
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        // Act
+        host.Load();
+        host.Unload();
+
+        // Assert
+        Assert.IsNull(PluginHost<LifecyclePlugin>.Current);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="PluginHost{TPlugin}.Current"/> remains <see langword="null"/>
+    /// when <see cref="PluginHost{TPlugin}.Load"/> fails due to an initialization exception.
+    /// </summary>
+    [TestMethod]
+    public void Current_WhenInitializeThrows_ReturnsNull()
+    {
+        // Arrange
+        var host = new PluginHost<InitializeFailurePlugin>(static () => new InitializeFailurePlugin());
+
+        // Act
+        Assert.ThrowsExactly<InvalidOperationException>(() => host.Load());
+
+        // Assert
+        Assert.IsNull(PluginHost<InitializeFailurePlugin>.Current);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="PluginHost{TPlugin}.Current"/> remains <see langword="null"/>
+    /// when <see cref="PluginHost{TPlugin}.Load"/> returns <see langword="false"/> because the
+    /// mutex is already held and becomes non-null only after the first host unloads and the
+    /// second host acquires the mutex.
+    /// </summary>
+    [TestMethod]
+    public void Current_WhenMutexBlocked_StaysFromFirstHost()
+    {
+        // Arrange
+        var firstHost = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+        var secondHost = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        // Act
+        firstHost.Load();
+        var firstCurrent = PluginHost<LifecyclePlugin>.Current;
+        secondHost.Load();
+
+        // Assert
+        Assert.IsNotNull(firstCurrent);
+        Assert.AreSame(firstCurrent, PluginHost<LifecyclePlugin>.Current);
+
+        firstHost.Unload();
     }
 
     /// <summary>
