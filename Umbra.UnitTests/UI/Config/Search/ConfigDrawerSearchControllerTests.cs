@@ -212,8 +212,8 @@ public sealed class ConfigDrawerSearchControllerTests
         controller.DrawControls();
 
         // Assert
-        Assert.IsGreaterThanOrEqualTo(2, renderer.DisabledStack.Count);
-        Assert.IsTrue(renderer.DisabledStack[0]);
+        Assert.IsGreaterThanOrEqualTo(2, renderer.BeginDisabledArgs.Count);
+        Assert.IsTrue(renderer.BeginDisabledArgs[0]);
     }
 
     /// <summary>
@@ -237,8 +237,8 @@ public sealed class ConfigDrawerSearchControllerTests
         controller.DrawControls();
 
         // Assert
-        Assert.IsGreaterThanOrEqualTo(2, renderer.DisabledStack.Count);
-        Assert.IsFalse(renderer.DisabledStack[0]);
+        Assert.IsGreaterThanOrEqualTo(2, renderer.BeginDisabledArgs.Count);
+        Assert.IsFalse(renderer.BeginDisabledArgs[0]);
     }
 
     /// <summary>
@@ -265,8 +265,8 @@ public sealed class ConfigDrawerSearchControllerTests
 
         // Assert
         Assert.AreEqual(0, controller.CurrentState!.MatchCount);
-        Assert.IsGreaterThanOrEqualTo(2, renderer.DisabledStack.Count);
-        Assert.IsTrue(renderer.DisabledStack[1]);
+        Assert.IsGreaterThanOrEqualTo(2, renderer.BeginDisabledArgs.Count);
+        Assert.IsTrue(renderer.BeginDisabledArgs[1]);
     }
 
     /// <summary>
@@ -290,17 +290,17 @@ public sealed class ConfigDrawerSearchControllerTests
 
         // Act
         controller.DrawControls();
-        renderer.DisabledStack.Clear();
+        renderer.BeginDisabledArgs.Clear();
         renderer.ButtonResults.Enqueue(false);
         renderer.ButtonResults.Enqueue(false);
         renderer.ButtonResults.Enqueue(true);
         controller.DrawControls();
-        renderer.DisabledStack.Clear();
+        renderer.BeginDisabledArgs.Clear();
         controller.DrawControls();
 
         // Assert
         Assert.AreEqual("alpha", controller.CurrentState!.FocusedResultId);
-        Assert.IsGreaterThanOrEqualTo(2, renderer.DisabledStack.Count);
-        Assert.IsTrue(renderer.DisabledStack[1]);
+        Assert.IsGreaterThanOrEqualTo(2, renderer.BeginDisabledArgs.Count);
+        Assert.IsTrue(renderer.BeginDisabledArgs[1]);
     }
 }

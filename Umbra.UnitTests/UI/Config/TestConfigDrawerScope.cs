@@ -9,7 +9,7 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public List<string> RenderedTexts { get; } = [];
     public List<string> InputTextLabels { get; } = [];
     public List<string> ButtonLabels { get; } = [];
-    public List<bool> DisabledStack { get; } = [];
+    public List<bool> BeginDisabledArgs { get; } = [];
     public int EndDisabledCount { get; private set; }
     public List<string> TextWidthRequests { get; } = [];
     public List<string> ButtonWidthRequests { get; } = [];
@@ -92,7 +92,7 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
 
     public void BeginDisabled(bool disabled)
     {
-        DisabledStack.Add(disabled);
+        BeginDisabledArgs.Add(disabled);
         _disabledScopeStack.Push(disabled);
         if (disabled)
             _disabledCount++;
