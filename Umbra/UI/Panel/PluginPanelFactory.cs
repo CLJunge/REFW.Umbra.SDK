@@ -99,9 +99,8 @@ public static class PluginPanelFactory
         bool drawSeparator = true)
         where TConfig : class, new()
     {
-        if (string.IsNullOrWhiteSpace(panelIdScope))
-            throw new ArgumentException("panelIdScope cannot be null or whitespace.", nameof(panelIdScope));
-
+        ArgumentException.ThrowIfNullOrWhiteSpace(configFilePath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(panelIdScope);
         ArgumentNullException.ThrowIfNull(options);
 
         var store = new ConfigStore<TConfig>(configFilePath);

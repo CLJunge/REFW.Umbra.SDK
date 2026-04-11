@@ -958,27 +958,43 @@ public sealed class PluginPanelFactoryTests_Create
     }
 
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    [DataRow("   ")]
-    public void Create_InvalidConfigFilePath_ThrowsArgumentException(string? configFilePath)
+    public void Create_NullConfigFilePath_ThrowsArgumentNullException()
     {
-        Assert.ThrowsExactly<ArgumentException>(
+        Assert.ThrowsExactly<ArgumentNullException>(
             () => PluginPanelFactory.Create<TestConfig>(
-                configFilePath!, $"ManagedCreate_BadPath_{Guid.NewGuid()}"));
+                null!, $"ManagedCreate_BadPath_{Guid.NewGuid()}"));
     }
 
     [TestMethod]
-    [DataRow(null)]
     [DataRow("")]
     [DataRow("   ")]
-    public void Create_InvalidPanelIdScope_ThrowsArgumentException(string? panelIdScope)
+    public void Create_EmptyOrWhitespaceConfigFilePath_ThrowsArgumentException(string configFilePath)
+    {
+        Assert.ThrowsExactly<ArgumentException>(
+            () => PluginPanelFactory.Create<TestConfig>(
+                configFilePath, $"ManagedCreate_BadPath_{Guid.NewGuid()}"));
+    }
+
+    [TestMethod]
+    public void Create_NullPanelIdScope_ThrowsArgumentNullException()
+    {
+        using var tempDir = new TempDirectory();
+        var configPath = Path.Combine(tempDir.Path, "config.json");
+
+        Assert.ThrowsExactly<ArgumentNullException>(
+            () => PluginPanelFactory.Create<TestConfig>(configPath, null!));
+    }
+
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void Create_EmptyOrWhitespacePanelIdScope_ThrowsArgumentException(string panelIdScope)
     {
         using var tempDir = new TempDirectory();
         var configPath = Path.Combine(tempDir.Path, "config.json");
 
         Assert.ThrowsExactly<ArgumentException>(
-            () => PluginPanelFactory.Create<TestConfig>(configPath, panelIdScope!));
+            () => PluginPanelFactory.Create<TestConfig>(configPath, panelIdScope));
     }
 
     [TestMethod]
