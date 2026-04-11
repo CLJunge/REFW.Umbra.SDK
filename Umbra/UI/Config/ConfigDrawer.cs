@@ -132,6 +132,7 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// </exception>
     internal ConfigDrawer(string idScope, List<IDrawNode> nodes, List<IDisposable> disposables, IConfigDrawerRenderer renderer, ConfigDrawerOptions? options = null, ConfigSearchIndex? searchIndex = null)
     {
+        ArgumentNullException.ThrowIfNull(idScope);
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(disposables);
         ArgumentNullException.ThrowIfNull(renderer);
