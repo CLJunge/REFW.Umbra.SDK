@@ -64,7 +64,11 @@ public sealed class PluginToast
     /// is used (which itself falls back to <see cref="ToastQueue.DefaultDuration"/>).
     /// </param>
     public void Push(string message, ToastLevel level = ToastLevel.Info, TimeSpan? duration = null)
-        => ToastQueue.Push($"[{PluginName}] {message}", level, duration ?? _defaultDuration);
+    {
+        if (string.IsNullOrWhiteSpace(message)) return;
+
+        ToastQueue.Push($"[{PluginName}] {message}", level, duration ?? _defaultDuration);
+    }
 
     /// <summary>
     /// Pushes an <see cref="ToastLevel.Info"/> toast notification.

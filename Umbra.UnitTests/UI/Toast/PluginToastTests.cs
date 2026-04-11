@@ -161,4 +161,69 @@ public sealed class PluginToastTests
         Assert.HasCount(1, entries);
         Assert.AreEqual(duration, entries[0].Duration);
     }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void Push_WithNullOrWhitespaceMessage_DoesNotEnqueue(string? message)
+    {
+        var toast = new PluginToast("MyPlugin");
+        toast.Push(message!, ToastLevel.Info);
+
+        var entries = ToastQueue.GetActiveEntries();
+        Assert.HasCount(0, entries);
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void Info_WithNullOrWhitespaceMessage_DoesNotEnqueue(string? message)
+    {
+        var toast = new PluginToast("MyPlugin");
+        toast.Info(message!);
+
+        var entries = ToastQueue.GetActiveEntries();
+        Assert.HasCount(0, entries);
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void Success_WithNullOrWhitespaceMessage_DoesNotEnqueue(string? message)
+    {
+        var toast = new PluginToast("MyPlugin");
+        toast.Success(message!);
+
+        var entries = ToastQueue.GetActiveEntries();
+        Assert.HasCount(0, entries);
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void Warning_WithNullOrWhitespaceMessage_DoesNotEnqueue(string? message)
+    {
+        var toast = new PluginToast("MyPlugin");
+        toast.Warning(message!);
+
+        var entries = ToastQueue.GetActiveEntries();
+        Assert.HasCount(0, entries);
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void Error_WithNullOrWhitespaceMessage_DoesNotEnqueue(string? message)
+    {
+        var toast = new PluginToast("MyPlugin");
+        toast.Error(message!);
+
+        var entries = ToastQueue.GetActiveEntries();
+        Assert.HasCount(0, entries);
+    }
 }
