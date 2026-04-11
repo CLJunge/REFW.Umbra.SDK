@@ -48,4 +48,15 @@ internal interface IConfigDrawerRenderer : IConfigDrawerScope, IButtonOps, IText
     /// <param name="maxLength">The maximum input length.</param>
     /// <returns><see langword="true"/> when the input changed; otherwise, <see langword="false"/>.</returns>
     bool InputText(string label, ref string value, uint maxLength);
+
+    /// <summary>
+    /// Begins a disabled UI scope when <paramref name="disabled"/> is <see langword="true"/>.
+    /// </summary>
+    /// <param name="disabled">Whether the enclosed controls should be disabled.</param>
+    void BeginDisabled(bool disabled);
+
+    /// <summary>
+    /// Ends the current disabled UI scope.
+    /// </summary>
+    void EndDisabled();
 }

@@ -9,6 +9,7 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public List<string> RenderedTexts { get; } = [];
     public List<string> InputTextLabels { get; } = [];
     public List<string> ButtonLabels { get; } = [];
+    public List<bool> DisabledStack { get; } = [];
     public List<string> TextWidthRequests { get; } = [];
     public List<string> ButtonWidthRequests { get; } = [];
     public List<float> NextItemWidths { get; } = [];
@@ -83,4 +84,8 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public void DrawHelpMarker(string description)
     {
     }
+
+    public void BeginDisabled(bool disabled) => DisabledStack.Add(disabled);
+
+    public void EndDisabled() => DisabledStack.Add(false);
 }

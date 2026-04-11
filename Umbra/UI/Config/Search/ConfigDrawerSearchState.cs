@@ -53,6 +53,22 @@ internal sealed class ConfigDrawerSearchState
     internal bool HasActiveQuery => NormalizedQuery.Length > 0;
 
     /// <summary>
+    /// Gets the number of current search matches.
+    /// </summary>
+    internal int MatchCount => _matchIds.Count;
+
+    /// <summary>
+    /// Gets a value indicating whether the previous/next navigation buttons should be interactive.
+    /// </summary>
+    /// <remarks>
+    /// Navigation is allowed when there is an active query with matches and either multiple results exist
+    /// or the single result has not been focused yet.
+    /// </remarks>
+    internal bool CanNavigate => HasActiveQuery
+        && _matchIds.Count > 0
+        && (_matchIds.Count > 1 || _focusedMatchIndex < 0);
+
+    /// <summary>
     /// Replaces the current query text and normalizes it for matching.
     /// </summary>
     /// <param name="query">The new raw query text.</param>

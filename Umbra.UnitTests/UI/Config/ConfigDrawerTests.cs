@@ -117,11 +117,12 @@ public sealed class ConfigDrawerTests
         Assert.HasCount(1, renderer.InputTextLabels);
         Assert.AreEqual("##ConfigDrawerSearch", renderer.InputTextLabels[0]);
         Assert.HasCount(1, renderer.NextItemWidths);
-        Assert.AreEqual(300f - 36f - 40f - 44f - (8f * 3f), renderer.NextItemWidths[0]);
-        Assert.HasCount(2, renderer.ButtonLabels);
-        Assert.AreEqual("<##ConfigDrawerSearchPrevious", renderer.ButtonLabels[0]);
-        Assert.AreEqual(">##ConfigDrawerSearchNext", renderer.ButtonLabels[1]);
-        Assert.AreEqual(3, renderer.SameLineCount);
+        Assert.AreEqual(300f - 36f - 40f - 40f - 44f - (8f * 4f), renderer.NextItemWidths[0]);
+        Assert.HasCount(3, renderer.ButtonLabels);
+        Assert.AreEqual("\u00d7##ConfigDrawerSearchClear", renderer.ButtonLabels[0]);
+        Assert.AreEqual("<##ConfigDrawerSearchPrevious", renderer.ButtonLabels[1]);
+        Assert.AreEqual(">##ConfigDrawerSearchNext", renderer.ButtonLabels[2]);
+        Assert.AreEqual(4, renderer.SameLineCount);
     }
 
     /// <summary>
@@ -199,7 +200,7 @@ public sealed class ConfigDrawerTests
 
         // Assert
         Assert.HasCount(1, renderer.TextWidthRequests);
-        Assert.HasCount(2, renderer.ButtonWidthRequests);
+        Assert.HasCount(3, renderer.ButtonWidthRequests);
         Assert.HasCount(2, renderer.NextItemWidths);
         Assert.AreEqual(renderer.NextItemWidths[0], renderer.NextItemWidths[1]);
     }
@@ -229,14 +230,14 @@ public sealed class ConfigDrawerTests
 
         // Assert
         Assert.HasCount(2, renderer.TextWidthRequests);
-        Assert.HasCount(4, renderer.ButtonWidthRequests);
+        Assert.HasCount(6, renderer.ButtonWidthRequests);
         Assert.HasCount(2, renderer.NextItemWidths);
         Assert.AreNotEqual(renderer.NextItemWidths[0], renderer.NextItemWidths[1]);
-        Assert.AreEqual(360f - 36f - 40f - 44f - (8f * 3f), renderer.NextItemWidths[1]);
+        Assert.AreEqual(360f - 36f - 40f - 40f - 44f - (8f * 4f), renderer.NextItemWidths[1]);
     }
 
     /// <summary>
-    /// Tests that entering a query filters the drawer through the flat search index and only draws matching results without auto-focusing them.
+    /// Tests that entering a query filters
     /// </summary>
     [TestMethod]
     public void Draw_WhenSearchQueryMatchesSingleResult_DrawsOnlyMatchingNodeWithoutAutoFocus()
@@ -341,13 +342,16 @@ public sealed class ConfigDrawerTests
         // Act
         drawer.Draw();
         renderer.ButtonResults.Enqueue(false);
+        renderer.ButtonResults.Enqueue(false);
         renderer.ButtonResults.Enqueue(true);
         drawer.Draw();
         var alphaFocusedAfterFirstNext = alphaNode.LastIsFocused;
         renderer.ButtonResults.Enqueue(false);
+        renderer.ButtonResults.Enqueue(false);
         renderer.ButtonResults.Enqueue(true);
         drawer.Draw();
         var betaFocusedAfterSecondNext = betaNode.LastIsFocused;
+        renderer.ButtonResults.Enqueue(false);
         renderer.ButtonResults.Enqueue(true);
         renderer.ButtonResults.Enqueue(false);
         drawer.Draw();
@@ -390,6 +394,7 @@ public sealed class ConfigDrawerTests
         // Act
         drawer.Draw();
         drawerRenderer.ButtonResults.Enqueue(false);
+        drawerRenderer.ButtonResults.Enqueue(false);
         drawerRenderer.ButtonResults.Enqueue(true);
         drawer.Draw();
 
@@ -399,7 +404,7 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Tests that next and previous navigation transfer keyboard focus to the newly focused control.
+    /// Tests that next and previous navigation transfer keyboard focus
     /// </summary>
     [TestMethod]
     public void Draw_WhenNavigationButtonsMoveFocus_RequestsKeyboardFocusForEachNewFocusedControl()
@@ -430,11 +435,14 @@ public sealed class ConfigDrawerTests
         // Act
         drawer.Draw();
         drawerRenderer.ButtonResults.Enqueue(false);
-        drawerRenderer.ButtonResults.Enqueue(true);
-        drawer.Draw();
         drawerRenderer.ButtonResults.Enqueue(false);
         drawerRenderer.ButtonResults.Enqueue(true);
         drawer.Draw();
+        drawerRenderer.ButtonResults.Enqueue(false);
+        drawerRenderer.ButtonResults.Enqueue(false);
+        drawerRenderer.ButtonResults.Enqueue(true);
+        drawer.Draw();
+        drawerRenderer.ButtonResults.Enqueue(false);
         drawerRenderer.ButtonResults.Enqueue(true);
         drawerRenderer.ButtonResults.Enqueue(false);
         drawer.Draw();

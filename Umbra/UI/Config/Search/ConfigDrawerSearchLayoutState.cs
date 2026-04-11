@@ -31,6 +31,11 @@ internal sealed class ConfigDrawerSearchLayoutState
     internal float NextButtonWidth { get; set; }
 
     /// <summary>
+    /// Gets or sets the cached clear-button width.
+    /// </summary>
+    internal float ClearButtonWidth { get; set; }
+
+    /// <summary>
     /// Gets or sets the cached search-input width.
     /// </summary>
     internal float SearchInputWidth { get; set; }
