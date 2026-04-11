@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Umbra.Input;
 
 /// <summary>
@@ -27,6 +29,7 @@ internal sealed class KeyStateTracker
     /// <param name="provider">The native key state source.</param>
     /// <param name="trackedKeys">The Windows virtual-key codes to track each update.</param>
     /// <exception cref="ArgumentNullException"><paramref name="provider"/> or <paramref name="trackedKeys"/> is <see langword="null"/>.</exception>
+    [SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "Code Cleanup tries to use collection initializer syntax preview features; production code avoids preview syntax")]
     public KeyStateTracker(INativeKeyStateProvider provider, int[] trackedKeys)
     {
         ArgumentNullException.ThrowIfNull(provider);
@@ -35,12 +38,10 @@ internal sealed class KeyStateTracker
         _provider = provider;
         _trackedKeys = trackedKeys;
 
-#pragma warning disable IDE0028 // Simplify collection initialization
-        _previouslyDown = new(trackedKeys.Length);
-        _currentlyDown = new(trackedKeys.Length);
-        _justPressed = new(8);
-        _justReleased = new(8);
-#pragma warning restore IDE0028 // Simplify collection initialization
+        _previouslyDown = new HashSet<int>(trackedKeys.Length);
+        _currentlyDown = new HashSet<int>(trackedKeys.Length);
+        _justPressed = new List<int>(8);
+        _justReleased = new List<int>(8);
     }
 
     /// <summary>

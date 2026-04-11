@@ -1,3 +1,4 @@
+using System.Numerics;
 using Umbra.Config;
 using Umbra.Config.Attributes;
 using Umbra.Input;
@@ -111,6 +112,15 @@ public record PluginConfig
     [UmbraPrefix("enums")]
     [UmbraCollapseAsTree]
     public EnumSamples Enums { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the color picker samples.
+    /// </summary>
+    [UmbraParameter]
+    [UmbraCategory("Colors")]
+    [UmbraPrefix("colors")]
+    [UmbraCollapseAsTree]
+    public ColorSamples Colors { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the samples covering custom parameter drawers, custom button colors, and
@@ -814,6 +824,45 @@ public record PluginConfig
         /// <summary>Gets or sets the multi-line changelog text sample.</summary>
         [UmbraParameter, UmbraDisplayName("Changelog"), UmbraDescription("A larger multi-line text sample with more visible rows."), UmbraMultiline(5), UmbraMaxLength(320)]
         public Parameter<string> Changelog { get; set; } = new("- Added data-type sample groups\n- Added nested type tests\n- Added custom drawer coverage");
+    }
+
+    /// <summary>
+    /// Color picker samples demonstrating <see cref="Vector4"/> RGBA parameters.
+    /// </summary>
+    [UmbraAutoRegister]
+    public record ColorSamples
+    {
+        /// <summary>Gets or sets the primary accent color.</summary>
+        [UmbraParameter, UmbraDisplayName("Accent Color"), UmbraDescription("The primary accent color used by the sample overlay.")]
+        public Parameter<Vector4> AccentColor { get; set; } = new(new Vector4(0.26f, 0.59f, 0.98f, 1.00f));
+
+        /// <summary>Gets or sets the background tint color.</summary>
+        [UmbraParameter, UmbraDisplayName("Background Tint"), UmbraDescription("A semi-transparent background tint applied behind sample overlays.")]
+        public Parameter<Vector4> BackgroundTint { get; set; } = new(new Vector4(0.08f, 0.08f, 0.12f, 0.80f));
+
+        /// <summary>Gets or sets the warning highlight color.</summary>
+        [UmbraParameter, UmbraDisplayName("Warning Highlight"), UmbraDescription("The color used for warning indicators in the sample overlay.")]
+        public Parameter<Vector4> WarningHighlight { get; set; } = new(new Vector4(0.96f, 0.73f, 0.15f, 1.00f));
+
+        /// <summary>Resets the color samples to their defaults.</summary>
+        [UmbraParameter]
+        [UmbraDisplayName("Reset Colors")]
+        [UmbraDescription("Resets the color picker samples to their defaults.")]
+        [UmbraBatchUndo("Reset Colors")]
+        [UmbraButtonStyle(ButtonStyle.Danger)]
+        [UmbraControlWidth(-1f)]
+        public Parameter<Action> ResetColors { get; init; }
+
+        /// <summary>Initializes a new <see cref="ColorSamples"/> and wires the reset action.</summary>
+        public ColorSamples()
+        {
+            ResetColors = new(() =>
+            {
+                AccentColor.Reset();
+                BackgroundTint.Reset();
+                WarningHighlight.Reset();
+            });
+        }
     }
 
     /// <summary>

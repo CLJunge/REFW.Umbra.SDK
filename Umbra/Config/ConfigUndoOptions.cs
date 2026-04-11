@@ -34,11 +34,12 @@ public sealed class ConfigUndoOptions
     }
 
     /// <summary>
-    /// Gets the optional toast notification settings for undo operations.
+    /// Gets the optional plugin-scoped toast instance used for undo/redo notifications.
     /// </summary>
     /// <remarks>
-    /// When <see langword="null"/>, no toast notification is displayed after a successful undo.
-    /// When non-<see langword="null"/>, a toast is displayed using the configured settings.
+    /// When <see langword="null"/>, no toast notification is displayed after a successful undo or redo.
+    /// When non-<see langword="null"/>, a toast is pushed through the supplied <see cref="PluginToast"/>
+    /// instance using its configured plugin name and default duration.
     /// </remarks>
-    public ConfigToastOptions? Toast { get; init; }
+    public PluginToast? Toast { get; init; }
 }

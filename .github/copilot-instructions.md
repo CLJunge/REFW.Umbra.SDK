@@ -84,10 +84,10 @@ The following optional features are toggled through `ConfigDrawerOptions` when c
 | Feature | Options type | Enabled when |
 |---|---|---|
 | **Search** | `ConfigSearchOptions` | `ConfigDrawerOptions.Search` is non-null |
-| **Transfer** | `ConfigTransferOptions` | `ConfigDrawerOptions.Transfer` is non-null **and** `Enabled` is `true` |
+| **Transfer** | `ConfigTransferOptions` | `ConfigDrawerOptions.Transfer` is non-null |
 | **Undo** | `ConfigUndoOptions` | `ConfigDrawerOptions.Undo` is non-null (store must be `ConfigStore<TConfig>`) |
 | **Save Controller** | *(auto-created)* | Section is created via `ConfigSection<TConfig>.CreateWithStore` and the store is `IConfigStore<TConfig>` |
-| **Toast (Undo)** | `ConfigToastOptions` | `ConfigUndoOptions.Toast` is non-null |
+| **Toast** | `PluginToast` | `ConfigUndoOptions.Toast` is non-null, or plugin creates its own `PluginToast` instance for general-purpose toast notifications |
 
 In `DEBUG` builds, `ConfigSectionDebugOverlay` renders a compact status block at the top of every `ConfigSection<TConfig>.Draw()` call listing which of the four primary features (Search, Transfer, Undo, Save Controller) are enabled or disabled. This overlay can be suppressed by passing `enableDebugOverlay: false` to any `ConfigSection<TConfig>` constructor or `CreateWithStore` factory method.
 

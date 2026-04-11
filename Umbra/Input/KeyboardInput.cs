@@ -169,7 +169,7 @@ public static class KeyboardInput
     /// </summary>
     /// <param name="binding">The hotkey binding to test.</param>
     /// <returns><see langword="true"/> if the binding's key just transitioned to pressed and all required modifiers are held; otherwise, <see langword="false"/>.</returns>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Guard clauses with early returns are more readable than a single chained conditional expression for multi-condition validation.")]
     public static bool IsHotkeyPressed(HotkeyBinding binding)
     {
         if (binding.IsEmpty) return false;

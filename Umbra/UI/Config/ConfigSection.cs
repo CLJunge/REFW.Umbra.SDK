@@ -354,18 +354,14 @@ public sealed class ConfigSection<TConfig> : IPanelSection where TConfig : class
     private static ConfigTransferFeature? CreateTransferFeature(IConfigTransferStore store, ConfigDrawerOptions options)
     {
         var transferOptions = options.Transfer;
-        if (transferOptions is null || !transferOptions.Enabled)
-            return null;
-
-        return new ConfigTransferFeature(store, transferOptions);
+        return transferOptions is null ? null : new ConfigTransferFeature(store, transferOptions);
     }
 
     private static ConfigUndoStack<TConfig>? CreateUndoStack(IConfigTransferStore store, ConfigDrawerOptions options)
     {
-        if (options.Undo is not { } undoOptions || store is not ConfigStore<TConfig> configStore)
-            return null;
-
-        return new ConfigUndoStack<TConfig>(configStore, undoOptions);
+        return options.Undo is not { } undoOptions || store is not ConfigStore<TConfig> configStore
+            ? null
+            : new ConfigUndoStack<TConfig>(configStore, undoOptions);
     }
 
     private void DrawTransferFeature()

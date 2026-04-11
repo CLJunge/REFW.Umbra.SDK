@@ -22,6 +22,7 @@ internal sealed class ImGuiConfigRenderContext :
     IParameterNodeRenderer,
     IConfigDrawerRenderer,
     INumericControlOps,
+    IColorControlOps,
     IButtonStyleColorSink
 {
     /// <summary>
@@ -169,6 +170,12 @@ internal sealed class ImGuiConfigRenderContext :
 
     /// <inheritdoc/>
     public bool IsItemDeactivated() => ImGui.IsItemDeactivated();
+
+    /// <inheritdoc/>
+    public bool ColorEdit4(string label, ref Vector4 value) => ImGui.ColorEdit4(label, ref value);
+
+    /// <inheritdoc/>
+    public bool IsMouseDown() => ImGui.IsMouseDown(ImGuiMouseButton.Left);
 
     private static unsafe bool SliderDoubleCore(string label, ref double value, double min, double max, string format)
     {

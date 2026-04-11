@@ -29,12 +29,19 @@ public readonly record struct HotkeyBinding(int Key, bool Ctrl = false, bool Shi
         var keyName = KeyboardInput.GetKeyName(Key);
         if (!Ctrl && !Shift && !Alt) return keyName;
 
-        var parts = new List<string>(4);
-        if (Ctrl) parts.Add("Ctrl");
-        if (Shift) parts.Add("Shift");
-        if (Alt) parts.Add("Alt");
-        parts.Add(keyName);
-        return string.Join('+', parts);
+        var modifiers = (Ctrl, Shift, Alt) switch
+        {
+            (true, true, true) => "Ctrl+Shift+Alt+",
+            (true, true, false) => "Ctrl+Shift+",
+            (true, false, true) => "Ctrl+Alt+",
+            (false, true, true) => "Shift+Alt+",
+            (true, false, false) => "Ctrl+",
+            (false, true, false) => "Shift+",
+            (false, false, true) => "Alt+",
+            _ => ""
+        };
+
+        return string.Concat(modifiers, keyName);
     }
 
     /// <inheritdoc/>

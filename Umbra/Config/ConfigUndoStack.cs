@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Umbra.UI.Config;
 using Umbra.UI.Toast;
 
@@ -15,8 +16,9 @@ namespace Umbra.Config;
 /// old snapshot value and the new current value are recorded as a
 /// <see cref="ConfigChangeRecord"/>. Calling <see cref="TryUndo"/> restores the most recent
 /// change and pushes it onto the redo stack. Calling <see cref="TryRedo"/> re-applies the
-/// most recently undone change. When <see cref="ConfigUndoOptions.Toast"/> is
-/// non-<see langword="null"/>, toast notifications are pushed via <see cref="ToastQueue"/>.
+/// most recently undone change. When <see cref="ConfigUndoOptions.Toast"/> supplies a
+/// non-<see langword="null"/> <see cref="PluginToast"/>, toast notifications are pushed
+/// through that instance.
 /// </para>
 /// <para>
 /// New user-initiated parameter changes clear the redo stack, following standard undo/redo
@@ -57,7 +59,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
     private readonly List<IUndoEntry> _redoStack;
     private readonly List<Action> _cleanupActions;
     private readonly int _capacity;
-    private readonly ConfigToastOptions? _toast;
+    private readonly PluginToast? _toast;
     private readonly Dictionary<string, NumericEditSession> _activeNumericEdits;
     private readonly Dictionary<string, TextEditSession> _activeTextEdits;
     private List<ConfigChangeRecord>? _pendingBatch;
@@ -78,7 +80,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
     /// <remarks>
     /// Toast notifications are disabled when using this constructor. Supply a
     /// <see cref="ConfigUndoOptions"/> instance with a non-<see langword="null"/>
-    /// <see cref="ConfigUndoOptions.Toast"/> to enable them.
+    /// <see cref="ConfigUndoOptions.Toast"/> <see cref="PluginToast"/> to enable them.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="store"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException"><paramref name="store"/> has not been loaded.</exception>
@@ -107,7 +109,8 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
     {
     }
 
-    private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, ConfigToastOptions? toast)
+    [SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "Code Cleanup tries to use collection initializer syntax preview features; production code avoids preview syntax")]
+    private ConfigUndoStack(ConfigStore<TConfig> store, int capacity, PluginToast? toast)
     {
         ArgumentNullException.ThrowIfNull(store);
 
@@ -122,9 +125,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
 
         _capacity = capacity;
         _toast = toast;
-#pragma warning disable IDE0028
-        _stack = new(capacity);
-#pragma warning restore IDE0028
+        _stack = new List<IUndoEntry>(capacity);
         _redoStack = [];
         _snapshots = [];
         _activeNumericEdits = [];
@@ -508,8 +509,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
             _suppressRecording = false;
         }
 
-        if (_toast is not null)
-            ToastQueue.Push(BuildToastMessage($"Undo: {record.DisplayLabel}"), ToastLevel.Info, _toast.Duration);
+        _toast?.Info($"Undo: {record.DisplayLabel}");
         return true;
     }
 
@@ -542,8 +542,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
             _suppressRecording = false;
         }
 
-        if (_toast is not null)
-            ToastQueue.Push(BuildToastMessage($"Undo: {batch.BatchLabel} ({batch.Records.Count} parameters)"), ToastLevel.Info, _toast.Duration);
+        _toast?.Info($"Undo: {batch.BatchLabel} ({batch.Records.Count} parameters)");
         return true;
     }
 
@@ -569,8 +568,7 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
         _stack.Add(record);
         UndoShortcutCoordinator.SetActive(this);
 
-        if (_toast is not null)
-            ToastQueue.Push(BuildToastMessage($"Redo: {record.DisplayLabel}"), ToastLevel.Info, _toast.Duration);
+        _toast?.Info($"Redo: {record.DisplayLabel}");
         return true;
     }
 
@@ -605,13 +603,9 @@ public sealed class ConfigUndoStack<TConfig> : IDisposable, INumericEditSink, IT
         _stack.Add(batch);
         UndoShortcutCoordinator.SetActive(this);
 
-        if (_toast is not null)
-            ToastQueue.Push(BuildToastMessage($"Redo: {batch.BatchLabel} ({batch.Records.Count} parameters)"), ToastLevel.Info, _toast.Duration);
+        _toast?.Info($"Redo: {batch.BatchLabel} ({batch.Records.Count} parameters)");
         return true;
     }
-
-    private string BuildToastMessage(string message) =>
-        _toast is not null ? $"[{_toast.PluginName}] {message}" : message;
 
     private void SubscribeToParameters()
     {

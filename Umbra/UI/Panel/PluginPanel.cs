@@ -15,6 +15,10 @@ namespace Umbra.UI.Panel;
 /// <para>
 /// Section collection concerns such as tree-label validation, stable ordering, and section disposal are delegated to <see cref="PluginPanelSectionCollection"/>. Root-node rendering, per-section tree-node wrapping, and separator placement are delegated to <see cref="PluginPanelDrawPipeline"/>.
 /// </para>
+/// <para>
+/// For convenient panel creation with built-in config features, use the static factory methods on
+/// <see cref="PluginPanelFactory"/> instead of constructing a panel directly.
+/// </para>
 /// </remarks>
 public sealed class PluginPanel : IDisposable
 {
