@@ -125,9 +125,6 @@ public sealed class ConfigDrawer<TConfig> : IDisposable where TConfig : class
     /// <param name="options">Optional feature flags that customize drawer behavior for the test instance. When <see langword="null"/>, <see cref="ConfigDrawerOptions.Default"/> is used.</param>
     /// <param name="searchIndex">The pre-built flat search index used by the test instance. When <see langword="null"/>, an empty index is created.</param>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="nodes"/>, <paramref name="disposables"/>, or <paramref name="renderer"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="idScope"/>, <paramref name="nodes"/>, <paramref name="disposables"/>, or <paramref name="renderer"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
