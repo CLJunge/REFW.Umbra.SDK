@@ -33,6 +33,11 @@
 
 **Plugin System**
 - `PluginHost<TPlugin>` for single-instance lifecycle management and safe callback dispatch
+- `PluginHost<TPlugin>.Current` static accessor for `[MethodHook]` and static callback forwarding
+- Plugin metadata: `PluginName`, `PluginVersion`, `PluginAuthor` on `IUmbraPlugin` with sensible defaults via `UmbraPlugin`
+- Lifecycle state tracking: `PluginState`, `LastError`, `LoadedAt` on each host instance
+- `PluginStatus` snapshot combining metadata and runtime state via `GetStatus()`
+- `PluginRegistry` for runtime discovery of all registered plugin hosts
 - `UmbraPlugin` base class with resilient `RunShutdownStep` sequencing
 - Callback forwarding: `OnPreUpdateBehavior`, `OnPreImGuiDrawUI`, `OnPreImGuiRenderer`
 

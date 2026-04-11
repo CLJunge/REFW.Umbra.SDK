@@ -30,6 +30,7 @@ public sealed class PluginHostTests
         ToastOverlay.SetRenderer(null);
         ToastOverlay.SetFrameIdProvider(static () => 42L);
         PluginInstanceGuard.Reset();
+        PluginRegistry.Reset();
         LifecyclePlugin.Reset();
         InitializeFailurePlugin.Reset();
         PluginHost<LifecyclePlugin>.ResetCurrent();
@@ -43,6 +44,7 @@ public sealed class PluginHostTests
     public void TestCleanup()
     {
         PluginInstanceGuard.Reset();
+        PluginRegistry.Reset();
         PluginHost<LifecyclePlugin>.ResetCurrent();
         PluginHost<InitializeFailurePlugin>.ResetCurrent();
         ToastQueue.Clear();
@@ -398,6 +400,9 @@ public sealed class PluginHostTests
         internal static int PreDrawCount;
         internal static int PreRendererCount;
 
+        public string PluginName => "LifecyclePlugin";
+        public string? PluginVersion => "1.0.0";
+        public string? PluginAuthor => "Test";
 
         public void Initialize()
         {
@@ -436,6 +441,10 @@ public sealed class PluginHostTests
         internal static int PreRendererCount;
         internal static bool ThrowOnInitialize = true;
         internal static bool ThrowOnShutdown;
+
+        public string PluginName => "InitializeFailurePlugin";
+        public string? PluginVersion => null;
+        public string? PluginAuthor => null;
 
         public void Initialize()
         {
@@ -487,4 +496,191 @@ public sealed class PluginHostTests
             LastEntries.AddRange(entries);
         }
     }
+
+    #region State transition tests
+
+    [TestMethod]
+    public void State_BeforeLoad_IsUnloaded()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        Assert.AreEqual(PluginState.Unloaded, host.State);
+    }
+
+    [TestMethod]
+    public void State_AfterSuccessfulLoad_IsLoaded()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        host.Load();
+
+        Assert.AreEqual(PluginState.Loaded, host.State);
+    }
+
+    [TestMethod]
+    public void State_AfterUnload_IsUnloaded()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+        host.Load();
+
+        host.Unload();
+
+        Assert.AreEqual(PluginState.Unloaded, host.State);
+    }
+
+    [TestMethod]
+    public void State_WhenInitializeThrows_IsFailed()
+    {
+        var host = new PluginHost<InitializeFailurePlugin>(static () => new InitializeFailurePlugin());
+
+        Assert.ThrowsExactly<InvalidOperationException>(() => host.Load());
+
+        Assert.AreEqual(PluginState.Failed, host.State);
+    }
+
+    #endregion
+
+    #region LastError tests
+
+    [TestMethod]
+    public void LastError_AfterFailedInit_ContainsException()
+    {
+        var host = new PluginHost<InitializeFailurePlugin>(static () => new InitializeFailurePlugin());
+
+        Assert.ThrowsExactly<InvalidOperationException>(() => host.Load());
+
+        Assert.IsNotNull(host.LastError);
+        Assert.IsInstanceOfType<InvalidOperationException>(host.LastError);
+    }
+
+    [TestMethod]
+    public void LastError_BeforeLoad_IsNull()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        Assert.IsNull(host.LastError);
+    }
+
+    [TestMethod]
+    public void LastError_AfterSuccessfulLoad_IsNull()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        host.Load();
+
+        Assert.IsNull(host.LastError);
+    }
+
+    #endregion
+
+    #region LoadedAt tests
+
+    [TestMethod]
+    public void LoadedAt_AfterSuccessfulLoad_IsSet()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+        var before = DateTimeOffset.UtcNow;
+
+        host.Load();
+
+        Assert.IsNotNull(host.LoadedAt);
+        Assert.IsGreaterThanOrEqualTo(before, host.LoadedAt.Value);
+        Assert.IsLessThanOrEqualTo(DateTimeOffset.UtcNow, host.LoadedAt.Value);
+    }
+
+    [TestMethod]
+    public void LoadedAt_BeforeLoad_IsNull()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        Assert.IsNull(host.LoadedAt);
+    }
+
+    [TestMethod]
+    public void LoadedAt_AfterUnload_IsNull()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+        host.Load();
+
+        host.Unload();
+
+        Assert.IsNull(host.LoadedAt);
+    }
+
+    #endregion
+
+    #region GetStatus tests
+
+    [TestMethod]
+    public void GetStatus_BeforeLoad_ReturnsUnloadedSnapshot()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        var status = host.GetStatus();
+
+        Assert.AreEqual(nameof(LifecyclePlugin), status.Name);
+        Assert.IsNull(status.Version);
+        Assert.IsNull(status.Author);
+        Assert.AreEqual(PluginState.Unloaded, status.State);
+        Assert.IsNull(status.LastError);
+        Assert.IsNull(status.LoadedAt);
+    }
+
+    [TestMethod]
+    public void GetStatus_AfterLoad_ReturnsFullSnapshot()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+
+        host.Load();
+        var status = host.GetStatus();
+
+        Assert.AreEqual("LifecyclePlugin", status.Name);
+        Assert.AreEqual("1.0.0", status.Version);
+        Assert.AreEqual("Test", status.Author);
+        Assert.AreEqual(PluginState.Loaded, status.State);
+        Assert.IsNull(status.LastError);
+        Assert.IsNotNull(status.LoadedAt);
+    }
+
+    [TestMethod]
+    public void GetStatus_AfterFailure_ReturnsFailedSnapshot()
+    {
+        var host = new PluginHost<InitializeFailurePlugin>(static () => new InitializeFailurePlugin());
+
+        Assert.ThrowsExactly<InvalidOperationException>(() => host.Load());
+        var status = host.GetStatus();
+
+        Assert.AreEqual(nameof(InitializeFailurePlugin), status.Name);
+        Assert.AreEqual(PluginState.Failed, status.State);
+        Assert.IsNotNull(status.LastError);
+    }
+
+    [TestMethod]
+    public void GetStatus_AfterUnload_ReturnsUnloadedSnapshot()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+        host.Load();
+        host.Unload();
+
+        var status = host.GetStatus();
+
+        Assert.AreEqual(PluginState.Unloaded, status.State);
+        Assert.IsNull(status.LastError);
+        Assert.IsNull(status.LoadedAt);
+    }
+
+    [TestMethod]
+    public void GetStatus_MetadataFromPlugin_FlowsThrough()
+    {
+        var host = new PluginHost<LifecyclePlugin>(static () => new LifecyclePlugin());
+        host.Load();
+
+        var status = host.GetStatus();
+
+        Assert.AreEqual("LifecyclePlugin", status.Name);
+        Assert.AreEqual("1.0.0", status.Version);
+        Assert.AreEqual("Test", status.Author);
+    }
+
+    #endregion
 }

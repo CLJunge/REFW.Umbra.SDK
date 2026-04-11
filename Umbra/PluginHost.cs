@@ -16,7 +16,7 @@ namespace Umbra;
 /// <typeparamref name="TPlugin"/> is also used as the mutex identity type for <see cref="PluginBootstrapper"/>. The mutex key is derived from the assembly identity of <typeparamref name="TPlugin"/>, so types from the same assembly participate in the same single-instance guard.
 /// </para>
 /// </remarks>
-public sealed class PluginHost<TPlugin>
+public sealed class PluginHost<TPlugin> : IPluginStatusProvider
     where TPlugin : class, IUmbraPlugin
 {
     #pragma warning disable CS0649
@@ -25,6 +25,9 @@ public sealed class PluginHost<TPlugin>
 
     private readonly Func<TPlugin> _factory;
     private volatile TPlugin? _instance;
+    private volatile PluginState _state;
+    private volatile Exception? _lastError;
+    private DateTimeOffset? _loadedAt;
 
     /// <summary>
     /// Gets the live plugin instance, or <see langword="null"/> when no instance is loaded.
@@ -38,6 +41,24 @@ public sealed class PluginHost<TPlugin>
     public static TPlugin? Current => _current;
 
     /// <summary>
+    /// Gets the current lifecycle state of the plugin managed by this host.
+    /// </summary>
+    /// <value>The <see cref="PluginState"/> reflecting the most recent lifecycle transition.</value>
+    public PluginState State => _state;
+
+    /// <summary>
+    /// Gets the exception from the most recent failed <see cref="IUmbraPlugin.Initialize"/> call,
+    /// or <see langword="null"/> when the plugin has not failed or has been unloaded since the failure.
+    /// </summary>
+    public Exception? LastError => _lastError;
+
+    /// <summary>
+    /// Gets the UTC timestamp at which the plugin completed initialization,
+    /// or <see langword="null"/> when the plugin is not currently loaded.
+    /// </summary>
+    public DateTimeOffset? LoadedAt => _loadedAt;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="PluginHost{TPlugin}"/> class.
     /// </summary>
     /// <param name="factory">The callback that creates the plugin instance after the mutex has been acquired.</param>
@@ -46,6 +67,21 @@ public sealed class PluginHost<TPlugin>
     {
         ArgumentNullException.ThrowIfNull(factory);
         _factory = factory;
+        PluginRegistry.Register(this);
+    }
+
+    /// <summary>
+    /// Returns an immutable snapshot of this host's current plugin metadata and lifecycle state.
+    /// </summary>
+    /// <returns>A <see cref="PluginStatus"/> containing the plugin's identity metadata and runtime state at the moment of the call.</returns>
+    public PluginStatus GetStatus()
+    {
+        var instance = _instance;
+        var name = instance?.PluginName ?? typeof(TPlugin).Name;
+        var version = instance?.PluginVersion;
+        var author = instance?.PluginAuthor;
+
+        return new PluginStatus(name, version, author, _state, _lastError, _loadedAt);
     }
 
     /// <summary>
@@ -70,6 +106,8 @@ public sealed class PluginHost<TPlugin>
         if (instance is null)
             return;
 
+        _state = PluginState.Unloading;
+
         try
         {
             PluginBootstrapper.Unload(typeof(TPlugin), instance.Shutdown);
@@ -78,6 +116,9 @@ public sealed class PluginHost<TPlugin>
         {
             _current = null;
             _instance = null;
+            _loadedAt = null;
+            _lastError = null;
+            _state = PluginState.Unloaded;
         }
     }
 
@@ -124,10 +165,13 @@ public sealed class PluginHost<TPlugin>
     /// </summary>
     private void InitializeInstance()
     {
+        _state = PluginState.Loading;
         var instance = _factory();
         try
         {
             instance.Initialize();
+            _loadedAt = DateTimeOffset.UtcNow;
+            _state = PluginState.Loaded;
             _instance = instance;
             _current = instance;
         }
@@ -144,8 +188,11 @@ public sealed class PluginHost<TPlugin>
     /// </summary>
     /// <param name="instance">The partially initialized plugin instance.</param>
     /// <param name="initializationException">The original initialization failure.</param>
-    private static void CleanupFailedInitialization(TPlugin instance, Exception initializationException)
+    private void CleanupFailedInitialization(TPlugin instance, Exception initializationException)
     {
+        _lastError = initializationException;
+        _state = PluginState.Failed;
+
         try
         {
             instance.Shutdown();
@@ -162,7 +209,7 @@ public sealed class PluginHost<TPlugin>
     }
 
     /// <summary>
-    /// Clears the static <see cref="Current"/> reference.
+    /// Clears the static <see cref="Current"/> reference and resets all instance-level state.
     /// </summary>
     /// <remarks>
     /// This method exists for unit tests that need deterministic isolation between runs.

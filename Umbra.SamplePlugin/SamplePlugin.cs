@@ -43,6 +43,15 @@ public sealed class SamplePlugin : UmbraPlugin
     /// </summary>
     public SamplePlugin() : base(_log) { }
 
+    /// <inheritdoc/>
+    public override string PluginName => "Sample Plugin";
+
+    /// <inheritdoc/>
+    public override string? PluginVersion => GetType().Assembly.GetName().Version?.ToString();
+
+    /// <inheritdoc/>
+    public override string? PluginAuthor => "CLJunge";
+
     /// <summary>
     /// Performs the sample plugin's real initialization work after the runtime host acquires the
     /// mutex and constructs the instance.

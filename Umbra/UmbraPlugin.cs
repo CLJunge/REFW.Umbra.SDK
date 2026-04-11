@@ -28,6 +28,15 @@ public abstract class UmbraPlugin : IUmbraPlugin
     protected PluginLogger Log { get; }
 
     /// <inheritdoc/>
+    public virtual string PluginName => GetType().Name;
+
+    /// <inheritdoc/>
+    public virtual string? PluginVersion => GetType().Assembly.GetName().Version?.ToString();
+
+    /// <inheritdoc/>
+    public virtual string? PluginAuthor => null;
+
+    /// <inheritdoc/>
     public virtual void Initialize() { }
 
     /// <inheritdoc/>
