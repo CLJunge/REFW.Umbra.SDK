@@ -8,7 +8,7 @@ namespace Umbra.UI.Panel;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Instances are created exclusively through <see cref="PluginPanelFactory.Create{TConfig}"/>. The
+/// Instances are created exclusively through <c>PluginPanelFactory.Create</c> factory methods. The
 /// factory creates the config store, loads the config, and wires the panel — this type then owns the
 /// full disposal sequence so the caller only needs to hold one reference.
 /// </para>
