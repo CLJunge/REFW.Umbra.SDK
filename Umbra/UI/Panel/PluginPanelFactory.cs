@@ -83,11 +83,12 @@ public static class PluginPanelFactory
     /// A <see cref="ManagedPluginPanel{TConfig}"/> that owns the panel, config, and store lifecycle.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="options"/> is <see langword="null"/>.
+    /// Thrown when <paramref name="configFilePath"/>, <paramref name="panelIdScope"/>, or
+    /// <paramref name="options"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="configFilePath"/> or <paramref name="panelIdScope"/> is
-    /// <see langword="null"/>, empty, or whitespace.
+    /// empty or whitespace.
     /// </exception>
     public static ManagedPluginPanel<TConfig> Create<TConfig>(
         string configFilePath,
