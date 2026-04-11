@@ -25,6 +25,9 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public Dictionary<string, float> ButtonWidths { get; } = [];
     public Queue<bool> ButtonResults { get; } = new();
 
+    private readonly Stack<bool> _disabledScopeStack = new();
+    private int _disabledCount;
+
     public void PushId(string idScope) => PushedIds.Add(idScope);
 
     public void PopId() => PopCount++;
@@ -66,6 +69,9 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     public bool Button(string label)
     {
         ButtonLabels.Add(label);
+        if (_disabledCount > 0)
+            return false;
+
         return ButtonResults.Count != 0 && ButtonResults.Dequeue();
     }
 
@@ -85,7 +91,18 @@ internal sealed class TestConfigDrawerScope : IConfigDrawerRenderer
     {
     }
 
-    public void BeginDisabled(bool disabled) => DisabledStack.Add(disabled);
+    public void BeginDisabled(bool disabled)
+    {
+        DisabledStack.Add(disabled);
+        _disabledScopeStack.Push(disabled);
+        if (disabled)
+            _disabledCount++;
+    }
 
-    public void EndDisabled() => DisabledStack.Add(false);
+    public void EndDisabled()
+    {
+        DisabledStack.Add(false);
+        if (_disabledScopeStack.Count > 0 && _disabledScopeStack.Pop())
+            _disabledCount--;
+    }
 }

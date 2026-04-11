@@ -81,22 +81,34 @@ internal sealed class ConfigDrawerSearchController
 
         _renderer.SameLine();
         _renderer.BeginDisabled(!searchState.HasActiveQuery);
-        if (_renderer.Button(_clearButtonLabel))
+        try
         {
-            searchState.SetQuery(string.Empty);
-            RefreshSearchMatches(searchState);
+            if (_renderer.Button(_clearButtonLabel))
+            {
+                searchState.SetQuery(string.Empty);
+                RefreshSearchMatches(searchState);
+            }
         }
-        _renderer.EndDisabled();
+        finally
+        {
+            _renderer.EndDisabled();
+        }
 
         _renderer.SameLine();
         _renderer.BeginDisabled(!searchState.CanNavigate);
-        if (_renderer.Button(_previousButtonLabel))
-            searchState.MovePrevious();
+        try
+        {
+            if (_renderer.Button(_previousButtonLabel))
+                searchState.MovePrevious();
 
-        _renderer.SameLine();
-        if (_renderer.Button(_nextButtonLabel))
-            searchState.MoveNext();
-        _renderer.EndDisabled();
+            _renderer.SameLine();
+            if (_renderer.Button(_nextButtonLabel))
+                searchState.MoveNext();
+        }
+        finally
+        {
+            _renderer.EndDisabled();
+        }
     }
 
     private void EnsureSearchLayout(ConfigDrawerSearchLayoutState layoutState)
