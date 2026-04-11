@@ -237,7 +237,8 @@ public sealed class ConfigDrawerTests
     }
 
     /// <summary>
-    /// Tests that entering a query filters
+    /// Tests that entering a query filters the visible nodes to the single matching result without
+    /// auto-focusing it.
     /// </summary>
     [TestMethod]
     public void Draw_WhenSearchQueryMatchesSingleResult_DrawsOnlyMatchingNodeWithoutAutoFocus()
