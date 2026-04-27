@@ -1860,6 +1860,7 @@ public sealed class PluginLoggerTests
     public void TestInitialize()
     {
         _originalLoggerEnabled = Logger.Enabled;
+        Logger.WriteObserver = null;
         Logger.SetLogSink(new TestLogSink());
         Logger.Enabled = true;
     }
@@ -1870,6 +1871,7 @@ public sealed class PluginLoggerTests
     [TestCleanup]
     public void TestCleanup()
     {
+        Logger.WriteObserver = null;
         Logger.SuppressedFailureObserver = null;
         Logger.ResetLogSink();
         Logger.Enabled = _originalLoggerEnabled;

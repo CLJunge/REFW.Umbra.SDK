@@ -2606,6 +2606,7 @@ public sealed class LoggerTests
     [TestInitialize]
     public void Initialize()
     {
+        Logger.WriteObserver = null;
         Logger.SetLogSink(new TestLogSink());
         Logger.EnableAll();
     }
@@ -2616,6 +2617,7 @@ public sealed class LoggerTests
     [TestCleanup]
     public void Cleanup()
     {
+        Logger.WriteObserver = null;
         Logger.SuppressedFailureObserver = null;
         Logger.EnableAll();
         Logger.ResetLogSink();
