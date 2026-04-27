@@ -11,7 +11,7 @@ namespace Umbra.UI.Panel;
 internal static class PluginPanelTreeNodeLabels
 {
     private static readonly HashSet<(string OwnerId, string TreeLabel)> _warnedInvalidLabels = [];
-    private static readonly object _warningLock = new();
+    private static readonly Lock _warningLock = new();
 
     /// <summary>
     /// Emits a developer warning when the section's visible label contains ImGui's label and ID separator token.
@@ -37,7 +37,7 @@ internal static class PluginPanelTreeNodeLabels
         if (treeLabel is not { } || !treeLabel.Contains("##", StringComparison.Ordinal))
             return;
 
-        var shouldWarn = false;
+        bool shouldWarn;
         lock (_warningLock)
         {
             shouldWarn = _warnedInvalidLabels.Add((ownerId, treeLabel));

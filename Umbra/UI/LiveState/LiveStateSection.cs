@@ -135,21 +135,21 @@ public sealed class LiveStateSection<T> : IPanelSection where T : class
         {
             throw new InvalidOperationException(
                 $"LiveStateSection<{typeof(T).Name}> requires a public parameterless constructor when using the parameterless section constructor. " +
-                $"Use {nameof(LiveStateSection<T>)}(T, string?, string?, bool) to supply the state instance explicitly.",
+                $"Use {nameof(LiveStateSection<>)}(T, string?, string?, bool) to supply the state instance explicitly.",
                 ex);
         }
         catch (TargetInvocationException ex)
         {
             throw new InvalidOperationException(
                 $"LiveStateSection<{typeof(T).Name}> state constructor threw an exception during activation. " +
-                $"Use {nameof(LiveStateSection<T>)}(T, string?, string?, bool) to supply a pre-constructed instance.",
+                $"Use {nameof(LiveStateSection<>)}(T, string?, string?, bool) to supply a pre-constructed instance.",
                 ex.InnerException ?? ex);
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException(
                 $"LiveStateSection<{typeof(T).Name}> could not activate the state type ({ex.GetType().Name}). " +
-                $"Use {nameof(LiveStateSection<T>)}(T, string?, string?, bool) to supply the state instance explicitly.",
+                $"Use {nameof(LiveStateSection<>)}(T, string?, string?, bool) to supply the state instance explicitly.",
                 ex);
         }
     }

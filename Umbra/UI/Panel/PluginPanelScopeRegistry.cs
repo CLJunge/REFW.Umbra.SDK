@@ -12,7 +12,7 @@ internal static class PluginPanelScopeRegistry
 {
     private static readonly HashSet<string> _registeredScopes = [];
     private static readonly HashSet<string> _warnedDuplicateScopes = [];
-    private static readonly object _scopeLock = new();
+    private static readonly Lock _scopeLock = new();
 
     /// <summary>
     /// Registers <paramref name="idScope"/> and emits a developer warning the first time the same active scope is detected as a duplicate.
