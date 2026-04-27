@@ -32,6 +32,22 @@ public static class Logger
     public static Action<string, Exception>? SuppressedFailureObserver { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional observer that receives every successfully dispatched log message.
+    /// </summary>
+    /// <value>
+    /// A callback that receives the <see cref="LogLevel"/> and fully formatted message for each
+    /// write that passes enablement, suppression, and level checks, or <see langword="null"/>
+    /// when no observer is installed.
+    /// </value>
+    /// <remarks>
+    /// This hook is intended for in-game log consoles or other diagnostic overlays that need to
+    /// capture log output without replacing the primary <see cref="ILogSink"/>. The observer is
+    /// called after the primary sink write succeeds. Exceptions thrown by the observer are
+    /// silently swallowed to protect the game process.
+    /// </remarks>
+    public static Action<LogLevel, string>? WriteObserver { get; set; }
+
+    /// <summary>
     /// Gets or sets a value indicating whether Umbra logging is globally enabled.
     /// </summary>
     /// <value><see langword="true"/> if log writes are allowed to proceed to suppression-depth checks; otherwise, <see langword="false"/>.</value>
@@ -98,7 +114,11 @@ public static class Logger
     public static void Debug(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Debug(message); }
+        try
+        {
+            GetLogSink().Debug(message);
+            NotifyWriteObserver(LogLevel.Debug, message);
+        }
         catch (Exception ex) { ReportSuppressedFailure("Logger.Debug", ex); }
     }
 
@@ -134,7 +154,11 @@ public static class Logger
     public static void Info(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Info(message); }
+        try
+        {
+            GetLogSink().Info(message);
+            NotifyWriteObserver(LogLevel.Info, message);
+        }
         catch (Exception ex) { ReportSuppressedFailure("Logger.Info", ex); }
     }
 
@@ -167,7 +191,11 @@ public static class Logger
     public static void Warning(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Warning(message); }
+        try
+        {
+            GetLogSink().Warning(message);
+            NotifyWriteObserver(LogLevel.Warning, message);
+        }
         catch (Exception ex) { ReportSuppressedFailure("Logger.Warning", ex); }
     }
 
@@ -200,7 +228,11 @@ public static class Logger
     public static void Error(string message)
     {
         if (!IsEnabled) return;
-        try { GetLogSink().Error(message); }
+        try
+        {
+            GetLogSink().Error(message);
+            NotifyWriteObserver(LogLevel.Error, message);
+        }
         catch (Exception ex) { ReportSuppressedFailure("Logger.Error", ex); }
     }
 
@@ -239,7 +271,9 @@ public static class Logger
         if (!IsEnabled) return;
         try
         {
-            GetLogSink().Error($"{message}\nException: {ex.GetType().Name}: {ex.Message}\nStack Trace:\n{ex.StackTrace}");
+            var formatted = $"{message}\nException: {ex.GetType().Name}: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
+            GetLogSink().Error(formatted);
+            NotifyWriteObserver(LogLevel.Error, formatted);
         }
         catch (Exception sinkException)
         {
@@ -275,6 +309,19 @@ public static class Logger
     /// </summary>
     /// <returns>The sink that should receive enabled log writes.</returns>
     internal static ILogSink GetLogSink() => LoggerSinkRegistry.Get();
+
+    /// <summary>
+    /// Notifies the installed <see cref="WriteObserver"/> about a successfully dispatched log message.
+    /// </summary>
+    /// <param name="level">The severity level of the dispatched message.</param>
+    /// <param name="message">The fully formatted message that was written to the primary sink.</param>
+    internal static void NotifyWriteObserver(LogLevel level, string message)
+    {
+        var observer = WriteObserver;
+        if (observer is null) return;
+        try { observer(level, message); }
+        catch { }
+    }
 
     /// <summary>
     /// Reports a suppressed internal logging failure to <see cref="SuppressedFailureObserver"/>.

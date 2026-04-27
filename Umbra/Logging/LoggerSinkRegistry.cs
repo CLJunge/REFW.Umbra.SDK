@@ -8,7 +8,7 @@ namespace Umbra.Logging;
 /// </remarks>
 internal static class LoggerSinkRegistry
 {
-    private static ILogSink? s_logSink;
+    private static ILogSink? _logSink;
 
     /// <summary>
     /// Replaces the currently active low-level sink.
@@ -18,13 +18,13 @@ internal static class LoggerSinkRegistry
     internal static void Set(ILogSink sink)
     {
         ArgumentNullException.ThrowIfNull(sink);
-        Interlocked.Exchange(ref s_logSink, sink);
+        Interlocked.Exchange(ref _logSink, sink);
     }
 
     /// <summary>
     /// Clears any replacement sink so the default REFramework-backed sink is recreated on the next enabled write.
     /// </summary>
-    internal static void Reset() => Interlocked.Exchange(ref s_logSink, null);
+    internal static void Reset() => Interlocked.Exchange(ref _logSink, null);
 
     /// <summary>
     /// Returns the currently active sink, creating the default <see cref="REFrameworkLogSink"/> on first use.
@@ -32,12 +32,12 @@ internal static class LoggerSinkRegistry
     /// <returns>The sink that should receive enabled log writes.</returns>
     internal static ILogSink Get()
     {
-        var sink = Volatile.Read(ref s_logSink);
+        var sink = Volatile.Read(ref _logSink);
         if (sink != null)
             return sink;
 
         sink = new REFrameworkLogSink();
-        var existing = Interlocked.CompareExchange(ref s_logSink, sink, null);
+        var existing = Interlocked.CompareExchange(ref _logSink, sink, null);
         return existing ?? sink;
     }
 }

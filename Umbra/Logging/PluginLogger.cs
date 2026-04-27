@@ -73,7 +73,12 @@ public sealed class PluginLogger
     public void Debug(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Debug) return;
-        try { Logger.GetLogSink().Debug(FormatMessage(message)); }
+        try
+        {
+            var formatted = FormatMessage(message);
+            Logger.GetLogSink().Debug(formatted);
+            Logger.NotifyWriteObserver(LogLevel.Debug, formatted);
+        }
         catch (Exception ex) { Logger.ReportSuppressedFailure("PluginLogger.Debug", ex); }
     }
 
@@ -109,7 +114,12 @@ public sealed class PluginLogger
     public void Info(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Info) return;
-        try { Logger.GetLogSink().Info(FormatMessage(message)); }
+        try
+        {
+            var formatted = FormatMessage(message);
+            Logger.GetLogSink().Info(formatted);
+            Logger.NotifyWriteObserver(LogLevel.Info, formatted);
+        }
         catch (Exception ex) { Logger.ReportSuppressedFailure("PluginLogger.Info", ex); }
     }
 
@@ -145,7 +155,12 @@ public sealed class PluginLogger
     public void Warning(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Warning) return;
-        try { Logger.GetLogSink().Warning(FormatMessage(message)); }
+        try
+        {
+            var formatted = FormatMessage(message);
+            Logger.GetLogSink().Warning(formatted);
+            Logger.NotifyWriteObserver(LogLevel.Warning, formatted);
+        }
         catch (Exception ex) { Logger.ReportSuppressedFailure("PluginLogger.Warning", ex); }
     }
 
@@ -181,7 +196,12 @@ public sealed class PluginLogger
     public void Error(string message)
     {
         if (!Logger.IsEnabled || MinLevel > LogLevel.Error) return;
-        try { Logger.GetLogSink().Error(FormatMessage(message)); }
+        try
+        {
+            var formatted = FormatMessage(message);
+            Logger.GetLogSink().Error(formatted);
+            Logger.NotifyWriteObserver(LogLevel.Error, formatted);
+        }
         catch (Exception ex) { Logger.ReportSuppressedFailure("PluginLogger.Error", ex); }
     }
 
@@ -222,6 +242,7 @@ public sealed class PluginLogger
         {
             var logMessage = $"{FormatMessage(message)}\nException: {ex.GetType().Name}: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
             Logger.GetLogSink().Error(logMessage);
+            Logger.NotifyWriteObserver(LogLevel.Error, logMessage);
         }
         catch (Exception sinkException)
         {
