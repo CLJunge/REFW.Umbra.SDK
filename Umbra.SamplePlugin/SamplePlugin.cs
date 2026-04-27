@@ -1,8 +1,8 @@
 using REFrameworkNET;
-using Umbra.Config;
 using Umbra.Logging;
 using Umbra.SamplePlugin.Config;
-using Umbra.UI.Config;
+using Umbra.UI.LiveState;
+using Umbra.UI.LiveState.LogConsole;
 using Umbra.UI.Panel;
 using Umbra.UI.Toast;
 #if BENCHMARK
@@ -26,6 +26,7 @@ public sealed class SamplePlugin : UmbraPlugin
 {
     private const string _runtimePanelScope = "SamplePlugin.RuntimePanel";
     private const string _runtimeSectionScope = "SamplePlugin.RuntimeConfigSection";
+    private const string _logConsoleSectionScope = "SamplePlugin.LogConsole";
 #if BENCHMARK
     private const string _benchmarkPanelScope = "SamplePlugin.BenchmarkPanel";
     private const string _benchmarkSectionScope = "SamplePlugin.BenchmarkConfigSection";
@@ -33,6 +34,8 @@ public sealed class SamplePlugin : UmbraPlugin
 
     private static readonly PluginLogger _log = new("SamplePlugin");
     private ManagedPluginPanel<PluginConfig>? _managedPanel;
+    private LogConsoleState? _logConsoleState;
+    private LiveStateSection<LogConsoleState>? _logConsoleSection;
 #if BENCHMARK
     private PluginPanel? _benchmarkPanel;
     private PluginPanelBenchmark? _panelBenchmark;
@@ -71,6 +74,15 @@ public sealed class SamplePlugin : UmbraPlugin
 
         PluginConfigActionBinder.Bind(_managedPanel.Config, _managedPanel.Store, Log);
 
+        _logConsoleState = new LogConsoleState();
+        _logConsoleSection = new LiveStateSection<LogConsoleState>(
+            _logConsoleState,
+            idScope: _logConsoleSectionScope,
+            sectionLabel: "Log Console",
+            expandedByDefault: true);
+        _managedPanel.Panel.Add(_logConsoleSection);
+        Logger.WriteObserver = (level, msg) => _logConsoleState.Buffer.Add(level, msg);
+
 #if BENCHMARK
         InitializeBenchmarking(_managedPanel.Config);
 #endif
@@ -91,6 +103,8 @@ public sealed class SamplePlugin : UmbraPlugin
         RunShutdownStep("dispose benchmark panel", DisposeBenchmarkPanel);
 #endif
 
+        RunShutdownStep("detach log observer", DetachLogObserver);
+        RunShutdownStep("dispose log console section", DisposeLogConsoleSection);
         RunShutdownStep("dispose managed panel", DisposeManagedPanel);
 
         Log.Info("Unloaded.");
@@ -248,6 +262,16 @@ public sealed class SamplePlugin : UmbraPlugin
         benchmarkPanel?.Dispose();
     }
 #endif
+
+    private static void DetachLogObserver() => Logger.WriteObserver = null;
+
+    private void DisposeLogConsoleSection()
+    {
+        var section = _logConsoleSection;
+        _logConsoleSection = null;
+        _logConsoleState = null;
+        section?.Dispose();
+    }
 
     private void DisposeManagedPanel()
     {

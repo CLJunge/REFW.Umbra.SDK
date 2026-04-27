@@ -43,6 +43,8 @@
 
 **Supporting**
 - Per-plugin `PluginLogger` and global `Logger` with level filtering
+- `Logger.WriteObserver` hook for capturing log output (powers the in-game log console)
+- `LogBuffer` thread-safe circular buffer and `LogConsoleState` / `LogConsoleDrawer` for in-game log display via `LiveStateSection`
 - `GameContext.CurrentGame` for RE Engine title detection
 - `KeyboardInput` and `HotkeyBinding` for hardware-backed hotkey capture via `UmbraKey`
 - Optional panel draw benchmarking when `BENCHMARK` is defined
