@@ -14,8 +14,8 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal static class ConditionalMemberPredicateResolver
 {
-    private static readonly ConcurrentDictionary<ConditionalAccessorCacheKey, ConditionalAccessorBinding> s_accessorCache = new();
-    private static readonly ConcurrentDictionary<ConditionalWarningCacheKey, byte> s_invalidAccessorWarnings = new();
+    private static readonly ConcurrentDictionary<ConditionalAccessorCacheKey, ConditionalAccessorBinding> _accessorCache = new();
+    private static readonly ConcurrentDictionary<ConditionalWarningCacheKey, byte> _invalidAccessorWarnings = new();
 
     /// <summary>
     /// Cache key for one owner-type/member-name conditional accessor shape.
@@ -54,7 +54,7 @@ internal static class ConditionalMemberPredicateResolver
         string conditionName)
     {
         var ownerType = owner.GetType();
-        var accessor = s_accessorCache.GetOrAdd(
+        var accessor = _accessorCache.GetOrAdd(
             new ConditionalAccessorCacheKey(ownerType, memberName),
             static key => CreateAccessorBinding(key.OwnerType, key.MemberName));
 
@@ -65,10 +65,7 @@ internal static class ConditionalMemberPredicateResolver
         }
 
         var getValue = accessor.GetValue;
-        if (!hasValue)
-            return () => getValue(owner) is true;
-
-        return () => Equals(getValue(owner), compareValue);
+        return !hasValue ? (() => getValue(owner) is true) : (() => Equals(getValue(owner), compareValue));
     }
 
     /// <summary>
@@ -83,10 +80,9 @@ internal static class ConditionalMemberPredicateResolver
 
         var rawType = (targetProp?.PropertyType ?? targetField!.FieldType)!;
         var getRaw = BuildRawAccessor(ownerType, targetProp, targetField);
-        if (rawType.IsGenericType && rawType.GetGenericTypeDefinition() == typeof(Parameter<>))
-            return new ConditionalAccessorBinding(true, owner => (getRaw(owner) as IParameter)?.GetValue());
-
-        return new ConditionalAccessorBinding(true, getRaw);
+        return rawType.IsGenericType && rawType.GetGenericTypeDefinition() == typeof(Parameter<>)
+            ? new ConditionalAccessorBinding(true, owner => (getRaw(owner) as IParameter)?.GetValue())
+            : new ConditionalAccessorBinding(true, getRaw);
     }
 
     /// <summary>
@@ -94,7 +90,7 @@ internal static class ConditionalMemberPredicateResolver
     /// </summary>
     private static void WarnInvalidAccessorOnce(ConditionalWarningCacheKey key)
     {
-        if (!s_invalidAccessorWarnings.TryAdd(key, 0))
+        if (!_invalidAccessorWarnings.TryAdd(key, 0))
             return;
 
         Logger.Warning(

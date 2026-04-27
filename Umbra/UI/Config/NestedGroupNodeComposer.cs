@@ -58,8 +58,6 @@ internal static class NestedNodeComposer
         Func<bool>? isDisabled,
         out IDisposable? disposable)
     {
-        disposable = null;
-
         try
         {
             var drawAction = NestedDrawerBinder.BuildDrawAction(nestedDrawerAttr, propType, nested, out disposable);

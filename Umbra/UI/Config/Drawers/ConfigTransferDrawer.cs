@@ -14,10 +14,10 @@ namespace Umbra.UI.Config.Drawers;
 /// </remarks>
 internal sealed class ConfigTransferDrawer : IDisposable
 {
-    private const uint DefaultMaxPathLength = 256;
-    private const float MinimumPathInputWidth = 64f;
-    private const string DefaultModeLabel = "Action";
-    private const string DefaultPathLabel = "Config File";
+    private const uint _defaultMaxPathLength = 256;
+    private const float _minimumPathInputWidth = 64f;
+    private const string _defaultModeLabel = "Action";
+    private const string _defaultPathLabel = "Config File";
     private static readonly Vector4 _successStatusColor = new(0.35f, 0.85f, 0.35f, 1f);
     private static readonly Vector4 _failureStatusColor = new(1f, 0.4f, 0.4f, 1f);
     private static readonly string[] _modeLabels = [nameof(ConfigTransferMode.Import), nameof(ConfigTransferMode.Export)];
@@ -133,7 +133,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
         if (modeParameter is null)
             return ConfigTransferMode.Import;
 
-        var label = GetLabel(modeParameter, DefaultModeLabel);
+        var label = GetLabel(modeParameter, _defaultModeLabel);
         var availableWidth = _renderer.GetAvailableWidth();
         var spacingX = _renderer.GetItemSpacingX();
         var comboWidth = availableWidth - _renderer.GetTextWidth(label) - spacingX;
@@ -142,7 +142,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
 
         _renderer.Text(label);
         _renderer.SameLine();
-        _renderer.SetNextItemWidth(Math.Max(MinimumPathInputWidth, comboWidth));
+        _renderer.SetNextItemWidth(Math.Max(_minimumPathInputWidth, comboWidth));
         if (_renderer.Combo(GetModeHiddenLabel(modeParameter), ref selectedIndex, _modeLabels, _modeLabels.Length))
             modeParameter.Value = _modes[selectedIndex];
 
@@ -154,7 +154,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
         Parameter<string> pathParameter,
         string? fallbackBrowseDirectory)
     {
-        var label = GetLabel(pathParameter, DefaultPathLabel);
+        var label = GetLabel(pathParameter, _defaultPathLabel);
         var browseButtonLabel = $"Browse...##{pathParameter.Key}";
         var availableWidth = _renderer.GetAvailableWidth();
         var spacingX = _renderer.GetItemSpacingX();
@@ -165,7 +165,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
 
         _renderer.Text(label);
         _renderer.SameLine();
-        _renderer.SetNextItemWidth(Math.Max(MinimumPathInputWidth, pathInputWidth));
+        _renderer.SetNextItemWidth(Math.Max(_minimumPathInputWidth, pathInputWidth));
         var currentValue = pathParameter.Value ?? string.Empty;
         if (_renderer.InputText(GetHiddenLabel(pathParameter), ref currentValue, GetMaxLength(pathParameter)))
             pathParameter.Value = currentValue;
@@ -238,13 +238,11 @@ internal sealed class ConfigTransferDrawer : IDisposable
             return TransferActionState.Invalid;
 
         var filePath = pathParameter.Value;
-        if (string.IsNullOrWhiteSpace(filePath))
-            return TransferActionState.Empty;
-
-        if (mode == ConfigTransferMode.Import)
-            return GetFileExists(filePath) ? TransferActionState.Ready : TransferActionState.Missing;
-
-        return HasJsonExtension(filePath) ? TransferActionState.Ready : TransferActionState.InvalidExtension;
+        return string.IsNullOrWhiteSpace(filePath)
+            ? TransferActionState.Empty
+            : mode == ConfigTransferMode.Import
+            ? GetFileExists(filePath) ? TransferActionState.Ready : TransferActionState.Missing
+            : HasJsonExtension(filePath) ? TransferActionState.Ready : TransferActionState.InvalidExtension;
     }
 
     /// <summary>
@@ -273,7 +271,7 @@ internal sealed class ConfigTransferDrawer : IDisposable
         => parameter.Metadata.HiddenLabel ?? $"##{parameter.Key}";
 
     private static uint GetMaxLength(Parameter<string> parameter)
-        => parameter.Metadata.MaxLength ?? DefaultMaxPathLength;
+        => parameter.Metadata.MaxLength ?? _defaultMaxPathLength;
 
     private static ConfigTransferMode GetTransferMode(Parameter<ConfigTransferMode> modeParameter)
     {
@@ -310,14 +308,13 @@ internal sealed class ConfigTransferDrawer : IDisposable
 
     private static ExecuteTransferActionCallback? WrapAction(Action? action)
     {
-        if (action is null)
-            return null;
-
-        return () =>
-        {
-            action();
-            return true;
-        };
+        return action is null
+            ? null
+            : (() =>
+            {
+                action();
+                return true;
+            });
     }
 
     private static string GetLabel<T>(Parameter<T> parameter, string fallback)

@@ -214,13 +214,9 @@ internal static class ConfigDrawTreeCollector
 
     private static Func<bool>? ComposeVisibility(Func<bool>? inheritedVisibility, Func<bool>? localVisibility)
     {
-        if (inheritedVisibility is null)
-            return localVisibility;
-
-        if (localVisibility is null)
-            return inheritedVisibility;
-
-        return () => inheritedVisibility() && localVisibility();
+        return inheritedVisibility is null
+            ? localVisibility
+            : localVisibility is null ? inheritedVisibility : (() => inheritedVisibility() && localVisibility());
     }
 
     private static Func<bool>? ComposeDisabled(
@@ -237,12 +233,8 @@ internal static class ConfigDrawTreeCollector
 
     private static Func<bool>? ComposeDisabled(Func<bool>? inheritedDisabled, Func<bool>? localDisabled)
     {
-        if (inheritedDisabled is null)
-            return localDisabled;
-
-        if (localDisabled is null)
-            return inheritedDisabled;
-
-        return () => inheritedDisabled() || localDisabled();
+        return inheritedDisabled is null
+            ? localDisabled
+            : localDisabled is null ? inheritedDisabled : (() => inheritedDisabled() || localDisabled());
     }
 }

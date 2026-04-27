@@ -6,12 +6,12 @@ namespace Umbra.UI.Config.Drawers;
 /// </summary>
 internal sealed partial class WindowsConfigTransferFilePicker : IConfigTransferFilePicker
 {
-    private const int MaxPathLength = 1024;
-    private const string Filter = "JSON Files (*.json)\0*.json\0All Files (*.*)\0*.*\0\0";
-    private const int OfnPathMustExist = 0x00000800;
-    private const int OfnFileMustExist = 0x00001000;
-    private const int OfnOverwritePrompt = 0x00000002;
-    private const int OfnNoChangeDir = 0x00000008;
+    private const int _maxPathLength = 1024;
+    private const string _filter = "JSON Files (*.json)\0*.json\0All Files (*.*)\0*.*\0\0";
+    private const int _ofnPathMustExist = 0x00000800;
+    private const int _ofnFileMustExist = 0x00001000;
+    private const int _ofnOverwritePrompt = 0x00000002;
+    private const int _ofnNoChangeDir = 0x00000008;
 
     public bool TryPickImportPath(string? currentPath, string? fallbackDirectory, out string? selectedPath)
         => TryPickPath(currentPath, fallbackDirectory, "Choose Config File for Import", forExport: false, out selectedPath);
@@ -27,7 +27,7 @@ internal sealed partial class WindowsConfigTransferFilePicker : IConfigTransferF
 
         var initialDirectory = GetInitialDirectory(currentPath, fallbackDirectory);
         var fileBuffer = AllocatePathBuffer(currentPath);
-        var filterPointer = Marshal.StringToHGlobalUni(Filter);
+        var filterPointer = Marshal.StringToHGlobalUni(_filter);
         var initialDirectoryPointer = initialDirectory is null ? nint.Zero : Marshal.StringToHGlobalUni(initialDirectory);
         var titlePointer = Marshal.StringToHGlobalUni(title);
         var defaultExtensionPointer = Marshal.StringToHGlobalUni("json");
@@ -39,17 +39,17 @@ internal sealed partial class WindowsConfigTransferFilePicker : IConfigTransferF
                 lStructSize = Marshal.SizeOf<OpenFileName>(),
                 lpstrFilter = filterPointer,
                 lpstrFile = fileBuffer,
-                nMaxFile = MaxPathLength,
+                nMaxFile = _maxPathLength,
                 lpstrInitialDir = initialDirectoryPointer,
                 lpstrTitle = titlePointer,
-                Flags = OfnNoChangeDir | OfnPathMustExist,
+                Flags = _ofnNoChangeDir | _ofnPathMustExist,
                 lpstrDefExt = defaultExtensionPointer
             };
 
             if (!forExport)
-                dialog.Flags |= OfnFileMustExist;
+                dialog.Flags |= _ofnFileMustExist;
             else
-                dialog.Flags |= OfnOverwritePrompt;
+                dialog.Flags |= _ofnOverwritePrompt;
 
             var success = forExport
                 ? GetSaveFileName(ref dialog)
@@ -74,11 +74,11 @@ internal sealed partial class WindowsConfigTransferFilePicker : IConfigTransferF
 
     private static nint AllocatePathBuffer(string? currentPath)
     {
-        var bufferPointer = Marshal.AllocHGlobal(MaxPathLength * sizeof(char));
-        var characters = new char[MaxPathLength];
+        var bufferPointer = Marshal.AllocHGlobal(_maxPathLength * sizeof(char));
+        var characters = new char[_maxPathLength];
         if (!string.IsNullOrWhiteSpace(currentPath))
         {
-            var copyLength = Math.Min(currentPath.Length, MaxPathLength - 1);
+            var copyLength = Math.Min(currentPath.Length, _maxPathLength - 1);
             currentPath.CopyTo(0, characters, 0, copyLength);
         }
 
@@ -95,19 +95,13 @@ internal sealed partial class WindowsConfigTransferFilePicker : IConfigTransferF
             return currentPath;
 
         var directoryPath = Path.GetDirectoryName(currentPath);
-        if (!string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath))
-            return directoryPath;
-
-        return GetExistingDirectory(fallbackDirectory);
+        return !string.IsNullOrWhiteSpace(directoryPath) && Directory.Exists(directoryPath)
+            ? directoryPath
+            : GetExistingDirectory(fallbackDirectory);
     }
 
     private static string? GetExistingDirectory(string? directoryPath)
-    {
-        if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath))
-            return null;
-
-        return directoryPath;
-    }
+        => string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath) ? null : directoryPath;
 
     [LibraryImport("comdlg32.dll", EntryPoint = "GetOpenFileNameW", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

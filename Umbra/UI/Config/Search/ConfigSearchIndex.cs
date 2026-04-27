@@ -100,12 +100,7 @@ internal sealed class ConfigSearchIndex
     }
 
     private bool IsResultVisible(string resultId)
-    {
-        if (!_visibilityPredicatesByResultId.TryGetValue(resultId, out var isVisible))
-            return true;
-
-        return isVisible();
-    }
+        => !_visibilityPredicatesByResultId.TryGetValue(resultId, out var isVisible) || isVisible();
 
     private string[] BuildAncestorBranchIds(string groupPath, string? category)
     {

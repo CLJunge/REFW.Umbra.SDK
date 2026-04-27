@@ -10,8 +10,8 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal static class ControlLayoutFactory
 {
-    private const float DefaultFillControlWidth = -1f;
-    private const string HiddenLabelPrefix = "##";
+    private const float _defaultFillControlWidth = -1f;
+    private const string _hiddenLabelPrefix = "##";
 
     /// <summary>
     /// Builds the precomputed layout state for one parameter row.
@@ -32,7 +32,7 @@ internal static class ControlLayoutFactory
         if (hiddenLabel is null)
         {
             var key = parameter.Key;
-            hiddenLabel = key is null ? HiddenLabelPrefix : string.Concat(HiddenLabelPrefix, key);
+            hiddenLabel = key is null ? _hiddenLabelPrefix : string.Concat(_hiddenLabelPrefix, key);
         }
 
         alignGroup.Register(label, hasDescription);
@@ -41,7 +41,7 @@ internal static class ControlLayoutFactory
             label,
             meta.Description,
             alignGroup,
-            meta.ControlWidth.GetValueOrDefault(DefaultFillControlWidth),
+            meta.ControlWidth.GetValueOrDefault(_defaultFillControlWidth),
             hiddenLabel);
     }
 }

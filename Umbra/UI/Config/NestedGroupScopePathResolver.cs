@@ -26,13 +26,10 @@ internal static class NestedScopePathResolver
         segment ??= propMeta.ConfigParameterKeyOverride;
         segment ??= propMeta.Property.Name.ToCamelCase() ?? propMeta.Property.Name;
 
-        if (string.IsNullOrEmpty(segment))
-        {
-            throw new InvalidOperationException(
-                $"Nested group property '{propMeta.Property.DeclaringType?.FullName ?? propMeta.Property.ReflectedType?.FullName ?? "<unknown>"}.{propMeta.Property.Name}' resolves to an empty scope segment. Nested group identifiers must be non-empty.");
-        }
-
-        return Combine(parentPath, segment);
+        return string.IsNullOrEmpty(segment)
+            ? throw new InvalidOperationException(
+                $"Nested group property '{propMeta.Property.DeclaringType?.FullName ?? propMeta.Property.ReflectedType?.FullName ?? "<unknown>"}.{propMeta.Property.Name}' resolves to an empty scope segment. Nested group identifiers must be non-empty.")
+            : Combine(parentPath, segment);
     }
 
     /// <summary>
@@ -47,9 +44,5 @@ internal static class NestedScopePathResolver
     /// otherwise <c>"left.right"</c>.
     /// </returns>
     private static string Combine(string left, string right)
-    {
-        if (string.IsNullOrEmpty(left)) return right;
-        if (string.IsNullOrEmpty(right)) return left;
-        return $"{left}.{right}";
-    }
+        => string.IsNullOrEmpty(left) ? right : string.IsNullOrEmpty(right) ? left : $"{left}.{right}";
 }

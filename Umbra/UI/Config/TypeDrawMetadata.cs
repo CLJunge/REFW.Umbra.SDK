@@ -12,7 +12,7 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal sealed class TypeDrawMetadata
 {
-    private static readonly ConcurrentDictionary<Type, TypeDrawMetadata> s_cache = new();
+    private static readonly ConcurrentDictionary<Type, TypeDrawMetadata> _cache = new();
 
     /// <summary>
     /// Stores the cached draw metadata for one public instance property of a configuration type.
@@ -90,5 +90,5 @@ internal sealed class TypeDrawMetadata
     /// <summary>
     /// Returns the cached metadata snapshot for <paramref name="type"/>, building it once on first use.
     /// </summary>
-    internal static TypeDrawMetadata For(Type type) => s_cache.GetOrAdd(type, TypeDrawMetadataFactory.Build);
+    internal static TypeDrawMetadata For(Type type) => _cache.GetOrAdd(type, TypeDrawMetadataFactory.Build);
 }

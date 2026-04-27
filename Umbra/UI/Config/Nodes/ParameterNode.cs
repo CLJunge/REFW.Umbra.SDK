@@ -13,14 +13,14 @@ namespace Umbra.UI.Config.Nodes;
 /// </remarks>
 internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
 {
-    private static readonly Vector4 MatchTextColor = new(1f, 0.95f, 0.60f, 1f);
-    private static readonly Vector4 MatchFrameColor = new(0.35f, 0.28f, 0.08f, 0.70f);
-    private static readonly Vector4 MatchFrameHoveredColor = new(0.42f, 0.34f, 0.10f, 0.82f);
-    private static readonly Vector4 MatchFrameActiveColor = new(0.48f, 0.40f, 0.12f, 0.90f);
-    private static readonly Vector4 FocusedTextColor = new(1f, 1f, 0.78f, 1f);
-    private static readonly Vector4 FocusedFrameColor = new(0.50f, 0.32f, 0.08f, 0.88f);
-    private static readonly Vector4 FocusedFrameHoveredColor = new(0.58f, 0.38f, 0.10f, 0.94f);
-    private static readonly Vector4 FocusedFrameActiveColor = new(0.66f, 0.44f, 0.12f, 1f);
+    private static readonly Vector4 _matchTextColor = new(1f, 0.95f, 0.60f, 1f);
+    private static readonly Vector4 _matchFrameColor = new(0.35f, 0.28f, 0.08f, 0.70f);
+    private static readonly Vector4 _matchFrameHoveredColor = new(0.42f, 0.34f, 0.10f, 0.82f);
+    private static readonly Vector4 _matchFrameActiveColor = new(0.48f, 0.40f, 0.12f, 0.90f);
+    private static readonly Vector4 _focusedTextColor = new(1f, 1f, 0.78f, 1f);
+    private static readonly Vector4 _focusedFrameColor = new(0.50f, 0.32f, 0.08f, 0.88f);
+    private static readonly Vector4 _focusedFrameHoveredColor = new(0.58f, 0.38f, 0.10f, 0.94f);
+    private static readonly Vector4 _focusedFrameActiveColor = new(0.66f, 0.44f, 0.12f, 1f);
 
     private readonly Func<bool>? _isVisible;
     private readonly Func<bool>? _isDisabled;
@@ -310,17 +310,17 @@ internal sealed class ParameterNode : IDrawNode, IConfigSearchNode
 
         if (_searchVisualState == SearchMatchVisualState.FocusedMatch)
         {
-            _renderer.PushStyleColor(ImGuiCol.Text, FocusedTextColor);
-            _renderer.PushStyleColor(ImGuiCol.FrameBg, FocusedFrameColor);
-            _renderer.PushStyleColor(ImGuiCol.FrameBgHovered, FocusedFrameHoveredColor);
-            _renderer.PushStyleColor(ImGuiCol.FrameBgActive, FocusedFrameActiveColor);
+            _renderer.PushStyleColor(ImGuiCol.Text, _focusedTextColor);
+            _renderer.PushStyleColor(ImGuiCol.FrameBg, _focusedFrameColor);
+            _renderer.PushStyleColor(ImGuiCol.FrameBgHovered, _focusedFrameHoveredColor);
+            _renderer.PushStyleColor(ImGuiCol.FrameBgActive, _focusedFrameActiveColor);
             return 4;
         }
 
-        _renderer.PushStyleColor(ImGuiCol.Text, MatchTextColor);
-        _renderer.PushStyleColor(ImGuiCol.FrameBg, MatchFrameColor);
-        _renderer.PushStyleColor(ImGuiCol.FrameBgHovered, MatchFrameHoveredColor);
-        _renderer.PushStyleColor(ImGuiCol.FrameBgActive, MatchFrameActiveColor);
+        _renderer.PushStyleColor(ImGuiCol.Text, _matchTextColor);
+        _renderer.PushStyleColor(ImGuiCol.FrameBg, _matchFrameColor);
+        _renderer.PushStyleColor(ImGuiCol.FrameBgHovered, _matchFrameHoveredColor);
+        _renderer.PushStyleColor(ImGuiCol.FrameBgActive, _matchFrameActiveColor);
         return 4;
     }
 }

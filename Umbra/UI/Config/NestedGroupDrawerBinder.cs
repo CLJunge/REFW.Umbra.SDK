@@ -14,7 +14,7 @@ namespace Umbra.UI.Config;
 /// </remarks>
 internal static class NestedDrawerBinder
 {
-    private static readonly ConcurrentDictionary<NestedGroupDrawerFactoryKey, NestedDrawerFactory> s_factories = new();
+    private static readonly ConcurrentDictionary<NestedGroupDrawerFactoryKey, NestedDrawerFactory> _factories = new();
 
     /// <summary>
     /// Cache key for one nested-group drawer binding shape.
@@ -41,10 +41,9 @@ internal static class NestedDrawerBinder
 
         internal Action Bind(object drawerInstance, object nested)
         {
-            if (invoker is null)
-                throw new InvalidOperationException("Cannot bind an unsupported nested-group drawer factory.");
-
-            return () => invoker(drawerInstance, nested);
+            return invoker is null
+                ? throw new InvalidOperationException("Cannot bind an unsupported nested-group drawer factory.")
+                : (() => invoker(drawerInstance, nested));
         }
     }
 
@@ -67,7 +66,7 @@ internal static class NestedDrawerBinder
     {
         disposable = null;
         var drawerType = nestedDrawerAttr.DrawerType;
-        var factory = s_factories.GetOrAdd(
+        var factory = _factories.GetOrAdd(
             new NestedGroupDrawerFactoryKey(drawerType, groupType),
             static key => CreateFactory(key.DrawerType, key.GroupType));
 
@@ -124,7 +123,7 @@ internal static class NestedDrawerBinder
         if (genericIface is null || supportedGroupType is null)
             return new NestedDrawerFactory(false, null);
 
-        var drawMethod = genericIface.GetMethod(nameof(INestedDrawer<object>.Draw))!;
+        var drawMethod = genericIface.GetMethod(nameof(INestedDrawer<>.Draw))!;
         var drawerParam = Expression.Parameter(typeof(object), "drawer");
         var groupParam = Expression.Parameter(typeof(object), "group");
         var callExpr = Expression.Call(

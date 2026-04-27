@@ -19,11 +19,7 @@ internal static class TextEditSinkComposer
     /// or <see langword="null"/> when both are null.
     /// </returns>
     internal static ITextEditSink? Compose(ITextEditSink? first, ITextEditSink? second)
-    {
-        if (first is null) return second;
-        if (second is null) return first;
-        return new CompositeSink(first, second);
-    }
+        => first is null ? second : second is null ? first : new CompositeSink(first, second);
 
     private sealed class CompositeSink(ITextEditSink first, ITextEditSink second) : ITextEditSink
     {

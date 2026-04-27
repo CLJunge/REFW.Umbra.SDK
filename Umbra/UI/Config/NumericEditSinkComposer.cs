@@ -19,11 +19,7 @@ internal static class NumericEditSinkComposer
     /// or <see langword="null"/> when both are null.
     /// </returns>
     internal static INumericEditSink? Compose(INumericEditSink? first, INumericEditSink? second)
-    {
-        if (first is null) return second;
-        if (second is null) return first;
-        return new CompositeSink(first, second);
-    }
+        => first is null ? second : second is null ? first : new CompositeSink(first, second);
 
     private sealed class CompositeSink(INumericEditSink first, INumericEditSink second) : INumericEditSink
     {

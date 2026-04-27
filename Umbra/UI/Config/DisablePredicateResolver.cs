@@ -18,14 +18,13 @@ internal static class DisablePredicateResolver
     /// <returns>A predicate that returns <see langword="true"/> when the parameter should render disabled; otherwise, <see langword="false"/>.</returns>
     internal static Func<bool> Build(IDisableIfAttribute? disableIf, object owner)
     {
-        if (disableIf is null)
-            return static () => false;
-
-        return ConditionalMemberPredicateResolver.BuildIsMatchPredicate(
-            disableIf.MemberName,
-            disableIf.HasValue,
-            disableIf.BoxedValue,
-            owner,
-            "DisableIf");
+        return disableIf is null
+            ? (static () => false)
+            : ConditionalMemberPredicateResolver.BuildIsMatchPredicate(
+                disableIf.MemberName,
+                disableIf.HasValue,
+                disableIf.BoxedValue,
+                owner,
+                "DisableIf");
     }
 }
