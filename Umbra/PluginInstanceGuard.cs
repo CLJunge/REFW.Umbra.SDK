@@ -13,7 +13,6 @@ namespace Umbra;
 internal static class PluginInstanceGuard
 {
     private static readonly Lock _sync = new();
-    [SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "Code Cleanup tries to use collection initializer syntax preview features; production code avoids preview syntax")]
     private static readonly Dictionary<string, PluginInstanceLease> _activeLeases = new(StringComparer.Ordinal);
 
     /// <summary>

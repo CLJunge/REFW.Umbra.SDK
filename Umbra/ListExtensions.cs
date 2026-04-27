@@ -91,13 +91,8 @@ internal static class ListExtensions
                     right);
             }
 
-            var swapItems = sourceItems;
-            sourceItems = destinationItems;
-            destinationItems = swapItems;
-
-            var swapKeys = sourceKeys;
-            sourceKeys = destinationKeys;
-            destinationKeys = swapKeys;
+            (destinationItems, sourceItems) = (sourceItems, destinationItems);
+            (destinationKeys, sourceKeys) = (sourceKeys, destinationKeys);
         }
 
         for (var i = 0; i < count; i++)

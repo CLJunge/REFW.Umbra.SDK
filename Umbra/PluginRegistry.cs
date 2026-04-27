@@ -12,7 +12,6 @@ namespace Umbra;
 public static class PluginRegistry
 {
     private static readonly Lock _sync = new();
-
     private static readonly List<IPluginStatusProvider> _providers = [];
 
     /// <summary>

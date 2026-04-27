@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Umbra;
 
 /// <summary>
@@ -15,7 +17,7 @@ public static class PluginBootstrapper
     /// <returns><see langword="true"/> if the inferred plugin mutex was acquired and <paramref name="initialize"/> ran; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="initialize"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The calling method cannot be resolved to a class-based plugin identity type.</exception>
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Load(Action initialize)
     {
         ArgumentNullException.ThrowIfNull(initialize);
@@ -67,7 +69,7 @@ public static class PluginBootstrapper
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="cleanup"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The calling method cannot be resolved to a class-based plugin identity type.</exception>
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Unload(Action cleanup)
     {
         ArgumentNullException.ThrowIfNull(cleanup);

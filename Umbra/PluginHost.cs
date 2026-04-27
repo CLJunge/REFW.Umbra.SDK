@@ -19,10 +19,7 @@ namespace Umbra;
 public sealed class PluginHost<TPlugin> : IPluginStatusProvider
     where TPlugin : class, IUmbraPlugin
 {
-    #pragma warning disable CS0649
     private static volatile TPlugin? _current;
-#pragma warning restore CS0649
-
     private readonly Func<TPlugin> _factory;
     private volatile TPlugin? _instance;
     private volatile PluginState _state;
@@ -30,13 +27,38 @@ public sealed class PluginHost<TPlugin> : IPluginStatusProvider
     private DateTimeOffset? _loadedAt;
 
     /// <summary>
-    /// Gets the live plugin instance, or <see langword="null"/> when no instance is loaded.
+    /// Gets the live plugin instance owned by this host, or <see langword="null"/> when no instance is loaded.
     /// </summary>
     /// <value>
-    /// The current <typeparamref name="TPlugin"/> instance between a successful <see cref="Load"/> and a subsequent <see cref="Unload"/>; otherwise, <see langword="null"/>.
+    /// The current <typeparamref name="TPlugin"/> instance between a successful <see cref="Load"/> and a subsequent
+    /// <see cref="Unload"/>; otherwise, <see langword="null"/>.
     /// </value>
     /// <remarks>
-    /// This property is intended for static <c>[MethodHook]</c> methods and other static callbacks that need to forward game events to the instance-based plugin without holding a reference to the <see cref="PluginHost{TPlugin}"/> object. The backing field is <see langword="volatile"/>, so reads from any thread observe the most recently published value. Callers should use null-conditional access (<c>Current?.SomeMethod()</c>) so forwarded calls become safe no-ops after unload or before load completes.
+    /// Use this property when the calling code already holds a reference to the
+    /// <see cref="PluginHost{TPlugin}"/> (e.g., <c>_host.Instance</c> in the static host class).
+    /// The backing field is <see langword="volatile"/>, so reads from any thread observe the most
+    /// recently published value. Callers should use null-conditional access
+    /// (<c>Instance?.SomeMethod()</c>) so forwarded calls become safe no-ops after unload or
+    /// before load completes.
+    /// </remarks>
+    public TPlugin? Instance => _instance;
+
+    /// <summary>
+    /// Gets the live plugin instance through a static accessor, or <see langword="null"/> when no
+    /// instance is loaded.
+    /// </summary>
+    /// <value>
+    /// The current <typeparamref name="TPlugin"/> instance between a successful <see cref="Load"/> and a subsequent
+    /// <see cref="Unload"/>; otherwise, <see langword="null"/>.
+    /// </value>
+    /// <remarks>
+    /// This property is intended for static <c>[MethodHook]</c> methods and other static callbacks
+    /// that need to forward game events to the instance-based plugin without holding a reference to
+    /// the <see cref="PluginHost{TPlugin}"/> object. Prefer <see cref="Instance"/> when the host
+    /// reference is already available. The backing field is <see langword="volatile"/>, so reads
+    /// from any thread observe the most recently published value. Callers should use
+    /// null-conditional access (<c>Current?.SomeMethod()</c>) so forwarded calls become safe
+    /// no-ops after unload or before load completes.
     /// </remarks>
     public static TPlugin? Current => _current;
 
