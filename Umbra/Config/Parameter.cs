@@ -17,7 +17,7 @@ public class Parameter<T> : IParameter, IParameterRegistration, IParameterValida
     /// Cached flag indicating whether <typeparamref name="T"/> is a non-nullable value type.
     /// Evaluated once per closed generic type to avoid repeated reflection on every call.
     /// </summary>
-    private static readonly bool IsNonNullableValueType =
+    private static readonly bool _isNonNullableValueType =
         typeof(T).IsValueType && Nullable.GetUnderlyingType(typeof(T)) == null;
 
     private T? _value;
@@ -216,11 +216,12 @@ public class Parameter<T> : IParameter, IParameterRegistration, IParameterValida
     /// is a non-nullable value type, or when <paramref name="value"/> is not assignable to
     /// <typeparamref name="T"/>.
     /// </exception>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Keeps the coercion logic straightforward and easy to read, especially with the early null check for non-nullable value types.")]
     private static T? CoerceValue(object? value)
     {
         if (value is null)
         {
-            if (IsNonNullableValueType)
+            if (_isNonNullableValueType)
                 throw new ArgumentException(
                     $"null is not valid for non-nullable value type {typeof(T)}.", nameof(value));
 

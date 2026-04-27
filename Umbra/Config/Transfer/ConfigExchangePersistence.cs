@@ -58,6 +58,7 @@ internal static class ConfigExchangePersistence
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Keep as-is for readability.")]
     internal static ConfigImportReport Import(
         string filePath,
         IReadOnlyDictionary<string, IParameter> parameters,
@@ -136,7 +137,6 @@ internal static class ConfigExchangePersistence
         out JsonElement valuesElement,
         out ConfigImportReport? failureReport)
     {
-        valuesElement = default;
         failureReport = null;
 
         var hasFormatVersion = root.TryGetProperty("formatVersion", out var formatVersionElement);

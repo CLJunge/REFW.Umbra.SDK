@@ -20,7 +20,6 @@ internal static class ConfigRegistrar
     /// <remarks>
     /// If two parameters resolve to the same fully qualified key, registration fails instead of allowing the later parameter to overwrite the earlier one.
     /// </remarks>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0028:Simplify collection initialization", Justification = "Code Cleanup tries to use collection initializer syntax preview features; production code avoids preview syntax")]
     internal static Dictionary<string, IParameter> Register<TConfig>(TConfig config)
         where TConfig : class
     {
@@ -88,10 +87,9 @@ internal static class ConfigRegistrar
     /// </exception>
     private static string GetParameterKeySegment(PropertyInfo property, UmbraParameterAttribute parameterAttribute)
     {
-        if (parameterAttribute.KeyOverride is not null)
-            return RequireNonEmptySegment(parameterAttribute.KeyOverride, property, "[UmbraParameter] key override");
-
-        return property.Name.ToCamelCase() ?? property.Name;
+        return parameterAttribute.KeyOverride is not null
+            ? RequireNonEmptySegment(parameterAttribute.KeyOverride, property, "[UmbraParameter] key override")
+            : property.Name.ToCamelCase() ?? property.Name;
     }
 
     /// <summary>
@@ -108,10 +106,7 @@ internal static class ConfigRegistrar
             return RequireNonEmptySegment(propertyPrefix, property, "[UmbraPrefix] on the nested-group property");
 
         var typePrefix = GetPrefix(nestedType);
-        if (typePrefix is not null)
-            return RequireNonEmptySegment(typePrefix, nestedType, "[UmbraPrefix] on the nested-group type");
-
-        return "";
+        return typePrefix is not null ? RequireNonEmptySegment(typePrefix, nestedType, "[UmbraPrefix] on the nested-group type") : "";
     }
 
     /// <summary>
@@ -201,9 +196,5 @@ internal static class ConfigRegistrar
     /// when either segment is <see langword="null"/> or empty.
     /// </summary>
     private static string Combine(string a, string b)
-    {
-        if (string.IsNullOrEmpty(a)) return b;
-        if (string.IsNullOrEmpty(b)) return a;
-        return $"{a}.{b}";
-    }
+        => string.IsNullOrEmpty(a) ? b : string.IsNullOrEmpty(b) ? a : $"{a}.{b}";
 }

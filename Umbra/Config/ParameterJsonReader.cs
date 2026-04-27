@@ -111,6 +111,7 @@ internal static class ParameterJsonReader
     /// <param name="element">The numeric JSON element to convert.</param>
     /// <param name="t">The target CLR numeric type.</param>
     /// <returns>The converted numeric value as an <see cref="object"/>.</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Keeps the type checks more readable and maintainable in a single block.")]
     private static object? ConvertNumber(JsonElement element, Type t)
     {
         if (t == typeof(int) || t == typeof(int?)) return element.GetInt32();
@@ -160,18 +161,15 @@ internal static class ParameterJsonReader
     /// <returns>The converted value, or <see langword="null"/> if the type is not supported.</returns>
     private static object? ConvertObject(JsonElement element, Type t)
     {
-        if (t == typeof(Vector4) || t == typeof(Vector4?))
-            return ConvertVector4(element);
-
-        if (t == typeof(HotkeyBinding) || t == typeof(HotkeyBinding?))
-            return ConvertHotkeyBinding(element);
-
-        return null;
+        return t == typeof(Vector4) || t == typeof(Vector4?)
+            ? ConvertVector4(element)
+            : t == typeof(HotkeyBinding) || t == typeof(HotkeyBinding?) ? ConvertHotkeyBinding(element) : (object?)null;
     }
 
     /// <summary>
     /// Reads a <see cref="Vector4"/> from a JSON object with <c>X</c>, <c>Y</c>, <c>Z</c>, <c>W</c> properties.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Keeps the property checks more readable and maintainable in a single block.")]
     private static Vector4? ConvertVector4(JsonElement element)
     {
         if (!element.TryGetProperty("X", out var xProp) && !element.TryGetProperty("x", out xProp))
@@ -206,10 +204,5 @@ internal static class ParameterJsonReader
     /// Tries to read a boolean property by Pascal-case or camelCase name, defaulting to <see langword="false"/>.
     /// </summary>
     private static bool TryGetBool(JsonElement element, string pascalName, string camelName)
-    {
-        if (element.TryGetProperty(pascalName, out var prop) || element.TryGetProperty(camelName, out prop))
-            return prop.ValueKind == JsonValueKind.True;
-
-        return false;
-    }
+        => (element.TryGetProperty(pascalName, out var prop) || element.TryGetProperty(camelName, out prop)) && prop.ValueKind == JsonValueKind.True;
 }

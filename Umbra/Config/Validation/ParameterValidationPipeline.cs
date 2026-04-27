@@ -34,12 +34,10 @@ internal static class ParameterValidationPipeline
             return result;
 
         result = ValidateNumericRange(context);
-        if (!result.IsValid)
-            return result;
-
-        return ValidateCustom(context, validatorCache);
+        return !result.IsValid ? result : ValidateCustom(context, validatorCache);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Keep the straightforward if statements for readability and easier future expansion of validation rules.")]
     private static ParameterValidationResult ValidateRequired(ParameterValidationContext context)
     {
         var metadata = context.Metadata;
@@ -69,10 +67,9 @@ internal static class ParameterValidationPipeline
             return ParameterValidationResult.Valid();
 
         var minLength = context.Metadata.MinLength;
-        if (minLength is uint requiredLength && text.Length < requiredLength)
-            return ParameterValidationResult.Invalid($"Value must be at least {requiredLength} characters long.");
-
-        return ParameterValidationResult.Valid();
+        return minLength is uint requiredLength && text.Length < requiredLength
+            ? ParameterValidationResult.Invalid($"Value must be at least {requiredLength} characters long.")
+            : ParameterValidationResult.Valid();
     }
 
     private static ParameterValidationResult ValidateRegex(ParameterValidationContext context)
@@ -145,10 +142,9 @@ internal static class ParameterValidationPipeline
                 context.CandidateValue,
                 context.ValueType,
                 context.Metadata);
-            if (result.IsValid)
-                return ParameterValidationResult.Valid();
-
-            return string.IsNullOrWhiteSpace(result.ErrorMessage)
+            return result.IsValid
+                ? ParameterValidationResult.Valid()
+                : string.IsNullOrWhiteSpace(result.ErrorMessage)
                 ? ParameterValidationResult.Invalid($"Validator '{validatorType.FullName ?? validatorType.Name}' rejected the value.")
                 : result;
         }

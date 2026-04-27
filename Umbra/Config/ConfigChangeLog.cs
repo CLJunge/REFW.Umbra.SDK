@@ -21,7 +21,7 @@ public sealed class ConfigChangeLog
     /// </summary>
     public const int DefaultCapacity = 64;
 
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private readonly ConfigChangeRecord[] _buffer;
     private int _head;
     private int _count;
