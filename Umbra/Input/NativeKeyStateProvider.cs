@@ -11,10 +11,10 @@ namespace Umbra.Input;
 /// key presses even when the game is running at low frame rates or when ImGui widgets consume
 /// key events.
 /// </remarks>
-internal sealed class NativeKeyStateProvider : INativeKeyStateProvider
+internal sealed partial class NativeKeyStateProvider : INativeKeyStateProvider
 {
-    [DllImport("user32.dll")]
-    private static extern short GetAsyncKeyState(int vKey);
+    [LibraryImport("user32.dll", EntryPoint = "GetAsyncKeyState", SetLastError = true)]
+    private static partial short GetAsyncKeyState(int vKey);
 
     /// <inheritdoc/>
     public bool IsKeyDown(int virtualKeyCode)
